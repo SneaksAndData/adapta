@@ -1,0 +1,35 @@
+name: Release to Azure Artifacts
+
+on: workflow_dispatch
+jobs:
+  release_to_azure_artifacts:
+    name: Release distribution to Azure Artifacts
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - run: git fetch --prune --unshallow
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.8.x'
+      - name: Build wheel
+        if: startsWith(github.ref, 'refs/tags')
+        run: |
+          set -e
+          
+          version=$(git describe --tags --abbrev=7)
+          
+          pip install virtualenv
+          python -m virtualenv venv
+          
+          . venv/bin/activate
+          pip install --upgrade twine build
+          
+          echo "__version__ = '$version'" > ./src/<python_project>/_version.py
+          
+          python -m build --sdist --wheel
+      - name: Publish distribution 📦 to Azure Artifacts
+        env:
+          PIP_PASSWORD: ${{ secrets.AZOPS_PAT }}
+        run: |
+          python3 -m twine upload --verbose --non-interactive --repository-url https://pkgs.dev.azure.com/eccoSneaksAndData/_packaging/eccoSneaksAndData/pypi/upload --username 'azservice-atlantis@ecco.onmicrosoft.com' --password $PIP_PASSWORD dist/*
