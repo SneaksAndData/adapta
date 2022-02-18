@@ -21,12 +21,11 @@ jobs:
           set -e
           
           curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/1.1.13/get-poetry.py | python -
-          . $HOME/.poetry/env
-          poetry --version
       - name: Prepare venv
         run: |
           set -e
-
+          
+          . $HOME/.poetry/env
           poetry shell && poetry install && poetry exit
       - name: Lint
         run: |
@@ -34,6 +33,7 @@ jobs:
 
           pypath=$(pwd)
           export PYTHONPATH="$pypath:$PYTHONPATH"
+          . $HOME/.poetry/env
 
           poetry shell
           find ./src/<my repo> -type f -name "*.py" | xargs poetry run pylint
@@ -44,6 +44,7 @@ jobs:
 
           pypath=$(pwd)
           export PYTHONPATH="$pypath:$PYTHONPATH"
+          . $HOME/.poetry/env
 
           poetry shell
           poetry run pytest ./test
