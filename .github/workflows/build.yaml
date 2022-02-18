@@ -20,7 +20,7 @@ jobs:
         run: |
           set -e
           
-          curl -sSL https://install.python-poetry.org | python3 - --version 1.2.0
+          curl -sSL https://install.python-poetry.org | python3 - --preview
       - name: Prepare venv
         run: |
           set -e
