@@ -15,9 +15,6 @@ jobs:
           python-version: '3.8.x' # Version range or exact version of a Python version to use, using SemVer's version range syntax
           architecture: 'x64' # optional x64 or x86. Defaults to x64 if not specified
       - name: Install and Configure Poetry
-        env:
-          POETRY_HTTP_BASIC_AZOPS_USERNAME: ${{ secrets.AZOPS_PAT_USER }}
-          POETRY_HTTP_BASIC_AZOPS_PASSWORD: ${{ secrets.AZOPS_PAT }}
         run: |
           set -e
           
@@ -25,12 +22,15 @@ jobs:
           
           poetry config repositories.azops https://pkgs.dev.azure.com/eccoSneaksAndData/_packaging/eccoSneaksAndData/pypi/simple/
       - name: Build Package and Publish distribution 📦 to Azure Artifacts
+        env:
+          POETRY_HTTP_BASIC_AZOPS_USERNAME: ${{ secrets.AZOPS_PAT_USER }}
+          POETRY_HTTP_BASIC_AZOPS_PASSWORD: ${{ secrets.AZOPS_PAT }}
         if: startsWith(github.ref, 'refs/tags')
         run: |
           set -e
           
           version=$(git describe --tags --abbrev=7)
           
-          sed -i "s/version = \"0.0.0\"/version = \"$version\"/" pyproject.toml
+          sed -i "s/version = \"0.0.0\"/version = \"${version:1}\"/" pyproject.toml
           
-          poetry package && poetry publish -r azops
+          poetry build && poetry publish -r azops
