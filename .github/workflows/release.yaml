@@ -15,12 +15,14 @@ jobs:
           python-version: '3.8.x' # Version range or exact version of a Python version to use, using SemVer's version range syntax
           architecture: 'x64' # optional x64 or x86. Defaults to x64 if not specified
       - name: Install and Configure Poetry
+        env:
+          REPO_URL: ${{ secrets.AZOPS_PYPI_UPLOAD }}
         run: |
           set -e
           
           curl -sSL https://install.python-poetry.org | python3 - --preview
           
-          poetry config repositories.azops https://pkgs.dev.azure.com/eccoSneaksAndData/_packaging/eccoSneaksAndData/pypi/simple/
+          poetry config repositories.azops $REPO_URL
       - name: Build Package and Publish distribution 📦 to Azure Artifacts
         env:
           POETRY_HTTP_BASIC_AZOPS_USERNAME: ${{ secrets.AZOPS_PAT_USER }}
