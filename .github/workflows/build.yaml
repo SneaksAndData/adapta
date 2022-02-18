@@ -25,7 +25,7 @@ jobs:
         run: |
           set -e
           
-          . /home/xami/.local/bin/poetry
+          . $HOME/.local/bin/poetry
           poetry shell && poetry install && poetry exit
       - name: Lint
         run: |
@@ -33,7 +33,7 @@ jobs:
 
           pypath=$(pwd)
           export PYTHONPATH="$pypath:$PYTHONPATH"
-          . /home/xami/.local/bin/poetry
+          . $HOME/.local/bin/poetry
 
           poetry shell
           find ./src/<my repo> -type f -name "*.py" | xargs poetry run pylint
