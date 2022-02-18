@@ -6,7 +6,7 @@ from typing import Dict
 
 from requests.auth import HTTPBasicAuth
 
-from utils import session_with_retries
+from proteus.utils import session_with_retries
 
 
 class CrystalConnector:
