@@ -22,7 +22,7 @@ jobs:
           set -e
           
           curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/1.1.13/get-poetry.py | python -
-          . $HOME/.poetry/bin
+          . $HOME/.poetry/env
           echo "$(poetry --version)"
           
           poetry config repositories.azops https://pkgs.dev.azure.com/eccoSneaksAndData/_packaging/eccoSneaksAndData/pypi/simple/
