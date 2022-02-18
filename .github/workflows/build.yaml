@@ -21,7 +21,7 @@ jobs:
           set -e
           
           curl -sSL https://install.python-poetry.org | python3 - --preview
-      - name: Prepare venv
+      - name: Install Dependencies
         run: |
           set -e
           
@@ -33,7 +33,7 @@ jobs:
           pypath=$(pwd)
           export PYTHONPATH="$pypath:$PYTHONPATH"
 
-          find ./src/<my repo> -type f -name "*.py" | xargs poetry run pylint
+          find ./proteus -type f -name "*.py" | xargs poetry run pylint
       - name: Unit test
         run: |
           set -e
