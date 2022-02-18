@@ -25,7 +25,7 @@ jobs:
         run: |
           set -e
           
-          poetry shell && poetry install && poetry exit
+          poetry install
       - name: Lint
         run: |
           set -e
@@ -33,9 +33,7 @@ jobs:
           pypath=$(pwd)
           export PYTHONPATH="$pypath:$PYTHONPATH"
 
-          poetry shell
           find ./src/<my repo> -type f -name "*.py" | xargs poetry run pylint
-          poetry exit
       - name: Unit test
         run: |
           set -e
@@ -44,9 +42,7 @@ jobs:
           export PYTHONPATH="$pypath:$PYTHONPATH"
           . $HOME/.poetry/env
 
-          poetry shell
           poetry run pytest ./test
-          poetry exit
 
   create_release:
     name: Create Release
