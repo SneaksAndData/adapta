@@ -4,10 +4,9 @@
 import os
 from typing import Dict
 
-import requests
-from requests.adapters import HTTPAdapter
 from requests.auth import HTTPBasicAuth
-from urllib3 import Retry
+
+from utils import session_with_retries
 
 
 class CrystalConnector:
@@ -17,16 +16,7 @@ class CrystalConnector:
 
     def __init__(self, *, base_url):
         self.base_url = base_url
-        retry_strategy = Retry(
-            total=4,
-            status_forcelist=[429, 500, 502, 503, 504],
-            method_whitelist=["HEAD", "GET", "OPTIONS", "TRACE"],
-            backoff_factor=1
-        )
-        adapter = HTTPAdapter(max_retries=retry_strategy)
-        self.http = requests.Session()
-        self.http.mount("https://", adapter)
-        self.http.mount("http://", adapter)
+        self.http = session_with_retries()
         self.http.auth = HTTPBasicAuth(os.environ.get('CRYSTAL_USER'), os.environ.get('CRYSTAL_PASSWORD'))
 
     def create_run(self, algorithm: str, payload: Dict, api_version="v1.1") -> str:

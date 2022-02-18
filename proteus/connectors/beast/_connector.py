@@ -4,13 +4,10 @@
 import json
 from http.client import HTTPException
 from typing import Optional
-import requests
-from requests.adapters import HTTPAdapter
-from urllib3.util import Retry
 
 from proteus.connectors.beast._auth import BeastAuth
 from proteus.connectors.beast._models import JobRequest, BeastJobParams
-from proteus.utils import doze
+from proteus.utils import doze, session_with_retries
 
 
 class BeastConnector:
@@ -30,18 +27,9 @@ class BeastConnector:
         self.base_url = base_url
         self.code_root = code_root
         self.lifecycle_check_interval = lifecycle_check_interval
-        retry_strategy = Retry(
-            total=4,
-            status_forcelist=[429, 500, 502, 503, 504],
-            method_whitelist=["HEAD", "GET", "OPTIONS", "TRACE"],
-            backoff_factor=1
-        )
-        adapter = HTTPAdapter(max_retries=retry_strategy)
-        self.http = requests.Session()
-        self.http.mount("https://", adapter)
-        self.http.mount("http://", adapter)
         self.failed_stages = ["FAILED", "SCHEDULING_FAILED", "RETRIES_EXCEEDED", "SUBMISSION_FAILED", "STALE"]
         self.success_stages = ["COMPLETED"]
+        self.http = session_with_retries()
         self.http.auth = BeastAuth()
         self._failure_type = failure_type or Exception
 
