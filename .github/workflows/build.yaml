@@ -47,7 +47,7 @@ jobs:
   create_release:
     name: Create Release
     runs-on: ubuntu-latest
-    needs: [ validate_code ]
+    needs: [ validate_commit ]
     if: ${{ github.ref == 'refs/heads/main' && (needs.validate_commit.result == 'success' || needs.validate_commit.result == 'skipped') && always() }}
 
     steps:
