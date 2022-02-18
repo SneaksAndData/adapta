@@ -25,12 +25,12 @@ jobs:
         env:
           POETRY_HTTP_BASIC_AZOPS_USERNAME: ${{ secrets.AZOPS_PAT_USER }}
           POETRY_HTTP_BASIC_AZOPS_PASSWORD: ${{ secrets.AZOPS_PAT }}
-        #if: startsWith(github.ref, 'refs/tags')
+        #if: startsWith(github.ref, 'refs/tags') sed -i "s/version = \"0.0.0\"/version = \"${version:1}\"/" pyproject.toml
         run: |
           set -e
           
           version=$(git describe --tags --abbrev=7)
           
-          sed -i "s/version = \"0.0.0\"/version = \"${version:1}\"/" pyproject.toml
+          
           
           poetry build && poetry publish -r azops
