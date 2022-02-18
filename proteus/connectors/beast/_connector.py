@@ -9,7 +9,7 @@ from requests.adapters import HTTPAdapter
 from urllib3.util import Retry
 
 from proteus.connectors.beast._auth import BeastAuth
-from proteus.connectors.beast._models import JobRequest, JobSocket, JobSize, ArgumentValue
+from proteus.connectors.beast._models import JobRequest, JobSocket, JobSize, ArgumentValue, BeastJobParams
 from proteus.utils import doze
 
 
@@ -49,39 +49,6 @@ class BeastConnector:
         self._failure_type = failure_type or Exception
 
     @staticmethod
-    def _convert_request_to_body(request: JobRequest) -> Dict:
-        base_request = {
-            "rootPath": request.root_path,
-            "projectName": request.project_name,
-            "version": request.version,
-            "runnable": request.runnable,
-            "inputs": list(map(lambda js: {
-                "alias": js.alias,
-                "dataPath": js.data_path,
-                "dataFormat": js.data_format
-            }, request.inputs)),
-            "outputs": list(map(lambda js: {
-                "alias": js.alias,
-                "dataPath": js.data_path,
-                "dataFormat": js.data_format
-            }, request.outputs)),
-            "overwrite": request.overwrite,
-            "extraArgs": request.extra_args,
-            "clientTag": request.client_tag
-        }
-
-        if request.cost_optimized:
-            base_request.setdefault("costOptimized", request.cost_optimized)
-
-        if request.job_size:
-            base_request.setdefault("jobSize", request.job_size.name)
-
-        if request.flexible_driver:
-            base_request.setdefault("flexibleDriver", request.flexible_driver)
-
-        return base_request
-
-    @staticmethod
     def redact_sensitive(json_str: str) -> str:
         """
           Redacts sensitive info when preparing a request to be printed
@@ -97,7 +64,7 @@ class BeastConnector:
         return json.dumps(request_json)
 
     def _submit(self, request: JobRequest) -> (str, str):
-        request_json = self._convert_request_to_body(request)
+        request_json = request.to_json()
 
         print(f"Submitting request: {self.redact_sensitive(json.dumps(request_json))}")
 
@@ -140,51 +107,36 @@ class BeastConnector:
         raise self._failure_type(
             f"Fatal: more than one submission of {submitted_tag} is running: {running_submissions}. Please review their status restart/terminate the task accordingly")
 
-    def run_job(self, project_name: str, project_version: str, project_runnable: str,
-                project_inputs: List[JobSocket], project_outputs: List[JobSocket],
-                overwrite_outputs: bool, extra_arguments: Dict[str, Union[ArgumentValue, str]],
-                size_hint: Optional[JobSize],
-                cost_optimized: Optional[bool],
-                flexible_driver: Optional[bool] = False,
-                **context):
+    def run_job(self, job_params: BeastJobParams, **context):
         """
           Runs a job through Beast
 
-        :param project_name: Repository name that contains a runnable. Must be deployed to a Beast-managed cluster beforehand.
-        :param project_version: Semantic version of a runnable.
-        :param project_runnable: Path to a runnable, for example src/folder1/my_script.py.
-        :param project_inputs: List of job inputs.
-        :param project_outputs: List of job outputs.
-        :param overwrite_outputs: Whether to wipe existing data before writing new out.
-        :param extra_arguments: Extra arguments for a submission, defined by an author.
-        :param size_hint: Job size hint for Beast.
-        :param cost_optimized: Job will run on a discounted workload (spot capacity).
-        :param flexible_driver: Whether to use fixed-size driver or derive driver memory from master node max memory.
+        :param job_params: Parameters for Beast Job body.
         :return: A JobRequest for Beast.
         """
 
         (request_id, request_lifecycle) = self._existing_submission(submitted_tag=context['task_instance_key_str'],
-                                                                    project=project_name)
+                                                                    project=job_params.project_name)
 
         if request_id:
             print(f"Resuming watch for {request_id}")
 
         if not request_id:
-            prepared_arguments = {key: str(value) for (key, value) in extra_arguments.items()}
+            prepared_arguments = {key: str(value) for (key, value) in job_params.extra_arguments.items()}
 
             submit_request = JobRequest(
                 root_path=self.code_root,
-                project_name=project_name,
-                runnable=project_runnable,
-                version=project_version,
-                inputs=project_inputs,
-                outputs=project_outputs,
-                overwrite=overwrite_outputs,
+                project_name=job_params.project_name,
+                runnable=job_params.project_runnable,
+                version=job_params.project_version,
+                inputs=job_params.project_inputs,
+                outputs=job_params.project_outputs,
+                overwrite=job_params.overwrite_outputs,
                 extra_args=prepared_arguments,
                 client_tag=context['task_instance_key_str'],
-                cost_optimized=cost_optimized,
-                job_size=size_hint,
-                flexible_driver=flexible_driver
+                cost_optimized=job_params.cost_optimized,
+                job_size=job_params.size_hint,
+                flexible_driver=job_params.flexible_driver
             )
 
             (request_id, request_lifecycle) = self._submit(submit_request)
