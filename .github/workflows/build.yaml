@@ -40,7 +40,6 @@ jobs:
 
           pypath=$(pwd)
           export PYTHONPATH="$pypath:$PYTHONPATH"
-          . $HOME/.poetry/env
 
           poetry run pytest ./test
 
