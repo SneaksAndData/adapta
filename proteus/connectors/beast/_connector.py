@@ -1,0 +1,199 @@
+"""
+  Connector for Beast Workload Manager (Spark AKS)
+"""
+import json
+from http.client import HTTPException
+from typing import List, Dict, Optional, Union
+import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util import Retry
+
+from proteus.connectors.beast._auth import BeastAuth
+from proteus.connectors.beast._models import JobRequest, JobSocket, JobSize, ArgumentValue
+from proteus.utils import doze
+
+
+class BeastConnector:
+    """
+      Beast API connector
+    """
+
+    def __init__(self, *, base_url, code_root="/ecco/dist", lifecycle_check_interval: int = 60,
+                 failure_type: Optional[Exception] = None):
+        """
+          Creates a Beast connector, capable of submitting/status tracking etc.
+
+        :param base_url: Base URL for Beast Workload Manager.
+        :param code_root: Root folder for code deployments.
+        :param lifecycle_check_interval: Time to wait between lifecycle checks for submissions/cancellations etc.
+        """
+        self.base_url = base_url
+        self.code_root = code_root
+        self.lifecycle_check_interval = lifecycle_check_interval
+        retry_strategy = Retry(
+            total=4,
+            status_forcelist=[429, 500, 502, 503, 504],
+            method_whitelist=["HEAD", "GET", "OPTIONS", "TRACE"],
+            backoff_factor=1
+        )
+        adapter = HTTPAdapter(max_retries=retry_strategy)
+        self.http = requests.Session()
+        self.http.mount("https://", adapter)
+        self.http.mount("http://", adapter)
+        self.failed_stages = ["FAILED", "SCHEDULING_FAILED", "RETRIES_EXCEEDED", "SUBMISSION_FAILED", "STALE"]
+        self.success_stages = ["COMPLETED"]
+        self._token_acquired = None
+        self._token_lifetime = 3600
+        self._token_cache = []
+        self.http.auth = BeastAuth(self._token_cache)
+        self._failure_type = failure_type or Exception
+
+    @staticmethod
+    def _convert_request_to_body(request: JobRequest) -> Dict:
+        base_request = {
+            "rootPath": request.root_path,
+            "projectName": request.project_name,
+            "version": request.version,
+            "runnable": request.runnable,
+            "inputs": list(map(lambda js: {
+                "alias": js.alias,
+                "dataPath": js.data_path,
+                "dataFormat": js.data_format
+            }, request.inputs)),
+            "outputs": list(map(lambda js: {
+                "alias": js.alias,
+                "dataPath": js.data_path,
+                "dataFormat": js.data_format
+            }, request.outputs)),
+            "overwrite": request.overwrite,
+            "extraArgs": request.extra_args,
+            "clientTag": request.client_tag
+        }
+
+        if request.cost_optimized:
+            base_request.setdefault("costOptimized", request.cost_optimized)
+
+        if request.job_size:
+            base_request.setdefault("jobSize", request.job_size.name)
+
+        if request.flexible_driver:
+            base_request.setdefault("flexibleDriver", request.flexible_driver)
+
+        return base_request
+
+    @staticmethod
+    def redact_sensitive(json_str: str) -> str:
+        """
+          Redacts sensitive info when preparing a request to be printed
+
+        :param json_str: Serialized JobRequest to print
+        :return:
+        """
+        request_json = json.loads(json_str)
+
+        for arg_key, _ in request_json['extraArgs'].items():
+            if 'password' in arg_key or 'secret' in arg_key:
+                request_json['extraArgs'][arg_key] = '***'
+        return json.dumps(request_json)
+
+    def _submit(self, request: JobRequest) -> (str, str):
+        request_json = self._convert_request_to_body(request)
+
+        print(f"Submitting request: {self.redact_sensitive(json.dumps(request_json))}")
+
+        submission_result = self.http.post(f"{self.base_url}/job/submit", json=request_json)
+        submission_json = submission_result.json()
+
+        if submission_result.status_code == 202 and submission_json:
+            print(
+                f"Beast has accepted the request, stage: {submission_json['lifeCycleStage']}, id: {submission_json['rowKey']}")
+        else:
+            raise HTTPException(
+                f"Error {submission_result.status_code} when submitting a request: {submission_result.text}")
+
+        return submission_json['rowKey'], submission_json['lifeCycleStage']
+
+    def _existing_submission(self, submitted_tag: str, project: str) -> (Optional[str], Optional[str]):
+        print(f"Looking for existing submissions of {submitted_tag}")
+
+        existing_submissions = self.http.get(f"{self.base_url}/job/requests/{project}/tags/{submitted_tag}").json()
+
+        if len(existing_submissions) == 0:
+            print(f"No previous submissions found for {submitted_tag}")
+            return None, None
+
+        running_submissions = []
+        for submission_request_id in existing_submissions:
+            submission_lifecycle = self.http.get(
+                f"{self.base_url}/job/requests/{submission_request_id}").json()['lifeCycleStage']
+            if submission_lifecycle not in self.success_stages and submission_lifecycle not in self.failed_stages:
+                print(f"Found a running submission of {submitted_tag}: {submission_request_id}.")
+                running_submissions.append((submission_request_id, submission_lifecycle))
+
+        if len(running_submissions) == 0:
+            print("None of found submissions are active")
+            return None, None
+
+        if len(running_submissions) == 1:
+            return running_submissions[0][0], running_submissions[0][1]
+
+        raise self._failure_type(
+            f"Fatal: more than one submission of {submitted_tag} is running: {running_submissions}. Please review their status restart/terminate the task accordingly")
+
+    def run_job(self, project_name: str, project_version: str, project_runnable: str,
+                project_inputs: List[JobSocket], project_outputs: List[JobSocket],
+                overwrite_outputs: bool, extra_arguments: Dict[str, Union[ArgumentValue, str]],
+                size_hint: Optional[JobSize],
+                cost_optimized: Optional[bool],
+                flexible_driver: Optional[bool] = False,
+                **context):
+        """
+          Runs a job through Beast
+
+        :param project_name: Repository name that contains a runnable. Must be deployed to a Beast-managed cluster beforehand.
+        :param project_version: Semantic version of a runnable.
+        :param project_runnable: Path to a runnable, for example src/folder1/my_script.py.
+        :param project_inputs: List of job inputs.
+        :param project_outputs: List of job outputs.
+        :param overwrite_outputs: Whether to wipe existing data before writing new out.
+        :param extra_arguments: Extra arguments for a submission, defined by an author.
+        :param size_hint: Job size hint for Beast.
+        :param cost_optimized: Job will run on a discounted workload (spot capacity).
+        :param flexible_driver: Whether to use fixed-size driver or derive driver memory from master node max memory.
+        :return: A JobRequest for Beast.
+        """
+
+        (request_id, request_lifecycle) = self._existing_submission(submitted_tag=context['task_instance_key_str'],
+                                                                    project=project_name)
+
+        if request_id:
+            print(f"Resuming watch for {request_id}")
+
+        if not request_id:
+            prepared_arguments = {key: str(value) for (key, value) in extra_arguments.items()}
+
+            submit_request = JobRequest(
+                root_path=self.code_root,
+                project_name=project_name,
+                runnable=project_runnable,
+                version=project_version,
+                inputs=project_inputs,
+                outputs=project_outputs,
+                overwrite=overwrite_outputs,
+                extra_args=prepared_arguments,
+                client_tag=context['task_instance_key_str'],
+                cost_optimized=cost_optimized,
+                job_size=size_hint,
+                flexible_driver=flexible_driver
+            )
+
+            (request_id, request_lifecycle) = self._submit(submit_request)
+
+        while request_lifecycle not in self.success_stages and request_lifecycle not in self.failed_stages:
+            doze(self.lifecycle_check_interval)
+            request_lifecycle = self.http.get(f"{self.base_url}/job/requests/{request_id}").json()['lifeCycleStage']
+            print(f"Request: {request_id}, current state: {request_lifecycle}")
+
+        if request_lifecycle in self.failed_stages:
+            raise self._failure_type(
+                f"Execution failed, please find request's log at: {self.base_url}/job/logs/{request_id}")

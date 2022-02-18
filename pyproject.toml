@@ -1,0 +1,29 @@
+[tool.poetry]
+name = "proteus"
+version = "0.0.0"
+description = "Logging, data connectors, monitoring, secret handling and general lifehacks to make data people lives easier."
+authors = ["ECCO Sneaks & Data <esdsupport@ecco.com>"]
+maintainers = 'GZU <gzu@ecco.com>, JRB <ext-jrb@ecco.com>'
+license = 'Proprietary'
+readme = "README.md"
+repository = 'https://github.com/SneaksAndData/proteus'
+
+[tool.poetry.dependencies]
+python = "^3.8"
+
+[tool.poetry.group.beast-dependencies]
+requests = "~2.27"
+cryptography = "~36.0"
+
+[tool.poetry.group.crystal-dependencies]
+requests = "~2.27"
+
+[tool.poetry.group.dev-dependencies]
+pytest = "~6.2"
+pylint = "~2.12"
+requests = "~2.27"
+cryptography = "~36.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
