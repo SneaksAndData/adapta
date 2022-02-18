@@ -16,21 +16,22 @@ jobs:
           architecture: 'x64' # optional x64 or x86. Defaults to x64 if not specified
       - name: Install and Configure Poetry
         env:
-          POETRY_HTTP_BASIC_AZOPS_USERNAME: ${{ secrets.AZOPS_PAT_USER }}
-          POETRY_HTTP_BASIC_AZOPS_PASSWORD: ${{ secrets.AZOPS_PAT }}
+          REPO_URL: ${{ secrets.AZOPS_PYPI_UPLOAD }}
         run: |
           set -e
           
           curl -sSL https://install.python-poetry.org | python3 - --preview
           
-          poetry config repositories.azops https://pkgs.dev.azure.com/eccoSneaksAndData/_packaging/eccoSneaksAndData/pypi/simple/
+          poetry config repositories.azops $REPO_URL
       - name: Build Package and Publish distribution 📦 to Azure Artifacts
+        env:
+          POETRY_HTTP_BASIC_AZOPS_USERNAME: ${{ secrets.AZOPS_PAT_USER }}
+          POETRY_HTTP_BASIC_AZOPS_PASSWORD: ${{ secrets.AZOPS_PAT }}
         if: startsWith(github.ref, 'refs/tags')
         run: |
           set -e
           
           version=$(git describe --tags --abbrev=7)
+          sed -i "s/version = \"0.0.0\"/version = \"${version:1}\"/" pyproject.toml
           
-          sed -i "s/version = \"0.0.0\"/version = \"$version\"/" pyproject.toml
-          
-          poetry package && poetry publish -r azops
+          poetry build && poetry publish -r azops
