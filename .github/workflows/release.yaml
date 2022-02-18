@@ -33,6 +33,6 @@ jobs:
           
           version=$(git describe --tags --abbrev=7)
           
-          sed -i 's/version = "0.1.0"/$version/" pyproject.toml
+          sed -i "s/version = \"0.0.0\"/version = \"$version\"/" pyproject.toml
           
           poetry package && poetry publish -r azops
