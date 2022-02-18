@@ -15,7 +15,7 @@ class BeastAuth(AuthBase):
 
     def __init__(self, token_cache: Optional[list] = None, token_lifetime=3600):
         # setup any auth-related data here
-        self.cache = token_cache
+        self.cache = token_cache or []
         self.token_lifetime = token_lifetime
 
     def _fetch_token(self) -> str:

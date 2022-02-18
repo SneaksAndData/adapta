@@ -3,13 +3,13 @@
 """
 import json
 from http.client import HTTPException
-from typing import List, Dict, Optional, Union
+from typing import Optional
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util import Retry
 
 from proteus.connectors.beast._auth import BeastAuth
-from proteus.connectors.beast._models import JobRequest, JobSocket, JobSize, ArgumentValue, BeastJobParams
+from proteus.connectors.beast._models import JobRequest, BeastJobParams
 from proteus.utils import doze
 
 
@@ -42,10 +42,7 @@ class BeastConnector:
         self.http.mount("http://", adapter)
         self.failed_stages = ["FAILED", "SCHEDULING_FAILED", "RETRIES_EXCEEDED", "SUBMISSION_FAILED", "STALE"]
         self.success_stages = ["COMPLETED"]
-        self._token_acquired = None
-        self._token_lifetime = 3600
-        self._token_cache = []
-        self.http.auth = BeastAuth(self._token_cache)
+        self.http.auth = BeastAuth()
         self._failure_type = failure_type or Exception
 
     @staticmethod

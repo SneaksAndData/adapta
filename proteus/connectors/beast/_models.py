@@ -62,6 +62,10 @@ class JobRequest:
     flexible_driver: Optional[bool]
 
     def to_json(self) -> Dict:
+        """
+         Converts this to POST body sent to Beast.
+        :return:
+        """
         base_request = {
             "rootPath": self.root_path,
             "projectName": self.project_name,
