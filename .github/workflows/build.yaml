@@ -41,7 +41,7 @@ jobs:
           pypath=$(pwd)
           export PYTHONPATH="$pypath:$PYTHONPATH"
 
-          poetry run pytest ./test
+          poetry run pytest ./tests
 
   create_release:
     name: Create Release
