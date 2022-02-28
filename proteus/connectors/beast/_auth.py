@@ -24,7 +24,7 @@ class BeastAuth(AuthBase):
 
         :return:
         """
-        credential = DefaultAzureCredential()
+        credential = DefaultAzureCredential(exclude_shared_token_cache_credential=True)
         token: str = credential.get_token("https://management.core.windows.net/.default").token
         self.cache.append((token, datetime.utcnow()))
 
