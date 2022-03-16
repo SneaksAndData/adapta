@@ -5,7 +5,7 @@ from typing import Optional
 
 from requests.auth import HTTPBasicAuth
 
-from proteus.connectors.arcane import SqlServerStreamConfiguration
+from proteus.connectors.arcane import SqlServerStreamConfiguration, StreamInfo
 from utils import session_with_retries
 
 
@@ -64,3 +64,16 @@ class ArcaneConnector:
         else:
             raise HTTPException(
                 f"Error {submission_result.status_code} when submitting a request: {submission_result.text}")
+
+    def get_stream(self, source: str, stream_id: str) -> Optional[StreamInfo]:
+        """
+          Reads information about the specified stream and source.
+
+        :param source: Stream source.
+        :param stream_id: Stream identifier.
+        :return:
+        """
+        info = self.http.get(f"{self.base_url}/stream/{source}/{stream_id}")
+        info.raise_for_status()
+
+        return StreamInfo.from_json(info.json())

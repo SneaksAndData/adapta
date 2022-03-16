@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict
+from typing import Dict, Optional
 
 
 @dataclass
@@ -32,3 +32,28 @@ class SqlServerStreamConfiguration:
             "FullLoadOnStart": self.full_load_on_start,
             "ClientTag": self.client_tag
         }
+
+
+@dataclass
+class StreamInfo:
+    id: str
+    stream_source: str
+    started_at: str
+    stopped_at: Optional[str]
+    owner: str
+    tag: str
+    stream_configuration: str
+    stream_metadata: str
+
+    @classmethod
+    def from_json(cls, json_data: Dict):
+        return StreamInfo(
+            id=json_data['id'],
+            stream_source=json_data['streamSource'],
+            started_at=json_data['startedAt'],
+            stopped_at=json_data['stoppedAt'],
+            owner=json_data['owner'],
+            tag=json_data['tag'],
+            stream_configuration=json_data['streamConfiguration'],
+            stream_metadata=json_data['streamMetadata']
+        )
