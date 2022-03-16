@@ -19,8 +19,6 @@ class ArcaneConnector:
         """
           Creates Arcane Streaming connector, capable of managing Akka streams launched via Arcane.
 
-          NB. Arcane uses BeastAuth for now. Don't be surprised.
-
         :param base_url: Base URL for Arcane Streaming endpoint.
         """
         self.base_url = base_url
