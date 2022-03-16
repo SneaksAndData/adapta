@@ -1,9 +1,11 @@
+import os
 from dataclasses import dataclass
 from http.client import HTTPException
 from typing import Optional
 
+from requests.auth import HTTPBasicAuth
+
 from proteus.connectors.arcane import SqlServerStreamConfiguration
-from proteus.connectors.beast._auth import BeastAuth
 from utils import session_with_retries
 
 
@@ -23,7 +25,7 @@ class ArcaneConnector:
         """
         self.base_url = base_url
         self.http = session_with_retries()
-        self.http.auth = BeastAuth()
+        self.http.auth = HTTPBasicAuth(os.environ.get('ARCANE_USER'), os.environ.get('ARCANE_PASSWORD'))
 
     def _existing_submission(self, submitted_tag: str, stream_source: str) -> Optional[str]:
         print(f"Looking for existing streams with {submitted_tag}")
@@ -55,7 +57,6 @@ class ArcaneConnector:
         :return:
         """
         request_json = conf.to_json()
-
         submission_result = self.http.post(f"{self.base_url}/stream/{conf.url_path}", json=request_json)
         submission_json = submission_result.json()
 

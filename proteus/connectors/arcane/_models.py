@@ -21,14 +21,14 @@ class SqlServerStreamConfiguration:
 
     def to_json(self) -> Dict:
         return {
-            "connectionString": self.connection_string,
-            "schema": self.schema,
-            "table": self.table,
-            "rowsPerGroup": self.rows_per_group,
-            "groupingInterval": self.grouping_interval,
-            "groupsPerFile": self.groups_per_file,
-            "sinkLocation": self.sink_location,
-            "sinkFileName": self.sink_filename,
-            "fullLoadOnStart": self.full_load_on_start,
-            "clientTag": self.client_tag
+            "ConnectionString": self.connection_string,
+            "Schema": self.schema,
+            "Table": self.table,
+            "RowsPerGroup": self.rows_per_group,
+            "GroupingInterval": self.grouping_interval,
+            "GroupsPerFile": self.groups_per_file,
+            "SinkLocation": self.sink_location,
+            "SinkFileName": self.sink_filename,
+            "FullLoadOnStart": self.full_load_on_start,
+            "ClientTag": self.client_tag
         }
