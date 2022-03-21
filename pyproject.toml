@@ -11,13 +11,20 @@ repository = 'https://github.com/SneaksAndData/proteus'
 [tool.poetry.dependencies]
 python = "^3.8"
 
+[tool.poetry.group.identity.dependencies]
+azure-identity = "~1.7"
+
 [tool.poetry.group.beast.dependencies]
 requests = "~2.27"
 cryptography = "~36.0"
-azure-identity = "~1.7"
 
 [tool.poetry.group.crystal.dependencies]
 requests = "~2.27"
+
+[tool.poetry.group.storage.dependencies]
+deltalake = "~0.5"
+azure-storage-blob = "~12.10.0"
+azure-mgmt-storage = "~19.1.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "~6.2"
