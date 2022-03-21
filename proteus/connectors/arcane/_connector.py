@@ -1,12 +1,14 @@
+"""
+  Connector for Arcane Streaming API
+"""
 import os
-from dataclasses import dataclass
 from http.client import HTTPException
 from typing import Optional
 
 from requests.auth import HTTPBasicAuth
 
-from proteus.connectors.arcane import SqlServerStreamConfiguration, StreamInfo
-from utils import session_with_retries
+from proteus.connectors.arcane._models import SqlServerStreamConfiguration, StreamInfo
+from proteus.utils import session_with_retries
 
 
 class ArcaneConnector:

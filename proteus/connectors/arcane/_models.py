@@ -1,3 +1,6 @@
+"""
+ Models for Arcane
+"""
 from dataclasses import dataclass
 from typing import Dict, Optional
 
@@ -20,6 +23,10 @@ class SqlServerStreamConfiguration:
     url_path: str = "start/sqlserverct"
 
     def to_dict(self) -> Dict:
+        """
+          Converts this to the payload accepted by streaming start endpoint.
+        :return:
+        """
         return {
             "ConnectionString": self.connection_string,
             "Schema": self.schema,
@@ -36,7 +43,10 @@ class SqlServerStreamConfiguration:
 
 @dataclass
 class StreamInfo:
-    id: str
+    """
+      Arcane stream information.
+    """
+    id: str  # pylint: disable=C0103
     stream_source: str
     started_at: str
     stopped_at: Optional[str]
@@ -47,6 +57,12 @@ class StreamInfo:
 
     @classmethod
     def from_dict(cls, json_data: Dict):
+        """
+          Converts json returned by stream info endpoint to this dataclass.
+
+        :param json_data: JSON response from Arcane stream info.
+        :return:
+        """
         return StreamInfo(
             id=json_data['id'],
             stream_source=json_data['streamSource'],
