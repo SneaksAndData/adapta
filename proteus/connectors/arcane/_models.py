@@ -19,7 +19,7 @@ class SqlServerStreamConfiguration:
     client_tag: str
     url_path: str = "start/sqlserverct"
 
-    def to_json(self) -> Dict:
+    def to_dict(self) -> Dict:
         return {
             "ConnectionString": self.connection_string,
             "Schema": self.schema,
@@ -46,7 +46,7 @@ class StreamInfo:
     stream_metadata: str
 
     @classmethod
-    def from_json(cls, json_data: Dict):
+    def from_dict(cls, json_data: Dict):
         return StreamInfo(
             id=json_data['id'],
             stream_source=json_data['streamSource'],

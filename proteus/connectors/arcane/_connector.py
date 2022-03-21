@@ -9,7 +9,6 @@ from proteus.connectors.arcane import SqlServerStreamConfiguration, StreamInfo
 from utils import session_with_retries
 
 
-@dataclass
 class ArcaneConnector:
     """
       Arcane Streaming API connector
@@ -45,7 +44,7 @@ class ArcaneConnector:
             return active_streams[0].id
 
         raise Exception(
-            f"Fatal: more than one active stream of {submitted_tag} is running: {active_streams}. Please review their status restart/terminate the task accordingly")
+            f"Fatal: more than one active stream of {submitted_tag} is running: {active_streams}. Please review their status and restart/terminate the task accordingly")
 
     def start_sql_server_ct_stream(self, conf: SqlServerStreamConfiguration):
         """
@@ -54,7 +53,7 @@ class ArcaneConnector:
         :param conf: Stream configuration
         :return:
         """
-        request_json = conf.to_json()
+        request_json = conf.to_dict()
         submission_result = self.http.post(f"{self.base_url}/stream/{conf.url_path}", json=request_json)
         submission_json = submission_result.json()
 
@@ -76,4 +75,4 @@ class ArcaneConnector:
         info = self.http.get(f"{self.base_url}/stream/{source}/{stream_id}")
         info.raise_for_status()
 
-        return StreamInfo.from_json(info.json())
+        return StreamInfo.from_dict(info.json())
