@@ -3,7 +3,7 @@
 """
 from dataclasses import dataclass
 
-from proteus.storage.models.base import DataPath
+from proteus.storage.models.base import DataPath, DataProtocols
 
 
 @dataclass
@@ -12,6 +12,7 @@ class LocalPath(DataPath):
      Local file system path.
     """
     path: str
+    protocol: str = DataProtocols.FILE.value
 
     @classmethod
     def from_hdfs_path(cls, hdfs_path: str) -> "LocalPath":

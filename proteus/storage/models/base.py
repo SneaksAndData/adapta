@@ -2,6 +2,16 @@
  Base class representing file system path.
 """
 from abc import abstractmethod, ABC
+from enum import Enum
+
+
+class DataProtocols(Enum):
+    """
+     HDFS protocol aliases for data path implementations.
+    """
+    AZURE_BLOB = 'wasbs'
+    ADLS2 = 'abfss'
+    FILE = 'file'
 
 
 class DataPath(ABC):
@@ -9,6 +19,7 @@ class DataPath(ABC):
      Base path to any data entity.
     """
     path: str
+    protocol: str
 
     @classmethod
     @abstractmethod

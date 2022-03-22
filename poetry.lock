@@ -38,7 +38,7 @@ tests_no_zope = ["coverage[toml] (>=5.0.2)", "hypothesis", "pympler", "pytest (>
 name = "azure-common"
 version = "1.1.28"
 description = "Microsoft Azure Client Library for Python (Common)"
-category = "dev"
+category = "main"
 optional = false
 python-versions = "*"
 
@@ -46,7 +46,7 @@ python-versions = "*"
 name = "azure-core"
 version = "1.23.0"
 description = "Microsoft Azure Core Library for Python"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.6"
 
@@ -59,7 +59,7 @@ typing-extensions = ">=4.0.1"
 name = "azure-identity"
 version = "1.7.1"
 description = "Microsoft Azure Identity Library for Python"
-category = "dev"
+category = "main"
 optional = false
 python-versions = "*"
 
@@ -74,7 +74,7 @@ six = ">=1.12.0"
 name = "azure-mgmt-core"
 version = "1.3.0"
 description = "Microsoft Azure Management Core Library for Python"
-category = "dev"
+category = "main"
 optional = false
 python-versions = "*"
 
@@ -85,7 +85,7 @@ azure-core = ">=1.15.0,<2.0.0"
 name = "azure-mgmt-storage"
 version = "19.1.0"
 description = "Microsoft Azure Storage Management Client Library for Python"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.6"
 
@@ -98,7 +98,7 @@ msrest = ">=0.6.21"
 name = "azure-storage-blob"
 version = "12.10.0"
 description = "Microsoft Azure Blob Storage Client Library for Python"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.6"
 
@@ -111,7 +111,7 @@ msrest = ">=0.6.21"
 name = "certifi"
 version = "2021.10.8"
 description = "Python package for providing Mozilla's CA Bundle."
-category = "dev"
+category = "main"
 optional = false
 python-versions = "*"
 
@@ -119,7 +119,7 @@ python-versions = "*"
 name = "cffi"
 version = "1.15.0"
 description = "Foreign Function Interface for Python calling C code."
-category = "dev"
+category = "main"
 optional = false
 python-versions = "*"
 
@@ -130,7 +130,7 @@ pycparser = "*"
 name = "charset-normalizer"
 version = "2.0.12"
 description = "The Real First Universal Charset Detector. Open, modern and actively maintained alternative to Chardet."
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.5.0"
 
@@ -160,7 +160,7 @@ toml = ["tomli"]
 name = "cryptography"
 version = "36.0.2"
 description = "cryptography is a package which provides cryptographic recipes and primitives to Python developers."
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.6"
 
@@ -179,7 +179,7 @@ test = ["pytest (>=6.2.0)", "pytest-cov", "pytest-subtests", "pytest-xdist", "pr
 name = "deltalake"
 version = "0.5.6"
 description = "Native Delta Lake Python binding based on delta-rs with Pandas integration"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.6"
 
@@ -194,7 +194,7 @@ devel = ["mypy", "black", "isort", "pytest", "pytest-mock", "pytest-cov", "pytes
 name = "idna"
 version = "3.3"
 description = "Internationalized Domain Names in Applications (IDNA)"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.5"
 
@@ -210,7 +210,7 @@ python-versions = "*"
 name = "isodate"
 version = "0.6.1"
 description = "An ISO 8601 date/time/duration parser and formatter"
-category = "dev"
+category = "main"
 optional = false
 python-versions = "*"
 
@@ -251,7 +251,7 @@ python-versions = "*"
 name = "msal"
 version = "1.17.0"
 description = "The Microsoft Authentication Library (MSAL) for Python library enables your app to access the Microsoft Cloud by supporting authentication of users with Microsoft Azure Active Directory accounts (AAD) and Microsoft Accounts (MSA) using industry standard OAuth2 and OpenID Connect."
-category = "dev"
+category = "main"
 optional = false
 python-versions = "*"
 
@@ -264,7 +264,7 @@ requests = ">=2.0.0,<3"
 name = "msal-extensions"
 version = "0.3.1"
 description = ""
-category = "dev"
+category = "main"
 optional = false
 python-versions = "*"
 
@@ -279,7 +279,7 @@ portalocker = [
 name = "msrest"
 version = "0.6.21"
 description = "AutoRest swagger generator Python client runtime."
-category = "dev"
+category = "main"
 optional = false
 python-versions = "*"
 
@@ -296,7 +296,7 @@ async = ["aiohttp (>=3.0)", "aiodns"]
 name = "numpy"
 version = "1.22.3"
 description = "NumPy is the fundamental package for array computing with Python."
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.8"
 
@@ -304,7 +304,7 @@ python-versions = ">=3.8"
 name = "oauthlib"
 version = "3.2.0"
 description = "A generic, spec-compliant, thorough implementation of the OAuth request-signing logic"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.6"
 
@@ -328,7 +328,7 @@ pyparsing = ">=2.0.2,<3.0.5 || >3.0.5"
 name = "pandas"
 version = "1.4.1"
 description = "Powerful data structures for data analysis, time series, and statistics"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.8"
 
@@ -373,7 +373,7 @@ testing = ["pytest", "pytest-benchmark"]
 name = "portalocker"
 version = "2.4.0"
 description = "Wraps the portalocker recipe for easy usage"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.5"
 
@@ -397,7 +397,7 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 name = "pyarrow"
 version = "7.0.0"
 description = "Python library for Apache Arrow"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.7"
 
@@ -408,7 +408,7 @@ numpy = ">=1.16.6"
 name = "pycparser"
 version = "2.21"
 description = "C parser in Python"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 
@@ -416,7 +416,7 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 name = "pyjwt"
 version = "2.3.0"
 description = "JSON Web Token implementation in Python"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.6"
 
@@ -498,7 +498,7 @@ testing = ["fields", "hunter", "process-tests", "six", "pytest-xdist", "virtuale
 name = "python-dateutil"
 version = "2.8.2"
 description = "Extensions to the standard Python datetime module"
-category = "dev"
+category = "main"
 optional = false
 python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,>=2.7"
 
@@ -509,7 +509,7 @@ six = ">=1.5"
 name = "pytz"
 version = "2022.1"
 description = "World timezone definitions, modern and historical"
-category = "dev"
+category = "main"
 optional = false
 python-versions = "*"
 
@@ -517,7 +517,7 @@ python-versions = "*"
 name = "pywin32"
 version = "303"
 description = "Python for Window Extensions"
-category = "dev"
+category = "main"
 optional = false
 python-versions = "*"
 
@@ -525,7 +525,7 @@ python-versions = "*"
 name = "requests"
 version = "2.27.1"
 description = "Python HTTP for Humans."
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*"
 
@@ -543,7 +543,7 @@ use_chardet_on_py3 = ["chardet (>=3.0.2,<5)"]
 name = "requests-oauthlib"
 version = "1.3.1"
 description = "OAuthlib authentication support for Requests."
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 
@@ -571,7 +571,7 @@ testing-integration = ["pytest", "pytest-xdist", "pytest-enabler", "virtualenv (
 name = "six"
 version = "1.16.0"
 description = "Python 2 and 3 compatibility utilities"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*"
 
@@ -587,7 +587,7 @@ python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*"
 name = "typing-extensions"
 version = "4.1.1"
 description = "Backported and Experimental Type Hints for Python 3.6+"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.6"
 
@@ -595,7 +595,7 @@ python-versions = ">=3.6"
 name = "urllib3"
 version = "1.26.9"
 description = "HTTP library with thread-safe connection pooling, file post, and more."
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, <4"
 
@@ -615,7 +615,7 @@ python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,>=2.7"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "06ff126e8d40dae1af53d17d7645325e3b580cb2636ee04c26bb26c3ddef0522"
+content-hash = "b347803fec8eb801a555248394e0f71b9e7b2470d63be4b29772235039a99d23"
 
 [metadata.files]
 astroid = [

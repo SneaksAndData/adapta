@@ -14,7 +14,7 @@ requests = "~2.27"
 cryptography = "~36.0"
 azure-identity = "~1.7"
 deltalake = "~0.5"
-azure-storage-blob = "~12.6.0"
+azure-storage-blob = "~12.10.0"
 azure-mgmt-storage = "~19.1.0"
 pandas = "~1.4.1"
 
