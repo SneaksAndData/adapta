@@ -18,7 +18,7 @@ azure-storage-blob = "~12.10.0"
 azure-mgmt-storage = "~19.1.0"
 pandas = "~1.4.1"
 
-[tool.poetry.dev.dependencies]
+[tool.poetry.dev-dependencies]
 pytest = "~6.2"
 pytest-cov = "~2.12"
 pylint = "~2.12"
