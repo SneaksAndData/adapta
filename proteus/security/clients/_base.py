@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Optional, Dict
+
+from proteus.storage.models.base import DataPath
 
 
 class ProteusClient(ABC):
@@ -13,7 +15,7 @@ class ProteusClient(ABC):
         pass
 
     @abstractmethod
-    def connect_storage(self, account_id: Optional[str] = None):
+    def connect_storage(self, path: DataPath, set_env: bool = False) -> Optional[Dict]:
         pass
 
     @abstractmethod

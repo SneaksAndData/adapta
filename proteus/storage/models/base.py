@@ -2,6 +2,7 @@ from abc import abstractmethod, ABC
 
 
 class DataPath(ABC):
+    path: str
 
     @abstractmethod
     def from_hdfs_path(cls, hdfs_path: str) -> "DataPath":
