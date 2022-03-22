@@ -1,5 +1,5 @@
 """
- Models used by storage clients.
+ Models used by Azure Client when working with storage.
 """
 from dataclasses import dataclass
 
