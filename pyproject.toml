@@ -29,6 +29,7 @@ pandas = "~1.4.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "~6.2"
+pytest-cov = "~2.12"
 pylint = "~2.12"
 requests = "~2.27"
 cryptography = "~36.0"
