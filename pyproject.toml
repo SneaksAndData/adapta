@@ -25,12 +25,14 @@ requests = "~2.27"
 deltalake = "~0.5"
 azure-storage-blob = "~12.10.0"
 azure-mgmt-storage = "~19.1.0"
+pandas = "~1.4.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "~6.2"
 pylint = "~2.12"
 requests = "~2.27"
 cryptography = "~36.0"
+pandas = "~1.4.1"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
