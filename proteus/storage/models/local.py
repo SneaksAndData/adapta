@@ -8,6 +8,9 @@ from proteus.storage.models.base import DataPath
 
 @dataclass
 class LocalPath(DataPath):
+    """
+     Local file system path.
+    """
     path: str
 
     @classmethod

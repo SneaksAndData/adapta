@@ -1,15 +1,18 @@
+"""
+ Operations on Delta Lake tables.
+"""
 from typing import Optional, Union, Iterator, List
 
 import pandas
 from deltalake import DeltaTable
 from pyarrow import RecordBatch, Table
-from pyarrow._compute import Expression
+from pyarrow._compute import Expression  # pylint: disable=E0611
 
 from proteus.security.clients._base import ProteusClient
 from proteus.storage.models.base import DataPath
 
 
-def load(proteus_client: ProteusClient,
+def load(proteus_client: ProteusClient,  # pylint: disable=R0913
          path: DataPath,
          version: Optional[int] = None,
          row_filter: Optional[Expression] = None,
@@ -18,7 +21,7 @@ def load(proteus_client: ProteusClient,
          ) -> Union[DeltaTable, pandas.DataFrame, Iterator[pandas.DataFrame]]:
     """
      Loads Delta Lake table from Azure storage and converts it to a pandas dataframe.
-     
+
     :param proteus_client: ProteusClient for target storage.
     :param path: Path to delta table, in HDFS format: abfss://container@account.dfs.core.windows.net/my/path
     :param version: Optional version to read. Defaults to latest.

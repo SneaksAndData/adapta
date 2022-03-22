@@ -1,3 +1,6 @@
+"""
+ Azure Cloud implementation of Proteus Client.
+"""
 import os
 from typing import Optional, List, Dict, Tuple
 
@@ -14,6 +17,7 @@ class AzureClient(ProteusClient):
     """
      Azure Credentials provider for various Azure resources.
     """
+
     def __init__(self, *, subscription_id: str):
         self.subscription_id = subscription_id
 
@@ -26,7 +30,6 @@ class AzureClient(ProteusClient):
          Not used in Azure.
         :return:
         """
-        pass
 
     def connect_storage(self, path: DataPath, set_env: bool = False) -> Optional[Dict]:
         def get_resource_group(account: StorageAccount) -> str:
@@ -40,9 +43,10 @@ class AzureClient(ProteusClient):
             cred = DefaultAzureCredential(exclude_shared_token_cache_credential=True)
             storage_client = StorageManagementClient(cred, self.subscription_id)
 
-            accounts: List[Tuple[str, str]] = list(map(lambda result: (get_resource_group(result), result.name), storage_client.storage_accounts.list()))
+            accounts: List[Tuple[str, str]] = list(
+                map(lambda result: (get_resource_group(result), result.name), storage_client.storage_accounts.list()))
 
-            for rg, account in accounts:
+            for rg, account in accounts: # pylint: disable=C0103
                 if adls_path.account == account:
                     keys: List[StorageAccountKey] = storage_client.storage_accounts.list_keys(
                         resource_group_name=rg,
