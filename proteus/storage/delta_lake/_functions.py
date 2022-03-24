@@ -9,8 +9,8 @@ from deltalake import DeltaTable, RawDeltaTable
 from deltalake.fs import DeltaStorageHandler
 from pyarrow import RecordBatch, Table
 from pyarrow._compute import Expression  # pylint: disable=E0611
-from pyarrow._dataset import FileSystemDataset
-from pyarrow._dataset_parquet import ParquetFileFormat, ParquetReadOptions
+from pyarrow._dataset import FileSystemDataset # pylint: disable=E0611
+from pyarrow._dataset_parquet import ParquetFileFormat, ParquetReadOptions # pylint: disable=E0611
 import pyarrow.fs as pa_fs
 
 from proteus.security.clients._base import ProteusClient
@@ -35,10 +35,10 @@ def _to_pyarrow_dataset(
             DeltaStorageHandler(table.table_uri())
         )
 
-    format = ParquetFileFormat(read_options=ParquetReadOptions(coerce_int96_timestamp_unit='ms'))
+    read_format = ParquetFileFormat(read_options=ParquetReadOptions(coerce_int96_timestamp_unit='ms'))
 
     fragments = [
-        format.make_fragment(
+        read_format.make_fragment(
             file,
             filesystem=filesystem,
             partition_expression=part_expression,
@@ -46,7 +46,7 @@ def _to_pyarrow_dataset(
         for file, part_expression in table.dataset_partitions(partitions)
     ]
 
-    return FileSystemDataset(fragments, schema, format, filesystem)
+    return FileSystemDataset(fragments, schema, read_format, filesystem)
 
 
 def load(proteus_client: ProteusClient,  # pylint: disable=R0913
