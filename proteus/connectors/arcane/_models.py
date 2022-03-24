@@ -20,6 +20,9 @@ class SqlServerStreamConfiguration:
     sink_filename: str
     full_load_on_start: bool
     client_tag: str
+    lookback_interval: int = 86400
+    change_capture_interval: str = "0.00:00:15"
+    command_timeout: int = 3600
     url_path: str = "start/sqlserverct"
 
     def to_dict(self) -> Dict:
@@ -37,7 +40,10 @@ class SqlServerStreamConfiguration:
             "SinkLocation": self.sink_location,
             "SinkFileName": self.sink_filename,
             "FullLoadOnStart": self.full_load_on_start,
-            "ClientTag": self.client_tag
+            "ClientTag": self.client_tag,
+            "LookbackInterval": self.lookback_interval,
+            "ChangeCaptureInterval": self.change_capture_interval,
+            "CommandTimeout": self.command_timeout
         }
 
 
@@ -54,6 +60,7 @@ class StreamInfo:
     tag: str
     stream_configuration: str
     stream_metadata: str
+    stream_state: str
 
     @classmethod
     def from_dict(cls, json_data: Dict):
@@ -71,5 +78,6 @@ class StreamInfo:
             owner=json_data['owner'],
             tag=json_data['tag'],
             stream_configuration=json_data['streamConfiguration'],
-            stream_metadata=json_data['streamMetadata']
+            stream_metadata=json_data['streamMetadata'],
+            stream_state=json_data['streamState']
         )
