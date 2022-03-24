@@ -23,6 +23,13 @@ class JobSocket:
     data_path: str
     data_format: str
 
+    def to_utils_format(self) -> str:
+        """
+         Converts JobSocket
+        :return:
+        """
+        return f"{self.alias}|{self.data_path}|{self.data_format}"
+
 
 class JobSize(Enum):
     """
