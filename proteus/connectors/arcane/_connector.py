@@ -8,7 +8,7 @@ from typing import Optional, List, Dict
 from requests.auth import HTTPBasicAuth
 
 from proteus.connectors.arcane._models import SqlServerStreamConfiguration, StreamInfo
-from proteus.utils import session_with_retries
+from proteus.utils import session_with_retries, doze
 
 
 class ArcaneConnector:
@@ -64,9 +64,14 @@ class ArcaneConnector:
                 f"Stream activated: {submission_json['id']}")
 
             return StreamInfo.from_dict(submission_json)
-        else:
-            raise HTTPException(
-                f"Error {submission_result.status_code} when submitting a request: {submission_result.text}")
+
+        if submission_result.status_code == 503:
+            retry_after_seconds = submission_result.headers.get('Retry-After')
+            doze(retry_after_seconds)
+            return self.start_sql_server_ct_stream(conf)
+
+        raise HTTPException(
+            f"Error {submission_result.status_code} when submitting a request: {submission_result.text}")
 
     def get_stream(self, source: str, stream_id: str) -> Optional[StreamInfo]:
         """
