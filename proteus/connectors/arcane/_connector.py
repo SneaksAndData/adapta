@@ -26,28 +26,6 @@ class ArcaneConnector:
         self.http = session_with_retries()
         self.http.auth = HTTPBasicAuth(os.environ.get('ARCANE_USER'), os.environ.get('ARCANE_PASSWORD'))
 
-    def _existing_submission(self, submitted_tag: str, stream_source: str) -> Optional[str]:
-        print(f"Looking for existing streams with {submitted_tag}")
-
-        existing_streams = self.http.get(f"{self.base_url}/stream/{stream_source}/tags/{submitted_tag}").json()
-
-        if len(existing_streams) == 0:
-            print(f"No active streams found for {submitted_tag}")
-            return None
-
-        active_streams = [active_stream_info.id for active_stream_info in existing_streams if
-                          not active_stream_info.stoppedAt]
-
-        if len(active_streams) == 0:
-            print("None of found streams are active")
-            return None
-
-        if len(active_streams) == 1:
-            return active_streams[0].id
-
-        raise Exception(
-            f"Fatal: more than one active stream of {submitted_tag} is running: {active_streams}. Please review their status and restart/terminate the task accordingly")
-
     def start_sql_server_ct_stream(self, conf: SqlServerStreamConfiguration) -> StreamInfo:
         """
          Starts a new stream again Sql Server table with change tracking enabled.
