@@ -1,5 +1,5 @@
 """
-  Connector for Arcane Streaming API
+  Connector for Arcane Streaming API.
 """
 import os
 from http.client import HTTPException
