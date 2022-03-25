@@ -1,37 +1,35 @@
-name: Release to Azure Artifacts
+name: Release a new version
 
 on: workflow_dispatch
+
 jobs:
-  release_to_azure_artifacts:
-    name: Release distribution to Azure Artifacts
+  create_release:
+    name: Create Release
     runs-on: ubuntu-latest
+    if: ${{ github.ref == 'refs/heads/main' }}
 
     steps:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
-      - uses: actions/setup-python@v2
-        with:
-          python-version: '3.8.x' # Version range or exact version of a Python version to use, using SemVer's version range syntax
-          architecture: 'x64' # optional x64 or x86. Defaults to x64 if not specified
-      - name: Install and Configure Poetry
+      - name: Create Release
         env:
-          REPO_URL: ${{ secrets.AZOPS_PYPI_UPLOAD }}
+          MAJOR_V: "0"
+          MINOR_V: "2"
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -e
-          
-          curl -sSL https://install.python-poetry.org | python3 - --preview
-          
-          poetry config repositories.azops $REPO_URL
-      - name: Build Package and Publish distribution 📦 to Azure Artifacts
-        env:
-          POETRY_HTTP_BASIC_AZOPS_USERNAME: ${{ secrets.AZOPS_PAT_USER }}
-          POETRY_HTTP_BASIC_AZOPS_PASSWORD: ${{ secrets.AZOPS_PAT }}
-        if: startsWith(github.ref, 'refs/tags')
-        run: |
-          set -e
-          
-          version=$(git describe --tags --abbrev=7)
-          sed -i "s/version = \"0.0.0\"/version = \"${version:1}\"/" pyproject.toml
-          
-          poetry build && poetry publish -r azops
+          providedMajor=$MAJOR_V
+          providedMinor=$MINOR_V
+          currentVersion=$(git describe --tags --abbrev=7)
+          currentMinor=$(echo $currentVersion | cut -d. -f2)
+          currentMajor=$(echo $currentVersion | cut -d. -f1 | cut -dv -f2)
+          if [[ $currentMajor -eq $providedMajor ]] && [[ $providedMinor -eq $currentMinor ]];
+          then
+            currentRevision=$(echo $(echo $currentVersion | rev | cut -d. -f1) | rev | cut -d- -f1)
+            nextRevision=$(( currentRevision + 1 ))
+          else
+            nextRevision='0'
+          fi
+          nextVersion="v$providedMajor.$providedMinor.$nextRevision"
+          gh release create $nextVersion --generate-notes
