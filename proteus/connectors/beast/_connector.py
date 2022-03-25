@@ -143,7 +143,7 @@ class BeastConnector:
         :return: A JobRequest for Beast.
         """
 
-        (request_id, request_lifecycle) = self._existing_submission(submitted_tag=context['task_instance_key_str'],
+        (request_id, _) = self._existing_submission(submitted_tag=context['task_instance_key_str'],
                                                                     project=job_params.project_name)
 
         if not request_id:
