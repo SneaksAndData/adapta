@@ -86,7 +86,7 @@ class ArcaneConnector:
         :param stream_id: Stream identifier.
         :return:
         """
-        info = self.http.post(f"{self.base_url}/stream/restart/{source}/{stream_id}")
+        info = self.http.post(f"{self.base_url}/stream/restart/{source}/{stream_id}", json=conf)
         info.raise_for_status()
 
         return StreamInfo.from_dict(info.json())
