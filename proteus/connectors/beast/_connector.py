@@ -134,3 +134,36 @@ class BeastConnector:
         if request_lifecycle in self.failed_stages:
             raise self._failure_type(
                 f"Execution failed, please find request's log at: {self.base_url}/job/logs/{request_id}")
+
+    def start_job(self, job_params: BeastJobParams, **context) -> Optional[str]:
+        """
+          Starts a job through Beast.
+
+        :param job_params: Parameters for Beast Job body.
+        :return: A JobRequest for Beast.
+        """
+
+        (request_id, request_lifecycle) = self._existing_submission(submitted_tag=context['task_instance_key_str'],
+                                                                    project=job_params.project_name)
+
+        if not request_id:
+            prepared_arguments = {key: str(value) for (key, value) in job_params.extra_arguments.items()}
+
+            submit_request = JobRequest(
+                root_path=self.code_root,
+                project_name=job_params.project_name,
+                runnable=job_params.project_runnable,
+                version=job_params.project_version,
+                inputs=job_params.project_inputs,
+                outputs=job_params.project_outputs,
+                overwrite=job_params.overwrite_outputs,
+                extra_args=prepared_arguments,
+                client_tag=context['task_instance_key_str'],
+                cost_optimized=job_params.cost_optimized,
+                job_size=job_params.size_hint,
+                flexible_driver=job_params.flexible_driver
+            )
+
+            request_id, _ = self._submit(submit_request)
+
+        return request_id
