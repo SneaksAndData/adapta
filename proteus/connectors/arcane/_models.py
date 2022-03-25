@@ -2,6 +2,7 @@
  Models for Arcane
 """
 from dataclasses import dataclass
+from enum import Enum
 from typing import Dict, Optional
 
 
@@ -81,3 +82,13 @@ class StreamInfo:
             stream_metadata=json_data['streamMetadata'],
             stream_state=json_data['streamState']
         )
+
+
+class StreamState(Enum):
+    """
+     Stream states in Arcane.
+    """
+    RUNNING = 'RUNNING'
+    STOPPED = 'STOPPED'
+    TERMINATING = 'TERMINATING'
+    RESTARTING = 'RESTARTING'
