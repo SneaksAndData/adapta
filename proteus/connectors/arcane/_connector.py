@@ -88,7 +88,7 @@ class ArcaneConnector:
 
     def get_streams_by_tag(self, source: str, tag: str) -> List[StreamInfo]:
         """
-         Reads streams matching the provided tag
+         Reads streams matching the provided tag.
 
         :param source: Source for searched streams.
         :param tag: Tag assigned to streams.
@@ -109,6 +109,19 @@ class ArcaneConnector:
         :return:
         """
         info = self.http.post(f"{self.base_url}/stream/restart/{source}/{stream_id}")
+        info.raise_for_status()
+
+        return StreamInfo.from_dict(info.json())
+
+    def stop_stream(self, source: str, stream_id: str) -> Optional[StreamInfo]:
+        """
+          Requests a stream stop.
+
+        :param source: Source for this stream.
+        :param stream_id: Stream identifier.
+        :return:
+        """
+        info = self.http.post(f"{self.base_url}/stream/stop/{source}/{stream_id}")
         info.raise_for_status()
 
         return StreamInfo.from_dict(info.json())
