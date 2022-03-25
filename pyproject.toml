@@ -10,7 +10,7 @@ repository = 'https://github.com/SneaksAndData/proteus'
 
 [tool.poetry.dependencies]
 python = "^3.8"
-requests = "~2.27"
+requests = "^2.26"
 cryptography = "~36.0"
 azure-identity = "~1.7"
 deltalake = "~0.5"
