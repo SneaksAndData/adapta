@@ -161,7 +161,8 @@ class BeastConnector:
                 client_tag=context['task_instance_key_str'],
                 cost_optimized=job_params.cost_optimized,
                 job_size=job_params.size_hint,
-                flexible_driver=job_params.flexible_driver
+                flexible_driver=job_params.flexible_driver,
+                max_runtime_hours=job_params.max_runtime_hours
             )
 
             request_id, _ = self._submit(submit_request)
