@@ -46,7 +46,6 @@ class AzureStorageClient(StorageClient):
             account_name=azure_path.account,
             permission=kwargs.get('permission', BlobSasPermissions(read=True)),
             expiry=kwargs.get('expiry', datetime.utcnow() + timedelta(hours=1)),
-            **kwargs
         )
 
         sas_uri = f'{blob_client.url}?{sas_token}'
