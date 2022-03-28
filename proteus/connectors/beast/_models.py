@@ -67,6 +67,7 @@ class JobRequest:
     cost_optimized: Optional[bool]
     job_size: Optional[JobSize]
     flexible_driver: Optional[bool]
+    max_runtime_hours: Optional[int]
 
     def to_json(self) -> Dict:
         """
@@ -101,6 +102,9 @@ class JobRequest:
 
         if self.flexible_driver:
             base_request.setdefault("flexibleDriver", self.flexible_driver)
+
+        if self.max_runtime_hours:
+            base_request.setdefault("maxRuntimeHours", str(self.max_runtime_hours))
 
         return base_request
 
@@ -196,3 +200,5 @@ class BeastJobParams:
     flexible_driver: Optional[bool] = field(metadata={
         'description': 'Whether to use fixed-size driver or derive driver memory from master node max memory.'},
         default=False)
+    max_runtime_hours: Optional[int] = field(metadata={
+        'description': 'Sets maximum allowed job run duration. Server-side default is 12 hours'}, default=None)
