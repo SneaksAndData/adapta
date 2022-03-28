@@ -38,14 +38,13 @@ class AzureStorageClient(StorageClient):
         blob_client = self._get_blob_client(blob_path)
         azure_path = cast_path(blob_path)
 
-        kwargs['account_key'] = self._storage_options['AZURE_STORAGE_ACCOUNT_KEY']
-
         sas_token = generate_blob_sas(
             blob_name=azure_path.path,
             container_name=azure_path.container,
             account_name=azure_path.account,
             permission=kwargs.get('permission', BlobSasPermissions(read=True)),
             expiry=kwargs.get('expiry', datetime.utcnow() + timedelta(hours=1)),
+            account_key=self._storage_options['AZURE_STORAGE_ACCOUNT_KEY']
         )
 
         sas_uri = f'{blob_client.url}?{sas_token}'
