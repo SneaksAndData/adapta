@@ -121,7 +121,8 @@ class BeastConnector:
                 client_tag=context['task_instance_key_str'],
                 cost_optimized=job_params.cost_optimized,
                 job_size=job_params.size_hint,
-                flexible_driver=job_params.flexible_driver
+                flexible_driver=job_params.flexible_driver,
+                max_runtime_hours=job_params.max_runtime_hours
             )
 
             (request_id, request_lifecycle) = self._submit(submit_request)
@@ -144,7 +145,7 @@ class BeastConnector:
         """
 
         (request_id, _) = self._existing_submission(submitted_tag=context['task_instance_key_str'],
-                                                                    project=job_params.project_name)
+                                                    project=job_params.project_name)
 
         if not request_id:
             prepared_arguments = {key: str(value) for (key, value) in job_params.extra_arguments.items()}
@@ -161,7 +162,8 @@ class BeastConnector:
                 client_tag=context['task_instance_key_str'],
                 cost_optimized=job_params.cost_optimized,
                 job_size=job_params.size_hint,
-                flexible_driver=job_params.flexible_driver
+                flexible_driver=job_params.flexible_driver,
+                max_runtime_hours=job_params.max_runtime_hours
             )
 
             request_id, _ = self._submit(submit_request)
