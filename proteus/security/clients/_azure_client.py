@@ -13,6 +13,19 @@ from proteus.storage.models.azure import AdlsGen2Path
 from proteus.storage.models.base import DataPath
 
 
+def _get_azure_credentials() -> DefaultAzureCredential:
+    """
+      Returns credentials for Azure Cloud going through credential provider chain.
+
+    :return: DefaultAzureCredential
+    """
+    return DefaultAzureCredential(
+        exclude_shared_token_cache_credential=True,
+        exclude_visual_studio_code_credential=True,
+        exclude_powershell_credential=True
+    )
+
+
 class AzureClient(ProteusClient):
     """
      Azure Credentials provider for various Azure resources.
@@ -22,11 +35,7 @@ class AzureClient(ProteusClient):
         self.subscription_id = subscription_id
 
     def get_access_token(self, scope: Optional[str] = None) -> str:
-        return DefaultAzureCredential(
-            exclude_shared_token_cache_credential=True,
-            exclude_visual_studio_code_credential=True,
-            exclude_powershell_credential=True
-        ).get_token(scope or "https://management.core.windows.net/.default").token
+        return _get_azure_credentials().get_token(scope or "https://management.core.windows.net/.default").token
 
     def connect_account(self):
         """
@@ -42,8 +51,7 @@ class AzureClient(ProteusClient):
 
         adls_path: AdlsGen2Path = path
 
-        cred = DefaultAzureCredential(exclude_shared_token_cache_credential=True)
-        storage_client = StorageManagementClient(cred, self.subscription_id)
+        storage_client = StorageManagementClient(_get_azure_credentials(), self.subscription_id)
 
         accounts: List[Tuple[str, str]] = list(
             map(lambda result: (get_resource_group(result), result.name), storage_client.storage_accounts.list()))
@@ -66,4 +74,4 @@ class AzureClient(ProteusClient):
         raise ValueError(f"Can't locate an account {path.account}")
 
     def get_credentials(self) -> DefaultAzureCredential:
-        return DefaultAzureCredential(exclude_shared_token_cache_credential=True)
+        return _get_azure_credentials()
