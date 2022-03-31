@@ -44,7 +44,10 @@ class ArcaneConnector:
             return StreamInfo.from_dict(submission_json)
 
         if submission_result.status_code == 503:
-            retry_after_seconds = submission_result.headers.get('Retry-After')
+            retry_after_seconds = int(submission_result.headers.get('Retry-After'))
+
+            print(f"Target instance full, will retry in {retry_after_seconds}")
+
             doze(retry_after_seconds)
             return self.start_sql_server_ct_stream(conf)
 
