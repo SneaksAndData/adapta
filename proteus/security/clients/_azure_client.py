@@ -22,8 +22,11 @@ class AzureClient(ProteusClient):
         self.subscription_id = subscription_id
 
     def get_access_token(self, scope: Optional[str] = None) -> str:
-        return DefaultAzureCredential(exclude_shared_token_cache_credential=True) \
-            .get_token(scope or "https://management.core.windows.net/.default").token
+        return DefaultAzureCredential(
+            exclude_shared_token_cache_credential=True,
+            exclude_visual_studio_code_credential=True,
+            exclude_powershell_credential=True
+        ).get_token(scope or "https://management.core.windows.net/.default").token
 
     def connect_account(self):
         """
