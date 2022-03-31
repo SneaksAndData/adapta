@@ -2,7 +2,6 @@
  Utility functions for storage operations.
 """
 import json
-from io import BytesIO
 from typing import Union
 
 import pandas
@@ -15,7 +14,7 @@ def pandas_to_parquet(dataframe: pandas.DataFrame) -> bytes:
     :param dataframe: Pandas DataFrame.
     :return: Byte array.
     """
-    return dataframe.to_parquet(BytesIO())
+    return dataframe.to_parquet()
 
 
 def json_to_bytes(data: Union[dict, list]) -> bytes:
