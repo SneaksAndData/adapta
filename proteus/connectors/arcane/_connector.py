@@ -55,6 +55,8 @@ class ArcaneConnector:
 
                 doze(retry_after_seconds)
 
+                continue
+
             raise HTTPException(
                 f"Error {submission_result.status_code} when submitting a request: {submission_result.text}")
 
