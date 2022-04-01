@@ -60,7 +60,7 @@ class ArcaneConnector:
             raise HTTPException(
                 f"Error {submission_result.status_code} when submitting a request: {submission_result.text}")
 
-        raise TimeoutError(f"Timed out waiting for Arcane to accept the stream start request")
+        raise TimeoutError("Timed out waiting for Arcane to accept the stream start request")
 
     def get_stream(self, source: str, stream_id: str) -> Optional[StreamInfo]:
         """
