@@ -16,15 +16,17 @@ class ArcaneConnector:
       Arcane Streaming API connector
     """
 
-    def __init__(self, *, base_url):
+    def __init__(self, *, base_url, retry_attempts=10):
         """
           Creates Arcane Streaming connector, capable of managing Akka streams launched via Arcane.
 
         :param base_url: Base URL for Arcane Streaming endpoint.
+        :param retry_attempts: Number of retries for Arcane-specific error messages.
         """
         self.base_url = base_url
         self.http = session_with_retries()
         self.http.auth = HTTPBasicAuth(os.environ.get('ARCANE_USER'), os.environ.get('ARCANE_PASSWORD'))
+        self.retry_attempts = retry_attempts
 
     def start_sql_server_ct_stream(self, conf: SqlServerStreamConfiguration) -> StreamInfo:
         """
@@ -33,26 +35,32 @@ class ArcaneConnector:
         :param conf: Stream configuration
         :return:
         """
-        request_json = conf.to_dict()
-        submission_result = self.http.post(f"{self.base_url}/stream/{conf.url_path}", json=request_json)
-        submission_json = submission_result.json()
+        attempts = 0
+        while attempts < self.retry_attempts:
+            request_json = conf.to_dict()
+            submission_result = self.http.post(f"{self.base_url}/stream/{conf.url_path}", json=request_json)
+            submission_json = submission_result.json()
 
-        if submission_result.status_code == 200 and submission_json:
-            print(
-                f"Stream activated: {submission_json['id']}")
+            if submission_result.status_code == 200 and submission_json:
+                print(
+                    f"Stream activated: {submission_json['id']}")
 
-            return StreamInfo.from_dict(submission_json)
+                return StreamInfo.from_dict(submission_json)
 
-        if submission_result.status_code == 503:
-            retry_after_seconds = int(submission_result.headers.get('Retry-After'))
+            if submission_result.status_code == 503:
+                attempts += 1
+                retry_after_seconds = int(submission_result.headers.get('Retry-After'))
 
-            print(f"Target instance full, will retry in {retry_after_seconds}")
+                print(f"Target instance full, will retry in {retry_after_seconds}")
 
-            doze(retry_after_seconds)
-            return self.start_sql_server_ct_stream(conf)
+                doze(retry_after_seconds)
 
-        raise HTTPException(
-            f"Error {submission_result.status_code} when submitting a request: {submission_result.text}")
+                continue
+
+            raise HTTPException(
+                f"Error {submission_result.status_code} when submitting a request: {submission_result.text}")
+
+        raise TimeoutError("Timed out waiting for Arcane to accept the stream start request")
 
     def get_stream(self, source: str, stream_id: str) -> Optional[StreamInfo]:
         """
