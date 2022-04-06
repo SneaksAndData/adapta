@@ -22,6 +22,9 @@ class StatusState(Enum):
 
 @dataclass
 class CrystalResult:
+    """
+    The Crystal result when retrieving an existing run.
+    """
     run_id: str
     status: StatusState
     result_uri: Optional[str] = None
@@ -29,6 +32,13 @@ class CrystalResult:
 
     @classmethod
     def from_dict(cls, dict_: dict):
+        """
+        Constructs a CrystalResult object from a dictionary containing the
+        keys from the /result HTTP GET request.
+
+        :param dict_: The (JSON) dict from the HTTP request.
+        :return: The corresponding CrystalResult object.
+        """
         return CrystalResult(
             run_id=dict_['requestId'],
             status=StatusState(dict_['status']),
@@ -39,6 +49,9 @@ class CrystalResult:
 
 @dataclass
 class CrystalAlgorithmResponse:
+    """
+    The result of an algorithm to be submitted to Crystal.
+    """
     run_id: str
     cause: Optional[str] = None
     message: Optional[str] = None
