@@ -21,7 +21,7 @@ class RequestLifeCycleStage(Enum):
 
 
 @dataclass
-class CrystalResult:
+class RequestResult:
     """
     The Crystal result when retrieving an existing run.
     """
@@ -39,7 +39,7 @@ class CrystalResult:
         :param dict_: The (JSON) dict from the HTTP request.
         :return: The corresponding CrystalResult object.
         """
-        return CrystalResult(
+        return RequestResult(
             run_id=dict_['requestId'],
             status=RequestLifeCycleStage(dict_['status']),
             result_uri=dict_['resultUri'],
@@ -48,7 +48,7 @@ class CrystalResult:
 
 
 @dataclass
-class CrystalAlgorithmResponse:
+class AlgorithmRunResult:
     """
     The result of an algorithm to be submitted to Crystal.
     """

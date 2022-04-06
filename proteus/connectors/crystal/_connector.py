@@ -8,7 +8,7 @@ from requests.auth import HTTPBasicAuth
 
 from proteus.utils import session_with_retries
 
-from proteus.connectors.crystal._models import CrystalResult, CrystalAlgorithmResponse
+from proteus.connectors.crystal._models import RequestResult, AlgorithmRunResult
 
 
 class CrystalConnector:
@@ -51,7 +51,7 @@ class CrystalConnector:
 
         return run_id
 
-    def retrieve_run(self, run_id: str, api_version="v1.1") -> CrystalResult:
+    def retrieve_run(self, run_id: str, api_version="v1.1") -> RequestResult:
         """
         Retrieves a submitted Crystal job.
 
@@ -65,11 +65,11 @@ class CrystalConnector:
         # raise if not successful
         response.raise_for_status()
 
-        crystal_result = CrystalResult.from_dict(response.json())
+        crystal_result = RequestResult.from_dict(response.json())
 
         return crystal_result
 
-    def submit_result(self, result: CrystalAlgorithmResponse) -> None:
+    def submit_result(self, result: AlgorithmRunResult) -> None:
         """
         Submit a result of an algorithm back to Crystal.
 
