@@ -24,8 +24,8 @@ class StatusState(Enum):
 class CrystalResult:
     run_id: str
     status: StatusState
-    result_uri: Optional[str]
-    run_error_message: Optional[str]
+    result_uri: Optional[str] = None
+    run_error_message: Optional[str] = None
 
     @classmethod
     def from_dict(cls, dict_: dict):
@@ -39,7 +39,7 @@ class CrystalResult:
 
 @dataclass
 class CrystalAlgorithmResponse:
-    cause: Optional[str]
-    message: Optional[str]
     run_id: str
-    sas_uri: Optional[str]
+    cause: Optional[str] = None
+    message: Optional[str] = None
+    sas_uri: Optional[str] = None
