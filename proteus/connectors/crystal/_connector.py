@@ -23,7 +23,7 @@ class CrystalConnector:
         password = password if password is not None else os.environ.get('CRYSTAL_PASSWORD')
         self.http.auth = HTTPBasicAuth(user, password)
 
-    def create_run(self, algorithm: str, payload: Dict, api_version="v1.1") -> str:
+    def create_run(self, algorithm: str, payload: Dict, api_version: str = "v1.1") -> str:
         """
           Creates a Crystal job run against the latest API version.
 
@@ -51,7 +51,7 @@ class CrystalConnector:
 
         return run_id
 
-    def retrieve_run(self, run_id: str, api_version="v1.1") -> RequestResult:
+    def retrieve_run(self, run_id: str, api_version: str = "v1.1") -> RequestResult:
         """
         Retrieves a submitted Crystal job.
 
@@ -69,11 +69,13 @@ class CrystalConnector:
 
         return crystal_result
 
-    def submit_result(self, result: AlgorithmRunResult) -> None:
+    def submit_result(self, result: AlgorithmRunResult, url: str) -> None:
         """
         Submit a result of an algorithm back to Crystal.
+        Notice, this method is only intended to be used within Crystal.
 
         :param result: The result of the algorithm.
+        :param url: URL of the results receiver.
         """
         payload = {
             'cause': result.cause,
@@ -83,7 +85,7 @@ class CrystalConnector:
         }
 
         run_response = self.http.post(
-            url=self.base_url,
+            url=url,
             json=payload
         )
 
