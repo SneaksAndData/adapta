@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 
-class StatusState(Enum):
+class RequestLifeCycleStage(Enum):
     """
      Crystal status states.
     """
@@ -26,7 +26,7 @@ class CrystalResult:
     The Crystal result when retrieving an existing run.
     """
     run_id: str
-    status: StatusState
+    status: RequestLifeCycleStage
     result_uri: Optional[str] = None
     run_error_message: Optional[str] = None
 
@@ -41,7 +41,7 @@ class CrystalResult:
         """
         return CrystalResult(
             run_id=dict_['requestId'],
-            status=StatusState(dict_['status']),
+            status=RequestLifeCycleStage(dict_['status']),
             result_uri=dict_['resultUri'],
             run_error_message=dict_['runErrorMessage'],
         )
