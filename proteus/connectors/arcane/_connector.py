@@ -3,11 +3,11 @@
 """
 import os
 from http.client import HTTPException
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Iterable
 
 from requests.auth import HTTPBasicAuth
 
-from proteus.connectors.arcane._models import SqlServerStreamConfiguration, StreamInfo
+from proteus.connectors.arcane._models import SqlServerStreamConfiguration, StreamInfo, StreamState
 from proteus.utils import session_with_retries, doze
 
 
@@ -114,3 +114,25 @@ class ArcaneConnector:
         info.raise_for_status()
 
         return StreamInfo.from_dict(info.json())
+
+    def stop_streams_with_tag(self, source: str, tag: str) -> Iterable[StreamInfo]:
+        """
+          Stops streams with a matching client tag.
+
+        :param source: Stream source.
+        :param tag: Client tag to look for.
+        :return: A list of stopped streams
+        """
+
+        active_streams = [
+            stream for stream in
+            self.get_streams_by_tag(
+                source,
+                tag
+            ) if stream.stream_state == StreamState.RUNNING.value
+        ]
+
+        for active_stream in active_streams:
+            info = self.http.post(f"{self.base_url}/stream/stop/{source}/{active_stream.id}")
+            if info.status_code == 202:
+                yield info.json()
