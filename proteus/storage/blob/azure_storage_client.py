@@ -31,8 +31,8 @@ class AzureStorageClient(StorageClient):
             blob=azure_path.path,
         )
 
-    def save_bytes_as_blob(self, data_bytes: bytes, blob_path: DataPath, metadata: Optional[Dict[str, str]] = None):
-        self._get_blob_client(blob_path).upload_blob(data_bytes, metadata=metadata)
+    def save_bytes_as_blob(self, data_bytes: bytes, blob_path: DataPath, metadata: Optional[Dict[str, str]] = None, overwrite = False):
+        self._get_blob_client(blob_path).upload_blob(data_bytes, metadata=metadata, overwrite=overwrite)
 
     def get_blob_uri(self, blob_path: DataPath, **kwargs) -> str:
         blob_client = self._get_blob_client(blob_path)
