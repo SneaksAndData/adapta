@@ -92,3 +92,4 @@ class StreamState(Enum):
     STOPPED = 'STOPPED'
     TERMINATING = 'TERMINATING'
     RESTARTING = 'RESTARTING'
+    FAILED = 'FAILED'
