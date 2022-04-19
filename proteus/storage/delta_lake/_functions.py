@@ -1,7 +1,7 @@
 """
  Operations on Delta Lake tables.
 """
-from typing import Optional, Union, Iterator, List, Tuple, Any
+from typing import Optional, Union, Iterator, List, Tuple, Any, Iterable
 
 import pandas
 import pyarrow
@@ -9,12 +9,13 @@ from deltalake import DeltaTable, RawDeltaTable
 from deltalake.fs import DeltaStorageHandler
 from pyarrow import RecordBatch, Table
 from pyarrow._compute import Expression  # pylint: disable=E0611
-from pyarrow._dataset import FileSystemDataset # pylint: disable=E0611
-from pyarrow._dataset_parquet import ParquetFileFormat, ParquetReadOptions # pylint: disable=E0611
+from pyarrow._dataset import FileSystemDataset  # pylint: disable=E0611
+from pyarrow._dataset_parquet import ParquetFileFormat, ParquetReadOptions  # pylint: disable=E0611
 import pyarrow.fs as pa_fs
 
 from proteus.security.clients._base import ProteusClient
 from proteus.storage.models.base import DataPath
+from proteus.storage.delta_lake._models import DeltaTransaction
 
 
 def _to_pyarrow_dataset(
@@ -84,3 +85,17 @@ def load(proteus_client: ProteusClient,  # pylint: disable=R0913
     pyarrow_table: Table = pyarrow_ds.to_table(filter=row_filter, columns=columns)
 
     return pyarrow_table.to_pandas(timestamp_as_object=True)
+
+
+def history(proteus_client: ProteusClient, path: DataPath) -> Iterable[DeltaTransaction]:
+    """
+      Returns transaction history for the table under path.
+
+    :param proteus_client: ProteusClient for target storage.
+    :param path: Path to delta table, in HDFS format: abfss://container@account.dfs.core.windows.net/my/path
+    :return: An iterable of Delta transactions for this table.
+    """
+    proteus_client.connect_storage(path, set_env=True)
+    delta_table = DeltaTable(path.to_delta_rs_path())
+
+    return [DeltaTransaction.from_dict(tran) for tran in delta_table.history()]
