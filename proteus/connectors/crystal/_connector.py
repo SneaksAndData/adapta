@@ -23,6 +23,12 @@ class CrystalConnector:
         password = password if password is not None else os.environ.get('CRYSTAL_PASSWORD')
         self.http.auth = HTTPBasicAuth(user, password)
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.dispose()
+
     def create_run(self, algorithm: str, payload: Dict, api_version: str = "v1.1") -> str:
         """
           Creates a Crystal job run against the latest API version.
@@ -91,3 +97,9 @@ class CrystalConnector:
 
         # raise if not successful
         run_response.raise_for_status()
+
+    def dispose(self) -> None:
+        """
+        Gracefully dispose object.
+        """
+        self.http.close()
