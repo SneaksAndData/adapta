@@ -15,6 +15,8 @@ class BeastConnector:
       Beast API connector
     """
 
+    __SUPPORTED_BEAST_RELEASE__ = "1.2.*"
+
     def __init__(self, *, base_url, code_root="/ecco/dist", lifecycle_check_interval: int = 60,
                  failure_type: Optional[Exception] = None):
         """
