@@ -205,7 +205,7 @@ class BeastJobParams:
         'description': 'Whether to use fixed-size driver or derive driver memory from master node max memory.'},
         default=False)
     max_runtime_hours: Optional[int] = field(metadata={
-        'description': 'Sets maximum allowed job run duration. Server-side default is 12 hours'}, default=None),
+        'description': 'Sets maximum allowed job run duration. Server-side default is 12 hours'}, default=None)
     runtime_tags: Optional[Dict[str, str]] = field(metadata={
         'description': 'Limits available runtimes to provided tags'
     }, default=None)
