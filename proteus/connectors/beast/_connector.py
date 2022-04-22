@@ -58,12 +58,12 @@ class BeastConnector:
 
         if submission_result.status_code == 202 and submission_json:
             print(
-                f"Beast has accepted the request, stage: {submission_json['lifeCycleStage']}, id: {submission_json['rowKey']}")
+                f"Beast has accepted the request, stage: {submission_json['lifeCycleStage']}, id: {submission_json['id']}")
         else:
             raise HTTPException(
                 f"Error {submission_result.status_code} when submitting a request: {submission_result.text}")
 
-        return submission_json['rowKey'], submission_json['lifeCycleStage']
+        return submission_json['id'], submission_json['lifeCycleStage']
 
     def _existing_submission(self, submitted_tag: str, project: str) -> (Optional[str], Optional[str]):
         print(f"Looking for existing submissions of {submitted_tag}")
@@ -122,7 +122,8 @@ class BeastConnector:
                 cost_optimized=job_params.cost_optimized,
                 job_size=job_params.size_hint,
                 flexible_driver=job_params.flexible_driver,
-                max_runtime_hours=job_params.max_runtime_hours
+                max_runtime_hours=job_params.max_runtime_hours,
+                runtime_tags=job_params.runtime_tags
             )
 
             (request_id, request_lifecycle) = self._submit(submit_request)
@@ -163,7 +164,8 @@ class BeastConnector:
                 cost_optimized=job_params.cost_optimized,
                 job_size=job_params.size_hint,
                 flexible_driver=job_params.flexible_driver,
-                max_runtime_hours=job_params.max_runtime_hours
+                max_runtime_hours=job_params.max_runtime_hours,
+                runtime_tags=job_params.runtime_tags
             )
 
             request_id, _ = self._submit(submit_request)
