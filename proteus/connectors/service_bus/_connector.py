@@ -1,3 +1,6 @@
+"""
+    Connector for Azure Service Bus.
+"""
 from typing import Optional
 import os
 from azure.servicebus import ServiceBusSender, ServiceBusClient, TransportType, ServiceBusMessage
