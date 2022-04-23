@@ -20,7 +20,7 @@ def get_client_and_path():
 def test_delta_history(get_client_and_path):
     client, data_path = get_client_and_path
     transactions = list(history(client, data_path))
-    operations = [tran.operation for tran in transactions]
+    operations = [tran.operation.value for tran in transactions]
 
     assert len(transactions) == 3 and operations == [DeltaOperation.CREATE_TABLE_AS_SELECT.value,
                                                      DeltaOperation.WRITE.value, DeltaOperation.UPDATE.value]
