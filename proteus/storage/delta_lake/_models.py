@@ -1,3 +1,6 @@
+"""
+ Models used by delta lake functions.
+"""
 from dataclasses import dataclass
 from enum import Enum
 from typing import Dict
@@ -11,6 +14,7 @@ class DeltaOperation(Enum):
     UPDATE = 'UPDATE'
     WRITE = 'WRITE'
     MERGE = 'MERGE'
+    CREATE_TABLE_AS_SELECT = 'CREATE TABLE AS SELECT'
 
 
 @dataclass
@@ -26,6 +30,11 @@ class DeltaTransaction:
 
     @classmethod
     def from_dict(cls, value: Dict) -> 'DeltaTransaction':
+        """
+          Converts delta transaction log entry to DeltaTransaction.
+        :param value: single entry from `describe history ...`
+        :return:
+        """
         return DeltaTransaction(
             timestamp=value['timestamp'],
             operation=DeltaOperation(value['operation']),
