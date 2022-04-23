@@ -38,7 +38,7 @@ class DeltaTransaction:
         return DeltaTransaction(
             timestamp=value['timestamp'],
             operation=DeltaOperation(value['operation']),
-            operation_parameters=value['operation_parameters'],
+            operation_parameters=value['operationParameters'],
             read_version=value['readVersion'],
             is_blind_append=value['isBlindAppend']
         )
