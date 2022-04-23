@@ -68,6 +68,7 @@ class JobRequest:
     job_size: Optional[JobSize]
     flexible_driver: Optional[bool]
     max_runtime_hours: Optional[int]
+    runtime_tags: Optional[Dict[str, str]]
 
     def to_json(self) -> Dict:
         """
@@ -105,6 +106,9 @@ class JobRequest:
 
         if self.max_runtime_hours:
             base_request.setdefault("maxRuntimeHours", str(self.max_runtime_hours))
+
+        if self.runtime_tags:
+            base_request.setdefault("runtimeTags", self.runtime_tags)
 
         return base_request
 
@@ -202,3 +206,6 @@ class BeastJobParams:
         default=False)
     max_runtime_hours: Optional[int] = field(metadata={
         'description': 'Sets maximum allowed job run duration. Server-side default is 12 hours'}, default=None)
+    runtime_tags: Optional[Dict[str, str]] = field(metadata={
+        'description': 'Limits available runtimes to provided tags'
+    }, default=None)
