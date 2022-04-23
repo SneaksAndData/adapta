@@ -15,6 +15,7 @@ class DeltaOperation(Enum):
     WRITE = 'WRITE'
     MERGE = 'MERGE'
     CREATE_TABLE_AS_SELECT = 'CREATE TABLE AS SELECT'
+    UNDEFINED = 'UNDEFINED'
 
 
 @dataclass
@@ -37,8 +38,8 @@ class DeltaTransaction:
         """
         return DeltaTransaction(
             timestamp=value['timestamp'],
-            operation=DeltaOperation(value['operation']),
-            operation_parameters=value['operationParameters'],
-            read_version=value['readVersion'],
-            is_blind_append=value['isBlindAppend']
+            operation=DeltaOperation(value.get('operation', DeltaOperation.UNDEFINED.value)),
+            operation_parameters=value.get('operationParameters', {}),
+            read_version=value.get('readVersion', -1),
+            is_blind_append=value.get('isBlindAppend', False)
         )
