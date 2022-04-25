@@ -125,7 +125,8 @@ class BeastConnector:
                 job_size=job_params.size_hint,
                 flexible_driver=job_params.flexible_driver,
                 max_runtime_hours=job_params.max_runtime_hours,
-                runtime_tags=job_params.runtime_tags
+                runtime_tags=job_params.runtime_tags,
+                execution_group=job_params.execution_group
             )
 
             (request_id, request_lifecycle) = self._submit(submit_request)
@@ -167,7 +168,8 @@ class BeastConnector:
                 job_size=job_params.size_hint,
                 flexible_driver=job_params.flexible_driver,
                 max_runtime_hours=job_params.max_runtime_hours,
-                runtime_tags=job_params.runtime_tags
+                runtime_tags=job_params.runtime_tags,
+                execution_group=job_params.execution_group
             )
 
             request_id, _ = self._submit(submit_request)
