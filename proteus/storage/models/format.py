@@ -17,7 +17,6 @@ class DataframeSerializationFormat(ABC):
         :param df: Dataframe to serialize.
         :return: Serialized dataframe as byte array.
         """
-        pass
 
 
 class ParquetSerializationFormat(DataframeSerializationFormat):
