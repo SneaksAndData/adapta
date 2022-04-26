@@ -95,6 +95,22 @@ azure-mgmt-core = ">=1.3.0,<2.0.0"
 msrest = ">=0.6.21"
 
 [[package]]
+name = "azure-servicebus"
+version = "7.3.4"
+description = "Microsoft Azure Service Bus Client Library for Python"
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+azure-common = ">=1.1,<2.0"
+azure-core = ">=1.14.0,<2.0.0"
+isodate = ">=0.6.0"
+msrest = ">=0.6.17,<2.0.0"
+six = ">=1.11.0"
+uamqp = ">=1.4.3,<2.0.0"
+
+[[package]]
 name = "azure-storage-blob"
 version = "12.10.0"
 description = "Microsoft Azure Blob Storage Client Library for Python"
@@ -592,6 +608,18 @@ optional = false
 python-versions = ">=3.7"
 
 [[package]]
+name = "uamqp"
+version = "1.5.3"
+description = "AMQP 1.0 Client Library for Python"
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+certifi = ">=2017.4.17"
+six = ">=1.0,<2.0"
+
+[[package]]
 name = "urllib3"
 version = "1.26.9"
 description = "HTTP library with thread-safe connection pooling, file post, and more."
@@ -615,7 +643,7 @@ python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,>=2.7"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "a5670eca87d681003da9bbc587c5daab4fac8f7f3b52d71aa9e026db50132082"
+content-hash = "486e783d908c81a89dbf7eb5e6793bf5e55110ba193df74ea0e3e0a67d31727d"
 
 [metadata.files]
 astroid = [
@@ -649,6 +677,10 @@ azure-mgmt-core = [
 azure-mgmt-storage = [
     {file = "azure-mgmt-storage-19.1.0.zip", hash = "sha256:49ea22f00e0965a3550af34a41c1a1d3a481690f6500c78e85408802f56d7416"},
     {file = "azure_mgmt_storage-19.1.0-py3-none-any.whl", hash = "sha256:61c7a55395e7410a24bfc8def353429eb772a105dd8268dce91f5ee38e4fc04e"},
+]
+azure-servicebus = [
+    {file = "azure-servicebus-7.3.4.zip", hash = "sha256:b85cbbbbdfe49ac7ee832df5ec8d29b97810a71d5055918e2a45bd9cec11ce8d"},
+    {file = "azure_servicebus-7.3.4-py2.py3-none-any.whl", hash = "sha256:2b995c25b9a00fdab8a48537e6bf8c99e085f461c6ec8096a7e832ea9872d227"},
 ]
 azure-storage-blob = [
     {file = "azure-storage-blob-12.10.0.zip", hash = "sha256:3c7dc2c93e7ff2a731acd66a36a1f0a6266072b4154deba4894dab891285ea3a"},
@@ -1031,6 +1063,33 @@ toml = [
 typing-extensions = [
     {file = "typing_extensions-4.2.0-py3-none-any.whl", hash = "sha256:6657594ee297170d19f67d55c05852a874e7eb634f4f753dbd667855e07c1708"},
     {file = "typing_extensions-4.2.0.tar.gz", hash = "sha256:f1c24655a0da0d1b67f07e17a5e6b2a105894e6824b92096378bb3668ef02376"},
+]
+uamqp = [
+    {file = "uamqp-1.5.3-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:ddc0bea1c8d8a7f23acc82b53dc5250638bc7b5c115dac175a67885bb65b04f2"},
+    {file = "uamqp-1.5.3-cp310-cp310-manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:f20c8f4598990c93c2ce509e3628ac558de94c5205ed458deb93a4f4d7b0672a"},
+    {file = "uamqp-1.5.3-cp310-cp310-win32.whl", hash = "sha256:dccd10ee8d08daa38464dd0437a676be3877cec597e51cea585f80aee437db84"},
+    {file = "uamqp-1.5.3-cp310-cp310-win_amd64.whl", hash = "sha256:80fe843c1da9bca6f06ca7aff49412451b083100ffa8a856f46773f0b6dd009a"},
+    {file = "uamqp-1.5.3-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:9b2876fd0df6b1bba6de4844dff9146d5f140b09f537678868d92466b1399f52"},
+    {file = "uamqp-1.5.3-cp36-cp36m-manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:6c9420361df8a9ac3953df22d6645c5335a36147f2108c21cd08f047625405f6"},
+    {file = "uamqp-1.5.3-cp36-cp36m-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:54ce94c200731cab1065981ece5da66edd203a16e982eb6c0e23877145bf2e58"},
+    {file = "uamqp-1.5.3-cp36-cp36m-win32.whl", hash = "sha256:b2fa093ed1b01b19cf6537a0707470c6a897877f9a7edbfcdf7353ebadd7367a"},
+    {file = "uamqp-1.5.3-cp36-cp36m-win_amd64.whl", hash = "sha256:0231853fe4beb7775e825bfa5a8dbcacb2fe5df9a196c7fc2b1646483b586dd9"},
+    {file = "uamqp-1.5.3-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:c7ac33b40dae123f9834682fa04b0311a5786ce4761bbef157e3d0597a65f8d6"},
+    {file = "uamqp-1.5.3-cp37-cp37m-manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:07abceeca0c1c3f28c9a20f7cdf985af981efdcbb6fa2bfd6a20c450082c9d56"},
+    {file = "uamqp-1.5.3-cp37-cp37m-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:eb412690fd0e9537882d335f5b52741af8d2e7891309882eb07213e735755d56"},
+    {file = "uamqp-1.5.3-cp37-cp37m-win32.whl", hash = "sha256:9c06c831870b9f325f8ab157d5c2871db235fff70fa13cac078d96515a7d4d01"},
+    {file = "uamqp-1.5.3-cp37-cp37m-win_amd64.whl", hash = "sha256:09b31d935b8d5a128ec0f1e9455a73e0165652f654bfa4432a44a2698bb81cc3"},
+    {file = "uamqp-1.5.3-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:bb3245ed98e2eb4076955e3aa5271c9cc8f4269d6732051ae643f0c86f650e2d"},
+    {file = "uamqp-1.5.3-cp38-cp38-manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:b2394ca17b722bb6cfddb0794699b9b427e0b3e93ed5ca42b0bee344506fe11f"},
+    {file = "uamqp-1.5.3-cp38-cp38-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:d39c68c6167f1c228cf0b376a487617b6204f4dbaa50aab654df90dbb549e8e2"},
+    {file = "uamqp-1.5.3-cp38-cp38-win32.whl", hash = "sha256:482080ec4cd873c35d67608b7ec7e1468f2636de233739328a87ad97604784bc"},
+    {file = "uamqp-1.5.3-cp38-cp38-win_amd64.whl", hash = "sha256:f736af8bb213ad99219a03db5bae4001fdd86b5137d2f5ad1b0d5cec7b33a04e"},
+    {file = "uamqp-1.5.3-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:9240730e62447e6c3f793e5773e5875903f264674edf0db64ed4cefd9c8e2790"},
+    {file = "uamqp-1.5.3-cp39-cp39-manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:8eb2b060d4915847af2be24d82f5ec35772f98ec95f7cca546b246d113b17aa7"},
+    {file = "uamqp-1.5.3-cp39-cp39-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:dea5fc73cabebda56d334f92ec0d560551789559a8741813ebcd1f2e2b7416b8"},
+    {file = "uamqp-1.5.3-cp39-cp39-win32.whl", hash = "sha256:c46f731a993668b88b9b425619c8d774e3c4a315f71b51969840772d52e3ddfc"},
+    {file = "uamqp-1.5.3-cp39-cp39-win_amd64.whl", hash = "sha256:546f9dcdd7610c0ee4a59aaf9124245988db44fbea417cbc495a18e1528f8437"},
+    {file = "uamqp-1.5.3.tar.gz", hash = "sha256:82e85f38cbdd742e04fa83a6be9786f06b1711fa8b7121d576d8f7c3c7c5d95b"},
 ]
 urllib3 = [
     {file = "urllib3-1.26.9-py2.py3-none-any.whl", hash = "sha256:44ece4d53fb1706f667c9bd1c648f5469a2ec925fcf3a776667042d645472c14"},
