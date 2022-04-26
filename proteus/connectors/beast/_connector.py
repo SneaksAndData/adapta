@@ -94,7 +94,7 @@ class BeastConnector:
         raise self._failure_type(
             f"Fatal: more than one submission of {submitted_tag} is running: {running_submissions}. Please review their status restart/terminate the task accordingly")
 
-    def run_job(self, job_params: BeastJobParams, **context):
+    def run_job(self, job_params: BeastJobParams):
         """
           Runs a job through Beast
 
@@ -140,7 +140,7 @@ class BeastConnector:
             raise self._failure_type(
                 f"Execution failed, please find request's log at: {self.base_url}/job/logs/{request_id}")
 
-    def start_job(self, job_params: BeastJobParams, **context) -> Optional[str]:
+    def start_job(self, job_params: BeastJobParams) -> Optional[str]:
         """
           Starts a job through Beast.
 
