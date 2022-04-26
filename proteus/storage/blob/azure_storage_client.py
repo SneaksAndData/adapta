@@ -19,7 +19,11 @@ class AzureStorageClient(StorageClient):
     def __init__(self, *, base_client: AzureClient, path: Union[AdlsGen2Path, WasbPath]):
         super().__init__(base_client=base_client)
         self._storage_options = self._base_client.connect_storage(path)
-        connection_string = f"DefaultEndpointsProtocol=https;AccountName={self._storage_options['AZURE_STORAGE_ACCOUNT_NAME']};AccountKey={self._storage_options['AZURE_STORAGE_ACCOUNT_KEY']};BlobEndpoint=https://{self._storage_options['AZURE_STORAGE_ACCOUNT_NAME']}.blob.core.windows.net/;"
+        connection_string = \
+            f"DefaultEndpointsProtocol=https;" \
+            f"AccountName={self._storage_options['AZURE_STORAGE_ACCOUNT_NAME']};" \
+            f"AccountKey={self._storage_options['AZURE_STORAGE_ACCOUNT_KEY']};" \
+            f"BlobEndpoint=https://{self._storage_options['AZURE_STORAGE_ACCOUNT_NAME']}.blob.core.windows.net/;"
 
         self._blob_service_client: BlobServiceClient = BlobServiceClient.from_connection_string(connection_string)
 
@@ -31,7 +35,12 @@ class AzureStorageClient(StorageClient):
             blob=azure_path.path,
         )
 
-    def save_bytes_as_blob(self, data_bytes: bytes, blob_path: DataPath, metadata: Optional[Dict[str, str]] = None, overwrite = False):
+    def save_bytes_as_blob(
+        self, data_bytes: bytes,
+        blob_path: DataPath,
+        metadata: Optional[Dict[str, str]] = None,
+        overwrite: bool = False
+    ):
         self._get_blob_client(blob_path).upload_blob(data_bytes, metadata=metadata, overwrite=overwrite)
 
     def get_blob_uri(self, blob_path: DataPath, **kwargs) -> str:
