@@ -1,9 +1,9 @@
 """
 Serialization formats for saving data structures as blob.
 """
+import json
 from abc import ABC, abstractmethod
-import pandas as pd
-from proteus.storage.blob._functions import json_to_bytes
+import pandas
 
 
 class DataFrameSerializationFormat(ABC):
@@ -11,10 +11,10 @@ class DataFrameSerializationFormat(ABC):
     Abstract dataframe serialization format.
     """
     @abstractmethod
-    def serialize(self, df: pd.DataFrame) -> bytes:
+    def serialize(self, p_df: pandas.DataFrame) -> bytes:
         """
         Serializes dataframe to bytes given a format.
-        :param df: Dataframe to serialize.
+        :param p_df: Dataframe to serialize.
         :return: Serialized dataframe as byte array.
         """
 
@@ -23,23 +23,23 @@ class ParquetSerializationFormat(DataFrameSerializationFormat):
     """
     Serializes dataframes as parquet format.
     """
-    def serialize(self, df: pd.DataFrame) -> bytes:
+    def serialize(self, p_df: pandas.DataFrame) -> bytes:
         """
         Serializes dataframe to bytes using parquet format.
-        :param df: Dataframe to serialize.
+        :param p_df: Dataframe to serialize.
         :return: Parquet serialized dataframe as byte array.
         """
-        return df.to_parquet()
+        return p_df.to_parquet()
 
 
 class JsonSerializationFormat(DataFrameSerializationFormat):
     """
     Serializes dataframes as JSON format.
     """
-    def serialize(self, df: pd.DataFrame) -> bytes:
+    def serialize(self, p_df: pandas.DataFrame) -> bytes:
         """
         Serializes dataframe to bytes using JSON format.
-        :param df: Dataframe to serialize.
+        :param p_df: Dataframe to serialize.
         :return: JSON serialized dataframe as byte array.
         """
-        return json_to_bytes(df.to_dict(orient='records'))
+        return json.dumps(p_df.to_dict(orient='records')).encode(encoding='utf-8')
