@@ -201,6 +201,9 @@ class BeastJobParams:
         'description': 'Whether to wipe existing data before writing new out.'})
     extra_arguments: Dict[str, Union[ArgumentValue, str]] = field(metadata={
         'description': 'Extra arguments for a submission, defined by an author.'})
+    client_tag: str = field(metadata={
+        'description': 'Client-assigned identifier for this request'
+    })
     size_hint: Optional[JobSize] = field(metadata={
         'description': 'Job size hint for Beast.'}, default=JobSize.SMALL)
     execution_group: Optional[str] = field(metadata={

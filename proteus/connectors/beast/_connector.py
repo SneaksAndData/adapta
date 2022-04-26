@@ -102,7 +102,7 @@ class BeastConnector:
         :return: A JobRequest for Beast.
         """
 
-        (request_id, request_lifecycle) = self._existing_submission(submitted_tag=context['task_instance_key_str'],
+        (request_id, request_lifecycle) = self._existing_submission(submitted_tag=job_params.client_tag,
                                                                     project=job_params.project_name)
 
         if request_id:
@@ -120,7 +120,7 @@ class BeastConnector:
                 outputs=job_params.project_outputs,
                 overwrite=job_params.overwrite_outputs,
                 extra_args=prepared_arguments,
-                client_tag=context['task_instance_key_str'],
+                client_tag=job_params.client_tag,
                 cost_optimized=job_params.cost_optimized,
                 job_size=job_params.size_hint,
                 flexible_driver=job_params.flexible_driver,
@@ -148,7 +148,7 @@ class BeastConnector:
         :return: A JobRequest for Beast.
         """
 
-        (request_id, _) = self._existing_submission(submitted_tag=context['task_instance_key_str'],
+        (request_id, _) = self._existing_submission(submitted_tag=job_params.client_tag,
                                                     project=job_params.project_name)
 
         if not request_id:
@@ -163,7 +163,7 @@ class BeastConnector:
                 outputs=job_params.project_outputs,
                 overwrite=job_params.overwrite_outputs,
                 extra_args=prepared_arguments,
-                client_tag=context['task_instance_key_str'],
+                client_tag=job_params.client_tag,
                 cost_optimized=job_params.cost_optimized,
                 job_size=job_params.size_hint,
                 flexible_driver=job_params.flexible_driver,
