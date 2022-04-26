@@ -66,6 +66,7 @@ class JobRequest:
     client_tag: str
     cost_optimized: Optional[bool]
     job_size: Optional[JobSize]
+    execution_group: Optional[str]
     flexible_driver: Optional[bool]
     max_runtime_hours: Optional[int]
     runtime_tags: Optional[Dict[str, str]]
@@ -109,6 +110,9 @@ class JobRequest:
 
         if self.runtime_tags:
             base_request.setdefault("runtimeTags", self.runtime_tags)
+
+        if self.execution_group:
+            base_request.setdefault('executionGroup', self.execution_group)
 
         return base_request
 
@@ -198,9 +202,11 @@ class BeastJobParams:
     extra_arguments: Dict[str, Union[ArgumentValue, str]] = field(metadata={
         'description': 'Extra arguments for a submission, defined by an author.'})
     size_hint: Optional[JobSize] = field(metadata={
-        'description': 'Job size hint for Beast.'})
+        'description': 'Job size hint for Beast.'}, default=JobSize.SMALL)
+    execution_group: Optional[str] = field(metadata={
+        'description': 'Spark scheduler pool that should be used for this request'}, default=None)
     cost_optimized: Optional[bool] = field(metadata={
-        'description': 'Job will run on a discounted workload (spot capacity).'})
+        'description': 'Job will run on a discounted workload (spot capacity).'}, default=True)
     flexible_driver: Optional[bool] = field(metadata={
         'description': 'Whether to use fixed-size driver or derive driver memory from master node max memory.'},
         default=False)
