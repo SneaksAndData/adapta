@@ -4,11 +4,11 @@
 from abc import ABC, abstractmethod
 from typing import Optional, Dict, Type
 
-import pandas as pd
+import pandas
 
 from proteus.security.clients import ProteusClient
 from proteus.storage.models.base import DataPath
-from proteus.storage.models.format import DataframeSerializationFormat, ParquetSerializationFormat
+from proteus.storage.models.format import DataFrameSerializationFormat, ParquetSerializationFormat
 
 
 class StorageClient(ABC):
@@ -48,24 +48,24 @@ class StorageClient(ABC):
 
     def save_df_as_blob(
         self,
-        df: pd.DataFrame,
+        p_df: pandas.DataFrame,
         blob_path: DataPath,
         metadata: Optional[Dict[str, str]] = None,
         overwrite: bool = False,
-        format_: Type[DataframeSerializationFormat] = ParquetSerializationFormat
+        serialization_format: Type[DataFrameSerializationFormat] = ParquetSerializationFormat
     ) -> None:
         # pylint: disable=R0913
         """
          Saves dataframe with the given serialization format.
 
-        :param df: Dataframe to save.
+        :param p_df: Dataframe to save.
         :param blob_path: Blob path in DataPath notation.
         :param metadata: Optional blob tags or metadata to attach.
         :param overwrite: whether a blob should be overwritten or an exception thrown if it already exists.
-        :param format_: The serialization format.
+        :param serialization_format: The serialization format.
         :return:
         """
-        bytes_ = format_().serialize(df)
+        bytes_ = serialization_format().serialize(p_df)
         self.save_bytes_as_blob(
             blob_path=blob_path,
             metadata=metadata,

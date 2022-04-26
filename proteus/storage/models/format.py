@@ -6,7 +6,7 @@ import pandas as pd
 from proteus.storage.blob._functions import json_to_bytes
 
 
-class DataframeSerializationFormat(ABC):
+class DataFrameSerializationFormat(ABC):
     """
     Abstract dataframe serialization format.
     """
@@ -19,7 +19,7 @@ class DataframeSerializationFormat(ABC):
         """
 
 
-class ParquetSerializationFormat(DataframeSerializationFormat):
+class ParquetSerializationFormat(DataFrameSerializationFormat):
     """
     Serializes dataframes as parquet format.
     """
@@ -32,7 +32,7 @@ class ParquetSerializationFormat(DataframeSerializationFormat):
         return df.to_parquet()
 
 
-class JsonSerializationFormat(DataframeSerializationFormat):
+class JsonSerializationFormat(DataFrameSerializationFormat):
     """
     Serializes dataframes as JSON format.
     """
