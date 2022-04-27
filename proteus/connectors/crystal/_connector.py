@@ -11,7 +11,7 @@ from proteus.connectors.crystal._models import RequestResult, AlgorithmRunResult
 from proteus.storage.models.format import SerializationFormat
 
 
-T = TypeVar('T')
+T = TypeVar('T')  # pylint: disable=C0103
 
 
 class CrystalConnector:

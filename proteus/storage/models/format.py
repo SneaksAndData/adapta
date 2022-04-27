@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 from typing import Generic, TypeVar
 import pandas
 
-T = TypeVar('T')
+T = TypeVar('T')  # pylint: disable=C0103
 
 
 class SerializationFormat(ABC, Generic[T]):
