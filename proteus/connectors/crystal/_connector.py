@@ -112,7 +112,7 @@ class CrystalConnector:
         :param serialization_format: The format used to deserialize the contents of the SAS URI.
         :return: The deserialized input data.
         """
-        http_response = self.http.get(crystal_arguments.sas_uri)
+        http_response = self.http.get(url=crystal_arguments.sas_uri)
         http_response.raise_for_status()
         return serialization_format().deserialize(http_response.content)
 
