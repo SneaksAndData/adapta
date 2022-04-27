@@ -8,7 +8,7 @@ import pandas
 
 from proteus.security.clients import ProteusClient
 from proteus.storage.models.base import DataPath
-from proteus.storage.models.format import DataFrameSerializationFormat, ParquetSerializationFormat
+from proteus.storage.models.format import SerializationFormat, DataFrameParquetSerializationFormat
 
 
 class StorageClient(ABC):
@@ -52,7 +52,7 @@ class StorageClient(ABC):
         blob_path: DataPath,
         metadata: Optional[Dict[str, str]] = None,
         overwrite: bool = False,
-        serialization_format: Type[DataFrameSerializationFormat] = ParquetSerializationFormat
+        serialization_format: Type[SerializationFormat[pandas.DataFrame]] = DataFrameParquetSerializationFormat
     ) -> None:
         # pylint: disable=R0913
         """
