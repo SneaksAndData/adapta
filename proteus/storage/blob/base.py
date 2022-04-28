@@ -4,11 +4,10 @@
 from abc import ABC, abstractmethod
 from typing import Optional, Dict, Type, TypeVar
 
-import pandas
 
 from proteus.security.clients import ProteusClient
 from proteus.storage.models.base import DataPath
-from proteus.storage.models.format import SerializationFormat, DataFrameParquetSerializationFormat
+from proteus.storage.models.format import SerializationFormat
 
 
 T = TypeVar('T')  # pylint: disable=C0103
