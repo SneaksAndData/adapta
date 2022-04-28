@@ -2,13 +2,16 @@
   Connector for Crystal Job Runtime (AKS)
 """
 import os
-from typing import Dict, Optional
+from typing import Dict, Optional, Type, TypeVar
 
 from requests.auth import HTTPBasicAuth
 
-from proteus.utils import session_with_retries
-
+from proteus.utils import session_with_retries, CrystalEntrypointArguments
 from proteus.connectors.crystal._models import RequestResult, AlgorithmRunResult
+from proteus.storage.models.format import SerializationFormat
+
+
+T = TypeVar('T')  # pylint: disable=C0103
 
 
 class CrystalConnector:
@@ -97,6 +100,21 @@ class CrystalConnector:
 
         # raise if not successful
         run_response.raise_for_status()
+
+    def read_input(
+        self,
+        crystal_arguments: CrystalEntrypointArguments,
+        serialization_format: Type[SerializationFormat[T]]
+    ) -> T:
+        """
+        Read Crystal input given in the SAS URI provided in the CrystalEntrypointArguments
+        :param crystal_arguments: The arguments given to the Crystal job.
+        :param serialization_format: The format used to deserialize the contents of the SAS URI.
+        :return: The deserialized input data.
+        """
+        http_response = self.http.get(url=crystal_arguments.sas_uri)
+        http_response.raise_for_status()
+        return serialization_format().deserialize(http_response.content)
 
     def dispose(self) -> None:
         """
