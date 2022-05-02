@@ -34,6 +34,19 @@ class AzureClient(ProteusClient):
     def __init__(self, *, subscription_id: str):
         self.subscription_id = subscription_id
 
+    @classmethod
+    def from_base_client(cls, client: ProteusClient) -> Optional['AzureClient']:
+        """
+         Safe casts ProteusClient to AzureClient if type checks out.
+
+        :param client: ProteusClient
+        :return: AzureClient or None if type does not check out
+        """
+        if isinstance(client, AzureClient):
+            return client
+
+        return None
+
     def get_access_token(self, scope: Optional[str] = None) -> str:
         return _get_azure_credentials().get_token(scope or "https://management.core.windows.net/.default").token
 
