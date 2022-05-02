@@ -14,6 +14,7 @@ class AzureSecretStorageClient(SecretStorageClient):
     """
      Azure KeyVault Client.
     """
+
     def __init__(self, *, base_client: AzureClient):
         """
          Creates a new instance of AzureSecretStorageClient.
@@ -28,9 +29,8 @@ class AzureSecretStorageClient(SecretStorageClient):
         return SecretClient(kv_uri, self._base_client.get_credentials())
 
     def read_secret(self, storage_name: str, secret_name: str) -> Union[bytes, str]:
-        kv = self._get_keyvault(storage_name)
-        return kv.get_secret(secret_name).value
+        return self._get_keyvault(storage_name).get_secret(secret_name).value
 
     def create_secret(self, storage_name: str, secret_name: str, secret_value: str, b64_encode=False) -> None:
-        kv = self._get_keyvault(storage_name)
-        kv.set_secret(secret_name, secret_value if not b64_encode else base64.b64encode(secret_value.encode('utf-8')))
+        self._get_keyvault(storage_name) \
+            .set_secret(secret_name, secret_value if not b64_encode else base64.b64encode(secret_value.encode('utf-8')))
