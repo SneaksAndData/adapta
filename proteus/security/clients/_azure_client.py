@@ -36,6 +36,12 @@ class AzureClient(ProteusClient):
 
     @classmethod
     def from_base_client(cls, client: ProteusClient) -> Optional['AzureClient']:
+        """
+         Safe casts ProteusClient to AzureClient if type checks out.
+
+        :param client: ProteusClient
+        :return: AzureClient or None if type does not check out
+        """
         if isinstance(client, AzureClient):
             return client
 
