@@ -6,7 +6,7 @@ from typing import Union
 
 from azure.keyvault.secrets import SecretClient
 
-from proteus.storage.secrets.base import SecretStorageClient
+from proteus.storage.secrets import SecretStorageClient
 from proteus.security.clients import AzureClient
 
 
