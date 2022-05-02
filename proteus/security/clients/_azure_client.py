@@ -4,9 +4,12 @@
 import os
 from typing import Optional, List, Dict, Tuple
 
+from azure.mgmt.resource.resources.v2018_05_01.models import GenericResource
 from azure.mgmt.storage.v2021_08_01.models import StorageAccountKey, StorageAccount
 from azure.mgmt.storage import StorageManagementClient
+from azure.mgmt.resource import ResourceManagementClient
 from azure.identity import DefaultAzureCredential
+from msrestazure.azure_exceptions import CloudError
 
 from proteus.security.clients._base import ProteusClient
 from proteus.storage.models.azure import AdlsGen2Path
@@ -33,6 +36,13 @@ class AzureClient(ProteusClient):
 
     def __init__(self, *, subscription_id: str):
         self.subscription_id = subscription_id
+
+    @classmethod
+    def from_base_client(cls, client: ProteusClient) -> Optional['AzureClient']:
+        if isinstance(client, AzureClient):
+            return client
+
+        return None
 
     def get_access_token(self, scope: Optional[str] = None) -> str:
         return _get_azure_credentials().get_token(scope or "https://management.core.windows.net/.default").token
@@ -72,6 +82,22 @@ class AzureClient(ProteusClient):
                 }
 
         raise ValueError(f"Can't locate an account {path.account}")
+
+    def find_resource(self, resource_name: str, resource_group: str) -> Optional[GenericResource]:
+        """
+          Find an Azure cloud resource using a provided name and a resource group.
+
+        :param resource_name: Azure resource
+        :param resource_group: Azure resource group
+        :return:
+        """
+        resource_manager = ResourceManagementClient(_get_azure_credentials(), self.subscription_id)
+
+        try:
+            return resource_manager.resources.get(resource_group_name=resource_group, resource_name=resource_name)
+        except CloudError as ce:
+            print(f"Resource not found: {ce}")
+            return None
 
     def get_credentials(self) -> DefaultAzureCredential:
         return _get_azure_credentials()
