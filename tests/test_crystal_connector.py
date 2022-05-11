@@ -40,6 +40,11 @@ def test_crystal_read_input(mocker, serializer: Type[SerializationFormat], data:
         return_value=MockHttpConnection(MockHttpResponse(serializer().serialize(data)))
     )
 
+    mocker.patch(
+        'proteus.connectors.crystal._connector.requests.get',
+        return_value=MockHttpResponse(serializer().serialize(data))
+    )
+
     args = CrystalEntrypointArguments(
         sas_uri='https://some.sas.url.com',
         request_id='test-id',
