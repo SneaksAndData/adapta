@@ -39,7 +39,7 @@ class AzureStorageClient(StorageClient):
             blob=azure_path.path,
         )
 
-    def save_data_as_blob(  # pylint: disable=R0913
+    def save_data_as_blob(  # pylint: disable=R0913,R0801
         self,
         data: T,
         blob_path: DataPath,
