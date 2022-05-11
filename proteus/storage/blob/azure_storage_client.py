@@ -12,7 +12,6 @@ from proteus.storage.models.azure import AdlsGen2Path, WasbPath, cast_path
 from proteus.storage.models.base import DataPath
 from proteus.storage.models.format import SerializationFormat
 
-
 T = TypeVar('T')  # pylint: disable=C0103
 
 
