@@ -24,7 +24,7 @@ class MockHttpConnection:
 
     def close(self):
         pass
-    
+
 
 @pytest.mark.parametrize(
     'serializer, data',

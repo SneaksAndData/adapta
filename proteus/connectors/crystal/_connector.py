@@ -4,7 +4,6 @@
 import os
 from typing import Dict, Optional, Type, TypeVar
 
-import requests
 from requests.auth import HTTPBasicAuth
 
 from proteus.utils import session_with_retries, CrystalEntrypointArguments
