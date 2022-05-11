@@ -102,7 +102,7 @@ class CrystalConnector:
         # raise if not successful
         run_response.raise_for_status()
 
-    def read_input(
+    def read_input(  # pylint: disable=R0201
         self,
         crystal_arguments: CrystalEntrypointArguments,
         serialization_format: Type[SerializationFormat[T]]
