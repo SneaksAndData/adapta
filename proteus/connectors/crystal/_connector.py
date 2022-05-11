@@ -4,7 +4,6 @@
 import os
 from typing import Dict, Optional, Type, TypeVar
 
-import requests
 from requests.auth import HTTPBasicAuth
 
 from proteus.utils import session_with_retries, CrystalEntrypointArguments
@@ -113,8 +112,10 @@ class CrystalConnector:
         :param serialization_format: The format used to deserialize the contents of the SAS URI.
         :return: The deserialized input data.
         """
-        http_response = requests.get(url=crystal_arguments.sas_uri)
+        http_session = session_with_retries()
+        http_response = http_session.get(url=crystal_arguments.sas_uri)
         http_response.raise_for_status()
+        http_session.close()
         return serialization_format().deserialize(http_response.content)
 
     def dispose(self) -> None:
