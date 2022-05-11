@@ -15,14 +15,6 @@ class MockHttpResponse:
         pass
 
 
-class MockHttpConnection:
-    def __init__(self, response: MockHttpResponse):
-        self.response = response
-
-    def get(self, *args: any, **kwargs: any):
-        return self.response
-
-
 @pytest.mark.parametrize(
     'serializer, data',
     [
@@ -35,11 +27,6 @@ def test_crystal_read_input(mocker, serializer: Type[SerializationFormat], data:
     """
     Test that the function `read_input` in the `CrystalConnector` object deserializes and returns the correct data.
     """
-    mocker.patch(
-        'proteus.connectors.crystal._connector.session_with_retries',
-        return_value=MockHttpConnection(MockHttpResponse(serializer().serialize(data)))
-    )
-
     mocker.patch(
         'proteus.connectors.crystal._connector.requests.get',
         return_value=MockHttpResponse(serializer().serialize(data))
