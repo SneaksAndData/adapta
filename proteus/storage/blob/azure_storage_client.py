@@ -2,7 +2,7 @@
  Storage Client implementation for Azure Cloud.
 """
 from datetime import datetime, timedelta
-from typing import Union, Optional, Dict
+from typing import Union, Optional, Dict, Type, TypeVar
 
 from azure.storage.blob import BlobServiceClient, BlobSasPermissions, BlobClient, generate_blob_sas
 
@@ -10,6 +10,9 @@ from proteus.storage.blob.base import StorageClient
 from proteus.security.clients import AzureClient
 from proteus.storage.models.azure import AdlsGen2Path, WasbPath, cast_path
 from proteus.storage.models.base import DataPath
+from proteus.storage.models.format import SerializationFormat
+
+T = TypeVar('T')  # pylint: disable=C0103
 
 
 class AzureStorageClient(StorageClient):
@@ -35,13 +38,16 @@ class AzureStorageClient(StorageClient):
             blob=azure_path.path,
         )
 
-    def save_bytes_as_blob(
-        self, data_bytes: bytes,
+    def save_data_as_blob(  # pylint: disable=R0913,R0801
+        self,
+        data: T,
         blob_path: DataPath,
+        serialization_format: Type[SerializationFormat[T]],
         metadata: Optional[Dict[str, str]] = None,
-        overwrite: bool = False
-    ):
-        self._get_blob_client(blob_path).upload_blob(data_bytes, metadata=metadata, overwrite=overwrite)
+        overwrite: bool = False,
+    ) -> None:
+        bytes_ = serialization_format().serialize(data)
+        self._get_blob_client(blob_path).upload_blob(bytes_, metadata=metadata, overwrite=overwrite)
 
     def get_blob_uri(self, blob_path: DataPath, **kwargs) -> str:
         blob_client = self._get_blob_client(blob_path)
