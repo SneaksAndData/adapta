@@ -31,7 +31,7 @@ class StorageClient(ABC):
         """
 
     @abstractmethod
-    def save_data_as_blob(
+    def save_data_as_blob(  # pylint: disable=R0913
         self,
         data: T,
         blob_path: DataPath,
@@ -39,7 +39,6 @@ class StorageClient(ABC):
         metadata: Optional[Dict[str, str]] = None,
         overwrite: bool = False,
     ) -> None:
-        # pylint: disable=R0913
         """
          Saves any data with the given serialization format.
 
