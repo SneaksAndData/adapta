@@ -136,3 +136,23 @@ class ArcaneConnector:
             info = self.http.post(f"{self.base_url}/stream/stop/{source}/{active_stream.id}")
             if info.status_code == 202:
                 yield info.json()
+
+    def transfer_stream(self, source: str, stream_id: str, new_owner: str) -> Optional[StreamInfo]:
+        """
+          Requests a stream transfer to another host.
+
+        :param source: Source for this stream.
+        :param stream_id: Stream identifier.
+        :param new_owner: A new host that should run this stream.
+        :return:
+        """
+
+        transfer_response = self.http.post(f"{self.base_url}/transfer/{source}/{stream_id}/{new_owner}")
+
+        transfer_response.raise_for_status()
+
+        try:
+            return StreamInfo.from_dict(transfer_response.json())
+        except ValueError as ex:
+            print(ex)
+            return None
