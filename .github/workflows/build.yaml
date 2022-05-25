@@ -26,7 +26,7 @@ jobs:
         run: |
           set -euxo pipefail
           
-          poetry install
+          poetry install --extras "azure"
       - name: Lint
         run: |
           set -euxo pipefail
