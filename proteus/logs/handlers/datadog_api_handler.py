@@ -18,6 +18,8 @@ class DataDogApiHandler(Handler):
         """
           Creates a handler than can upload log records to DataDog index.
 
+          Additional docs: https://docs.datadoghq.com/logs/log_collection/?tab=host#attributes-and-tags
+
         :param buffer_size: Optional number of records to buffer up in memory before sending to DataDog.
         :param async_handler: Whether to send requests in an async manner. Only use this for production.
         :param debug: Whether to print messages from this handler to the console. Use this to debug handler behaviour.
@@ -26,7 +28,7 @@ class DataDogApiHandler(Handler):
         assert os.getenv(
             'DD_API_KEY'), 'DD_API_KEY environment variable must be set in order to use DataDogApiHandler'
         assert os.getenv('DD_APP_KEY', 'DD_APP_KEY environment variable must be set in order to use DataDogApiHandler')
-        assert os.getenv('DD_SITE', 'DD_APP_KEY environment variable must be set in order to use DataDogApiHandler')
+        assert os.getenv('DD_SITE', 'DD_SITE environment variable must be set in order to use DataDogApiHandler')
 
         configuration = Configuration()
         configuration.server_variables["site"] = os.getenv('DD_SITE')
@@ -96,6 +98,7 @@ class DataDogApiHandler(Handler):
         if len(self._buffer) < self._buffer_size:
             self._buffer.append(convert_record(record))
         else:
+            self._buffer.append(convert_record(record))
             self._flush()
 
     def flush(self) -> None:

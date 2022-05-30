@@ -50,6 +50,3 @@ class ProteusLogger:
         elif isinstance(data, DebugLog):
             logger.debug(msg=data.get_message(), exc_info=data.exception, stack_info=True, stacklevel=3,
                          extra=data.diagnostics)
-
-
-
