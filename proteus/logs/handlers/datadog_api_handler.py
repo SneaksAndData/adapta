@@ -17,6 +17,9 @@ from datadog_api_client.v2.model.http_log_item import HTTPLogItem
 
 
 class DataDogApiHandler(Handler):
+    """
+      Logging handler for DataDog.
+    """
     def __init__(self, *, buffer_size=10, async_handler=False, debug=False):
         """
           Creates a handler than can upload log records to DataDog index.
@@ -49,7 +52,6 @@ class DataDogApiHandler(Handler):
         if platform.system() != "Windows":
             signal.signal(signal.SIGINT, self._flush())
             signal.signal(signal.SIGTERM, self._flush())
-            signal.signal(signal.CTRL_C_EVENT, self._flush())
 
     def _flush(self) -> None:
         """
