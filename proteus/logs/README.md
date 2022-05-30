@@ -26,6 +26,17 @@ except ValueError as ex:
     proteus_logger.log(log_source='proteus_test_logger_2', data=ErrorLog(template='Test error message: {message}', args={'message': 'failure'}, exception=ex))
 ```
 
+You can also use `Logger` instances directly:
+```python
+from proteus.logs import ProteusLogger
+from proteus.logs.models import LogLevel, InfoLog, ErrorLog
+
+proteus_logger = ProteusLogger() \
+    .add_log_source(log_source='proteus_test_logger_1', lowest_log_level=LogLevel.INFO)
+
+logger = proteus_logger.proteus_test_logger_1
+```
+
 ### DataDog handler
 
 In order to send logs to DataDog, use `DataDogApiHandler` when adding a log source. If you still want messages in `stdout` or `stderr`, add `StreamHandler` on top:

@@ -1,3 +1,6 @@
+"""
+  Logging handler for DataDog.
+"""
 import json
 import os
 import signal

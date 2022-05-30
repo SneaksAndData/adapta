@@ -1,3 +1,6 @@
+"""
+ Proteus Logging Interface.
+"""
 import logging
 import sys
 
@@ -10,11 +13,25 @@ from proteus.logs.models import InfoLog, WarnLog, ErrorLog, DebugLog, BaseLog, L
 
 
 class ProteusLogger:
+    """
+     Proteus Proxy for Python logging library.
+    """
     def __init__(self):
+        """
+          Creates a new instance of a ProteusLogger
+        """
         self._loggers = {}
 
     def add_log_source(self, *, log_source: str, lowest_log_level: LogLevel,
                        log_handlers: Optional[List[Handler]] = None) -> 'ProteusLogger':
+        """
+          Adds a new log source.
+
+        :param log_source: Name of a source.
+        :param lowest_log_level: Minimal log level for this source.
+        :param log_handlers: Attached log handlers. StreamHandler is used if not provided
+        :return:
+        """
         new_logger = logging.getLogger(log_source)
         new_logger.setLevel(lowest_log_level.value)
 
@@ -36,6 +53,13 @@ class ProteusLogger:
         return None
 
     def log(self, log_source: str, data: BaseLog) -> None:
+        """
+          Send a log message.
+
+        :param log_source: Source of a log message.
+        :param data: Log data to send.
+        :return:
+        """
 
         assert log_source in self._loggers, f"{log_source} does not have an associated logger. Use add_log_source() to associate a logger with this log source."
 

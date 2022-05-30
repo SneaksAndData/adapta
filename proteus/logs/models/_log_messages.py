@@ -28,7 +28,7 @@ class BaseLog(ABC):
 
         :return:
         """
-        base_object = {k: v if type(v) == str else str(v) for k, v in dataclasses.asdict(self).items() if
+        base_object = {k: v if isinstance(v, str) else str(v) for k, v in dataclasses.asdict(self).items() if
                        v and k not in exclude_fields}
         base_object.setdefault('text', self.template.format(**self.args))
 
