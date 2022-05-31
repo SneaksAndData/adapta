@@ -11,28 +11,31 @@ from proteus.logs import ProteusLogger
 from proteus.logs.models import LogLevel, InfoLog, ErrorLog
 
 proteus_logger = ProteusLogger() \
-    .add_log_source(log_source='proteus_test_logger_1', lowest_log_level=LogLevel.INFO) \
-    .add_log_source(log_source='proteus_test_logger_2', lowest_log_level=LogLevel.ERROR)
+    .add_log_source(log_source_name='proteus_test_logger_1', min_log_level=LogLevel.INFO, is_default=True) \
+    .add_log_source(log_source_name='proteus_test_logger_2', min_log_level=LogLevel.ERROR)
 
-# INFO level
+# INFO level, default log source
 
-proteus_logger.log(log_source='proteus_test_logger_1', data=InfoLog(template='Test message: {message}', args={'message': 'important'}))
+proteus_logger.log(data=InfoLog(template='Test message: {message}', args={'message': 'important'}))
 
 # ERROR level with exception
 
 try:
     raise ValueError('Big boom')
 except ValueError as ex:
-    proteus_logger.log(log_source='proteus_test_logger_2', data=ErrorLog(template='Test error message: {message}', args={'message': 'failure'}, exception=ex))
+    proteus_logger.log(log_source_name='proteus_test_logger_2',
+                       data=ErrorLog(template='Test error message: {message}', args={'message': 'failure'},
+                                     exception=ex))
 ```
 
 You can also use `Logger` instances directly:
+
 ```python
 from proteus.logs import ProteusLogger
-from proteus.logs.models import LogLevel, InfoLog, ErrorLog
+from proteus.logs.models import LogLevel
 
 proteus_logger = ProteusLogger() \
-    .add_log_source(log_source='proteus_test_logger_1', lowest_log_level=LogLevel.INFO)
+    .add_log_source(log_source_name='proteus_test_logger_1', min_log_level=LogLevel.INFO, is_default=True)
 
 logger = proteus_logger.proteus_test_logger_1
 ```
@@ -40,6 +43,7 @@ logger = proteus_logger.proteus_test_logger_1
 ### DataDog handler
 
 In order to send logs to DataDog, use `DataDogApiHandler` when adding a log source. If you still want messages in `stdout` or `stderr`, add `StreamHandler` on top:
+
 ```python
 from logging import StreamHandler
 
@@ -48,7 +52,8 @@ from proteus.logs.models import LogLevel
 from proteus.logs.handlers.datadog_api_handler import DataDogApiHandler
 
 proteus_logger = ProteusLogger() \
-    .add_log_source(log_source='proteus_test_logger_1', lowest_log_level=LogLevel.INFO, log_handlers=[DataDogApiHandler(), StreamHandler()])
+    .add_log_source(log_source_name='proteus_test_logger_1', min_log_level=LogLevel.INFO,
+                    log_handlers=[DataDogApiHandler(), StreamHandler()], is_default=True)
 ```
 
 Remember to set `DD_API_KEY`, `DD_APP_KEY` and `DD_SITE` environment variables before creating an instance of `DataDogApiHandler()`.
