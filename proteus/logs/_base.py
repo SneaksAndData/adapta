@@ -82,5 +82,4 @@ class ProteusLogger:
         elif isinstance(data, ErrorLog):
             logger.error(msg=data.get_message(), exc_info=data.exception, stack_info=True, stacklevel=3)
         elif isinstance(data, DebugLog):
-            logger.debug(msg=data.get_message(), exc_info=data.exception, stack_info=True, stacklevel=3,
-                         extra=data.diagnostics)
+            logger.debug(msg=data.get_message(), exc_info=data.exception, stack_info=True, stacklevel=3)
