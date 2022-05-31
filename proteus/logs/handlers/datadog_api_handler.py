@@ -50,8 +50,8 @@ class DataDogApiHandler(Handler):
 
         # send records even if an application is interrupted
         if platform.system() != "Windows":
-            signal.signal(signal.SIG_DFL, self._flush())
-            signal.signal(signal.SIG_IGN, self._flush())
+            signal.signal(signal.SIGINT, self._flush)
+            signal.signal(signal.SIGTERM, self._flush)
 
     def _flush(self) -> None:
         """
