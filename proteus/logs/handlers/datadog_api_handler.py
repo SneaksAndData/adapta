@@ -90,8 +90,6 @@ class DataDogApiHandler(Handler):
                     'kind': ex_type.__name__
                 })
 
-                record_message.pop('exception')
-
             return HTTPLogItem(
                 ddsource=rec.name,
                 ddtags=tags,

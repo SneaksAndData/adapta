@@ -1,6 +1,7 @@
 """
  Proteus Logging Interface.
 """
+import json
 import logging
 import sys
 
@@ -9,7 +10,7 @@ from typing import List, Optional
 
 import json_log_formatter
 
-from proteus.logs.models import InfoLog, WarnLog, ErrorLog, DebugLog, BaseLog, LogLevel
+from proteus.logs.models import LogLevel
 
 
 class ProteusLogger:
@@ -40,7 +41,7 @@ class ProteusLogger:
         new_logger.setLevel(min_log_level.value)
 
         if not log_handlers or len(log_handlers) == 0:
-            log_handlers = [StreamHandler(sys.stdout)]
+            log_handlers = [StreamHandler()]
 
         for log_handler in log_handlers:
             log_handler.setFormatter(json_log_formatter.JSONFormatter())
@@ -59,27 +60,98 @@ class ProteusLogger:
 
         return None
 
-    def log(self, data: BaseLog, log_source_name: Optional[str] = None) -> None:
+    def _prepare_message(self, template: str, tags: Optional[str] = None, diagnostics: Optional[str] = None,
+                         **kwargs) -> str:
         """
-          Send a log message from a provided or a default log source.
+         Returns message dictionary to be used by handler formatter.
+         :param exclude_fields: Fields to exclude from export
 
-        :param log_source_name: Source of a log message.
-        :param data: Log data to send.
         :return:
         """
+        base_object = {
+            'template': template,
+            'text': template.format(**kwargs)
+        }
+        if tags:
+            base_object.setdefault('tags', tags)
+        if diagnostics:
+            base_object.setdefault('diagnostics', diagnostics)
 
+        return json.dumps(base_object)
+
+    def _get_logger(self, log_source_name: Optional[str] = None) -> logging.Logger:
+        """
+          Retrieves a logger by log source name, or a default logger is log source name is not provided.
+
+        :param log_source_name: Optional name of a log source.
+        :return:
+        """
         assert log_source_name or self._default_log_source, 'Argument `log_source` must be provided when no default log source is added. You can add a log source as default by calling `add_log_source(.., is_default=True)`'
 
         if log_source_name:
             assert log_source_name in self._loggers, f"{log_source_name} does not have an associated logger. Use add_log_source() to associate a logger with this log source."
 
-        logger: logging.Logger = self._loggers[log_source_name or self._default_log_source]
+        return self._loggers[log_source_name or self._default_log_source]
 
-        if isinstance(data, InfoLog):
-            logger.info(msg=data.get_message())
-        elif isinstance(data, WarnLog):
-            logger.warning(msg=data.get_message(), exc_info=data.exception, stack_info=True, stacklevel=3)
-        elif isinstance(data, ErrorLog):
-            logger.error(msg=data.get_message(), exc_info=data.exception, stack_info=True, stacklevel=3)
-        elif isinstance(data, DebugLog):
-            logger.debug(msg=data.get_message(), exc_info=data.exception, stack_info=True, stacklevel=3)
+    def info(self, template: str, tags: Optional[str] = None, log_source_name: Optional[str] = None, **kwargs) -> None:
+        """
+          Sends an INFO level message to configured log sources.
+
+        :param template: Message template.
+        :param tags: Optional message tags.
+        :param log_source_name: Optional name of a log source, if not using a default.
+        :param kwargs: Templated arguments (key=value).
+        :return:
+        """
+        logger = self._get_logger(log_source_name)
+        logger.info(msg=self._prepare_message(template=template, tags=tags, diagnostics=None, **kwargs))
+
+    def warning(self, template: str, exception: BaseException, tags: Optional[str] = None,
+                log_source_name: Optional[str] = None, **kwargs) -> None:
+        """
+          Sends a WARNING level message to configured log sources.
+
+        :param template: Message template.
+        :param exception: Exception associated with this warning.
+        :param tags: Optional message tags.
+        :param log_source_name: Optional name of a log source, if not using a default.
+        :param kwargs: Templated arguments (key=value).
+        :return:
+        """
+        logger = self._get_logger(log_source_name)
+        logger.warning(msg=self._prepare_message(template=template, tags=tags, diagnostics=None, **kwargs),
+                       exc_info=exception, stack_info=True, stacklevel=3)
+
+    def error(self, template: str, exception: BaseException, tags: Optional[str] = None,
+              log_source_name: Optional[str] = None, **kwargs) -> None:
+        """
+          Sends an ERROR level message to configured log sources.
+
+        :param template: Message template.
+        :param exception: Exception associated with this error.
+        :param tags: Optional message tags.
+        :param log_source_name: Optional name of a log source, if not using a default.
+        :param kwargs: Templated arguments (key=value).
+        :return:
+        """
+        logger = self._get_logger(log_source_name)
+        logger.error(msg=self._prepare_message(template=template, tags=tags, diagnostics=None, **kwargs),
+                     exc_info=exception, stack_info=True, stacklevel=3)
+
+    def debug(self, template: str, exception: BaseException, diagnostics: Optional[str] = None,
+              tags: Optional[str] = None,
+              log_source_name: Optional[str] = None, **kwargs) -> None:
+        """
+          Sends a DEBUG level message to configured log sources.
+
+        :param template: Message template.
+        :param exception: Exception associated with this error.
+        :param diagnostics: Optional additional diagnostics info.
+        :param tags: Optional message tags.
+        :param log_source_name: Optional name of a log source, if not using a default.
+        :param kwargs: Templated arguments (key=value).
+        :return:
+        """
+        logger = self._get_logger(log_source_name)
+        logger.error(msg=self._prepare_message(template=template, tags=tags, diagnostics=diagnostics, **kwargs),
+                     exc_info=exception, stack_info=True, stacklevel=3)
