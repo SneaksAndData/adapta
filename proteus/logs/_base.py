@@ -3,7 +3,6 @@
 """
 import json
 import logging
-import sys
 
 from logging import Handler, StreamHandler
 from typing import List, Optional
@@ -60,7 +59,8 @@ class ProteusLogger:
 
         return None
 
-    def _prepare_message(self, template: str, tags: Optional[str] = None, diagnostics: Optional[str] = None,
+    @staticmethod
+    def _prepare_message(template: str, tags: Optional[str] = None, diagnostics: Optional[str] = None,
                          **kwargs) -> str:
         """
          Returns message dictionary to be used by handler formatter.
@@ -138,7 +138,7 @@ class ProteusLogger:
         logger.error(msg=self._prepare_message(template=template, tags=tags, diagnostics=None, **kwargs),
                      exc_info=exception, stack_info=True, stacklevel=3)
 
-    def debug(self, template: str, exception: BaseException, diagnostics: Optional[str] = None,
+    def debug(self, template: str, exception: BaseException, diagnostics: Optional[str] = None,  # pylint: disable=R0913
               tags: Optional[str] = None,
               log_source_name: Optional[str] = None, **kwargs) -> None:
         """
