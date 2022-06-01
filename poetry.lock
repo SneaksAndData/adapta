@@ -205,6 +205,35 @@ ssh = ["bcrypt (>=3.1.5)"]
 test = ["pytest (>=6.2.0)", "pytest-cov", "pytest-subtests", "pytest-xdist", "pretend", "iso8601", "pytz", "hypothesis (>=1.11.4,!=3.79.2)"]
 
 [[package]]
+name = "datadog"
+version = "0.44.0"
+description = "The Datadog Python library"
+category = "main"
+optional = true
+python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,!=3.6.*,>=2.7"
+
+[package.dependencies]
+requests = ">=2.6.0"
+
+[[package]]
+name = "datadog-api-client"
+version = "1.12"
+description = "Collection of all Datadog Public endpoints"
+category = "main"
+optional = true
+python-versions = ">=3.7"
+
+[package.dependencies]
+certifi = "*"
+python-dateutil = "*"
+urllib3 = ">=1.15"
+
+[package.extras]
+apm = ["ddtrace (>=1.0.0rc1)"]
+async = ["aiosonic"]
+tests = ["aiosonic", "glom", "jinja2", "pytest", "pytest-bdd (>=5.0.0)", "pytest-asyncio", "pytest-randomly", "pytest-recording", "python-dateutil", "mypy", "types-python-dateutil"]
+
+[[package]]
 name = "deltalake"
 version = "0.5.6"
 description = "Native Delta Lake Python binding based on delta-rs with Pandas integration"
@@ -270,6 +299,14 @@ pipfile_deprecated_finder = ["pipreqs", "requirementslib"]
 requirements_deprecated_finder = ["pipreqs", "pip-api"]
 colors = ["colorama (>=0.4.3,<0.5.0)"]
 plugins = ["setuptools"]
+
+[[package]]
+name = "json-log-formatter"
+version = "0.5.1"
+description = "JSON log formatter"
+category = "main"
+optional = false
+python-versions = "*"
 
 [[package]]
 name = "lazy-object-proxy"
@@ -692,11 +729,12 @@ python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,>=2.7"
 
 [extras]
 azure = ["azure-identity", "azure-storage-blob", "azure-mgmt-storage", "azure-keyvault-secrets", "azure-servicebus"]
+datadog = ["datadog", "datadog-api-client"]
 
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "737e5eb23ba5bfd156e34bd8b0c96e735c9bc3cc1f154c62bd4eff6d47e9c024"
+content-hash = "c6a091dc7b9b862babd5ad817e921efde9d590a4f6494419681c977b31ff7fdc"
 
 [metadata.files]
 astroid = [
@@ -872,6 +910,14 @@ cryptography = [
     {file = "cryptography-36.0.2-pp38-pypy38_pp73-win_amd64.whl", hash = "sha256:e167b6b710c7f7bc54e67ef593f8731e1f45aa35f8a8a7b72d6e42ec76afd4b3"},
     {file = "cryptography-36.0.2.tar.gz", hash = "sha256:70f8f4f7bb2ac9f340655cbac89d68c527af5bb4387522a8413e841e3e6628c9"},
 ]
+datadog = [
+    {file = "datadog-0.44.0-py2.py3-none-any.whl", hash = "sha256:57c4878d3a8351f652792cdba78050274789dcc44313adec096e87f9d3ca5992"},
+    {file = "datadog-0.44.0.tar.gz", hash = "sha256:071170f0c7ef22511dbf7f9bd76c4be500ee2d3d52072900a5c87b5495d2c733"},
+]
+datadog-api-client = [
+    {file = "datadog-api-client-1.12.tar.gz", hash = "sha256:2f3a347f5b6768be2f31650f5db947bccd7c79e82cc8d2424ce82723d63781b7"},
+    {file = "datadog_api_client-1.12-py3-none-any.whl", hash = "sha256:de9e68f441c1c6fe5be1d5d970408ad70f8b9e3273a8893a48ad563a43732e83"},
+]
 deltalake = [
     {file = "deltalake-0.5.6-cp36-abi3-macosx_10_7_x86_64.whl", hash = "sha256:eb419eac9382fd01390f091215e31c5c3bb4d29e421ffc94a55cd306805b1dfa"},
     {file = "deltalake-0.5.6-cp36-abi3-macosx_11_0_arm64.whl", hash = "sha256:3128d6df02ea2a82b2227195743f305f3bac66f308848bb58ba10a79b8565d7a"},
@@ -898,6 +944,9 @@ isodate = [
 isort = [
     {file = "isort-5.10.1-py3-none-any.whl", hash = "sha256:6f62d78e2f89b4500b080fe3a81690850cd254227f27f75c3a0c491a1f351ba7"},
     {file = "isort-5.10.1.tar.gz", hash = "sha256:e8443a5e7a020e9d7f97f1d7d9cd17c88bcb3bc7e218bf9cf5095fe550be2951"},
+]
+json-log-formatter = [
+    {file = "JSON-log-formatter-0.5.1.tar.gz", hash = "sha256:53246bcc5be5452bd46020326c50556ac6d35be20f00733d7235e0ca90d0c5f1"},
 ]
 lazy-object-proxy = [
     {file = "lazy-object-proxy-1.7.1.tar.gz", hash = "sha256:d609c75b986def706743cdebe5e47553f4a5a1da9c5ff66d76013ef396b5a8a4"},
