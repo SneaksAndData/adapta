@@ -22,9 +22,18 @@ class CrystalConnector:
     def __init__(self, *, base_url: str, user: Optional[str] = None, password: Optional[str] = None):
         self.base_url = base_url
         self.http = session_with_retries()
-        user = user if user is not None else os.environ.get('CRYSTAL_USER')
-        password = password if password is not None else os.environ.get('CRYSTAL_PASSWORD')
-        self.http.auth = HTTPBasicAuth(user, password)
+        if user is not None and password is not None:
+            self.http.auth = HTTPBasicAuth(user, password)
+
+    @staticmethod
+    def create_authenticated(*, base_url: str, user: Optional[str], password: Optional[str]):
+        return CrystalConnector(base_url=base_url,
+                                user=user or os.environ.get('CRYSTAL_USER'),
+                                password=password or os.environ.get('CRYSTAL_PASSWORD'))
+
+    @staticmethod
+    def create_anonymous(*, base_url: str):
+        return CrystalConnector(base_url=base_url, user=None, password=None)
 
     def __enter__(self):
         return self
