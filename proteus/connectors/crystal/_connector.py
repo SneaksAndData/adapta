@@ -10,7 +10,6 @@ from proteus.utils import session_with_retries, CrystalEntrypointArguments
 from proteus.connectors.crystal._models import RequestResult, AlgorithmRunResult
 from proteus.storage.models.format import SerializationFormat
 
-
 T = TypeVar('T')  # pylint: disable=C0103
 
 
@@ -116,11 +115,9 @@ class CrystalConnector:
         # raise if not successful
         run_response.raise_for_status()
 
-    def read_input(  # pylint: disable=R0201
-        self,
-        crystal_arguments: CrystalEntrypointArguments,
-        serialization_format: Type[SerializationFormat[T]]
-    ) -> T:
+    @staticmethod
+    def read_input(*, crystal_arguments: CrystalEntrypointArguments,
+                   serialization_format: Type[SerializationFormat[T]]) -> T:
         """
         Read Crystal input given in the SAS URI provided in the CrystalEntrypointArguments
         :param crystal_arguments: The arguments given to the Crystal job.
