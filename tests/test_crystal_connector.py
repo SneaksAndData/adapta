@@ -49,7 +49,7 @@ def test_crystal_read_input(mocker, serializer: Type[SerializationFormat], data:
         results_receiver='https://some.url.com'
     )
 
-    conn = CrystalConnector(base_url='https://some.url.com', user='test-user', password='test-pass')
+    conn = CrystalConnector.create_authenticated(base_url='https://some.url.com', user='test-user', password='test-pass')
     read_data = conn.read_input(args, serializer)
 
     if isinstance(data, pandas.DataFrame):
