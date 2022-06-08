@@ -27,12 +27,14 @@ class CrystalConnector:
 
     @staticmethod
     def create_authenticated(*, base_url: str, user: Optional[str], password: Optional[str]):
+        """Creates crystal connector with basic authentication"""
         return CrystalConnector(base_url=base_url,
                                 user=user or os.environ.get('CRYSTAL_USER'),
                                 password=password or os.environ.get('CRYSTAL_PASSWORD'))
 
     @staticmethod
     def create_anonymous(*, base_url: str):
+        """Creates crystal connector with no authentication"""
         return CrystalConnector(base_url=base_url, user=None, password=None)
 
     def __enter__(self):
