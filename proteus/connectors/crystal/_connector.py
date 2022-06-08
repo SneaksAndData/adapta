@@ -38,7 +38,7 @@ class CrystalConnector:
     @staticmethod
     def create_anonymous(*, base_url: str):
         """Creates Crystal connector with no authentication.
-         This should be use for accessing Crystal containers inside kubernetes cluster."""
+         This should be use for accessing Crystal from inside a hosting cluster."""
         return CrystalConnector(base_url=base_url, user=None, password=None)
 
     def __enter__(self):
