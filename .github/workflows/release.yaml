@@ -15,7 +15,7 @@ jobs:
       - name: Create Release
         env:
           MAJOR_V: "0"
-          MINOR_V: "5"
+          MINOR_V: "6"
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -e
