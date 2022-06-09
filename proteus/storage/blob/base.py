@@ -2,8 +2,7 @@
  Abstraction for storage operations.
 """
 from abc import ABC, abstractmethod
-from typing import Optional, Dict, Type, TypeVar
-
+from typing import Optional, Dict, Type, TypeVar, Iterator
 
 from proteus.security.clients import ProteusClient
 from proteus.storage.models.base import DataPath
@@ -49,4 +48,14 @@ class StorageClient(ABC):
         :param serialization_format: The serialization format.
             The type (T) of the serialization format must be compatible with the provided data.
         :return:
+        """
+
+    @abstractmethod
+    def read_blobs(self, blob_path: DataPath, serialization_format: Type[SerializationFormat[T]]) -> Iterator[T]:
+        """
+         Reads data under provided path into the given format.
+
+        :param blob_path: Path to blob(s).
+        :param serialization_format: Format to deserialize blobs into.
+        :return: An iterator over deserialized blobs
         """
