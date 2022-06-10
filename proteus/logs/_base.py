@@ -154,4 +154,4 @@ class ProteusLogger:
         """
         logger = self._get_logger(log_source_name)
         logger.error(msg=self._prepare_message(template=template, tags=tags, diagnostics=diagnostics, **kwargs),
-                     exc_info=exception, stack_info=True, stacklevel=3)
+                     exc_info=exception, stack_info=True)
