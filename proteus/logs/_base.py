@@ -77,6 +77,8 @@ class ProteusLogger:
         if diagnostics:
             base_object.setdefault('diagnostics', diagnostics)
 
+        base_object.update(**kwargs)
+
         return json.dumps(base_object)
 
     def _get_logger(self, log_source_name: Optional[str] = None) -> logging.Logger:
