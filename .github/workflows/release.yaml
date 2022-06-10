@@ -13,23 +13,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Create Release
-        env:
-          MAJOR_V: "0"
-          MINOR_V: "5"
-          GITHUB_TOKEN: ${{ github.token }}
-        run: |
-          set -e
-          providedMajor=$MAJOR_V
-          providedMinor=$MINOR_V
-          currentVersion=$(git describe --tags --abbrev=7)
-          currentMinor=$(echo $currentVersion | cut -d. -f2)
-          currentMajor=$(echo $currentVersion | cut -d. -f1 | cut -dv -f2)
-          if [[ $currentMajor -eq $providedMajor ]] && [[ $providedMinor -eq $currentMinor ]];
-          then
-            currentRevision=$(echo $(echo $currentVersion | rev | cut -d. -f1) | rev | cut -d- -f1)
-            nextRevision=$(( currentRevision + 1 ))
-          else
-            nextRevision='0'
-          fi
-          nextVersion="v$providedMajor.$providedMinor.$nextRevision"
-          gh release create $nextVersion --generate-notes
+        uses: SneaksAndData/github-actions/semver_release@v0.0.2
+        with:
+          major_v: 0
+          minor_v: 5
