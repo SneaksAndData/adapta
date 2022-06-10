@@ -120,7 +120,7 @@ class ProteusLogger:
         """
         logger = self._get_logger(log_source_name)
         logger.warning(msg=self._prepare_message(template=template, tags=tags, diagnostics=None, **kwargs),
-                       exc_info=exception, stack_info=True, stacklevel=3)
+                       exc_info=exception, stack_info=True)
 
     def error(self, template: str, exception: BaseException, tags: Optional[str] = None,
               log_source_name: Optional[str] = None, **kwargs) -> None:
@@ -136,7 +136,7 @@ class ProteusLogger:
         """
         logger = self._get_logger(log_source_name)
         logger.error(msg=self._prepare_message(template=template, tags=tags, diagnostics=None, **kwargs),
-                     exc_info=exception, stack_info=True, stacklevel=3)
+                     exc_info=exception, stack_info=True)
 
     def debug(self, template: str, exception: BaseException, diagnostics: Optional[str] = None,  # pylint: disable=R0913
               tags: Optional[str] = None,
