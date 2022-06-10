@@ -2,9 +2,10 @@
  Storage Client implementation for Azure Cloud.
 """
 from datetime import datetime, timedelta
-from typing import Union, Optional, Dict, Type, TypeVar
+from typing import Union, Optional, Dict, Type, TypeVar, Iterator
 
-from azure.storage.blob import BlobServiceClient, BlobSasPermissions, BlobClient, generate_blob_sas
+from azure.core.paging import ItemPaged
+from azure.storage.blob import BlobServiceClient, BlobSasPermissions, BlobClient, generate_blob_sas, BlobProperties
 
 from proteus.storage.blob.base import StorageClient
 from proteus.security.clients import AzureClient
@@ -19,6 +20,7 @@ class AzureStorageClient(StorageClient):
     """
      Azure Storage (Blob and ADLS) Client.
     """
+
     def __init__(self, *, base_client: AzureClient, path: Union[AdlsGen2Path, WasbPath]):
         super().__init__(base_client=base_client)
         self._storage_options = self._base_client.connect_storage(path)
@@ -39,12 +41,12 @@ class AzureStorageClient(StorageClient):
         )
 
     def save_data_as_blob(  # pylint: disable=R0913,R0801
-        self,
-        data: T,
-        blob_path: DataPath,
-        serialization_format: Type[SerializationFormat[T]],
-        metadata: Optional[Dict[str, str]] = None,
-        overwrite: bool = False,
+            self,
+            data: T,
+            blob_path: DataPath,
+            serialization_format: Type[SerializationFormat[T]],
+            metadata: Optional[Dict[str, str]] = None,
+            overwrite: bool = False,
     ) -> None:
         bytes_ = serialization_format().serialize(data)
         self._get_blob_client(blob_path).upload_blob(bytes_, metadata=metadata, overwrite=overwrite)
@@ -64,3 +66,17 @@ class AzureStorageClient(StorageClient):
 
         sas_uri = f'{blob_client.url}?{sas_token}'
         return sas_uri
+
+    def read_blobs(self, blob_path: DataPath, serialization_format: Type[SerializationFormat[T]]) -> Iterator[T]:
+        azure_path = cast_path(blob_path)
+
+        blobs_on_path: ItemPaged[BlobProperties] = self._blob_service_client.get_container_client(
+            azure_path.container).list_blobs(name_starts_with=blob_path.path)
+
+        for blob in blobs_on_path:
+            blob_data: bytes = self._blob_service_client.get_blob_client(
+                container=azure_path.container,
+                blob=blob.name,
+            ).download_blob().readall()
+
+            yield serialization_format().deserialize(blob_data)
