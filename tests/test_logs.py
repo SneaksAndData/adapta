@@ -95,6 +95,6 @@ def test_datadog_api_handler(mocker: MockerFixture):
         ddsource=mock_source,
         ddtags=None,
         hostname=socket.gethostname(),
-        message='{"template": "This a unit test logger {index}", "text": "This a ''unit test logger 1", "error": {"stack": "", "message": null, ''"kind": "ValueError"}}',
+        message='{"template": "This a unit test logger {index}", "text": "This a ''unit test logger 1", "index": 1, "error": {"stack": "", "message": null, ''"kind": "ValueError"}}',
         status='WARNING'
     )
