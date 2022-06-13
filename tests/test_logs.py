@@ -1,6 +1,7 @@
 import json
 import os
 import socket
+import traceback
 from logging import StreamHandler
 
 import tempfile
@@ -89,12 +90,17 @@ def test_datadog_api_handler(mocker: MockerFixture):
         .add_log_source(log_source_name=mock_source, min_log_level=LogLevel.INFO,
                         log_handlers=[mock_handler], is_default=True)
 
-    dd_logger.warning(template='This a unit test logger {index}', exception=ValueError("test warning"), index=1)
+    ex_str = None
+    try:
+        raise ValueError("test warning")
+    except BaseException as ex:
+        dd_logger.warning(template='This a unit test logger {index}', exception=ex, index=1)
+        ex_str = traceback.format_exc().removesuffix("\n")
 
     assert mock_handler._buffer[0] == HTTPLogItem(
         ddsource=mock_source,
         ddtags=None,
         hostname=socket.gethostname(),
-        message='{"template": "This a unit test logger {index}", "text": "This a ''unit test logger 1", "index": 1, "error": {"stack": "", "message": null, ''"kind": "ValueError"}}',
+        message=json.dumps({"template": "This a unit test logger {index}", "text": "This a unit test logger 1", "index": 1, "error": {"stack": ex_str, "message": None, ''"kind": "ValueError"}}),
         status='WARNING'
     )
