@@ -24,7 +24,7 @@ from proteus.logs.models import LogLevel
             {'index': 1},
             None,
             None,
-            '{"template": "This a unit test logger {index}", "text": "This a unit test logger 1"}'
+            '{"template": "This a unit test logger {index}", "text": "This a unit test logger 1", "index": 1}'
     ),
     (
             LogLevel.WARN,
@@ -32,7 +32,7 @@ from proteus.logs.models import LogLevel
             {'index': 1},
             ValueError("test warning"),
             None,
-            '{"template": "This a unit test logger {index}", "text": "This a unit test logger 1"}'
+            '{"template": "This a unit test logger {index}", "text": "This a unit test logger 1", "index": 1}'
     ),
     (
             LogLevel.ERROR,
@@ -40,7 +40,7 @@ from proteus.logs.models import LogLevel
             {'index': 1},
             ValueError("test error"),
             None,
-            '{"template": "This a unit test logger {index}", "text": "This a unit test logger 1"}'
+            '{"template": "This a unit test logger {index}", "text": "This a unit test logger 1", "index": 1}'
     ),
     (
             LogLevel.DEBUG,
@@ -48,7 +48,7 @@ from proteus.logs.models import LogLevel
             {'index': 1},
             ValueError("test error"),
             'additional debug info',
-            '{"template": "This a unit test logger {index}", "text": "This a unit test logger 1", "diagnostics": "additional debug info"}'
+            '{"template": "This a unit test logger {index}", "text": "This a unit test logger 1", "diagnostics": "additional debug info", "index": 1}'
     )
 ])
 def test_log_format(level: LogLevel, template: str, args: Dict, exception: BaseException, diagnostics: str,
@@ -95,6 +95,6 @@ def test_datadog_api_handler(mocker: MockerFixture):
         ddsource=mock_source,
         ddtags=None,
         hostname=socket.gethostname(),
-        message='{"template": "This a unit test logger {index}", "text": "This a ''unit test logger 1", "error": {"stack": "", "message": null, ''"kind": "ValueError"}}',
+        message='{"template": "This a unit test logger {index}", "text": "This a ''unit test logger 1", "index": 1, "error": {"stack": "", "message": null, ''"kind": "ValueError"}}',
         status='WARNING'
     )
