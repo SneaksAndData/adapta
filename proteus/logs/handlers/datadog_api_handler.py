@@ -6,7 +6,6 @@ import os
 import signal
 import socket
 import platform
-import traceback
 from logging import LogRecord, Handler
 from typing import List
 
@@ -83,9 +82,9 @@ class DataDogApiHandler(Handler):
                 record_json.pop('tags')
 
             if rec.exc_info:
-                ex_type, _, ex_tb = rec.exc_info
+                ex_type, _, _ = rec.exc_info
                 record_message.setdefault('error', {
-                    'stack': '\n'.join(traceback.format_tb(ex_tb)),
+                    'stack': record_json['exc_info'],
                     'message': rec.exc_text,
                     'kind': ex_type.__name__
                 })
