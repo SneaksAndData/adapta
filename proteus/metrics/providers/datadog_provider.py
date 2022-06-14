@@ -11,7 +11,7 @@ from datadog_api_client.v1.model.metric_metadata import MetricMetadata
 from proteus.metrics._base import MetricsProvider
 
 
-class DataDogMetricsProvider(MetricsProvider):
+class DatadogMetricsProvider(MetricsProvider):
     def __init__(self, metric_namespace: str, fixed_tags: Dict[str, str] = None, debug = False):
         self._options = {
             'statsd_host': os.getenv('PROTEUS__DD_STATSD_HOST'),
@@ -20,7 +20,7 @@ class DataDogMetricsProvider(MetricsProvider):
             'app_key': os.getenv('PROTEUS__DD_APP_KEY'),
             'api_host': os.getenv('PROTEUS__DD_API_HOST'),
             'statsd_namespace': metric_namespace,
-            'statsd_constant_tags': DataDogMetricsProvider.convert_tags(fixed_tags) if fixed_tags else None
+            'statsd_constant_tags': DatadogMetricsProvider.convert_tags(fixed_tags) if fixed_tags else None
         }
 
         initialize(**self._options)
@@ -57,19 +57,19 @@ class DataDogMetricsProvider(MetricsProvider):
                 .update_metric_metadata(metric_name=metric_name, body=metric_metadata)
 
     def increment(self, metric_name: str, tags: Dict[str, str]) -> None:
-        statsd.increment(metric=metric_name, tags=DataDogMetricsProvider.convert_tags(tags))
+        statsd.increment(metric=metric_name, tags=DatadogMetricsProvider.convert_tags(tags))
 
     def decrement(self, metric_name: str, tags: Dict[str, str]) -> None:
-        statsd.decrement(metric=metric_name, tags=DataDogMetricsProvider.convert_tags(tags))
+        statsd.decrement(metric=metric_name, tags=DatadogMetricsProvider.convert_tags(tags))
 
     def count(self, metric_name: str, metric_value: int, tags: Dict[str, str]) -> None:
         raise NotImplemented
 
     def gauge(self, metric_name: str, metric_value: Union[int, float], tags: Dict[str, str]) -> None:
-        statsd.gauge(metric=metric_name, value=metric_value, tags=DataDogMetricsProvider.convert_tags(tags))
+        statsd.gauge(metric=metric_name, value=metric_value, tags=DatadogMetricsProvider.convert_tags(tags))
 
     def set(self, metric_name: str, metric_value: Union[str, int, float], tags: Dict[str, str]) -> None:
-        statsd.set(metric=metric_name, value=metric_value, tags=DataDogMetricsProvider.convert_tags(tags))
+        statsd.set(metric=metric_name, value=metric_value, tags=DatadogMetricsProvider.convert_tags(tags))
 
     def histogram(self, metric_name: str, metric_value: Union[int, float], tags: Dict[str, str]) -> None:
-        statsd.histogram(metric=metric_name, value=metric_value, tags=DataDogMetricsProvider.convert_tags(tags))
+        statsd.histogram(metric=metric_name, value=metric_value, tags=DatadogMetricsProvider.convert_tags(tags))
