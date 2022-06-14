@@ -43,3 +43,11 @@ for i in range(0, 100):
     sleep(0.1)
     provider.set(metric_name="test_set", metric_value=f"some-value-{random.randint(0, 100)}", tags={'env': 'test', 'other_tag': f'{i % 10}'})
 ```
+
+You can also enrich pushed metrics with information like units, description etc.:
+```python
+from proteus.metrics.providers.datadog_provider import DatadogMetricsProvider
+from datadog_api_client.v1.model.metric_metadata import MetricMetadata
+
+DatadogMetricsProvider.update_metric_metadata(metric_name='my_metric.test', metric_metadata=MetricMetadata(description='best metric!'))
+```

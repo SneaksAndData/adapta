@@ -1,8 +1,14 @@
+"""
+ Metrics integration abstraction.
+"""
 from abc import ABC, abstractmethod
 from typing import Dict
 
 
 class MetricsProvider(ABC):
+    """
+      Base class for metrics implementations.
+    """
 
     @abstractmethod
     def increment(self, metric_name: str, tags: Dict[str, str]) -> None:

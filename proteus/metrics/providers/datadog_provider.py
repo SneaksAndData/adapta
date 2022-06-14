@@ -1,3 +1,6 @@
+"""
+  Implementation of a metrics provider for Datadog.
+"""
 import logging
 import os
 import sys
@@ -12,6 +15,9 @@ from proteus.metrics._base import MetricsProvider
 
 
 class DatadogMetricsProvider(MetricsProvider):
+    """
+      DogStatsD projection of Proteus MetricsProvider.
+    """
     def __init__(self, metric_namespace: str, fixed_tags: Dict[str, str] = None, debug = False):
         self._options = {
             'statsd_host': os.getenv('PROTEUS__DD_STATSD_HOST'),
@@ -63,7 +69,7 @@ class DatadogMetricsProvider(MetricsProvider):
         statsd.decrement(metric=metric_name, tags=DatadogMetricsProvider.convert_tags(tags))
 
     def count(self, metric_name: str, metric_value: int, tags: Dict[str, str]) -> None:
-        raise NotImplemented
+        raise NotImplementedError
 
     def gauge(self, metric_name: str, metric_value: Union[int, float], tags: Dict[str, str]) -> None:
         statsd.gauge(metric=metric_name, value=metric_value, tags=DatadogMetricsProvider.convert_tags(tags))
