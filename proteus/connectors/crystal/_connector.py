@@ -10,7 +10,6 @@ from proteus.utils import session_with_retries, CrystalEntrypointArguments
 from proteus.connectors.crystal._models import RequestResult, AlgorithmRunResult
 from proteus.storage.models.format import SerializationFormat
 
-
 T = TypeVar('T')  # pylint: disable=C0103
 
 
@@ -22,9 +21,24 @@ class CrystalConnector:
     def __init__(self, *, base_url: str, user: Optional[str] = None, password: Optional[str] = None):
         self.base_url = base_url
         self.http = session_with_retries()
-        user = user if user is not None else os.environ.get('CRYSTAL_USER')
-        password = password if password is not None else os.environ.get('CRYSTAL_PASSWORD')
-        self.http.auth = HTTPBasicAuth(user, password)
+        if user is not None and password is not None:
+            self.http.auth = HTTPBasicAuth(user, password)
+
+    @staticmethod
+    def create_authenticated(*, base_url: str, user: Optional[str], password: Optional[str]):
+        """Creates Crystal connector with basic authentication.
+        For connecting to Crystal outside the Crystal kubernetes cluster, e.g.
+        from other cluster or Airflow environment.
+        """
+        return CrystalConnector(base_url=base_url,
+                                user=user or os.environ.get('CRYSTAL_USER'),
+                                password=password or os.environ.get('CRYSTAL_PASSWORD'))
+
+    @staticmethod
+    def create_anonymous(*, base_url: str):
+        """Creates Crystal connector with no authentication.
+         This should be use for accessing Crystal from inside a hosting cluster."""
+        return CrystalConnector(base_url=base_url, user=None, password=None)
 
     def __enter__(self):
         return self
@@ -101,11 +115,9 @@ class CrystalConnector:
         # raise if not successful
         run_response.raise_for_status()
 
-    def read_input(  # pylint: disable=R0201
-        self,
-        crystal_arguments: CrystalEntrypointArguments,
-        serialization_format: Type[SerializationFormat[T]]
-    ) -> T:
+    @staticmethod
+    def read_input(*, crystal_arguments: CrystalEntrypointArguments,
+                   serialization_format: Type[SerializationFormat[T]]) -> T:
         """
         Read Crystal input given in the SAS URI provided in the CrystalEntrypointArguments
         :param crystal_arguments: The arguments given to the Crystal job.
