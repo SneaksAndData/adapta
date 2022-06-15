@@ -13,6 +13,10 @@ from proteus.storage.models.format import DictJsonSerializationFormat, Serializa
         (DataFrameParquetSerializationFormat, pandas.DataFrame(data={'test': [1, 2, 3]})),
         (DataFrameJsonSerializationFormat, pandas.DataFrame(data={'test': [1, 2, 3]})),
         (PickleSerializationFormat, pandas.DataFrame(data={'test': [1, 2, 3]})),
+        (PickleSerializationFormat, [1, 2, 3]),
+        (PickleSerializationFormat, {'foo': 'bar'}),
+        (PickleSerializationFormat, 'Hello, World!'),
+        (PickleSerializationFormat, b'Test string'),
         (UnitSerializationFormat, b'Test string'),
     ]
 )

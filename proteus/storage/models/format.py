@@ -6,6 +6,7 @@ import io
 import pickle
 from abc import ABC, abstractmethod
 from typing import Generic, TypeVar, Any
+
 import pandas
 
 T = TypeVar('T')  # pylint: disable=C0103
