@@ -5,7 +5,7 @@ import json
 import io
 import pickle
 from abc import ABC, abstractmethod
-from typing import Generic, TypeVar, Any
+from typing import Generic, TypeVar
 
 import pandas
 
