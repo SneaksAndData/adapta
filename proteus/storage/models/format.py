@@ -117,11 +117,11 @@ class UnitSerializationFormat(SerializationFormat[bytes]):
         return data
 
 
-class PickleSerializationFormat(SerializationFormat[pandas.DataFrame]):
+class PickleSerializationFormat(SerializationFormat[T]):
     """
     Serializes objects as pickle format.
     """
-    def serialize(self, data: Any) -> bytes:
+    def serialize(self, data: T) -> bytes:
         """
         Serializes objects to bytes using pickle format.
         :param data: Object to serialize.
@@ -129,7 +129,7 @@ class PickleSerializationFormat(SerializationFormat[pandas.DataFrame]):
         """
         return pickle.dumps(data)
 
-    def deserialize(self, data: bytes) -> Any:
+    def deserialize(self, data: bytes) -> T:
         """
         Deserializes objects from bytes using pickle format.
         :param data: Object to deserialize in pickle format as bytes.
