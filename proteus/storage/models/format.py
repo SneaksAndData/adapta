@@ -3,8 +3,10 @@ Serialization formats for saving data structures as blob.
 """
 import json
 import io
+import pickle
 from abc import ABC, abstractmethod
 from typing import Generic, TypeVar
+
 import pandas
 
 T = TypeVar('T')  # pylint: disable=C0103
@@ -113,3 +115,24 @@ class UnitSerializationFormat(SerializationFormat[bytes]):
         :return: Deserialized bytes.
         """
         return data
+
+
+class PickleSerializationFormat(SerializationFormat[T]):
+    """
+    Serializes objects as pickle format.
+    """
+    def serialize(self, data: T) -> bytes:
+        """
+        Serializes objects to bytes using pickle format.
+        :param data: Object to serialize.
+        :return: Pickle serialized object as byte array.
+        """
+        return pickle.dumps(data)
+
+    def deserialize(self, data: bytes) -> T:
+        """
+        Deserializes objects from bytes using pickle format.
+        :param data: Object to deserialize in pickle format as bytes.
+        :return: Deserialized object.
+        """
+        return pickle.loads(data)

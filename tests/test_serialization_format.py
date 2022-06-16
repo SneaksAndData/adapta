@@ -2,7 +2,8 @@ import pytest
 from typing import Type
 import pandas
 from proteus.storage.models.format import DictJsonSerializationFormat, SerializationFormat, \
-    DataFrameParquetSerializationFormat, DataFrameJsonSerializationFormat, UnitSerializationFormat
+    DataFrameParquetSerializationFormat, DataFrameJsonSerializationFormat, UnitSerializationFormat, \
+    PickleSerializationFormat
 
 
 @pytest.mark.parametrize(
@@ -11,6 +12,11 @@ from proteus.storage.models.format import DictJsonSerializationFormat, Serializa
         (DictJsonSerializationFormat, {'test': 'test'}),
         (DataFrameParquetSerializationFormat, pandas.DataFrame(data={'test': [1, 2, 3]})),
         (DataFrameJsonSerializationFormat, pandas.DataFrame(data={'test': [1, 2, 3]})),
+        (PickleSerializationFormat, pandas.DataFrame(data={'test': [1, 2, 3]})),
+        (PickleSerializationFormat, [1, 2, 3]),
+        (PickleSerializationFormat, {'foo': 'bar'}),
+        (PickleSerializationFormat, 'Hello, World!'),
+        (PickleSerializationFormat, b'Test string'),
         (UnitSerializationFormat, b'Test string'),
     ]
 )
