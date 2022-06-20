@@ -13,20 +13,13 @@ jobs:
     if: ${{ github.ref != 'refs/heads/main' }}
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
+      - name: Install Poetry and dependencies
+        uses: SneaksAndData/github-actions/install_poetry@v0.0.3
         with:
-          python-version: '3.9.x' # Version range or exact version of a Python version to use, using SemVer's version range syntax
-          architecture: 'x64' # optional x64 or x86. Defaults to x64 if not specified
-      - name: Install Poetry
-        run: |
-          set -euxo pipefail
-          
-          curl -sSL https://install.python-poetry.org | python3 - --preview
-      - name: Install Dependencies
-        run: |
-          set -euxo pipefail
-          
-          poetry install --extras "azure datadog"
+          pypi_repo_url: ${{ secrets.AZOPS_PYPI_REPO_URL }}
+          pypi_token_username: ${{ secrets.AZOPS_PAT_USER }}
+          pypi_token: ${{ secrets.AZOPS_PAT }}
+          install_extras: "azure datadog"
       - name: Lint
         run: |
           set -euxo pipefail
