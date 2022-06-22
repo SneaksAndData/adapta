@@ -1,13 +1,31 @@
 """
  Models for Arcane
 """
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
 from typing import Dict, Optional
 
 
+class StreamConfiguration(ABC):
+    @abstractmethod
+    def to_dict(self):
+        """
+          Converts this to the payload accepted by streaming start endpoint.
+        :return:
+        """
+
+    @abstractmethod
+    @property
+    def url_path(self):
+        """
+         Url path for streams matching this configuration.
+        :return:
+        """
+
+
 @dataclass
-class SqlServerStreamConfiguration:
+class SqlServerStreamConfiguration(StreamConfiguration):
     """
      Stream configuration for Sql Server Change Tracking Source.
     """
@@ -24,13 +42,11 @@ class SqlServerStreamConfiguration:
     lookback_interval: int = 86400
     change_capture_interval: str = "0.00:00:15"
     command_timeout: int = 3600
-    url_path: str = "start/sqlserverct"
+
+    def url_path(self) -> str:
+        return "start/sqlserverct"
 
     def to_dict(self) -> Dict:
-        """
-          Converts this to the payload accepted by streaming start endpoint.
-        :return:
-        """
         return {
             "ConnectionString": self.connection_string,
             "Schema": self.schema,
@@ -49,7 +65,7 @@ class SqlServerStreamConfiguration:
 
 
 @dataclass
-class CdmChangeFeedStreamConfiguration:
+class CdmChangeFeedStreamConfiguration(StreamConfiguration):
     """
      Stream configuration for Sql Server Change Tracking Source.
     """
@@ -66,13 +82,11 @@ class CdmChangeFeedStreamConfiguration:
     http_client_max_retries: int = 3
     http_client_retry_delay: str = "0.00:00:01"
     change_capture_interval: str = "0.00:00:15"
-    url_path: str = "start/microsoft_cdm"
+
+    def url_path(self) -> str:
+        return "start/microsoft_cdm"
 
     def to_dict(self) -> Dict:
-        """
-          Converts this to the payload accepted by streaming start endpoint.
-        :return:
-        """
         return {
             "StorageAccountConnectionString": self.storage_account_connection_string,
             "HttpClientMaxRetries": self.http_client_max_retries,
