@@ -7,7 +7,7 @@ from typing import Optional, List, Dict, Iterable
 
 from requests.auth import HTTPBasicAuth
 
-from proteus.connectors.arcane._models import SqlServerStreamConfiguration, StreamInfo, StreamState
+from proteus.connectors.arcane._models import StreamInfo, StreamState, StreamConfiguration
 from proteus.utils import session_with_retries, doze
 
 
@@ -28,7 +28,7 @@ class ArcaneConnector:
         self.http.auth = HTTPBasicAuth(os.environ.get('ARCANE_USER'), os.environ.get('ARCANE_PASSWORD'))
         self.retry_attempts = retry_attempts
 
-    def start_sql_server_ct_stream(self, conf: SqlServerStreamConfiguration) -> StreamInfo:
+    def start_stream(self, conf: StreamConfiguration) -> StreamInfo:
         """
          Starts a new stream again Sql Server table with change tracking enabled.
 

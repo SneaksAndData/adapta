@@ -1,13 +1,35 @@
 """
  Models for Arcane
 """
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
 from typing import Dict, Optional
 
 
+class StreamConfiguration(ABC):
+    """
+     Base configuration for all streams.
+    """
+
+    @abstractmethod
+    def to_dict(self):
+        """
+          Converts this to the payload accepted by streaming start endpoint.
+        :return:
+        """
+
+    @abstractmethod
+    @property
+    def url_path(self):
+        """
+         Url path for streams matching this configuration.
+        :return:
+        """
+
+
 @dataclass
-class SqlServerStreamConfiguration:
+class SqlServerStreamConfiguration(StreamConfiguration):
     """
      Stream configuration for Sql Server Change Tracking Source.
     """
@@ -24,13 +46,12 @@ class SqlServerStreamConfiguration:
     lookback_interval: int = 86400
     change_capture_interval: str = "0.00:00:15"
     command_timeout: int = 3600
-    url_path: str = "start/sqlserverct"
+
+    @property
+    def url_path(self) -> str:
+        return "start/sqlserverct"
 
     def to_dict(self) -> Dict:
-        """
-          Converts this to the payload accepted by streaming start endpoint.
-        :return:
-        """
         return {
             "ConnectionString": self.connection_string,
             "Schema": self.schema,
@@ -45,6 +66,47 @@ class SqlServerStreamConfiguration:
             "LookbackInterval": self.lookback_interval,
             "ChangeCaptureInterval": self.change_capture_interval,
             "CommandTimeout": self.command_timeout
+        }
+
+
+@dataclass
+class CdmChangeFeedStreamConfiguration(StreamConfiguration):
+    """
+     Stream configuration for Sql Server Change Tracking Source.
+    """
+    storage_account_connection_string: str
+    base_location: str
+    entity_name: str
+    rows_per_group: int
+    grouping_interval: str
+    groups_per_file: int
+    sink_location: str
+    sink_filename: str
+    full_load_on_start: bool
+    client_tag: str
+    http_client_max_retries: int = 3
+    http_client_retry_delay: str = "0.00:00:01"
+    change_capture_interval: str = "0.00:00:15"
+
+    @property
+    def url_path(self) -> str:
+        return "start/microsoft_cdm"
+
+    def to_dict(self) -> Dict:
+        return {
+            "StorageAccountConnectionString": self.storage_account_connection_string,
+            "HttpClientMaxRetries": self.http_client_max_retries,
+            "HttpClientRetryDelay": self.http_client_retry_delay,
+            "BaseLocation": self.base_location,
+            "EntityName": self.entity_name,
+            "FullLoadOnStart": self.full_load_on_start,
+            "ChangeCaptureInterval": self.change_capture_interval,
+            "RowsPerGroup": self.rows_per_group,
+            "GroupingInterval": self.grouping_interval,
+            "GroupsPerFile": self.groups_per_file,
+            "SinkLocation": self.sink_location,
+            "SinkFileName": self.sink_filename,
+            "ClientTag": self.client_tag
         }
 
 
