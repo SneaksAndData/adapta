@@ -19,8 +19,8 @@ class StreamConfiguration(ABC):
         :return:
         """
 
-    @abstractmethod
     @property
+    @abstractmethod
     def url_path(self):
         """
          Url path for streams matching this configuration.
