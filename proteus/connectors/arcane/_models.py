@@ -8,6 +8,10 @@ from typing import Dict, Optional
 
 
 class StreamConfiguration(ABC):
+    """
+     Base configuration for all streams.
+    """
+
     @abstractmethod
     def to_dict(self):
         """
@@ -43,6 +47,7 @@ class SqlServerStreamConfiguration(StreamConfiguration):
     change_capture_interval: str = "0.00:00:15"
     command_timeout: int = 3600
 
+    @property
     def url_path(self) -> str:
         return "start/sqlserverct"
 
@@ -83,6 +88,7 @@ class CdmChangeFeedStreamConfiguration(StreamConfiguration):
     http_client_retry_delay: str = "0.00:00:01"
     change_capture_interval: str = "0.00:00:15"
 
+    @property
     def url_path(self) -> str:
         return "start/microsoft_cdm"
 
