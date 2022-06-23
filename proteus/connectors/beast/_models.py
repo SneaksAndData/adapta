@@ -39,6 +39,22 @@ class JobSocket:
         vals = job_socket.split('|')
         return cls(alias=vals[0], data_path=vals[1], data_format=vals[2])
 
+    @staticmethod
+    def from_list(sockets: List['JobSocket'], alias: str) -> 'JobSocket':
+        """Fetches a job socket from list of sockets.
+        :param sockets: List of sockets
+        :param alias: Alias to look up
+
+        :returns: Socket with alias 'alias'
+        """
+        socket = [s for s in sockets if s.alias == alias]
+
+        if len(socket) > 1:
+            raise ValueError(f'Multiple job sockets exist with alias {alias}')
+        if len(socket) == 0:
+            raise ValueError(f'No job sockets exist with alias {alias}')
+        return socket[0]
+
 
 class JobSize(Enum):
     """
