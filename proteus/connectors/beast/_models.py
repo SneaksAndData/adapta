@@ -23,13 +23,24 @@ class JobSocket:
     data_path: str
     data_format: str
 
-    def to_utils_format(self) -> str:
+    def to_utils_format(self):
+        return self.serialize()
+
+    def serialize(self) -> str:
         """
          Converts JobSocket
         :return:
         """
         return f"{self.alias}|{self.data_path}|{self.data_format}"
 
+    @classmethod
+    def deserialize(cls, job_socket: str) -> 'JobSocket':
+        """
+         Converts JobSocket
+        :return:
+        """
+        vals = job_socket.split('|')
+        return cls(alias=vals[0], data_path=vals[1], data_format=vals[2])
 
 class JobSize(Enum):
     """
