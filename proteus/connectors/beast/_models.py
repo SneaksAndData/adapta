@@ -5,6 +5,7 @@ import os
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from typing import List, Dict, Optional, Union
+from warnings import warn
 
 from cryptography.fernet import Fernet
 
@@ -24,11 +25,35 @@ class JobSocket:
     data_format: str
 
     def to_utils_format(self) -> str:
-        """
-         Converts JobSocket
-        :return:
-        """
+        """Serializes JobSocket to string"""
+        warn('This method is deprecated. Use serialize method instead', DeprecationWarning)
+        return self.serialize()
+
+    def serialize(self) -> str:
+        """Serializes JobSocket to string"""
         return f"{self.alias}|{self.data_path}|{self.data_format}"
+
+    @classmethod
+    def deserialize(cls, job_socket: str) -> 'JobSocket':
+        """Deserializes JobSocket from string"""
+        vals = job_socket.split('|')
+        return cls(alias=vals[0], data_path=vals[1], data_format=vals[2])
+
+    @staticmethod
+    def from_list(sockets: List['JobSocket'], alias: str) -> 'JobSocket':
+        """Fetches a job socket from list of sockets.
+        :param sockets: List of sockets
+        :param alias: Alias to look up
+
+        :returns: Socket with alias 'alias'
+        """
+        socket = [s for s in sockets if s.alias == alias]
+
+        if len(socket) > 1:
+            raise ValueError(f'Multiple job sockets exist with alias {alias}')
+        if len(socket) == 0:
+            raise ValueError(f'No job sockets exist with alias {alias}')
+        return socket[0]
 
 
 class JobSize(Enum):
