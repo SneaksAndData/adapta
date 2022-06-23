@@ -5,6 +5,7 @@ import os
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from typing import List, Dict, Optional, Union
+from warnings import warn
 
 from cryptography.fernet import Fernet
 
@@ -25,6 +26,7 @@ class JobSocket:
 
     def to_utils_format(self) -> str:
         """Serializes JobSocket to string"""
+        warn('This method is deprecated. Use serialize method instead', DeprecationWarning)
         return self.serialize()
 
     def serialize(self) -> str:
