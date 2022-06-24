@@ -25,7 +25,7 @@ class CrystalConnector:
             self.http.auth = HTTPBasicAuth(user, password)
 
     @staticmethod
-    def create_authenticated(*, base_url: str, user: Optional[str], password: Optional[str]):
+    def create_authenticated(*, base_url: str, user: Optional[str] = None, password: Optional[str] = None):
         """Creates Crystal connector with basic authentication.
         For connecting to Crystal outside the Crystal kubernetes cluster, e.g.
         from other cluster or Airflow environment.
