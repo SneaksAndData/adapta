@@ -94,3 +94,24 @@ class BoxerConnector:
         response = self.http.get(target_url)
         response.raise_for_status()
         return _iterate_boxer_claims_response(response)
+
+    def create_consumer(self, consumer_id: str, overwrite: bool = False) -> str:
+        """ Adds/Overwrites a new Boxer Claim to a user
+        :param consumer_id: Consumer ID of new consumer
+        :param overwrite: Flag to overwrite if consumer with given consumer_id already exists
+        :return: New consumer's private key (Base64 Encoded)
+        """
+        target_url = f"{self.base_url}/consumer/{consumer_id}?overwrite={overwrite}"
+        response = self.http.post(target_url, json={})
+        response.raise_for_status()
+        return response.text
+
+    def get_consumer_public_key(self, consumer_id: str) -> str:
+        """ Adds/Overwrites a new Boxer Claim to a user
+        :param consumer_id: Boxer Claim
+        :return:
+        """
+        target_url = f"{self.base_url}/consumer/publicKey/{consumer_id}"
+        response = self.http.get(target_url, json={})
+        response.raise_for_status()
+        return response.text
