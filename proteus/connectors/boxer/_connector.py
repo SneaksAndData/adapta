@@ -2,10 +2,9 @@
   Connector for Boxer Auth API.
 """
 import os
-import jwt
-
 from typing import Iterator
 
+import jwt
 from proteus.connectors.boxer._auth import BoxerAuth
 from proteus.connectors.boxer._helpers import (_iterate_user_claims_response,
                                                _iterate_boxer_claims_response)

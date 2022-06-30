@@ -1,3 +1,5 @@
+""" Helper functions to parse responses
+"""
 from requests import Response
 
 from proteus.connectors.boxer._models import UserClaim, BoxerClaim

@@ -15,6 +15,9 @@ class BoxerClaim:
     issuer: str
 
     def to_dict(self) -> Dict:
+        """ Convert to Dictionary
+        :return: Dictionary
+        """
         return {
             "claimType": self.claim_type,
             "claimValue": self.claim_value,
@@ -23,6 +26,10 @@ class BoxerClaim:
 
     @classmethod
     def from_dict(cls, json_data: Dict):
+        """ Initialize from Dictionary
+        :param json_data: Dictionary
+        :return:
+        """
         return BoxerClaim(
             claim_type=json_data['claimType'],
             claim_value=json_data['claimValue'],
@@ -39,6 +46,9 @@ class UserClaim:
     claim: BoxerClaim
 
     def to_dict(self) -> Dict:
+        """ Convert to Dictionary
+        :return: Dictionary
+        """
         return {
             "userId": self.user_id,
             "userClaimId": self.user_claim_id,
@@ -47,6 +57,10 @@ class UserClaim:
 
     @classmethod
     def from_dict(cls, json_data: Dict):
+        """ Initialize from Dictionary
+        :param json_data: Dictionary
+        :return:
+        """
         return UserClaim(
             user_id=json_data['userId'],
             user_claim_id=json_data['userClaimId'],
@@ -63,6 +77,9 @@ class GroupClaim:
     claim: BoxerClaim
 
     def to_dict(self) -> Dict:
+        """ Convert to Dictionary
+        :return: Dictionary
+        """
         return {
             "groupName": self.group_name,
             "groupClaimId": self.group_claim_id,
@@ -71,6 +88,10 @@ class GroupClaim:
 
     @classmethod
     def from_dict(cls, json_data: Dict):
+        """ Initialize from Dictionary
+        :param json_data: Dictionary
+        :return:
+        """
         return GroupClaim(
             group_name=json_data['groupName'],
             group_claim_id=json_data['groupClaimId'],
