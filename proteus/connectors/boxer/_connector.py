@@ -76,7 +76,7 @@ class BoxerConnector:
         return _iterate_boxer_claims_response(response)
 
     def get_claims_by_group(self, group_name: str) -> Iterator[BoxerClaim]:
-        """ Reads user claims from Boxer
+        """ Reads group claims from Boxer
         :param group_name: group name to load claims for
         :return: Iterator[UserClaim]
         """
@@ -86,7 +86,7 @@ class BoxerConnector:
         return _iterate_boxer_claims_response(response)
 
     def get_claims_for_token(self, jwt_token: str) -> Iterator[BoxerClaim]:
-        """ Reads user claims from Boxer
+        """ Reads user claims from Boxer based on jwt token
         :param jwt_token: jwt token with UPN set
         :return: Iterator[UserClaim]
         """
@@ -107,9 +107,9 @@ class BoxerConnector:
         return response.text
 
     def get_consumer_public_key(self, consumer_id: str) -> str:
-        """ Adds/Overwrites a new Boxer Claim to a user
+        """ Reads Consumer's public key
         :param consumer_id: Boxer Claim
-        :return:
+        :return: public key (Base64 Encoded)
         """
         target_url = f"{self.base_url}/consumer/publicKey/{consumer_id}"
         response = self.http.get(target_url, json={})
