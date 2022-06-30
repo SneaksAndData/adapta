@@ -11,7 +11,7 @@ from Crypto.Hash.SHA256 import new as sha256_get_instance
 
 
 class BoxerAuth(AuthBase):
-    """Attaches HTTP Bearer Authentication to the given Request object sent to Beast"""
+    """Attaches HTTP Bearer Authentication to the given Request object sent to Boxer"""
 
     def __init__(self, *, private_key_base64: str, consumer_id: str):
         # setup any auth-related data here
