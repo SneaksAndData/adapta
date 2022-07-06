@@ -1,53 +1,17 @@
 """
  Operations on Delta Lake tables.
 """
-from typing import Optional, Union, Iterator, List, Tuple, Any, Iterable
+from typing import Optional, Union, Iterator, List, Iterable
 
 import pandas
-import pyarrow
-from deltalake import DeltaTable, RawDeltaTable
-from deltalake.fs import DeltaStorageHandler
+from deltalake import DeltaTable
 from pyarrow import RecordBatch, Table
 from pyarrow._compute import Expression  # pylint: disable=E0611
-from pyarrow._dataset import FileSystemDataset  # pylint: disable=E0611
-from pyarrow._dataset_parquet import ParquetFileFormat, ParquetReadOptions  # pylint: disable=E0611
-import pyarrow.fs as pa_fs
+from pyarrow._dataset_parquet import ParquetReadOptions  # pylint: disable=E0611
 
 from proteus.security.clients._base import ProteusClient
 from proteus.storage.models.base import DataPath
 from proteus.storage.delta_lake._models import DeltaTransaction
-
-
-def _to_pyarrow_dataset(
-        table: RawDeltaTable,
-        schema: pyarrow.Schema,
-        partitions: Optional[List[Tuple[str, str, Any]]] = None,
-        filesystem: Optional[Union[str, pa_fs.FileSystem]] = None,
-) -> pyarrow.dataset.Dataset:
-    """
-    Build a PyArrow Dataset using data from the DeltaTable.
-
-    :param partitions: A list of partition filters, see help(DeltaTable.files_by_partitions) for filter syntax
-    :param filesystem: A concrete implementation of the Pyarrow FileSystem or a fsspec-compatible interface. If None, the first file path will be used to determine the right FileSystem
-    :return: the PyArrow dataset in PyArrow
-    """
-    if not filesystem:
-        filesystem = pa_fs.PyFileSystem(
-            DeltaStorageHandler(table.table_uri())
-        )
-
-    read_format = ParquetFileFormat(read_options=ParquetReadOptions(coerce_int96_timestamp_unit='ms'))
-
-    fragments = [
-        read_format.make_fragment(
-            file,
-            filesystem=filesystem,
-            partition_expression=part_expression,
-        )
-        for file, part_expression in table.dataset_partitions(partitions)
-    ]
-
-    return FileSystemDataset(fragments, schema, read_format, filesystem)
 
 
 def load(proteus_client: ProteusClient,  # pylint: disable=R0913
@@ -73,8 +37,8 @@ def load(proteus_client: ProteusClient,  # pylint: disable=R0913
     :return: A DeltaTable wrapped Rust class, pandas Dataframe or an iterator of pandas Dataframes, for batched reads.
     """
     proteus_client.connect_storage(path, set_env=True)
-    delta_table = DeltaTable(path.to_delta_rs_path(), version=version)
-    pyarrow_ds = _to_pyarrow_dataset(delta_table._table, delta_table.pyarrow_schema())
+    pyarrow_ds = DeltaTable(path.to_delta_rs_path(), version=version) \
+        .to_pyarrow_dataset(parquet_read_options=ParquetReadOptions(coerce_int96_timestamp_unit="ms"))
 
     if batch_size:
         batches: Iterator[RecordBatch] = pyarrow_ds.to_batches(filter=row_filter, columns=columns,
