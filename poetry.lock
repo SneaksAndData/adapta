@@ -235,7 +235,7 @@ tests = ["aiosonic", "glom", "jinja2", "pytest", "pytest-bdd (>=5.0.0)", "pytest
 
 [[package]]
 name = "deltalake"
-version = "0.5.6"
+version = "0.5.8"
 description = "Native Delta Lake Python binding based on delta-rs with Pandas integration"
 category = "main"
 optional = false
@@ -246,7 +246,8 @@ pyarrow = ">=4"
 
 [package.extras]
 pandas = ["types-dataclasses", "pandas"]
-devel = ["mypy", "black", "isort", "pytest", "pytest-mock", "pytest-cov", "pytest-timeout", "sphinx", "sphinx-rtd-theme", "toml", "pandas"]
+pyspark = ["pyspark", "delta-spark"]
+devel = ["mypy", "black", "isort", "pytest", "pytest-mock", "pytest-cov", "pytest-timeout", "sphinx (<=4.5)", "sphinx-rtd-theme", "toml", "typing-extensions"]
 
 [[package]]
 name = "dill"
@@ -806,7 +807,7 @@ datadog = ["datadog", "datadog-api-client"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "71eea8262f4bbce6cf89d20160c540400b21d939a8267364421f1f2d43c56a8f"
+content-hash = "fd98bc192d115380f5927fc33891e53f6504dfc54724d465f9149578dbe5f9e5"
 
 [metadata.files]
 astroid = [
@@ -1005,11 +1006,12 @@ datadog-api-client = [
     {file = "datadog_api_client-1.12-py3-none-any.whl", hash = "sha256:de9e68f441c1c6fe5be1d5d970408ad70f8b9e3273a8893a48ad563a43732e83"},
 ]
 deltalake = [
-    {file = "deltalake-0.5.6-cp36-abi3-macosx_10_7_x86_64.whl", hash = "sha256:eb419eac9382fd01390f091215e31c5c3bb4d29e421ffc94a55cd306805b1dfa"},
-    {file = "deltalake-0.5.6-cp36-abi3-macosx_11_0_arm64.whl", hash = "sha256:3128d6df02ea2a82b2227195743f305f3bac66f308848bb58ba10a79b8565d7a"},
-    {file = "deltalake-0.5.6-cp36-abi3-manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:af2753e5c5f5213c77bb0b0cb18865fb69cf68be500bac3839219fe846d935b4"},
-    {file = "deltalake-0.5.6-cp36-abi3-win_amd64.whl", hash = "sha256:7f9029a741522d8c8ef58e41d6ecc4541d8fa2f253248793fc24db4fc755739c"},
-    {file = "deltalake-0.5.6.tar.gz", hash = "sha256:e36f45bfa7477ce16809f1e0baddd2672bf02f5c85d7d136a5d4508ed521054b"},
+    {file = "deltalake-0.5.8-cp37-abi3-macosx_10_7_x86_64.whl", hash = "sha256:a9bfdcf252cc697e7ca6cb16be270b2fe7aed7689eefd49b187e813ce6c3f39b"},
+    {file = "deltalake-0.5.8-cp37-abi3-macosx_11_0_arm64.whl", hash = "sha256:d516c53b3a1acc6b3a39009394ae5f75abafd5a1045a1f6cf8f24e165210581e"},
+    {file = "deltalake-0.5.8-cp37-abi3-manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:25da93fc520e60b3b5e97469ddd532da9ee0c1c00938b8df826eebd794559636"},
+    {file = "deltalake-0.5.8-cp37-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:5f93bea8c7a25c343b9783ba09230a1205145463ab4c546a69469b3da7b97592"},
+    {file = "deltalake-0.5.8-cp37-abi3-win_amd64.whl", hash = "sha256:ef36fd94162a9ed234c3ae8487479fa58994729c038a8ee6599d1bd6d91628fa"},
+    {file = "deltalake-0.5.8.tar.gz", hash = "sha256:b386422fcc9c151b794748c9cef3fbb33debd4475bbabc6e9e288ef23ab3b87e"},
 ]
 dill = [
     {file = "dill-0.3.5.1-py2.py3-none-any.whl", hash = "sha256:33501d03270bbe410c72639b350e941882a8b0fd55357580fbc873fba0c59302"},
