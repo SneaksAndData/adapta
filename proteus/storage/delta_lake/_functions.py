@@ -1,17 +1,13 @@
 """
  Operations on Delta Lake tables.
 """
-from typing import Optional, Union, Iterator, List, Tuple, Any, Iterable
+from typing import Optional, Union, Iterator, List, Iterable
 
 import pandas
-import pyarrow
-from deltalake import DeltaTable, RawDeltaTable
-from deltalake.fs import DeltaStorageHandler
+from deltalake import DeltaTable
 from pyarrow import RecordBatch, Table
 from pyarrow._compute import Expression  # pylint: disable=E0611
-from pyarrow._dataset import FileSystemDataset  # pylint: disable=E0611
-from pyarrow._dataset_parquet import ParquetFileFormat, ParquetReadOptions  # pylint: disable=E0611
-import pyarrow.fs as pa_fs
+from pyarrow._dataset_parquet import ParquetReadOptions  # pylint: disable=E0611
 
 from proteus.security.clients._base import ProteusClient
 from proteus.storage.models.base import DataPath
