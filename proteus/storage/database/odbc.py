@@ -43,8 +43,8 @@ class OdbcClient(ABC):
             driver=self._driver
         )
         try:
-            self._engine = sqlalchemy.create_engine(connection_url, pool_pre_ping=True)
-            self._connection = self._engine.connect()
+            self._engine: sqlalchemy.engine.Engine = sqlalchemy.create_engine(connection_url, pool_pre_ping=True)
+            self._connection: sqlalchemy.engine.Connection = self._engine.connect()
         except SQLAlchemyError as ex:
             self._logger.error(
                 'Error connecting to {host}:{port} using dialect {dialect} and driver {driver}',
@@ -59,6 +59,13 @@ class OdbcClient(ABC):
         self._connection.close()
         self._engine.dispose()
 
+    def __connection__(self) -> Optional[sqlalchemy.engine.Connection]:
+        if self._connection is None:
+            self._logger.info(f'No connection is active. Please create one using with OdbcClient(..) as client: ...')
+            return None
+
+        return self._connection
+
     def query(
             self,
             query: str,
@@ -71,45 +78,46 @@ class OdbcClient(ABC):
         :param chunksize: Size of an individual data chunk. If not provided, query result will be a single dataframe.
         :return:
         """
-        if self._connection is None:
-            self._logger.info(f'No connection is active. Please create one using with OdbcClient(..) as client: ...')
+        try:
+            if chunksize:
+                return pandas.read_sql(query, con=self.__connection__(), chunksize=chunksize)
+
+            return pandas.read_sql(query, con=self.__connection__())
+        except SQLAlchemyError as ex:
+            self._logger.error('Engine error while executing query {query}', query=query, exception=ex)
             return None
-        if chunksize:
-            return pandas.read_sql(query, con=self._connection, chunksize=chunksize)
+        except BaseException as other:
+            self._logger.error('Unknown error while executing query {query}', query=query, exception=other)
+            return None
 
-        return pandas.read_sql(query, con=self._connection)
+    def materialize(
+            self,
+            data: pandas.DataFrame,
+            schema: str,
+            name: str,
+            overwrite: bool = True
+    ) -> Optional[int]:
+        """
+          Materialize dataframe as a table in a database.
 
-    # def materialize_query(
-    #         self,
-    #         : pd.DataFrame,
-    #         schema: str,
-    #         name: str,
-    #         if_exists: str
-    # ) -> None:
-    #     """Write dataframe to database.
-    #
-    #     Args:
-    #         df: The dataframe to write.
-    #         schema: The schema in which the table is.
-    #         name: The name of the table.
-    #         if_exists: The action to take if the table already exists. Options: "append", "replace" and "truncate".
-    #         "replace" removes the table and inserts it again with new data which in some cases may change datatypes.
-    #         "truncate" only empties the table before insertion of new data.
-    #     """
-    #     if self.connection is None:
-    #         missing_connection_error()
-    #
-    #     if if_exists == 'truncate':
-    #         if self.connection.dialect.name == "sqlite":
-    #             self.connection.execute(f'DELETE FROM {schema}.{name}')
-    #         else:
-    #             self.connection.execute(f'TRUNCATE TABLE {schema}.{name}')
-    #         if_exists = 'append'
-    #
-    #     df.to_sql(
-    #         name=name,
-    #         schema=schema,
-    #         con=self.connection,
-    #         index=False,
-    #         if_exists=if_exists,
-    #     )
+        :param data: Dataframe to materialize as a table.
+        :param schema: Schema of a table.
+        :param name: Name of a table.
+        :param overwrite: Whether to append or overwrite the data, including schema.
+        :return:
+        """
+
+        try:
+            if overwrite:
+                self.__connection__().execute(f"DROP TABLE {schema}.{name}")
+
+            return data.to_sql(
+                name=name,
+                schema=schema,
+                con=self.__connection__(),
+                index=False,
+                if_exists='append' if not overwrite else 'replace',
+            )
+        except SQLAlchemyError as ex:
+            self._logger.error("Error while materializing a dataframe into {schema}.{table}", schema=schema, table=name, exception=ex)
+            return None
