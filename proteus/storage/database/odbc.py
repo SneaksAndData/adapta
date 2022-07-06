@@ -7,8 +7,8 @@ from sqlalchemy.connectors import pyodbc
 from sqlalchemy.engine import URL
 from sqlalchemy.exc import SQLAlchemyError
 
-from logs import ProteusLogger
-from storage.database.models import ConnectionDialect, resolve_driver
+from proteus.logs import ProteusLogger
+from proteus.storage.database.models import ConnectionDialect, resolve_driver
 
 
 class OdbcClient(ABC):
