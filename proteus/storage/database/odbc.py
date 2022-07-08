@@ -49,6 +49,8 @@ class OdbcClient(ABC):
         self._password = password
         self._port = port
         self._logger = logger
+        self._engine = None
+        self._connection = None
         pyodbc.pooling = False
 
     def __enter__(self):
