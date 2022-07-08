@@ -12,6 +12,8 @@ from proteus.utils._models import CrystalEntrypointArguments
 def doze(seconds: int, doze_period_ms: int = 100) -> int:
     """Sleeps for time given in seconds.
 
+    Note for Windows users: doze_period_ms less than 15 doesn't work correctly.
+
     Args:
         seconds: Seconds to doze for
         doze_period_ms: Milliseconds per doze cycle
@@ -20,11 +22,11 @@ def doze(seconds: int, doze_period_ms: int = 100) -> int:
 
     """
     loops = int(seconds * 1000 / doze_period_ms)
-    start = time.time_ns()
+    start = time.monotonic_ns()
     for _ in range(loops):
         time.sleep(doze_period_ms / 1000)
 
-    return time.time_ns() - start
+    return time.monotonic_ns() - start
 
 
 def session_with_retries(method_list: Optional[List[str]] = None):

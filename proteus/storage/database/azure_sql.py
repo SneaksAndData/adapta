@@ -1,5 +1,4 @@
-import time
-from typing import Optional, List
+from typing import Optional
 
 import pandas
 from sqlalchemy import text
