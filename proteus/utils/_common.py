@@ -9,19 +9,22 @@ from urllib3 import Retry
 from proteus.utils._models import CrystalEntrypointArguments
 
 
-def doze(seconds: int, doze_period_ms: int = 100) -> None:
+def doze(seconds: int, doze_period_ms: int = 100) -> int:
     """Sleeps for time given in seconds.
 
     Args:
         seconds: Seconds to doze for
         doze_period_ms: Milliseconds per doze cycle
 
-    Returns: None
+    Returns: Time elapsed in nanoseconds
 
     """
     loops = int(seconds * 1000 / doze_period_ms)
+    start = time.time_ns()
     for _ in range(loops):
         time.sleep(doze_period_ms / 1000)
+
+    return time.time_ns() - start
 
 
 def session_with_retries(method_list: Optional[List[str]] = None):

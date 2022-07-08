@@ -8,15 +8,23 @@ from sqlalchemy.engine import URL
 from sqlalchemy.exc import SQLAlchemyError
 
 from proteus.logs import ProteusLogger
-from proteus.storage.database.models import ConnectionDialect, resolve_driver
+from proteus.storage.database.models import DatabaseType
+from proteus.storage.database.models import SqlAlchemyDialect
 
 
 class OdbcClient(ABC):
-    def __init__(self, logger: ProteusLogger, dialect: ConnectionDialect, host_name: str, user_name: str,
-                 database: Optional[str] = None,
-                 password: Optional[str] = None, port: Optional[int] = None):
-        self._dialect = dialect.value
-        self._driver = resolve_driver(dialect)
+    def __init__(
+            self,
+            logger: ProteusLogger,
+            database_type: DatabaseType,
+            host_name: str,
+            user_name: str,
+            database: Optional[str] = None,
+            password: Optional[str] = None,
+            port: Optional[int] = None
+    ):
+        self._db_type = database_type
+        self._dialect: SqlAlchemyDialect = database_type.value
         self._host = host_name
         self._database = database
         self._user = user_name
@@ -33,14 +41,14 @@ class OdbcClient(ABC):
             username=self._user,
             password=self._password,
             port=self._port,
-            query=self._driver
+            query=self._dialect.dialect
         )
         self._logger.info(
             'Connecting to {host}:{port} using dialect {dialect} and driver {driver}',
             host=self._host,
             port=self._port,
-            dialect=self._dialect,
-            driver=self._driver
+            dialect=self._dialect.dialect,
+            driver=self._dialect.driver
         )
         try:
             self._engine: sqlalchemy.engine.Engine = sqlalchemy.create_engine(connection_url, pool_pre_ping=True)
@@ -50,8 +58,8 @@ class OdbcClient(ABC):
                 'Error connecting to {host}:{port} using dialect {dialect} and driver {driver}',
                 host=self._host,
                 port=self._port,
-                dialect=self._dialect,
-                driver=self._driver,
+                dialect=self._dialect.dialect,
+                driver=self._dialect.driver,
                 exception=ex
             )
 
@@ -59,7 +67,17 @@ class OdbcClient(ABC):
         self._connection.close()
         self._engine.dispose()
 
-    def __connection__(self) -> Optional[sqlalchemy.engine.Connection]:
+    def fork(self) -> 'OdbcClient':
+        return OdbcClient(
+            logger=self._logger,
+            database_type=self._db_type,
+            host_name=self._host,
+            user_name=self._user,
+            password=self._password,
+            port=self._port
+        )
+
+    def _get_connection(self) -> Optional[sqlalchemy.engine.Connection]:
         if self._connection is None:
             self._logger.info(f'No connection is active. Please create one using with OdbcClient(..) as client: ...')
             return None
@@ -80,9 +98,9 @@ class OdbcClient(ABC):
         """
         try:
             if chunksize:
-                return pandas.read_sql(query, con=self.__connection__(), chunksize=chunksize)
+                return pandas.read_sql(query, con=self._get_connection(), chunksize=chunksize)
 
-            return pandas.read_sql(query, con=self.__connection__())
+            return pandas.read_sql(query, con=self._get_connection())
         except SQLAlchemyError as ex:
             self._logger.error('Engine error while executing query {query}', query=query, exception=ex)
             return None
@@ -109,12 +127,12 @@ class OdbcClient(ABC):
 
         try:
             if overwrite:
-                self.__connection__().execute(f"DROP TABLE {schema}.{name}")
+                self._get_connection().execute(f"DROP TABLE {schema}.{name}")
 
             return data.to_sql(
                 name=name,
                 schema=schema,
-                con=self.__connection__(),
+                con=self._get_connection(),
                 index=False,
                 if_exists='append' if not overwrite else 'replace',
             )
