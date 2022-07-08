@@ -102,7 +102,7 @@ class OdbcClient(ABC):
 
     def _get_connection(self) -> Optional[sqlalchemy.engine.Connection]:
         if self._connection is None:
-            self._logger.info(f'No connection is active. Please create one using with OdbcClient(..) as client: ...')
+            self._logger.info('No connection is active. Please create one using with OdbcClient(..) as client: ...')
             return None
 
         return self._connection
@@ -127,7 +127,7 @@ class OdbcClient(ABC):
         except SQLAlchemyError as ex:
             self._logger.error('Engine error while executing query {query}', query=query, exception=ex)
             return None
-        except BaseException as other:
+        except BaseException as other:  # pylint: disable=W0703
             self._logger.error('Unknown error while executing query {query}', query=query, exception=other)
             return None
 
