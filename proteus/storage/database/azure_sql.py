@@ -1,3 +1,7 @@
+"""
+ ODBC client extension for Azure SQL.
+"""
+
 from typing import Optional
 
 import pandas
@@ -10,14 +14,37 @@ from proteus.utils import doze
 
 
 class AzureSqlClient(OdbcClient):
+    """
+     Azure SQL (cloud) ODBC client.
+    """
     def __init__(
             self,
             logger: ProteusLogger,
-            database_type: DatabaseType,
             host_name: str,
-            user_name: str
+            user_name: str,
+            password: str,
+            database: Optional[str] = None,
+            port: Optional[int] = 1433
     ):
-        super().__init__(logger, database_type, host_name, user_name)
+        """
+          Creates an instance of an Azure SQL ODBC client.
+
+        :param logger: Logger instance for database operations.
+        :param host_name: Hostname of the instance.
+        :param user_name: User to connect with
+        :param password: SQL user password to use with this instance.
+        :param database: Database to connect to.
+        :param port: Connection port. Defaults to 1433.
+        """
+        super().__init__(
+            logger=logger,
+            database_type=DatabaseType.SQL_SERVER_ODBC,
+            host_name=host_name,
+            user_name=user_name,
+            database=database,
+            password=password,
+            port=port
+        )
 
     def scale_instance(self, target_objective='HS_Gen4_8', timeout_seconds: Optional[int] = 180) -> Optional[bool]:
         """

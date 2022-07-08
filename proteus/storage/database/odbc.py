@@ -1,3 +1,7 @@
+"""
+ Database client that uses an ODBC driver.
+"""
+
 from abc import ABC
 from typing import Optional, Union, Iterator
 
@@ -13,16 +17,30 @@ from proteus.storage.database.models import SqlAlchemyDialect
 
 
 class OdbcClient(ABC):
+    """
+     Generic ODBC database client that relies on SqlAlchemy API.
+    """
     def __init__(
             self,
             logger: ProteusLogger,
             database_type: DatabaseType,
-            host_name: str,
-            user_name: str,
+            host_name: Optional[str] = None,
+            user_name: Optional[str] = None,
             database: Optional[str] = None,
             password: Optional[str] = None,
             port: Optional[int] = None
     ):
+        """
+         Creates an instance of an OdbcClient
+
+        :param logger: Logger instance for database operations.
+        :param database_type: Type of database to connect to.
+        :param host_name: Host name.
+        :param user_name: SQL user name.
+        :param database: Optional database name to connect to.
+        :param password: SQL user password.
+        :param port: Connection port.
+        """
         self._db_type = database_type
         self._dialect: SqlAlchemyDialect = database_type.value
         self._host = host_name
@@ -35,13 +53,13 @@ class OdbcClient(ABC):
 
     def __enter__(self):
         connection_url: sqlalchemy.engine.URL = URL.create(
-            drivername=self._dialect,
+            drivername=self._dialect.dialect,
             host=self._host,
             database=self._database,
             username=self._user,
             password=self._password,
             port=self._port,
-            query=self._dialect.dialect
+            query=self._dialect.driver
         )
         self._logger.info(
             'Connecting to {host}:{port} using dialect {dialect} and driver {driver}',
@@ -68,6 +86,9 @@ class OdbcClient(ABC):
         self._engine.dispose()
 
     def fork(self) -> 'OdbcClient':
+        """
+         Copies this client in order to create a new connection, while keeping the other one open (fork).
+        """
         return OdbcClient(
             logger=self._logger,
             database_type=self._db_type,
@@ -127,7 +148,7 @@ class OdbcClient(ABC):
 
         try:
             if overwrite:
-                self._get_connection().execute(f"DROP TABLE {schema}.{name}")
+                self._get_connection().execute(f"DROP TABLE IF EXISTS {schema}.{name}")
 
             return data.to_sql(
                 name=name,
