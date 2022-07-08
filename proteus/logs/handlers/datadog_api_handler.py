@@ -77,9 +77,9 @@ class DataDogApiHandler(Handler):
             record_json = json.loads(self.format(rec))
             record_message = json.loads(record_json['message'])
 
-            tags = record_json.get('tags', None)
+            tags = record_message.get('tags', None)
             if tags:
-                record_json.pop('tags')
+                record_message.pop('tags')
 
             if rec.exc_info:
                 ex_type, _, _ = rec.exc_info
