@@ -59,22 +59,22 @@ class DatadogMetricsProvider(MetricsProvider):
 
         self._api.metadata.Metadata.update(metric_name=metric_name, **metric_metadata.to_dict())
 
-    def increment(self, metric_name: str, tags: Dict[str, str] = None) -> None:
+    def increment(self, metric_name: str, tags: Optional[Dict[str, str]] = None) -> None:
         statsd.increment(metric=metric_name, tags=DatadogMetricsProvider.convert_tags(tags))
 
-    def decrement(self, metric_name: str, tags: Dict[str, str] = None) -> None:
+    def decrement(self, metric_name: str, tags: Optional[Dict[str, str]] = None) -> None:
         statsd.decrement(metric=metric_name, tags=DatadogMetricsProvider.convert_tags(tags))
 
-    def count(self, metric_name: str, metric_value: int, tags: Dict[str, str] = None) -> None:
+    def count(self, metric_name: str, metric_value: int, tags: Optional[Dict[str, str]] = None) -> None:
         raise NotImplementedError
 
-    def gauge(self, metric_name: str, metric_value: Union[int, float], tags: Dict[str, str] = None) -> None:
+    def gauge(self, metric_name: str, metric_value: Union[int, float], tags: Optional[Dict[str, str]] = None) -> None:
         statsd.gauge(metric=metric_name, value=metric_value, tags=DatadogMetricsProvider.convert_tags(tags))
 
-    def set(self, metric_name: str, metric_value: Union[str, int, float], tags: Dict[str, str] = None) -> None:
+    def set(self, metric_name: str, metric_value: Union[str, int, float], tags: Optional[Dict[str, str]] = None) -> None:
         statsd.set(metric=metric_name, value=metric_value, tags=DatadogMetricsProvider.convert_tags(tags))
 
-    def histogram(self, metric_name: str, metric_value: Union[int, float], tags: Dict[str, str] = None) -> None:
+    def histogram(self, metric_name: str, metric_value: Union[int, float], tags: Optional[Dict[str, str]] = None) -> None:
         statsd.histogram(metric=metric_name, value=metric_value, tags=DatadogMetricsProvider.convert_tags(tags))
 
     def event(self, event_info: Event) -> Dict:
