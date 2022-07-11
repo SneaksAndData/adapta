@@ -26,7 +26,7 @@ jobs:
         run: |
           set -euxo pipefail
           
-          poetry install --extras "azure datadog boxer"
+          poetry install --extras "azure datadog boxer databases"
       - name: Lint
         run: |
           set -euxo pipefail
