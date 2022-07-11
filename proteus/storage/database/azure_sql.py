@@ -97,7 +97,7 @@ class AzureSqlClient(OdbcClient):
         return True
 
 
-def get_current_objective(client: AzureSqlClient) -> pandas.DataFrame:
+def get_current_objective(client: AzureSqlClient) -> str:
     """
      Reads current database size for the specified client.
 
