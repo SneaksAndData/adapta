@@ -4,7 +4,6 @@
 
 from typing import Optional
 
-import pandas
 from sqlalchemy import text
 
 from proteus.logs import ProteusLogger
