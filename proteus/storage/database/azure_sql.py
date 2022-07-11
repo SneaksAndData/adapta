@@ -48,7 +48,10 @@ class AzureSqlClient(OdbcClient):
         )
 
     @property
-    def size(self):
+    def size(self) -> str:
+        """
+         Current size (Service Objective) of a database in Azure.
+        """
         return get_current_objective(self)
 
     def scale_instance(self, target_objective='HS_Gen4_8', timeout_seconds: Optional[int] = 180) -> bool:
