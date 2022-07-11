@@ -19,9 +19,9 @@ from proteus.logs import ProteusLogger
 from proteus.logs.models import LogLevel
 
 proteus_logger = ProteusLogger().add_log_source(
-    log_source_name='azsql', 
-    min_log_level=LogLevel.INFO, 
-    is_default=True, 
+    log_source_name='azsql',
+    min_log_level=LogLevel.INFO,
+    is_default=True,
     log_handlers=[]  # don't forget to provide log handlers if you need to log outside stdout
 )
 
@@ -38,17 +38,16 @@ some_data = azsql.query('select * from dbo.big_data', chunksize=1000)
 
 for chunk in some_data:
     print(chunk)
-    
+
 # write data to dbo.small_data
 data_to_write = pandas.DataFrame(data={
-        'id': ["1", "2", "3"],
-        'name': ["Exostrike", "BIOM", "Collin"]
-    })
-
+    'id': ["1", "2", "3"],
+    'name': ["Exostrike", "BIOM", "Collin"]
+})
 
 azsql.materialize(data_to_write, 'dbo', 'small_data', True)
 
 # scale Azure SQL instance
-result = azsql.scale_instance(target_objective='BFG_INSTANCE', timeout_seconds=300)
+result = azsql.scale_instance(target_objective='HS_Gen4_1', max_wait_time=300)
 ```
 
