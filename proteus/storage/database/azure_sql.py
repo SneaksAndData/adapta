@@ -17,6 +17,7 @@ class AzureSqlClient(OdbcClient):
     """
      Azure SQL (cloud) ODBC client.
     """
+
     def __init__(
             self,
             logger: ProteusLogger,
@@ -46,6 +47,10 @@ class AzureSqlClient(OdbcClient):
             port=port
         )
 
+    @property
+    def size(self):
+        return get_current_objective(self)
+
     def scale_instance(self, target_objective='HS_Gen4_8', timeout_seconds: Optional[int] = 180) -> Optional[bool]:
         """
           Scales up/down the connected database.
@@ -55,10 +60,8 @@ class AzureSqlClient(OdbcClient):
           operation doesn't complete, function will return None.
         :return: Result of a scale operation.
         """
-        def get_current_objective(client: OdbcClient) -> pandas.DataFrame:
-            return client.query(
-                'SELECT service_objective FROM sys.database_service_objectives'
-            ).to_dict().get('service_objective', None)
+
+        assert self._database, 'Database name must be provided when constructing a client for this method to execute.'
 
         current_objective = get_current_objective(self)
 
@@ -69,13 +72,30 @@ class AzureSqlClient(OdbcClient):
             text(f"ALTER DATABASE [{self._database}] MODIFY (service_objective = '{target_objective}');")
         )
 
+        self._logger.info("Requested scale-up for {host}/{database}", host=self._host, database=self._database)
+
         if timeout_seconds:
             elapsed = 0
             while current_objective != target_objective and timeout_seconds > elapsed:
                 elapsed += (doze(60) // 1e9)
                 with self.fork() as client_fork:
                     current_objective = get_current_objective(client_fork)
+                    self._logger.info("Waiting for the scale-up to complete, elapsed {elapsed}s", elapsed=elapsed)
+
+            self._logger.info(
+                "Scale-up {result} after {elapsed}s",
+                result='completed' if current_objective == target_objective else 'failed',
+                elapsed=elapsed
+            )
 
             return current_objective == target_objective
 
+        self._logger.info("Timeout not specified - exiting without awaiting the operation result")
+
         return True
+
+
+def get_current_objective(client: AzureSqlClient) -> pandas.DataFrame:
+    return client.query(
+        'SELECT service_objective FROM sys.database_service_objectives'
+    ).to_dict().get('service_objective', None)

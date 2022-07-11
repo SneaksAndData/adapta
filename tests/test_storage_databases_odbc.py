@@ -41,7 +41,7 @@ def test_materialize(sqlite: OdbcClient):
 
 def test_read_non_existing_table(sqlite: OdbcClient):
     """
-    Test that the method raises an exception if a non-existing table is attempted to be read from.
+    Test that the method returns None if a non-existing table is attempted to be read from.
     """
     with sqlite:
         result = sqlite.query("SELECT * FROM main.product")
@@ -51,7 +51,7 @@ def test_read_non_existing_table(sqlite: OdbcClient):
 
 def test_write_empty_schema(sqlite: OdbcClient):
     """
-    Test that the method raises an exception if a non-existing table is attempted to be written to.
+    Test that the method returns None if a non-existing table is attempted to be written to.
     """
     with sqlite:
         result = sqlite.materialize(data=pandas.DataFrame(data={}), schema="main", name="product", overwrite=True)
@@ -61,7 +61,7 @@ def test_write_empty_schema(sqlite: OdbcClient):
 
 def test_joined_write_read_frame(sqlite: OdbcClient):
     """
-    Test that writing two tables and reading them joined it again will return the original dataframes but joined.
+    Test that writing two tables and reading them joined again will return the original dataframes joined as well.
     """
     with sqlite:
         _ = sqlite.materialize(
