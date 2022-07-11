@@ -98,6 +98,12 @@ class AzureSqlClient(OdbcClient):
 
 
 def get_current_objective(client: AzureSqlClient) -> pandas.DataFrame:
+    """
+     Reads current database size for the specified client.
+
+    :param client: Azure SQL database (ODBC) client.
+    :return: Name of an active Azure SQL Service Objective.
+    """
     return client.query(
         'SELECT service_objective FROM sys.database_service_objectives'
     ).to_dict().get('service_objective', None)
