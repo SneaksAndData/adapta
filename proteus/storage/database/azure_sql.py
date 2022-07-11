@@ -51,14 +51,16 @@ class AzureSqlClient(OdbcClient):
     def size(self):
         return get_current_objective(self)
 
-    def scale_instance(self, target_objective='HS_Gen4_8', timeout_seconds: Optional[int] = 180) -> Optional[bool]:
+    def scale_instance(self, target_objective='HS_Gen4_8', timeout_seconds: Optional[int] = 180) -> bool:
         """
           Scales up/down the connected database.
 
         :param target_objective: Target Azure SQL instance size.
         :param timeout_seconds: If provided, waits for the operation to complete within a specified interval. If a scale
-          operation doesn't complete, function will return None.
+          operation doesn't complete within a timeout, function will return False, otherwise True.
         :return: Result of a scale operation.
+          NB: if a timeout is not specified, True is returned,
+          thus a user should perform a self-check if a downstream operation requires a scaled database.
         """
 
         assert self._database, 'Database name must be provided when constructing a client for this method to execute.'
