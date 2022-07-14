@@ -7,10 +7,13 @@ import sys
 from typing import Dict, List, Union, Optional
 
 from datadog import initialize, statsd, api
+from datadog_api_client import Configuration, ApiClient
 from datadog_api_client.v1.model.event import Event
 from datadog_api_client.v1.model.metric_metadata import MetricMetadata
+from datadog_api_client.v2.api.key_management_api import KeyManagementApi
 
 from proteus.metrics._base import MetricsProvider
+from proteus.utils.apis.datadog import get_key_name
 
 
 class DatadogMetricsProvider(MetricsProvider):
@@ -71,10 +74,12 @@ class DatadogMetricsProvider(MetricsProvider):
     def gauge(self, metric_name: str, metric_value: Union[int, float], tags: Optional[Dict[str, str]] = None) -> None:
         statsd.gauge(metric=metric_name, value=metric_value, tags=DatadogMetricsProvider.convert_tags(tags))
 
-    def set(self, metric_name: str, metric_value: Union[str, int, float], tags: Optional[Dict[str, str]] = None) -> None:
+    def set(self, metric_name: str, metric_value: Union[str, int, float],
+            tags: Optional[Dict[str, str]] = None) -> None:
         statsd.set(metric=metric_name, value=metric_value, tags=DatadogMetricsProvider.convert_tags(tags))
 
-    def histogram(self, metric_name: str, metric_value: Union[int, float], tags: Optional[Dict[str, str]] = None) -> None:
+    def histogram(self, metric_name: str, metric_value: Union[int, float],
+                  tags: Optional[Dict[str, str]] = None) -> None:
         statsd.histogram(metric=metric_name, value=metric_value, tags=DatadogMetricsProvider.convert_tags(tags))
 
     def event(self, event_info: Event) -> Dict:
@@ -97,4 +102,20 @@ class DatadogMetricsProvider(MetricsProvider):
 
         :return: API response.
         """
-        return self._api.Event.create(attach_host_name=True, **event_info.to_dict())
+
+        configuration = Configuration()
+        configuration.server_variables["site"] = self._options['api_host'].replace('https://api.', '')
+        configuration.debug = False
+        configuration.api_key["apiKeyAuth"] = self._options['api_key']
+        configuration.api_key["appKeyAuth"] = self._options['app_key']
+
+        key_name = get_key_name(conf=configuration)
+        env_name = {
+            'test_': 'test',
+            'production_': 'production'
+        }.get(f"{key_name.split('_')[0]}_", 'local')
+
+        event_attrs = event_info.to_dict()
+        event_attrs['tags'].append(f'environment:{env_name}')
+
+        return self._api.Event.create(attach_host_name=True, **event_attrs)

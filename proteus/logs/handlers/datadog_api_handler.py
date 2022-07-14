@@ -14,6 +14,8 @@ from datadog_api_client.v2.api.logs_api import LogsApi
 from datadog_api_client.v2.model.http_log import HTTPLog
 from datadog_api_client.v2.model.http_log_item import HTTPLogItem
 
+from proteus.utils.apis.datadog import get_key_name
+
 
 class DataDogApiHandler(Handler):
     """
@@ -46,6 +48,7 @@ class DataDogApiHandler(Handler):
         self._buffer_size = buffer_size
         self._async_handler = async_handler
         self._debug = debug
+        self._configuration = configuration
 
         # send records even if an application is interrupted
         if platform.system() != "Windows":
@@ -77,9 +80,20 @@ class DataDogApiHandler(Handler):
             record_json = json.loads(self.format(rec))
             record_message = json.loads(record_json['message'])
 
-            tags = record_message.get('tags', None)
-            if tags:
+            tags: List[str] = record_message.get('tags', [])
+
+            if len(tags) > 0:
                 record_message.pop('tags')
+
+
+            # infer environment from key name
+            key_name = get_key_name(conf=self._configuration)
+            env_name = {
+                'test_': 'test',
+                'production_': 'production'
+            }.get(f"{key_name.split('_')[0]}_", 'local')
+
+            tags.append(f"environment:{env_name}")
 
             if rec.exc_info:
                 ex_type, _, _ = rec.exc_info
