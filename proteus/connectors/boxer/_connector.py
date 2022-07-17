@@ -75,7 +75,7 @@ class BoxerConnector:
         response.raise_for_status()
         return _iterate_boxer_claims_response(response)
 
-    def get_claims_by_group(self, group_name: str) -> Iterator[BoxerClaim]:
+    def get_claims_by_group(self, group_name: str) -> Iterator[UserClaim]:
         """ Reads group claims from Boxer
         :param group_name: group name to load claims for
         :return: Iterator[UserClaim]
@@ -83,7 +83,7 @@ class BoxerConnector:
         target_url = f"{self.base_url}/claims/group/{group_name}"
         response = self.http.get(target_url)
         response.raise_for_status()
-        return _iterate_boxer_claims_response(response)
+        return _iterate_user_claims_response(response)
 
     def get_claims_for_token(self, jwt_token: str) -> Iterator[BoxerClaim]:
         """ Reads user claims from Boxer based on jwt token
