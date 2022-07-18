@@ -4,12 +4,23 @@
 import logging
 import os
 import sys
+from enum import Enum
 from typing import Dict, List, Union, Optional
 
 from datadog import initialize, statsd, api
 from datadog_api_client.v1.model.metric_metadata import MetricMetadata
 
 from proteus.metrics._base import MetricsProvider
+
+
+class EventAlertType(Enum):
+    ERROR = "error"
+    WARNING = "warning"
+    INFO = "info"
+    SUCCESS = "success"
+    USER_UPDATE = "user_update"
+    RECOMMENDATION = "recommendation"
+    SNAPSHOT = "snapshot"
 
 
 class DatadogMetricsProvider(MetricsProvider):
@@ -81,14 +92,14 @@ class DatadogMetricsProvider(MetricsProvider):
     def event(self,
               title: str,
               message: str,
-              alert_type: Optional[str] = None,
+              alert_type: Optional[str] = EventAlertType.INFO.value,
               aggregation_key: Optional[str] = None,
               source_type_name: Optional[str] = None,
               date_happened: Optional[int] = None,
               priority: Optional[str] = None,
               tags: Optional[List[str]] = None,
               hostname: Optional[str] = None) -> None:
-        return statsd.event(
+        statsd.event(
             title=title,
             message=message,
             alert_type=alert_type,

@@ -60,15 +60,16 @@ class DataDogApiHandler(Handler):
 
         # environment tag is inferred from kubernetes context name, if one exists
         self._env = environment
-        try:
-            config.load_incluster_config()
-            _, current_context = config.list_kube_config_contexts()
-            assert isinstance(current_context, kubernetes.config.kube_config.ConfigNode)
-            self._env = current_context.name
-        except ConfigException:
-            pass
-        finally:
-            self._env = self._env or 'local'
+        if not self._env:
+            try:
+                config.load_incluster_config()
+                _, current_context = config.list_kube_config_contexts()
+                assert isinstance(current_context, kubernetes.config.kube_config.ConfigNode)
+                self._env = current_context.name
+            except ConfigException:
+                pass
+            finally:
+                self._env = self._env or 'local'
 
     def _flush(self) -> None:
         """

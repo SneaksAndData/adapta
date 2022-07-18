@@ -92,4 +92,3 @@ class MetricsProvider(ABC):
         :param hostname: Optional hostname.
         :return:
         """
-
