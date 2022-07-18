@@ -2,7 +2,7 @@
  Metrics integration abstraction.
 """
 from abc import ABC, abstractmethod
-from typing import Dict, Optional, List
+from typing import Dict, Optional
 
 
 class MetricsProvider(ABC):
@@ -76,7 +76,7 @@ class MetricsProvider(ABC):
               source_type_name: Optional[str] = None,
               date_happened: Optional[int] = None,
               priority: Optional[str] = None,
-              tags: Optional[List[str]] = None,
+              tags: Optional[Optional[Dict[str, str]]] = None,
               hostname: Optional[str] = None) -> None:
         """
           Send an event to statsd.
@@ -88,7 +88,7 @@ class MetricsProvider(ABC):
         :param source_type_name: Event source type.
         :param date_happened: when the event occurred. if unset defaults to the current time. (POSIX timestamp) (integer).
         :param priority: priority to post the event as. ("normal" or "low", defaults to "normal") (string).
-        :param tags: Tag list for this event.
+        :param tags: Tag mapping for this event.
         :param hostname: Optional hostname.
         :return:
         """
