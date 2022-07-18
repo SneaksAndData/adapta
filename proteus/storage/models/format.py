@@ -58,7 +58,6 @@ class DataFrameCsvSerializationFormat(SerializationFormat[pandas.DataFrame]):
     """
     Serializes dataframes as CSV format.
     """
-
     def serialize(self, data: pandas.DataFrame) -> bytes:
         """
         Serializes dataframe to bytes using CSV format.
