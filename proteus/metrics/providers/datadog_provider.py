@@ -18,9 +18,6 @@ class EventAlertType(Enum):
     WARNING = "warning"
     INFO = "info"
     SUCCESS = "success"
-    USER_UPDATE = "user_update"
-    RECOMMENDATION = "recommendation"
-    SNAPSHOT = "snapshot"
 
 
 class DatadogMetricsProvider(MetricsProvider):
