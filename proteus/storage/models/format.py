@@ -54,6 +54,27 @@ class DataFrameParquetSerializationFormat(SerializationFormat[pandas.DataFrame])
         return pandas.read_parquet(io.BytesIO(data))
 
 
+class DataFrameCsvSerializationFormat(SerializationFormat[pandas.DataFrame]):
+    """
+    Serializes dataframes as CSV format.
+    """
+    def serialize(self, data: pandas.DataFrame) -> bytes:
+        """
+        Serializes dataframe to bytes using CSV format.
+        :param data: Dataframe to serialize.
+        :return: CSV serialized dataframe as byte array.
+        """
+        return data.to_csv(index=False).encode(encoding='utf-8')
+
+    def deserialize(self, data: bytes) -> pandas.DataFrame:
+        """
+        Deserializes dataframe from bytes using CSV format.
+        :param data: Dataframe to deserialize in CSV format as bytes.
+        :return: Deserialized dataframe.
+        """
+        return pandas.read_csv(io.BytesIO(data))
+
+
 class DictJsonSerializationFormat(SerializationFormat[dict]):
     """
     Serializes dictionaries as JSON format.
