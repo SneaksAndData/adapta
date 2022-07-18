@@ -97,7 +97,7 @@ class DatadogMetricsProvider(MetricsProvider):
               source_type_name: Optional[str] = None,
               date_happened: Optional[int] = None,
               priority: Optional[str] = None,
-              tags: Optional[List[str]] = None,
+              tags: Optional[Optional[Dict[str, str]]] = None,
               hostname: Optional[str] = None) -> None:
         statsd.event(
             title=title,
