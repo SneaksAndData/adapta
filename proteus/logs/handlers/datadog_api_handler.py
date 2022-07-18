@@ -15,7 +15,8 @@ from datadog_api_client.v2.api.logs_api import LogsApi
 from datadog_api_client.v2.model.http_log import HTTPLog
 from datadog_api_client.v2.model.http_log_item import HTTPLogItem
 
-from kubernetes import client, config
+from kubernetes import config
+from kubernetes.config import ConfigException
 
 
 class DataDogApiHandler(Handler):
@@ -64,6 +65,8 @@ class DataDogApiHandler(Handler):
             _, current_context = config.list_kube_config_contexts()
             assert isinstance(current_context, kubernetes.config.kube_config.ConfigNode)
             self._env = current_context.name
+        except ConfigException:
+            pass
         finally:
             self._env = self._env or 'local'
 
@@ -109,7 +112,7 @@ class DataDogApiHandler(Handler):
 
             return HTTPLogItem(
                 ddsource=rec.name,
-                ddtags=tags,
+                ddtags=','.join(tags),
                 hostname=socket.gethostname(),
                 message=json.dumps(record_message),
                 status=rec.levelname

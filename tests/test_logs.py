@@ -99,7 +99,7 @@ def test_datadog_api_handler(mocker: MockerFixture):
 
     assert mock_handler._buffer[0] == HTTPLogItem(
         ddsource=mock_source,
-        ddtags=None,
+        ddtags='environment:local',
         hostname=socket.gethostname(),
         message=json.dumps({"template": "This a unit test logger {index}", "text": "This a unit test logger 1", "index": 1, "error": {"stack": ex_str, "message": None, ''"kind": "ValueError"}}),
         status='WARNING'
