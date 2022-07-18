@@ -7,13 +7,9 @@ import sys
 from typing import Dict, List, Union, Optional
 
 from datadog import initialize, statsd, api
-from datadog_api_client import Configuration, ApiClient
-from datadog_api_client.v1.model.event import Event
 from datadog_api_client.v1.model.metric_metadata import MetricMetadata
-from datadog_api_client.v2.api.key_management_api import KeyManagementApi
 
 from proteus.metrics._base import MetricsProvider
-from proteus.utils.apis.datadog import get_key_name
 
 
 class DatadogMetricsProvider(MetricsProvider):
@@ -82,40 +78,24 @@ class DatadogMetricsProvider(MetricsProvider):
                   tags: Optional[Dict[str, str]] = None) -> None:
         statsd.histogram(metric=metric_name, value=metric_value, tags=DatadogMetricsProvider.convert_tags(tags))
 
-    def event(self, event_info: Event) -> Dict:
-        """
-         Creates an event using Datadog Event API. This can be used instead of metrics functions, for example, to report state changes.
-        :param event_info: Event information.
-
-        title: title for the new event (string)
-        text: event message (string)
-        aggregation_key: key by which to group events in event stream (string)
-        alert_type: "error", "warning", "info" or "success" (EventAlertType)
-        date_happened: when the event occurred. if unset defaults to the current time. (POSIX timestamp) (integer)
-        handle: user to post the event as. defaults to owner of the application key used to submit. (string)
-        priority: priority to post the event as. ("normal" or "low", defaults to "normal") (string)
-        related_event_id: post event as a child of the given event (related_event_id: id)
-        tags: tags to post the event with (list of strings)
-        host: host to post the event with (string).
-        You can leave this empty as this method will always attach hostname to the event.
-        device_name: device_name to post the event with (list of strings).
-
-        :return: API response.
-        """
-
-        configuration = Configuration()
-        configuration.server_variables["site"] = self._options['api_host'].replace('https://api.', '')
-        configuration.debug = False
-        configuration.api_key["apiKeyAuth"] = self._options['api_key']
-        configuration.api_key["appKeyAuth"] = self._options['app_key']
-
-        key_name = get_key_name(conf=configuration)
-        env_name = {
-            'test_': 'test',
-            'production_': 'production'
-        }.get(f"{key_name.split('_')[0]}_", 'local')
-
-        event_attrs = event_info.to_dict()
-        event_attrs['tags'].append(f'environment:{env_name}')
-
-        return self._api.Event.create(attach_host_name=True, **event_attrs)
+    def event(self,
+              title: str,
+              message: str,
+              alert_type: Optional[str] = None,
+              aggregation_key: Optional[str] = None,
+              source_type_name: Optional[str] = None,
+              date_happened: Optional[int] = None,
+              priority: Optional[str] = None,
+              tags: Optional[List[str]] = None,
+              hostname: Optional[str] = None) -> None:
+        return statsd.event(
+            title=title,
+            message=message,
+            alert_type=alert_type,
+            aggregation_key=aggregation_key,
+            source_type_name=source_type_name,
+            date_happened=date_happened,
+            priority=priority,
+            tags=DatadogMetricsProvider.convert_tags(tags),
+            hostname=hostname
+        )

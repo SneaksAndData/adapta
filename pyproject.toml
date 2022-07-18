@@ -25,6 +25,8 @@ azure-servicebus = { version = "~7.3", optional = true }
 datadog = { version = "~0.44.0", optional = true }
 datadog-api-client = { version = "~1.12.0", optional = true }
 
+kubernetes = { version = "24.2.0", optional = true }
+
 JSON-log-formatter = "~0.5.1"
 
 pycryptodome = { version = "~3.15", optional = true }
@@ -43,7 +45,8 @@ azure = [
 ]
 datadog = [
     'datadog',
-    'datadog-api-client'
+    'datadog-api-client',
+    'kubernetes'
 ]
 boxer = [
     'pycryptodome',
