@@ -14,6 +14,9 @@ from proteus.metrics._base import MetricsProvider
 
 
 class EventAlertType(Enum):
+    """
+     Wrapper for alert_type value set in Events API.
+    """
     ERROR = "error"
     WARNING = "warning"
     INFO = "info"
