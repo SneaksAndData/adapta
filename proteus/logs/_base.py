@@ -3,6 +3,9 @@
 """
 import json
 import logging
+import ctypes
+
+from contextlib import contextmanager
 
 from logging import Handler, StreamHandler
 from typing import List, Optional
@@ -157,3 +160,27 @@ class ProteusLogger:
         logger = self._get_logger(log_source_name)
         logger.error(msg=self._prepare_message(template=template, tags=tags, diagnostics=diagnostics, **kwargs),
                      exc_info=exception, stack_info=True)
+
+    @contextmanager
+    def redirect(self,
+                 tags: Optional[str] = None,
+                 log_source_name: Optional[str] = None):
+        """
+         Copies stdout to a new file and dumps its contents as INFO messages on context exit
+
+        :param tags: Optional message tags.
+        :param log_source_name: Optional name of a log source, if not using a default.
+        :return:
+        """
+        libc = ctypes.CDLL(None)
+        try:
+            _ = libc.dup(1)
+            fd = libc.creat("foo")
+            libc.dup2(fd, 1)
+            libc.close(fd)
+
+            yield None
+        finally:
+            with open('f', encoding='utf-8') as output:
+                for line in output.readlines():
+                    self.info('Linked library message: {msg}', msg=line, tags=tags, log_source_name=log_source_name)
