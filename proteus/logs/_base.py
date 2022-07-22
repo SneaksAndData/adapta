@@ -207,9 +207,9 @@ class ProteusLogger:
         saved_stdout = libc.dup(1)
         tmp_file = os.path.join(tempfile.gettempdir(), tempfile.mktemp()).encode('utf-8')
         try:
-            fd = libc.creat(tmp_file)
-            libc.dup2(fd, 1)
-            libc.close(fd)
+            redirected_fd = libc.creat(tmp_file)
+            libc.dup2(redirected_fd, 1)
+            libc.close(redirected_fd)
             yield None
         finally:
             libc.dup2(saved_stdout, 1)
@@ -219,4 +219,3 @@ class ProteusLogger:
                 for line in output.readlines():
                     self.info('Redirected output: {msg}', msg=line, tags=tags, log_source_name=log_source_name)
             self.info('>> Redirected output {state} <<', state='END', tags=tags, log_source_name=log_source_name)
-
