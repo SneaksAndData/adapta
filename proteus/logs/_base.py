@@ -170,9 +170,9 @@ class ProteusLogger:
                  log_source_name: Optional[str] = None):
         """
          Redirects stdout to a temporary file and dumps its contents as INFO messages
-         once the wrapped code block executes. Stdout is restored after the block completes execution. Note that
-         timestamps appended by the logger will not correlate with the actual timestamp of the reported message,
-         if one is present in the output. This method works for the whole process,
+         once the wrapped code block finishes execution. Stdout is restored after the block completes execution.
+         Note that timestamps appended by the logger will not correlate with the actual timestamp
+         of the reported message, if one is present in the output. This method works for the whole process,
          including external libraries (C/C++ etc). Example usage:
 
          with proteus_logger.redirect():
