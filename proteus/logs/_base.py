@@ -4,6 +4,9 @@
 import json
 import logging
 import ctypes
+import os.path
+import sys
+import tempfile
 
 from contextlib import contextmanager
 
@@ -166,21 +169,54 @@ class ProteusLogger:
                  tags: Optional[str] = None,
                  log_source_name: Optional[str] = None):
         """
-         Copies stdout to a new file and dumps its contents as INFO messages on context exit
+         Redirects stdout to a temporary file and dumps its contents as INFO messages
+         once the wrapped code block executes. Stdout is restored after the block completes execution. Note that
+         timestamps appended by the logger will not correlate with the actual timestamp of the reported message,
+         if one is present in the output. This method works for the whole process,
+         including external libraries (C/C++ etc). Example usage:
+
+         with proteus_logger.redirect():
+             # from here, output will be redirected and collected separately
+             call_my_function()
+             call_my_other_function()
+
+         # once `with` block ends, vanilla logging behaviour is restored.
+         call_my_other_other_function()
+
+         NB: This method only works on Linux. Invoking it on Windows will have no effect.
 
         :param tags: Optional message tags.
         :param log_source_name: Optional name of a log source, if not using a default.
         :return:
         """
+
+        if sys.platform == "win32":
+            self.info(
+                '>> Output redirection not supported on this platform: {platform} <<',
+                platform=sys.platform,
+                tags=tags,
+                log_source_name=log_source_name
+            )
+            try:
+                yield None
+                return
+            finally:
+                pass
+
         libc = ctypes.CDLL(None)
+        saved_stdout = libc.dup(1)
+        tmp_file = os.path.join(tempfile.gettempdir(), tempfile.mktemp()).encode('utf-8')
         try:
-            _ = libc.dup(1)
-            fd = libc.creat("foo")
+            fd = libc.creat(tmp_file)
             libc.dup2(fd, 1)
             libc.close(fd)
-
             yield None
         finally:
-            with open('f', encoding='utf-8') as output:
+            libc.dup2(saved_stdout, 1)
+            os.chmod(tmp_file, 420)
+            self.info('>> Redirected output {state} <<', state='BEGIN', tags=tags, log_source_name=log_source_name)
+            with open(tmp_file, encoding='utf-8') as output:
                 for line in output.readlines():
-                    self.info('Linked library message: {msg}', msg=line, tags=tags, log_source_name=log_source_name)
+                    self.info('Redirected output: {msg}', msg=line, tags=tags, log_source_name=log_source_name)
+            self.info('>> Redirected output {state} <<', state='END', tags=tags, log_source_name=log_source_name)
+
