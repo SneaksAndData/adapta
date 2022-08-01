@@ -186,7 +186,7 @@ class ArgumentValue:
         :param value: payload to decrypt
         :return: Encrypted payload
         """
-        encryption_key = os.environ.get('RUNTIME_ENCRYPTION_KEY', None).encode('utf-8')
+        encryption_key = os.environ.get('PROTEUS__RUNTIME_ENCRYPTION_KEY', None).encode('utf-8')
 
         if not encryption_key:
             raise ValueError(

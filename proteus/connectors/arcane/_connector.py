@@ -25,7 +25,7 @@ class ArcaneConnector:
         """
         self.base_url = base_url
         self.http = session_with_retries()
-        self.http.auth = HTTPBasicAuth(os.environ.get('ARCANE_USER'), os.environ.get('ARCANE_PASSWORD'))
+        self.http.auth = HTTPBasicAuth(os.environ.get('PROTEUS__ARCANE_USER'), os.environ.get('PROTEUS__ARCANE_PASSWORD'))
         self.retry_attempts = retry_attempts
 
     def start_stream(self, conf: StreamConfiguration) -> StreamInfo:

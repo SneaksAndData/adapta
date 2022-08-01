@@ -24,10 +24,10 @@ class BoxerConnector:
         """
         self.base_url = base_url
         self.http = session_with_retries()
-        assert os.environ.get('BOXER_CONSUMER_ID'), "Environment BOXER_CONSUMER_ID not set"
-        assert os.environ.get('BOXER_PRIVATE_KEY'), "Environment BOXER_PRIVATE_KEY not set"
-        self.http.auth = BoxerAuth(private_key_base64=os.environ.get('BOXER_PRIVATE_KEY'),
-                                   consumer_id=os.environ.get('BOXER_CONSUMER_ID'))
+        assert os.environ.get('PROTEUS__BOXER_CONSUMER_ID'), "Environment BOXER_CONSUMER_ID not set"
+        assert os.environ.get('PROTEUS__BOXER_PRIVATE_KEY'), "Environment BOXER_PRIVATE_KEY not set"
+        self.http.auth = BoxerAuth(private_key_base64=os.environ.get('PROTEUS__BOXER_PRIVATE_KEY'),
+                                   consumer_id=os.environ.get('PROTEUS__BOXER_CONSUMER_ID'))
         self.retry_attempts = retry_attempts
 
     def push_user_claim(self, claim: BoxerClaim, user_id: str):

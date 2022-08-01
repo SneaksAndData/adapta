@@ -31,8 +31,8 @@ class CrystalConnector:
         from other cluster or Airflow environment.
         """
         return CrystalConnector(base_url=base_url,
-                                user=user or os.environ.get('CRYSTAL_USER'),
-                                password=password or os.environ.get('CRYSTAL_PASSWORD'))
+                                user=user or os.environ.get('PROTEUS__CRYSTAL_USER'),
+                                password=password or os.environ.get('PROTEUS__CRYSTAL_PASSWORD'))
 
     @staticmethod
     def create_anonymous(*, base_url: str):
