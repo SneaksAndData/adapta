@@ -35,13 +35,11 @@ class DataDogApiHandler(Handler):
         :param environment: Environment that sends logs. If not provided, will be inferred depending on the actual runtime.
         """
         super().__init__()
-        assert os.getenv(
-            'DD_API_KEY'), 'DD_API_KEY environment variable must be set in order to use DataDogApiHandler'
-        assert os.getenv('DD_APP_KEY', 'DD_APP_KEY environment variable must be set in order to use DataDogApiHandler')
-        assert os.getenv('DD_SITE', 'DD_SITE environment variable must be set in order to use DataDogApiHandler')
 
         configuration = Configuration()
-        configuration.server_variables["site"] = os.getenv('DD_SITE')
+        configuration.server_variables["site"] = os.getenv('PROTEUS__DD_SITE')
+        configuration.api_key['apiKeyAuth'] = os.getenv('PROTEUS__DATADOG_API_KEY')
+        configuration.api_key['appKeyAuth'] = os.getenv('PROTEUS__DATADOG_APP_KEY')
 
         if debug:
             configuration.debug = True
