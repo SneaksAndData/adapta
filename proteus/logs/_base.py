@@ -11,7 +11,7 @@ import tempfile
 from contextlib import contextmanager
 
 from logging import Handler, StreamHandler
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 
 import json_log_formatter
 
@@ -66,7 +66,7 @@ class ProteusLogger:
         return None
 
     @staticmethod
-    def _prepare_message(template: str, tags: Optional[str] = None, diagnostics: Optional[str] = None,
+    def _prepare_message(template: str, tags: Optional[Dict[str, str]] = None, diagnostics: Optional[str] = None,
                          **kwargs) -> str:
         """
          Returns message dictionary to be used by handler formatter.
@@ -74,7 +74,7 @@ class ProteusLogger:
 
         :return:
         """
-        base_object = {
+        base_object: Dict[str, Any] = {
             'template': template,
             'text': template.format(**kwargs)
         }
@@ -101,7 +101,8 @@ class ProteusLogger:
 
         return self._loggers[log_source_name or self._default_log_source]
 
-    def info(self, template: str, tags: Optional[str] = None, log_source_name: Optional[str] = None, **kwargs) -> None:
+    def info(self, template: str, tags: Optional[Dict[str, str]] = None, log_source_name: Optional[str] = None,
+             **kwargs) -> None:
         """
           Sends an INFO level message to configured log sources.
 
@@ -114,7 +115,7 @@ class ProteusLogger:
         logger = self._get_logger(log_source_name)
         logger.info(msg=self._prepare_message(template=template, tags=tags, diagnostics=None, **kwargs))
 
-    def warning(self, template: str, exception: BaseException, tags: Optional[str] = None,
+    def warning(self, template: str, exception: BaseException, tags: Optional[Dict[str, str]] = None,
                 log_source_name: Optional[str] = None, **kwargs) -> None:
         """
           Sends a WARNING level message to configured log sources.
@@ -130,7 +131,7 @@ class ProteusLogger:
         logger.warning(msg=self._prepare_message(template=template, tags=tags, diagnostics=None, **kwargs),
                        exc_info=exception, stack_info=True)
 
-    def error(self, template: str, exception: BaseException, tags: Optional[str] = None,
+    def error(self, template: str, exception: BaseException, tags: Optional[Dict[str, str]] = None,
               log_source_name: Optional[str] = None, **kwargs) -> None:
         """
           Sends an ERROR level message to configured log sources.
@@ -147,7 +148,7 @@ class ProteusLogger:
                      exc_info=exception, stack_info=True)
 
     def debug(self, template: str, exception: BaseException, diagnostics: Optional[str] = None,  # pylint: disable=R0913
-              tags: Optional[str] = None,
+              tags: Optional[Dict[str, str]] = None,
               log_source_name: Optional[str] = None, **kwargs) -> None:
         """
           Sends a DEBUG level message to configured log sources.
@@ -166,7 +167,7 @@ class ProteusLogger:
 
     @contextmanager
     def redirect(self,
-                 tags: Optional[str] = None,
+                 tags: Optional[Dict[str, str]] = None,
                  log_source_name: Optional[str] = None):
         """
          Redirects stdout to a temporary file and dumps its contents as INFO messages

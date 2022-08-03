@@ -7,7 +7,7 @@ import signal
 import socket
 import platform
 from logging import LogRecord, Handler
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 import kubernetes.config.kube_config
 from datadog_api_client import Configuration, ApiClient
@@ -18,12 +18,16 @@ from datadog_api_client.v2.model.http_log_item import HTTPLogItem
 from kubernetes import config
 from kubernetes.config import ConfigException
 
+from proteus.utils import convert_datadog_tags
+
 
 class DataDogApiHandler(Handler):
     """
       Logging handler for DataDog.
     """
-    def __init__(self, *, buffer_size=10, async_handler=False, debug=False, environment: Optional[str] = None):
+
+    def __init__(self, *, buffer_size=10, async_handler=False, debug=False,
+                 fixed_tags: Optional[Dict[str, str]] = None):
         """
           Creates a handler than can upload log records to DataDog index.
 
@@ -32,7 +36,9 @@ class DataDogApiHandler(Handler):
         :param buffer_size: Optional number of records to buffer up in memory before sending to DataDog.
         :param async_handler: Whether to send requests in an async manner. Only use this for production.
         :param debug: Whether to print messages from this handler to the console. Use this to debug handler behaviour.
-        :param environment: Environment that sends logs. If not provided, will be inferred depending on the actual runtime.
+        :param fixed_tags: Static key-value pairs to be applied as tags for each log message.
+          Some keys will be added if not present in this dictionary:
+            - environment: Environment sending logs. If not provided, will be inferred depending on the actual runtime.
         """
         super().__init__()
         assert os.getenv(
@@ -59,17 +65,16 @@ class DataDogApiHandler(Handler):
             signal.signal(signal.SIGTERM, self._flush)
 
         # environment tag is inferred from kubernetes context name, if one exists
-        self._env = environment
-        if not self._env:
+        self._fixed_tags = fixed_tags or {}
+        if 'environment' not in self._fixed_tags:
+            self._fixed_tags.setdefault('environment', 'local')
             try:
                 config.load_incluster_config()
                 _, current_context = config.list_kube_config_contexts()
                 assert isinstance(current_context, kubernetes.config.kube_config.ConfigNode)
-                self._env = current_context.name
+                self._fixed_tags['environment'] = current_context.name
             except ConfigException:
                 pass
-            finally:
-                self._env = self._env or 'local'
 
     def _flush(self) -> None:
         """
@@ -96,12 +101,12 @@ class DataDogApiHandler(Handler):
             record_json = json.loads(self.format(rec))
             record_message = json.loads(record_json['message'])
 
-            tags: List[str] = record_message.get('tags', [])
+            tags: Dict[str, str] = record_message.get('tags', {})
 
             if len(tags) > 0:
                 record_message.pop('tags')
 
-            tags.append(f"environment:{self._env}")
+            tags.update(self._fixed_tags)
 
             if rec.exc_info:
                 ex_type, _, _ = rec.exc_info
@@ -113,7 +118,7 @@ class DataDogApiHandler(Handler):
 
             return HTTPLogItem(
                 ddsource=rec.name,
-                ddtags=','.join(tags),
+                ddtags=','.join(convert_datadog_tags(tags)),
                 hostname=socket.gethostname(),
                 message=json.dumps(record_message),
                 status=rec.levelname
