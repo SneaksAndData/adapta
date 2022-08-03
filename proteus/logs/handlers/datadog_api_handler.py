@@ -36,7 +36,9 @@ class DataDogApiHandler(Handler):
         :param buffer_size: Optional number of records to buffer up in memory before sending to DataDog.
         :param async_handler: Whether to send requests in an async manner. Only use this for production.
         :param debug: Whether to print messages from this handler to the console. Use this to debug handler behaviour.
-        :param environment: Environment that sends logs. If not provided, will be inferred depending on the actual runtime.
+        :param fixed_tags: Static key-value pairs to be applied as tags for each log message.
+          Some keys will be added if not present in this dictionary:
+            - environment: Environment sending logs. If not provided, will be inferred depending on the actual runtime.
         """
         super().__init__()
         assert os.getenv(

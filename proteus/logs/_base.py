@@ -115,7 +115,7 @@ class ProteusLogger:
         logger = self._get_logger(log_source_name)
         logger.info(msg=self._prepare_message(template=template, tags=tags, diagnostics=None, **kwargs))
 
-    def warning(self, template: str, exception: BaseException, tags: Optional[str] = None,
+    def warning(self, template: str, exception: BaseException, tags: Optional[Dict[str, str]] = None,
                 log_source_name: Optional[str] = None, **kwargs) -> None:
         """
           Sends a WARNING level message to configured log sources.
