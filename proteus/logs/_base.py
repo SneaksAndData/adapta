@@ -243,8 +243,10 @@ class ProteusLogger:
                 LogLevel.DEBUG: logger.debug
             }
 
+            log_method[log_level](log_header(state='BEGIN'))
+
             with open(tmp_file, encoding='utf-8') as output:
-                log_method[log_level](log_header(state='BEGIN'))
                 for line in output.readlines():
                     log_method[log_level](log_message(msg=line))
+
             log_method[log_level](log_header(state='END'))
