@@ -151,7 +151,7 @@ class OdbcClient(ABC):
             if write_mode == WriteMode.REPLACE:
                 self._get_connection().execute(f"DROP TABLE IF EXISTS {schema}.{name}")
             if write_mode == WriteMode.TRUNCATE:
-                if self._dialect.dialect == "sqlite":
+                if self._dialect.dialect == DatabaseType.SQLITE_ODBC.value.dialect:
                     self._get_connection().execute(f'DELETE FROM {schema}.{name}')
                 else:
                     self._get_connection().execute(f'TRUNCATE TABLE {schema}.{name}')
