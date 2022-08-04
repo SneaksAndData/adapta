@@ -135,12 +135,3 @@ def test_write_truncate(sqlite: OdbcClient):
         read_df = sqlite.query("SELECT * FROM main.sku")
 
     assert read_df.equals(sku_df2)
-
-
-def test_write_truncate_non_existent_table(sqlite: OdbcClient):
-    """
-    Test that the method raises an exception if a non-existing table is attempted to be written to with truncate.
-    """
-    with sqlite, pytest.raises(Exception):
-        sku_df = sku_data()
-        sqlite.materialize(sku_df, "main", "tablethatdoesnotexist", write_mode=WriteMode.TRUNCATE)
