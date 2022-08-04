@@ -1,9 +1,7 @@
+import pytest
 import pandas
-
-from proteus.logs.models import LogLevel
-from proteus.logs import ProteusLogger
 from proteus.storage.database.odbc import OdbcClient
-from proteus.storage.database.models import DatabaseType
+from proteus.storage.database.models import WriteMode
 
 
 def sku_data():
@@ -31,7 +29,7 @@ def test_materialize(sqlite: OdbcClient):
             data=sku_data(),
             schema='main',
             name='sku',
-            overwrite=True
+            write_mode=WriteMode.REPLACE
         )
 
         result = sqlite.query("SELECT * FROM main.sku")
@@ -54,7 +52,7 @@ def test_write_empty_schema(sqlite: OdbcClient):
     Test that the method returns None if a non-existing table is attempted to be written to.
     """
     with sqlite:
-        result = sqlite.materialize(data=pandas.DataFrame(data={}), schema="main", name="product", overwrite=True)
+        result = sqlite.materialize(data=pandas.DataFrame(data={}), schema="main", name="product", write_mode=WriteMode.REPLACE)
 
     assert result is None
 
@@ -68,14 +66,14 @@ def test_joined_write_read_frame(sqlite: OdbcClient):
             data=sku_data(),
             schema="main",
             name="sku",
-            overwrite=True
+            write_mode=WriteMode.REPLACE
         )
 
         _ = sqlite.materialize(
             data=location_data(),
             schema="main",
             name="location",
-            overwrite=True
+            write_mode=WriteMode.REPLACE
         )
 
         result = sqlite.query("""
@@ -100,8 +98,8 @@ def test_write_append(sqlite: OdbcClient):
     each other.
     """
     with sqlite:
-        sqlite.materialize(data=sku_data(), schema="main", name="sku", overwrite=True)
-        sqlite.materialize(data=sku_data(), schema="main", name="sku", overwrite=False)
+        sqlite.materialize(data=sku_data(), schema="main", name="sku", write_mode=WriteMode.REPLACE)
+        sqlite.materialize(data=sku_data(), schema="main", name="sku", write_mode=WriteMode.APPEND)
 
         result = sqlite.query("SELECT * FROM main.sku")
 
@@ -113,11 +111,36 @@ def test_write_replace(sqlite: OdbcClient):
     Test that writing two tables with replace and reading it again will return the last written dataframe.
     """
     with sqlite:
-        sqlite.materialize(data=sku_data(), schema="main", name="sku", overwrite=True)
+        sqlite.materialize(data=sku_data(), schema="main", name="sku", write_mode=WriteMode.REPLACE)
         sku_df2 = sku_data()
         sku_df2['location_id'] = '4'
-        sqlite.materialize(data=sku_df2, schema="main", name="sku", overwrite=True)
+        sqlite.materialize(data=sku_df2, schema="main", name="sku", write_mode=WriteMode.REPLACE)
 
         result = sqlite.query("SELECT * FROM main.sku")
 
     assert result.equals(sku_df2)
+
+
+def test_write_truncate(sqlite: OdbcClient):
+    """
+    Test that writing two tables with truncate and reading it again will return the last written dataframe.
+    """
+    with sqlite:
+        sku_df = sku_data()
+        sqlite.materialize(data=sku_data(), schema="main", name="sku", write_mode=WriteMode.APPEND)
+        sku_df2 = sku_df.copy()
+        sku_df2['location_id'] = '4'
+        sqlite.materialize(data=sku_df2, schema="main", name="sku", write_mode=WriteMode.TRUNCATE)
+
+        read_df = sqlite.query("SELECT * FROM main.sku")
+
+    assert read_df.equals(sku_df2)
+
+
+def test_write_truncate_non_existent_table(sqlite: OdbcClient):
+    """
+    Test that the method raises an exception if a non-existing table is attempted to be written to with truncate.
+    """
+    with sqlite, pytest.raises(Exception):
+        sku_df = sku_data()
+        sqlite.materialize(sku_df, "main", "sku", write_mode=WriteMode.TRUNCATE)
