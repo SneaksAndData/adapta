@@ -29,12 +29,3 @@ class DatabaseType(Enum):
         dialect='sqlite+pysqlite',
         driver={}
     )
-
-
-class WriteMode(Enum):
-    """
-    Enum for database write operations.
-    """
-    REPLACE = 'replace'  # removes the table and inserts it again with new data which in some cases may change datatypes
-    TRUNCATE = 'truncate'  # only empties the table before insertion of new data
-    APPEND = 'append'  # appends data to existing data in the table

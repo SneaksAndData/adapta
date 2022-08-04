@@ -29,7 +29,7 @@ def test_materialize(sqlite: OdbcClient):
             data=sku_data(),
             schema='main',
             name='sku',
-            write_mode=WriteMode.REPLACE
+            overwrite=True,
         )
 
         result = sqlite.query("SELECT * FROM main.sku")
@@ -52,7 +52,7 @@ def test_write_empty_schema(sqlite: OdbcClient):
     Test that the method returns None if a non-existing table is attempted to be written to.
     """
     with sqlite:
-        result = sqlite.materialize(data=pandas.DataFrame(data={}), schema="main", name="product", write_mode=WriteMode.REPLACE)
+        result = sqlite.materialize(data=pandas.DataFrame(data={}), schema="main", name="product", overwrite=True)
 
     assert result is None
 
@@ -66,14 +66,14 @@ def test_joined_write_read_frame(sqlite: OdbcClient):
             data=sku_data(),
             schema="main",
             name="sku",
-            write_mode=WriteMode.REPLACE
+            overwrite=True
         )
 
         _ = sqlite.materialize(
             data=location_data(),
             schema="main",
             name="location",
-            write_mode=WriteMode.REPLACE
+            overwrite=True
         )
 
         result = sqlite.query("""
@@ -98,8 +98,8 @@ def test_write_append(sqlite: OdbcClient):
     each other.
     """
     with sqlite:
-        sqlite.materialize(data=sku_data(), schema="main", name="sku", write_mode=WriteMode.REPLACE)
-        sqlite.materialize(data=sku_data(), schema="main", name="sku", write_mode=WriteMode.APPEND)
+        sqlite.materialize(data=sku_data(), schema="main", name="sku", overwrite=True)
+        sqlite.materialize(data=sku_data(), schema="main", name="sku", overwrite=False)
 
         result = sqlite.query("SELECT * FROM main.sku")
 
@@ -111,27 +111,11 @@ def test_write_replace(sqlite: OdbcClient):
     Test that writing two tables with replace and reading it again will return the last written dataframe.
     """
     with sqlite:
-        sqlite.materialize(data=sku_data(), schema="main", name="sku", write_mode=WriteMode.REPLACE)
+        sqlite.materialize(data=sku_data(), schema="main", name="sku", overwrite=True)
         sku_df2 = sku_data()
         sku_df2['location_id'] = '4'
-        sqlite.materialize(data=sku_df2, schema="main", name="sku", write_mode=WriteMode.REPLACE)
+        sqlite.materialize(data=sku_df2, schema="main", name="sku", overwrite=True)
 
         result = sqlite.query("SELECT * FROM main.sku")
 
     assert result.equals(sku_df2)
-
-
-def test_write_truncate(sqlite: OdbcClient):
-    """
-    Test that writing two tables with truncate and reading it again will return the last written dataframe.
-    """
-    with sqlite:
-        sku_df = sku_data()
-        sqlite.materialize(data=sku_data(), schema="main", name="sku", write_mode=WriteMode.APPEND)
-        sku_df2 = sku_df.copy()
-        sku_df2['location_id'] = '4'
-        sqlite.materialize(data=sku_df2, schema="main", name="sku", write_mode=WriteMode.TRUNCATE)
-
-        read_df = sqlite.query("SELECT * FROM main.sku")
-
-    assert read_df.equals(sku_df2)
