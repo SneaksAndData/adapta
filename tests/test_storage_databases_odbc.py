@@ -143,4 +143,4 @@ def test_write_truncate_non_existent_table(sqlite: OdbcClient):
     """
     with sqlite, pytest.raises(Exception):
         sku_df = sku_data()
-        sqlite.materialize(sku_df, "main", "sku", write_mode=WriteMode.TRUNCATE)
+        sqlite.materialize(sku_df, "main", "tablethatdoesnotexist", write_mode=WriteMode.TRUNCATE)
