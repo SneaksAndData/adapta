@@ -235,7 +235,7 @@ class ProteusLogger:
 
             logger = self._get_logger(log_source_name)
             log_header = partial(self._prepare_message, template='>> Redirected output {state} <<', tags=tags, diagnostics=None)
-            log_message = partial(self._prepare_message, template='Redirected output: {msg}', tags=tags, diagnostics=None)
+            log_message = partial(self._prepare_message, template='Redirected output: {message}', tags=tags, diagnostics=None)
             log_method = {
                 LogLevel.INFO: logger.info,
                 LogLevel.WARN: logger.warning,
@@ -247,6 +247,6 @@ class ProteusLogger:
 
             with open(tmp_file, encoding='utf-8') as output:
                 for line in output.readlines():
-                    log_method[log_level](log_message(msg=line))
+                    log_method[log_level](log_message(message=line))
 
             log_method[log_level](log_header(state='END'))
