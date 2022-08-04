@@ -165,5 +165,5 @@ class OdbcClient(ABC):
                 if_exists=if_exists,
             )
         except SQLAlchemyError as ex:
-            self._logger.error(f"Error while materializing a dataframe into {schema}.{table}", schema=schema, table=name, exception=ex)
+            self._logger.error(f"Error while materializing a dataframe into {schema}.{name}", schema=schema, table=name, exception=ex)
             return None
