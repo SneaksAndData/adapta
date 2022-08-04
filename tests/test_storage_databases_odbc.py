@@ -1,7 +1,6 @@
 import pytest
 import pandas
 from proteus.storage.database.odbc import OdbcClient
-from proteus.storage.database.models import WriteMode
 
 
 def sku_data():
