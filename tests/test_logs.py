@@ -78,9 +78,9 @@ def test_log_format(level: LogLevel, template: str, args: Dict, exception: BaseE
 
 
 def test_datadog_api_handler(mocker: MockerFixture):
-    os.environ.setdefault('DD_API_KEY', 'some-key')
-    os.environ.setdefault('DD_APP_KEY', 'some-app-key')
-    os.environ.setdefault('DD_SITE', 'some-site.dog')
+    os.environ.setdefault('PROTEUS__DD_API_KEY', 'some-key')
+    os.environ.setdefault('PROTEUS__DD_APP_KEY', 'some-app-key')
+    os.environ.setdefault('PROTEUS__DD_SITE', 'some-site.dog')
 
     mocker.patch('proteus.logs.handlers.datadog_api_handler.DataDogApiHandler._flush', return_value=None)
     mock_handler = DataDogApiHandler(buffer_size=1)
