@@ -9,11 +9,10 @@ import pandas
 import sqlalchemy
 from sqlalchemy.connectors import pyodbc
 from sqlalchemy.engine import URL
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import SQLAlchemyError, OperationalError
 
 from proteus.logs import ProteusLogger
-from proteus.storage.database.models import DatabaseType
-from proteus.storage.database.models import SqlAlchemyDialect
+from proteus.storage.database.models import DatabaseType, SqlAlchemyDialect
 
 
 class OdbcClient(ABC):
@@ -136,7 +135,7 @@ class OdbcClient(ABC):
             data: pandas.DataFrame,
             schema: str,
             name: str,
-            overwrite: bool = True
+            overwrite: bool = False,
     ) -> Optional[int]:
         """
           Materialize dataframe as a table in a database.
@@ -144,21 +143,27 @@ class OdbcClient(ABC):
         :param data: Dataframe to materialize as a table.
         :param schema: Schema of a table.
         :param name: Name of a table.
-        :param overwrite: Whether to append or overwrite the data, including schema.
+        :param overwrite: Whether to overwrite or append the data.
         :return:
         """
-
         try:
             if overwrite:
-                self._get_connection().execute(f"DROP TABLE IF EXISTS {schema}.{name}")
+                try:
+                    if self._dialect.dialect == DatabaseType.SQLITE_ODBC.value.dialect:
+                        self._get_connection().execute(f'DELETE FROM {schema}.{name}')
+                    else:
+                        self._get_connection().execute(f'TRUNCATE TABLE {schema}.{name}')
+                except OperationalError as ex:
+                    # The table does not exist. Do nothing and let the Pandas API handle the creation of the table.
+                    self._logger.warning(f"Error truncating {schema}.{name}, now creating table without truncating.", schema=schema, table=name, exception=ex)
 
             return data.to_sql(
                 name=name,
                 schema=schema,
                 con=self._get_connection(),
                 index=False,
-                if_exists='append' if not overwrite else 'replace',
+                if_exists='append',
             )
         except SQLAlchemyError as ex:
-            self._logger.error("Error while materializing a dataframe into {schema}.{table}", schema=schema, table=name, exception=ex)
+            self._logger.error(f"Error while materializing a dataframe into {schema}.{name}", schema=schema, table=name, exception=ex)
             return None
