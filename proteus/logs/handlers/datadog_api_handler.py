@@ -43,9 +43,9 @@ class DataDogApiHandler(Handler):
         super().__init__()
 
         configuration = Configuration()
-        configuration.server_variables["site"] = os.getenv('PROTEUS__DD_SITE')
-        configuration.api_key['apiKeyAuth'] = os.getenv('PROTEUS__DD_API_KEY')
-        configuration.api_key['appKeyAuth'] = os.getenv('PROTEUS__DD_APP_KEY')
+        configuration.server_variables["site"] = os.environ.get('PROTEUS__DD_SITE')
+        configuration.api_key['apiKeyAuth'] = os.environ.get('PROTEUS__DD_API_KEY')
+        configuration.api_key['appKeyAuth'] = os.environ.get('PROTEUS__DD_APP_KEY')
 
         if debug:
             configuration.debug = True
