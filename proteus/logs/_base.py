@@ -24,12 +24,15 @@ class ProteusLogger:
      Proteus Proxy for Python logging library.
     """
 
-    def __init__(self):
+    def __init__(self, fixed_template: Optional[Dict[str, Dict[str, str]]] = None):
         """
           Creates a new instance of a ProteusLogger
+
+        :param fixed_template: Additional template to append to message templates provided via logging methods.
         """
         self._loggers = {}
         self._default_log_source = None
+        self._fixed_template = fixed_template
 
     def add_log_source(self, *, log_source_name: str, min_log_level: LogLevel,
                        log_handlers: Optional[List[Handler]] = None,
@@ -102,6 +105,13 @@ class ProteusLogger:
 
         return self._loggers[log_source_name or self._default_log_source]
 
+    def _get_fixed_args(self) -> Dict:
+        fixed_args = {}
+        for fixed_value in self._fixed_template.values():
+            fixed_args = {**fixed_args, **fixed_value}
+
+        return fixed_args
+
     def info(self,
              template: str,
              tags: Optional[Dict[str, str]] = None,
@@ -117,7 +127,14 @@ class ProteusLogger:
         :return:
         """
         logger = self._get_logger(log_source_name)
-        logger.info(msg=self._prepare_message(template=template, tags=tags, diagnostics=None, **kwargs))
+
+        logger.info(
+            msg=self._prepare_message(
+                template=', '.join([template, ', '.join(self._fixed_template.keys())]),
+                tags=tags,
+                diagnostics=None,
+                **self._get_fixed_args(),
+                **kwargs))
 
     def warning(self,
                 template: str,
@@ -136,8 +153,14 @@ class ProteusLogger:
         :return:
         """
         logger = self._get_logger(log_source_name)
-        logger.warning(msg=self._prepare_message(template=template, tags=tags, diagnostics=None, **kwargs),
-                       exc_info=exception, stack_info=True)
+        logger.warning(
+            msg=self._prepare_message(
+                template=', '.join([template, ', '.join(self._fixed_template.keys())]),
+                tags=tags,
+                diagnostics=None,
+                **self._get_fixed_args(),
+                **kwargs),
+            exc_info=exception, stack_info=True)
 
     def error(self,
               template: str,
@@ -156,8 +179,14 @@ class ProteusLogger:
         :return:
         """
         logger = self._get_logger(log_source_name)
-        logger.error(msg=self._prepare_message(template=template, tags=tags, diagnostics=None, **kwargs),
-                     exc_info=exception, stack_info=True)
+        logger.error(
+            msg=self._prepare_message(
+                template=', '.join([template, ', '.join(self._fixed_template.keys())]),
+                tags=tags,
+                diagnostics=None,
+                **self._get_fixed_args(),
+                **kwargs),
+            exc_info=exception, stack_info=True)
 
     def debug(self,
               template: str,
@@ -177,8 +206,14 @@ class ProteusLogger:
         :return:
         """
         logger = self._get_logger(log_source_name)
-        logger.error(msg=self._prepare_message(template=template, tags=tags, diagnostics=diagnostics, **kwargs),
-                     exc_info=exception, stack_info=True)
+        logger.error(
+            msg=self._prepare_message(
+                template=', '.join([template, ', '.join(self._fixed_template.keys())]),
+                tags=tags,
+                diagnostics=diagnostics,
+                **self._get_fixed_args(),
+                **kwargs),
+            exc_info=exception, stack_info=True)
 
     @contextmanager
     def redirect(self,
@@ -210,7 +245,8 @@ class ProteusLogger:
 
         if sys.platform == "win32":
             self.info(
-                '>> Output redirection not supported on this platform: {platform} <<',
+                ', '.join(
+                    ['>> Output redirection not supported on this platform: {platform} <<', self._fixed_template]),
                 platform=sys.platform,
                 tags=tags,
                 log_source_name=log_source_name
@@ -234,8 +270,16 @@ class ProteusLogger:
             os.chmod(tmp_file, 420)
 
             logger = self._get_logger(log_source_name)
-            log_header = partial(self._prepare_message, template='>> Redirected output {state} <<', tags=tags, diagnostics=None)
-            log_message = partial(self._prepare_message, template='Redirected output: {message}', tags=tags, diagnostics=None)
+            log_header = partial(self._prepare_message,
+                                 template=', '.join(['>> Redirected output {state} <<', ', '.join(self._fixed_template.keys())]),
+                                 tags=tags,
+                                 **self._get_fixed_args(),
+                                 diagnostics=None)
+            log_message = partial(self._prepare_message,
+                                  template=', '.join(['Redirected output: {message}', ', '.join(self._fixed_template.keys())]),
+                                  tags=tags,
+                                  **self._get_fixed_args(),
+                                  diagnostics=None)
             log_method = {
                 LogLevel.INFO: logger.info,
                 LogLevel.WARN: logger.warning,
