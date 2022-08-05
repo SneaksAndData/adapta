@@ -120,7 +120,7 @@ class ProteusLogger:
         return fixed_args
 
     def _get_template(self, template) -> str:
-        return f'{self._fixed_template_delimiter} '.join(
+        return self._fixed_template_delimiter.join(
             [template, ', '.join(self._fixed_template.keys())]) if self._fixed_template else template
 
     def info(self,
