@@ -1,4 +1,3 @@
-import pytest
 import pandas
 from proteus.storage.database.odbc import OdbcClient
 
