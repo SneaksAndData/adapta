@@ -24,15 +24,21 @@ class ProteusLogger:
      Proteus Proxy for Python logging library.
     """
 
-    def __init__(self, fixed_template: Optional[Dict[str, Dict[str, str]]] = None):
+    def __init__(
+            self,
+            fixed_template: Optional[Dict[str, Dict[str, str]]] = None,
+            fixed_template_delimiter=','
+    ):
         """
           Creates a new instance of a ProteusLogger
 
         :param fixed_template: Additional template to append to message templates provided via logging methods.
+        :param fixed_template_delimiter: Optional delimiter to use when appending fixed templates.
         """
         self._loggers = {}
         self._default_log_source = None
         self._fixed_template = fixed_template
+        self._fixed_template_delimiter = fixed_template_delimiter
 
     def add_log_source(self, *, log_source_name: str, min_log_level: LogLevel,
                        log_handlers: Optional[List[Handler]] = None,
@@ -107,10 +113,15 @@ class ProteusLogger:
 
     def _get_fixed_args(self) -> Dict:
         fixed_args = {}
-        for fixed_value in self._fixed_template.values():
-            fixed_args = {**fixed_args, **fixed_value}
+        if self._fixed_template:
+            for fixed_value in self._fixed_template.values():
+                fixed_args = {**fixed_args, **fixed_value}
 
         return fixed_args
+
+    def _get_template(self, template) -> str:
+        return f'{self._fixed_template_delimiter} '.join(
+            [template, ', '.join(self._fixed_template.keys())]) if self._fixed_template else template
 
     def info(self,
              template: str,
@@ -130,7 +141,7 @@ class ProteusLogger:
 
         logger.info(
             msg=self._prepare_message(
-                template=', '.join([template, ', '.join(self._fixed_template.keys())]),
+                template=self._get_template(template),
                 tags=tags,
                 diagnostics=None,
                 **self._get_fixed_args(),
@@ -155,7 +166,7 @@ class ProteusLogger:
         logger = self._get_logger(log_source_name)
         logger.warning(
             msg=self._prepare_message(
-                template=', '.join([template, ', '.join(self._fixed_template.keys())]),
+                template=self._get_template(template),
                 tags=tags,
                 diagnostics=None,
                 **self._get_fixed_args(),
@@ -181,7 +192,7 @@ class ProteusLogger:
         logger = self._get_logger(log_source_name)
         logger.error(
             msg=self._prepare_message(
-                template=', '.join([template, ', '.join(self._fixed_template.keys())]),
+                template=self._get_template(template),
                 tags=tags,
                 diagnostics=None,
                 **self._get_fixed_args(),
@@ -208,7 +219,7 @@ class ProteusLogger:
         logger = self._get_logger(log_source_name)
         logger.error(
             msg=self._prepare_message(
-                template=', '.join([template, ', '.join(self._fixed_template.keys())]),
+                template=self._get_template(template),
                 tags=tags,
                 diagnostics=diagnostics,
                 **self._get_fixed_args(),
@@ -245,8 +256,7 @@ class ProteusLogger:
 
         if sys.platform == "win32":
             self.info(
-                ', '.join(
-                    ['>> Output redirection not supported on this platform: {platform} <<', self._fixed_template]),
+                self._get_template('>> Output redirection not supported on this platform: {platform} <<'),
                 platform=sys.platform,
                 tags=tags,
                 log_source_name=log_source_name
@@ -271,12 +281,12 @@ class ProteusLogger:
 
             logger = self._get_logger(log_source_name)
             log_header = partial(self._prepare_message,
-                                 template=', '.join(['>> Redirected output {state} <<', ', '.join(self._fixed_template.keys())]),
+                                 template=self._get_template('>> Redirected output {state} <<'),
                                  tags=tags,
                                  **self._get_fixed_args(),
                                  diagnostics=None)
             log_message = partial(self._prepare_message,
-                                  template=', '.join(['Redirected output: {message}', ', '.join(self._fixed_template.keys())]),
+                                  template=self._get_template('Redirected output: {message}'),
                                   tags=tags,
                                   **self._get_fixed_args(),
                                   diagnostics=None)
