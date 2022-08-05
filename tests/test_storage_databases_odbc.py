@@ -1,9 +1,5 @@
 import pandas
-
-from proteus.logs.models import LogLevel
-from proteus.logs import ProteusLogger
 from proteus.storage.database.odbc import OdbcClient
-from proteus.storage.database.models import DatabaseType
 
 
 def sku_data():
@@ -31,7 +27,7 @@ def test_materialize(sqlite: OdbcClient):
             data=sku_data(),
             schema='main',
             name='sku',
-            overwrite=True
+            overwrite=True,
         )
 
         result = sqlite.query("SELECT * FROM main.sku")
