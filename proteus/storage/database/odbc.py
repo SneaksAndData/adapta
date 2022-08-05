@@ -9,7 +9,7 @@ import pandas
 import sqlalchemy
 from sqlalchemy.connectors import pyodbc
 from sqlalchemy.engine import URL
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import SQLAlchemyError, OperationalError
 
 from proteus.logs import ProteusLogger
 from proteus.storage.database.models import DatabaseType, SqlAlchemyDialect
@@ -148,10 +148,14 @@ class OdbcClient(ABC):
         """
         try:
             if overwrite:
-                if self._dialect.dialect == DatabaseType.SQLITE_ODBC.value.dialect:
-                    self._get_connection().execute(f'DELETE FROM {schema}.{name}')
-                else:
-                    self._get_connection().execute(f'TRUNCATE TABLE {schema}.{name}')
+                try:
+                    if self._dialect.dialect == DatabaseType.SQLITE_ODBC.value.dialect:
+                        self._get_connection().execute(f'DELETE FROM {schema}.{name}')
+                    else:
+                        self._get_connection().execute(f'TRUNCATE TABLE {schema}.{name}')
+                except OperationalError as ex:
+                    # The table does not exist. Do nothing and let the Pandas API handle the creation of the table.
+                    self._logger.warning(f"Error truncating {schema}.{name}, now creating table without truncating.", schema=schema, table=name, exception=ex)
 
             return data.to_sql(
                 name=name,
