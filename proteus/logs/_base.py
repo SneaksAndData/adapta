@@ -27,7 +27,7 @@ class ProteusLogger:
     def __init__(
             self,
             fixed_template: Optional[Dict[str, Dict[str, str]]] = None,
-            fixed_template_delimiter=','
+            fixed_template_delimiter=', '
     ):
         """
           Creates a new instance of a ProteusLogger
