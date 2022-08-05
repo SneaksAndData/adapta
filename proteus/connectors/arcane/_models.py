@@ -123,7 +123,7 @@ class BigQueryStreamConfiguration(StreamConfiguration):
     partition_column_name: str
     change_capture_interval: str
     lookback_interval: str
-    fullLoad_on_start: str
+    full_load_on_start: str
     sink_location: str
     partition_column_name_format: str
     client_tag: str
@@ -142,7 +142,7 @@ class BigQueryStreamConfiguration(StreamConfiguration):
             "PartitionColumnName": self.partition_column_name,
             "ChangeCaptureInterval": self.change_capture_interval,
             "LookbackInterval": self.lookback_interval,
-            "FullLoadOnStart": self.fullLoad_on_start,
+            "FullLoadOnStart": self.full_load_on_start,
             "SinkLocation": self.sink_location,
             "PartitionColumnNameFormat": self.partition_column_name_format,
             "ClientTag": self.client_tag
