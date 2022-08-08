@@ -217,7 +217,7 @@ class ProteusLogger:
         :return:
         """
         logger = self._get_logger(log_source_name)
-        logger.error(
+        logger.debug(
             msg=self._prepare_message(
                 template=self._get_template(template),
                 tags=tags,
