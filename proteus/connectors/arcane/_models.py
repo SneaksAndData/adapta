@@ -111,6 +111,45 @@ class CdmChangeFeedStreamConfiguration(StreamConfiguration):
 
 
 @dataclass
+class BigQueryStreamConfiguration(StreamConfiguration):
+    """
+     Stream configuration for Sql Server Change Tracking Source.
+    """
+    project: str
+    dataset: str
+    table: str
+    entity_name: str
+    secret: str
+    partition_column_name: str
+    change_capture_interval: str
+    lookback_interval: str
+    full_load_on_start: str
+    sink_location: str
+    partition_column_name_format: str
+    client_tag: str
+
+    @property
+    def url_path(self) -> str:
+        return "start/bigquery"
+
+    def to_dict(self) -> Dict:
+        return {
+            "Project": self.project,
+            "Dataset": self.dataset,
+            "Table": self.table,
+            "EntityName": self.entity_name,
+            "Secret": self.secret,
+            "PartitionColumnName": self.partition_column_name,
+            "ChangeCaptureInterval": self.change_capture_interval,
+            "LookbackInterval": self.lookback_interval,
+            "FullLoadOnStart": self.full_load_on_start,
+            "SinkLocation": self.sink_location,
+            "PartitionColumnNameFormat": self.partition_column_name_format,
+            "ClientTag": self.client_tag
+        }
+
+
+@dataclass
 class StreamInfo:
     """
       Arcane stream information.
