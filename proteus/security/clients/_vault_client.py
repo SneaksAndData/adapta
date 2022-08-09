@@ -7,6 +7,9 @@ from proteus.storage.models.base import DataPath
 
 class VaultClient(ProteusClient):
 
+    def get_credentials(self):
+        pass
+
     def get_access_token(self, scope: Optional[str] = None) -> str:
         pass
 
@@ -15,11 +18,3 @@ class VaultClient(ProteusClient):
 
     def connect_account(self):
         pass
-
-    def __init__(self):
-        self._client = hvac.Client()
-
-    def get_credentials(self):
-        with open('/var/run/secrets/kubernetes.io/serviceaccount/token') as f:
-            jwt = f.read()
-            self._client.auth_kubernetes("application", jwt)
