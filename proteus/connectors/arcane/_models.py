@@ -3,6 +3,7 @@
 """
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from dataclasses_json import DataClassJsonMixin, dataclass_json, LetterCase
 from enum import Enum
 from typing import Dict, Optional
 
@@ -149,40 +150,33 @@ class BigQueryStreamConfiguration(StreamConfiguration):
         }
 
 
+@dataclass_json(letter_case=LetterCase.CAMEL)
 @dataclass
-class StreamInfo:
+class StreamError(DataClassJsonMixin):
+    """
+     Arcane stream failure information.
+    """
+    error_type: str
+    error_message: str
+    error_stack: str
+
+
+@dataclass_json(letter_case=LetterCase.CAMEL)
+@dataclass
+class StreamInfo(DataClassJsonMixin):
     """
       Arcane stream information.
     """
     id: str  # pylint: disable=C0103
     stream_source: str
     started_at: str
-    stopped_at: Optional[str]
     owner: str
     tag: str
     stream_configuration: str
     stream_metadata: str
     stream_state: str
-
-    @classmethod
-    def from_dict(cls, json_data: Dict):
-        """
-          Converts json returned by stream info endpoint to this dataclass.
-
-        :param json_data: JSON response from Arcane stream info.
-        :return:
-        """
-        return StreamInfo(
-            id=json_data['id'],
-            stream_source=json_data['streamSource'],
-            started_at=json_data['startedAt'],
-            stopped_at=json_data['stoppedAt'],
-            owner=json_data['owner'],
-            tag=json_data['tag'],
-            stream_configuration=json_data['streamConfiguration'],
-            stream_metadata=json_data['streamMetadata'],
-            stream_state=json_data['streamState']
-        )
+    error: StreamError
+    stopped_at: Optional[str] = None
 
 
 class StreamState(Enum):
