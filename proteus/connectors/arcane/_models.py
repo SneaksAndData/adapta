@@ -2,10 +2,11 @@
  Models for Arcane
 """
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
-from dataclasses_json import DataClassJsonMixin, dataclass_json, LetterCase
 from enum import Enum
 from typing import Dict, Optional
+from dataclasses import dataclass
+
+from dataclasses_json import DataClassJsonMixin, dataclass_json, LetterCase
 
 
 class StreamConfiguration(ABC):
