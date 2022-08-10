@@ -2,9 +2,11 @@
  Models for Arcane
 """
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from enum import Enum
 from typing import Dict, Optional
+from dataclasses import dataclass
+
+from dataclasses_json import DataClassJsonMixin, dataclass_json, LetterCase
 
 
 class StreamConfiguration(ABC):
@@ -111,39 +113,71 @@ class CdmChangeFeedStreamConfiguration(StreamConfiguration):
 
 
 @dataclass
-class StreamInfo:
+class BigQueryStreamConfiguration(StreamConfiguration):
+    """
+     Stream configuration for Sql Server Change Tracking Source.
+    """
+    project: str
+    dataset: str
+    table: str
+    entity_name: str
+    secret: str
+    partition_column_name: str
+    change_capture_interval: str
+    lookback_interval: str
+    full_load_on_start: str
+    sink_location: str
+    partition_column_name_format: str
+    client_tag: str
+
+    @property
+    def url_path(self) -> str:
+        return "start/bigquery"
+
+    def to_dict(self) -> Dict:
+        return {
+            "Project": self.project,
+            "Dataset": self.dataset,
+            "Table": self.table,
+            "EntityName": self.entity_name,
+            "Secret": self.secret,
+            "PartitionColumnName": self.partition_column_name,
+            "ChangeCaptureInterval": self.change_capture_interval,
+            "LookbackInterval": self.lookback_interval,
+            "FullLoadOnStart": self.full_load_on_start,
+            "SinkLocation": self.sink_location,
+            "PartitionColumnNameFormat": self.partition_column_name_format,
+            "ClientTag": self.client_tag
+        }
+
+
+@dataclass_json(letter_case=LetterCase.CAMEL)
+@dataclass
+class StreamError(DataClassJsonMixin):
+    """
+     Arcane stream failure information.
+    """
+    error_type: str
+    error_message: str
+    error_stack: str
+
+
+@dataclass_json(letter_case=LetterCase.CAMEL)
+@dataclass
+class StreamInfo(DataClassJsonMixin):
     """
       Arcane stream information.
     """
     id: str  # pylint: disable=C0103
     stream_source: str
     started_at: str
-    stopped_at: Optional[str]
     owner: str
     tag: str
     stream_configuration: str
     stream_metadata: str
     stream_state: str
-
-    @classmethod
-    def from_dict(cls, json_data: Dict):
-        """
-          Converts json returned by stream info endpoint to this dataclass.
-
-        :param json_data: JSON response from Arcane stream info.
-        :return:
-        """
-        return StreamInfo(
-            id=json_data['id'],
-            stream_source=json_data['streamSource'],
-            started_at=json_data['startedAt'],
-            stopped_at=json_data['stoppedAt'],
-            owner=json_data['owner'],
-            tag=json_data['tag'],
-            stream_configuration=json_data['streamConfiguration'],
-            stream_metadata=json_data['streamMetadata'],
-            stream_state=json_data['streamState']
-        )
+    error: StreamError
+    stopped_at: Optional[str] = None
 
 
 class StreamState(Enum):
