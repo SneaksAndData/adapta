@@ -51,6 +51,29 @@ class StorageClient(ABC):
         """
 
     @abstractmethod
+    def delete_blob(
+        self,
+        blob_path: DataPath,
+    ) -> None:
+        """
+        Deletes blob at blob_path
+
+        :param blob_path: Blob path as DataPath object
+        """
+
+    @abstractmethod
+    def list_blobs(
+        self,
+        blob_path: DataPath,
+    ) -> Iterator[DataPath]:
+        """
+        Lists blobs in blob_path
+
+        :param blob_path: Blob path as DataPath object
+        :return: An iterator of DataPaths to blobs
+        """
+
+    @abstractmethod
     def read_blobs(self, blob_path: DataPath, serialization_format: Type[SerializationFormat[T]]) -> Iterator[T]:
         """
          Reads data under provided path into the given format.
