@@ -80,3 +80,27 @@ class AzureStorageClient(StorageClient):
             ).download_blob().readall()
 
             yield serialization_format().deserialize(blob_data)
+
+    def list_blobs(
+        self,
+        blob_path: DataPath,
+    ) -> Iterator[DataPath]:
+        azure_path = cast_path(blob_path)
+
+        blobs: ItemPaged[BlobProperties] = self._blob_service_client.get_container_client(
+            azure_path.container).list_blobs(name_starts_with=blob_path.path)
+
+        for blob in blobs:
+            if blob.size == 0:  # Skip folders
+                continue
+            yield AdlsGen2Path(account=azure_path.account, container=azure_path.container, path=blob.name)
+
+    def delete_blob(
+        self,
+        blob_path: DataPath,
+    ) -> None:
+        azure_path = cast_path(blob_path)
+
+        self._blob_service_client \
+            .get_container_client(azure_path.container) \
+            .delete_blob(blob_path.path)
