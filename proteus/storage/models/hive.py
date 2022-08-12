@@ -13,7 +13,7 @@ from storage.database.azure_sql import AzureSqlClient
 @dataclass
 class HivePath(DataPath):
     """
-     Path wrapper for ADLS Gen2.
+     Virtual representation of a Hive entity path.
     """
     hive_server: str
     hive_server_port: str
