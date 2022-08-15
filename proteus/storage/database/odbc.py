@@ -157,7 +157,7 @@ class OdbcClient(ABC):
                         self._get_connection().execute(f'TRUNCATE TABLE {schema}.{name}')
                 except OperationalError as ex:
                     # The table does not exist. Do nothing and let the Pandas API handle the creation of the table.
-                    self._logger.warning("Error truncating {schema}.{name}, now creating table without truncating.", schema=schema, table=name, exception=ex)
+                    self._logger.warning("Error truncating {schema}.{table}, now creating table without truncating.", schema=schema, table=name, exception=ex)
 
             return data.to_sql(
                 name=name,
@@ -173,5 +173,5 @@ class OdbcClient(ABC):
         finally:
             active_tran: sqlalchemy.engine.RootTransaction = self._get_connection().get_transaction()
             if active_tran and active_tran.is_active:
-                self._logger.info('Found an active transaction for {schema}.{table}. Committing it.', schema=schema, table=name)
+                self._logger.debug('Found an active transaction for {schema}.{table}. Committing it.', schema=schema, table=name)
                 active_tran.commit()
