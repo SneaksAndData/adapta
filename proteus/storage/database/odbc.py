@@ -136,6 +136,7 @@ class OdbcClient(ABC):
             schema: str,
             name: str,
             overwrite: bool = False,
+            chunksize: Optional[int] = None
     ) -> Optional[int]:
         """
           Materialize dataframe as a table in a database.
@@ -144,6 +145,7 @@ class OdbcClient(ABC):
         :param schema: Schema of a table.
         :param name: Name of a table.
         :param overwrite: Whether to overwrite or append the data.
+        :param chunksize: Use this to split a dataframe into chunks and append them sequentially to the target table.
         :return:
         """
         try:
@@ -155,15 +157,21 @@ class OdbcClient(ABC):
                         self._get_connection().execute(f'TRUNCATE TABLE {schema}.{name}')
                 except OperationalError as ex:
                     # The table does not exist. Do nothing and let the Pandas API handle the creation of the table.
-                    self._logger.warning(f"Error truncating {schema}.{name}, now creating table without truncating.", schema=schema, table=name, exception=ex)
+                    self._logger.warning("Error truncating {schema}.{table}, now creating table without truncating.", schema=schema, table=name, exception=ex)
 
             return data.to_sql(
                 name=name,
                 schema=schema,
                 con=self._get_connection(),
                 index=False,
+                chunksize=chunksize,
                 if_exists='append',
             )
         except SQLAlchemyError as ex:
-            self._logger.error(f"Error while materializing a dataframe into {schema}.{name}", schema=schema, table=name, exception=ex)
+            self._logger.error("Error while materializing a dataframe into {schema}.{table}", schema=schema, table=name, exception=ex)
             return None
+        finally:
+            active_tran: sqlalchemy.engine.RootTransaction = self._get_connection().get_transaction()
+            if active_tran and active_tran.is_active:
+                self._logger.debug('Found an active transaction for {schema}.{table}. Committing it.', schema=schema, table=name)
+                active_tran.commit()
