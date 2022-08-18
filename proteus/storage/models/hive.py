@@ -43,6 +43,13 @@ class HivePath(DataPath):
 
     @staticmethod
     def from_hive_name(schema: str, table: str) -> 'HivePath':
+        """
+         Creates a HivePath from schema and table names. Relies on the rest of Hive connection info being provided through environment.
+
+        :param schema: Hive table schema.
+        :param table: Hive table name.
+        :return: A valid HivePath
+        """
         assert os.getenv('PROTEUS__HIVE_SERVER') \
                and os.getenv('PROTEUS__HIVE_SERVER_PORT') \
                and os.getenv('PROTEUS__HIVE_SERVER_DATABASE') \
