@@ -52,7 +52,7 @@ class OdbcClient(ABC):
         self._connection = None
         pyodbc.pooling = False
 
-    def __enter__(self):
+    def __enter__(self) -> Optional['OdbcClient']:
         connection_url: sqlalchemy.engine.URL = URL.create(
             drivername=self._dialect.dialect,
             host=self._host,
@@ -72,6 +72,7 @@ class OdbcClient(ABC):
         try:
             self._engine: sqlalchemy.engine.Engine = sqlalchemy.create_engine(connection_url, pool_pre_ping=True)
             self._connection: sqlalchemy.engine.Connection = self._engine.connect()
+            return self
         except SQLAlchemyError as ex:
             self._logger.error(
                 'Error connecting to {host}:{port} using dialect {dialect} and driver {driver}',
@@ -81,6 +82,7 @@ class OdbcClient(ABC):
                 driver=self._dialect.driver,
                 exception=ex
             )
+            return None
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self._connection.close()
