@@ -5,9 +5,9 @@ import os
 from dataclasses import dataclass
 from typing import Optional
 
-from proteus.logs import ProteusLogger
+from proteus.storage.database.azure_sql import AzureSqlClient
 from proteus.storage.models.base import DataPath, DataProtocols
-from storage.database.azure_sql import AzureSqlClient
+from proteus.logs import ProteusLogger
 
 
 @dataclass
@@ -41,6 +41,24 @@ class HivePath(DataPath):
             path='/'.join(hdfs_path.split('@')[1].split('/')[1:])
         )
 
+    @staticmethod
+    def from_hive_name(schema: str, table: str) -> 'HivePath':
+        assert os.getenv('PROTEUS__HIVE_SERVER') \
+               and os.getenv('PROTEUS__HIVE_SERVER_PORT') \
+               and os.getenv('PROTEUS__HIVE_SERVER_DATABASE') \
+               and os.getenv('PROTEUS__HIVE_SERVER_ENGINE'), \
+            'PROTEUS__HIVE_SERVER, PROTEUS__HIVE_SERVER_PORT and PROTEUS__HIVE_SERVER_ENGINE must be set to construct a valid HivePath'
+
+        return HivePath(
+            hive_server=os.getenv('PROTEUS__HIVE_SERVER'),
+            hive_server_port=os.getenv('PROTEUS__HIVE_SERVER_PORT'),
+            hive_database=os.getenv('PROTEUS__HIVE_SERVER_DATABASE'),
+            hive_engine=os.getenv('PROTEUS__HIVE_SERVER_ENGINE'),
+            hive_schema=schema,
+            hive_table=table,
+            path=f"{os.getenv('PROTEUS__HIVE_SERVER_DATABASE')}/{schema}/{table}"
+        )
+
     def _check_path(self):
         assert not self.path.startswith('/'), 'Path should not start with /'
 
@@ -57,28 +75,31 @@ class HivePath(DataPath):
         """
         if self.hive_engine == 'sqlserver':
             with AzureSqlClient(
-                logger=logger,
-                host_name=self.hive_server,
-                port=int(self.hive_server_port),
-                database=self.hive_database,
-                user_name=os.environ['PROTEUS__HIVE_USER'],
-                password=os.environ['PROTEUS__HIVE_PASSWORD']
+                    logger=logger,
+                    host_name=self.hive_server,
+                    port=int(self.hive_server_port),
+                    database=self.hive_database,
+                    user_name=os.environ['PROTEUS__HIVE_USER'],
+                    password=os.environ['PROTEUS__HIVE_PASSWORD']
             ) as hive_db_client:
                 db_info = hive_db_client.query(f"select * from DBS where name = '{self.hive_schema}'").to_dict()
                 db_id, db_location = db_info['DB_ID'], db_info['DB_LOCATION_URI']
 
-                tbl_info = hive_db_client.query(f"select * from TBLS where db_id = {db_id} and TBL_NAME = '{self.hive_table}'").to_dict()
+                tbl_info = hive_db_client.query(
+                    f"select * from TBLS where db_id = {db_id} and TBL_NAME = '{self.hive_table}'").to_dict()
                 tbl_id, tbl_type = tbl_info['TBL_ID'], tbl_info['TBL_TYPE']
 
                 if tbl_type == 'EXTERNAL':
-                    return hive_db_client.query(f"select * from SERDE_PARAMS where SERDE_ID = {tbl_id} and PARAM_KEY = 'path'").to_dict()['PARAM_VALUE']
+                    return hive_db_client.query(
+                        f"select * from SERDE_PARAMS where SERDE_ID = {tbl_id} and PARAM_KEY = 'path'").to_dict()[
+                        'PARAM_VALUE']
 
                 if tbl_type == 'MANAGED_TABLE':
                     return f"{db_location}/{self.hive_table}"
 
                 return None
 
-        raise NotImplementedError('Engine {engine} is not supported.', self.hive_engine)
+        raise NotImplementedError(f'Engine {self.hive_engine} is not supported.')
 
     def to_delta_rs_path(self) -> str:
         raise NotImplementedError
