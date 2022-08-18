@@ -83,7 +83,6 @@ class DataDogApiHandler(Handler):
         """
         This handler only works with JSON formatter so overriding it is disabled.
         """
-        pass
 
     def _flush(self) -> None:
         """
