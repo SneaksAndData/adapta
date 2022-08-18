@@ -42,7 +42,8 @@ class ProteusLogger:
 
     def add_log_source(self, *, log_source_name: str, min_log_level: LogLevel,
                        log_handlers: Optional[List[Handler]] = None,
-                       is_default=False) -> 'ProteusLogger':
+                       is_default=False,
+                       formatter: Optional[logging.Formatter] = json_log_formatter.JSONFormatter()) -> 'ProteusLogger':
         """
           Adds a new log source.
 
@@ -50,6 +51,8 @@ class ProteusLogger:
         :param min_log_level: Minimal log level for this source.
         :param log_handlers: Attached log handlers. StreamHandler is used if not provided.
         :param is_default: Whether this log source should be used in a `log` method when no log source is explicitly provided.
+        :param formatter: Logging formatter. Defaults to JSONFormatter so output can be correctly processed by log parsers.
+          Note that some log handlers require specific formatters to be used.
         :return:
         """
         new_logger = logging.getLogger(log_source_name)
@@ -59,7 +62,8 @@ class ProteusLogger:
             log_handlers = [StreamHandler()]
 
         for log_handler in log_handlers:
-            log_handler.setFormatter(json_log_formatter.JSONFormatter())
+            if formatter:
+                log_handler.setFormatter(formatter)
             new_logger.addHandler(log_handler)
 
         self._loggers.setdefault(log_source_name, new_logger)

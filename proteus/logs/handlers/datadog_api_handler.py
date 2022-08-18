@@ -6,9 +6,10 @@ import os
 import signal
 import socket
 import platform
-from logging import LogRecord, Handler
+from logging import LogRecord, Handler, Formatter
 from typing import List, Optional, Dict
 
+import json_log_formatter
 import kubernetes.config.kube_config
 from datadog_api_client import Configuration, ApiClient
 from datadog_api_client.v2.api.logs_api import LogsApi
@@ -53,6 +54,7 @@ class DataDogApiHandler(Handler):
         if debug:
             configuration.debug = True
 
+        self.formatter = json_log_formatter.JSONFormatter()
         self._logs_api = LogsApi(api_client=ApiClient(configuration))
         self._buffer: List[HTTPLogItem] = []
         self._buffer_size = buffer_size
@@ -76,6 +78,12 @@ class DataDogApiHandler(Handler):
                 self._fixed_tags['environment'] = current_context.name
             except ConfigException:
                 pass
+
+    def setFormatter(self, fmt: Optional[Formatter]) -> None:
+        """
+        This handler only works with JSON formatter so overriding it is disabled.
+        """
+        pass
 
     def _flush(self) -> None:
         """
