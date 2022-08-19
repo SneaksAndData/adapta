@@ -51,7 +51,7 @@ def load(proteus_client: ProteusClient,  # pylint: disable=R0913
     return pyarrow_table.to_pandas(timestamp_as_object=True)
 
 
-def history(proteus_client: ProteusClient, path: DataPath) -> Iterable[DeltaTransaction]:
+def history(proteus_client: ProteusClient, path: DataPath, limit: Optional[int] = 1) -> Iterable[DeltaTransaction]:
     """
       Returns transaction history for the table under path.
 
@@ -62,4 +62,4 @@ def history(proteus_client: ProteusClient, path: DataPath) -> Iterable[DeltaTran
     proteus_client.connect_storage(path, set_env=True)
     delta_table = DeltaTable(path.to_delta_rs_path())
 
-    return [DeltaTransaction.from_dict(tran) for tran in delta_table.history()]
+    return [DeltaTransaction.from_dict(tran) for tran in delta_table.history(limit = limit)]
