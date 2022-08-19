@@ -82,6 +82,7 @@ class OdbcClient(ABC):
                 driver=self._dialect.driver,
                 exception=ex
             )
+
             return None
 
     def __exit__(self, exc_type, exc_val, exc_tb):
