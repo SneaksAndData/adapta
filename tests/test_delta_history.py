@@ -24,6 +24,13 @@ def test_delta_history(get_client_and_path):
 
     assert len(transactions) == 1 and operations == [DeltaOperation.UPDATE.value]
 
+def test_delta_history_2(get_client_and_path):
+    client, data_path = get_client_and_path
+    transactions = list(history(client, data_path, limit=2))
+    operations = [tran.operation.value for tran in transactions]
+
+    assert len(transactions) == 2 and operations == [DeltaOperation.WRITE.value, DeltaOperation.UPDATE.value]
+
 def test_delta_history_full(get_client_and_path):
     client, data_path = get_client_and_path
     transactions = list(history(client, data_path, limit=None))
