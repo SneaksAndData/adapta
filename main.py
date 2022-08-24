@@ -9,12 +9,10 @@ from proteus.logs import ProteusLogger
 from proteus.logs.models import LogLevel
 
 if __name__ == "__main__":
-    duplicate = os.dup(sys.stdout.fileno())
-    file_ = os.fdopen(duplicate, "wb")
     logger: ProteusLogger = ProteusLogger().add_log_source(
         log_source_name='AutoReplenishmentModel',
         min_log_level=LogLevel.INFO,
-        log_handlers=[StreamHandler(TextIOWrapper(file_))],
+        log_handlers=[StreamHandler()],
         is_default=True
     )
     with logger.redirect():
