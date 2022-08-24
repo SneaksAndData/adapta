@@ -7,6 +7,7 @@ import ctypes
 import os.path
 import sys
 import tempfile
+import uuid
 
 from contextlib import contextmanager
 from functools import partial
@@ -269,13 +270,20 @@ class ProteusLogger:
 
         libc = ctypes.CDLL(None)
         saved_stdout = libc.dup(1)
-        tmp_file = os.path.join(tempfile.gettempdir(), tempfile.mktemp()).encode('utf-8')
+        if saved_stdout == -1:
+            raise Exception("could not save stdout")
+        tmp_file = os.path.join(os.getcwd(), f"redirected_output_{uuid.UUID}").encode('utf-8')
         try:
             redirected_fd = libc.creat(tmp_file)
-            libc.dup2(redirected_fd, 1)
-            libc.close(redirected_fd)
+            return_value = libc.dup2(redirected_fd, 1)
+            if return_value == -1:
+                raise Exception("could not duplicate file")
+            return_value = libc.close(redirected_fd)
+            if return_value == -1:
+                raise Exception("could not duplicate file")
             yield None
         finally:
+            sys.stdout.flush()
             libc.dup2(saved_stdout, 1)
             os.chmod(tmp_file, 420)
 
