@@ -1,3 +1,5 @@
+name: Crate development package
+
 on: issue_comment
 
 jobs:
