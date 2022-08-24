@@ -7,7 +7,6 @@ import ctypes
 import os.path
 import sys
 import tempfile
-import uuid
 
 from contextlib import contextmanager
 from functools import partial
