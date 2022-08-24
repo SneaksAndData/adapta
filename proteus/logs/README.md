@@ -75,7 +75,7 @@ proteus_logger = ProteusLogger(fixed_template={
 ```
 
 Note: StreamHandler from logging package should not be used together with stdout redirection, it could lead
-to duplicated messages in datadog.
+to duplicated messages in datadog. If you want to print log messages to stdout, you should use SafeStreamHandler.
 
 Remember to set `PROTEUS__DD_API_KEY`, `PROTEUS__DD_APP_KEY` and `PROTEUS__DD_SITE` environment variables before creating an instance
 of `DataDogApiHandler()`.
