@@ -11,6 +11,7 @@ def test_does_not_close_stderr():
 
 def test_does_not_close_stdout():
     ssh = SafeStreamHandler(sys.stdout)
+    stream = ssh.stream
     ssh.close()
-    assert not sys.stderr.closed
-    assert ssh.stream.closed
+    assert not sys.stdout.closed
+    assert stream.closed
