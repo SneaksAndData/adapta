@@ -276,6 +276,7 @@ class ProteusLogger:
             libc.close(redirected_fd)
             yield None
         finally:
+            sys.stdout.flush()
             libc.dup2(saved_stdout, 1)
             os.chmod(tmp_file, 420)
 
