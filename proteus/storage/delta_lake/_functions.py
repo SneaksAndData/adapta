@@ -36,8 +36,8 @@ def load(proteus_client: ProteusClient,  # pylint: disable=R0913
     :param batch_size: Optional batch size when reading in batches. If not set, whole table will be loaded into memory.
     :return: A DeltaTable wrapped Rust class, pandas Dataframe or an iterator of pandas Dataframes, for batched reads.
     """
-    proteus_client.connect_storage(path, set_env=True)
-    pyarrow_ds = DeltaTable(path.to_delta_rs_path(), version=version) \
+    storage_options = proteus_client.connect_storage(path)
+    pyarrow_ds = DeltaTable(path.to_delta_rs_path(), version=version, storage_options=storage_options) \
         .to_pyarrow_dataset(parquet_read_options=ParquetReadOptions(coerce_int96_timestamp_unit="ms"))
 
     if batch_size:
@@ -59,7 +59,7 @@ def history(proteus_client: ProteusClient, path: DataPath, limit: Optional[int] 
     :param path: Path to delta table, in HDFS format: abfss://container@account.dfs.core.windows.net/my/path
     :return: An iterable of Delta transactions for this table.
     """
-    proteus_client.connect_storage(path, set_env=True)
-    delta_table = DeltaTable(path.to_delta_rs_path())
+    storage_options = proteus_client.connect_storage(path)
+    delta_table = DeltaTable(path.to_delta_rs_path(), storage_options=storage_options)
 
     return [DeltaTransaction.from_dict(tran) for tran in delta_table.history(limit = limit)]
