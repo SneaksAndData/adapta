@@ -90,13 +90,13 @@ class AzureClient(ProteusClient):
 
     def get_credentials(self) -> DefaultAzureCredential:
         return _get_azure_credentials()
-    
+
     def get_filesystem(self, path: DataPath) -> PyFileSystem:
 
         connection_options = self.connect_storage(path=path)
-        fs = AzureBlobFileSystem(
+        file_system = AzureBlobFileSystem(
             account_name = connection_options['AZURE_STORAGE_ACCOUNT_NAME'],
             credential = connection_options['AZURE_STORAGE_ACCOUNT_KEY']
         )
 
-        return PyFileSystem(FSSpecHandler(fs))
+        return PyFileSystem(FSSpecHandler(file_system))

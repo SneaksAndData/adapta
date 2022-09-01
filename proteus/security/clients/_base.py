@@ -46,7 +46,7 @@ class ProteusClient(ABC):
 
         :return:
         """
-    
+
     @abstractmethod
     def get_filesystem(self, path: DataPath) -> PyFileSystem:
         """
