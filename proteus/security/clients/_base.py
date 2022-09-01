@@ -48,7 +48,7 @@ class ProteusClient(ABC):
         """
 
     @abstractmethod
-    def get_filesystem(self, path: DataPath) -> PyFileSystem:
+    def get_pyarrow_filesystem(self, path: DataPath) -> PyFileSystem:
         """
         Returns a `PyFileSystem` object that's authenticated for the provided path
 

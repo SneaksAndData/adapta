@@ -91,7 +91,7 @@ class AzureClient(ProteusClient):
     def get_credentials(self) -> DefaultAzureCredential:
         return _get_azure_credentials()
 
-    def get_filesystem(self, path: DataPath) -> PyFileSystem:
+    def get_pyarrow_filesystem(self, path: DataPath) -> PyFileSystem:
 
         connection_options = self.connect_storage(path=path)
         file_system = AzureBlobFileSystem(

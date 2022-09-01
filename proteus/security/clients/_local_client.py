@@ -40,5 +40,5 @@ class LocalClient(ProteusClient):
         :return:
         """
 
-    def get_filesystem(self, path: DataPath) -> PyFileSystem:
+    def get_pyarrow_filesystem(self, path: DataPath) -> PyFileSystem:
         return PyFileSystem(FSSpecHandler(LocalFileSystem()))
