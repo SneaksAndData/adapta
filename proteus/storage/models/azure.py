@@ -37,7 +37,7 @@ class AdlsGen2Path(DataPath):
 
     def to_delta_rs_path(self) -> str:
         self._check_path()
-        return f"adls2://{self.account}/{self.container}/{self.path}"
+        return f"az://{self.container}/{self.path}"
 
 
 @dataclass
