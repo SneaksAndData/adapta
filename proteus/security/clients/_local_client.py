@@ -2,6 +2,7 @@
  Client representing Local infrastructure. Mainly used for unit tests.
 """
 from typing import Optional, Dict
+from pyarrow.fs import PyFileSystem, FSSpecHandler, LocalFileSystem
 
 from proteus.security.clients._base import ProteusClient
 from proteus.storage.models.base import DataPath
@@ -38,3 +39,6 @@ class LocalClient(ProteusClient):
          Not supported in local client.
         :return:
         """
+
+    def get_filesystem(self, path: DataPath) -> PyFileSystem:
+        return PyFileSystem(FSSpecHandler(LocalFileSystem()))

@@ -4,9 +4,11 @@
 import os
 from typing import Optional, List, Dict, Tuple
 
+from adlfs import AzureBlobFileSystem
 from azure.mgmt.storage.v2021_08_01.models import StorageAccountKey, StorageAccount
 from azure.mgmt.storage import StorageManagementClient
 from azure.identity import DefaultAzureCredential
+from pyarrow.fs import PyFileSystem, FSSpecHandler
 
 from proteus.security.clients._base import ProteusClient
 from proteus.storage.models.azure import AdlsGen2Path
@@ -88,3 +90,13 @@ class AzureClient(ProteusClient):
 
     def get_credentials(self) -> DefaultAzureCredential:
         return _get_azure_credentials()
+    
+    def get_filesystem(self, path: DataPath) -> PyFileSystem:
+
+        connection_options = self.connect_storage(path=path)
+        fs = AzureBlobFileSystem(
+            account_name = connection_options['AZURE_STORAGE_ACCOUNT_NAME'],
+            credential = connection_options['AZURE_STORAGE_ACCOUNT_KEY']
+        )
+
+        return PyFileSystem(FSSpecHandler(fs))

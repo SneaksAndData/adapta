@@ -4,6 +4,7 @@
 from abc import ABC, abstractmethod
 from typing import Optional, Dict
 
+from pyarrow.fs import PyFileSystem
 from proteus.storage.models.base import DataPath
 
 
@@ -43,5 +44,14 @@ class ProteusClient(ABC):
         """
          Connects infrastructure provider account, usually by setting specific environment variables.
 
+        :return:
+        """
+    
+    @abstractmethod
+    def get_filesystem(self, path: DataPath) -> PyFileSystem:
+        """
+        Returns a `PyFileSystem` object that's authenticated for the provided path
+
+        :param path: Data path to authenticate.
         :return:
         """
