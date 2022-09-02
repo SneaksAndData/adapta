@@ -43,19 +43,39 @@ logger = proteus_logger.proteus_test_logger_1
 ### DataDog handler
 
 In order to send logs to DataDog, use `DataDogApiHandler` when adding a log source. If you still want messages
-in `stdout` or `stderr`, add `StreamHandler` on top:
+in `stdout` or `stderr`, add `SafeStreamHandler` on top:
 
 ```python
-from logging import StreamHandler
-
 from proteus.logs import ProteusLogger
 from proteus.logs.models import LogLevel
 from proteus.logs.handlers.datadog_api_handler import DataDogApiHandler
+from proteus.logs.handlers.safe_stream_handler import SafeStreamHandler
 
 proteus_logger = ProteusLogger() \
     .add_log_source(log_source_name='proteus_test_logger_1', min_log_level=LogLevel.INFO,
-                    log_handlers=[DataDogApiHandler(), StreamHandler()], is_default=True)
+                    log_handlers=[DataDogApiHandler(), SafeStreamHandler()], is_default=True)
+
+# you can also add fixed parts to your log messages, for example add a job execution id:
+
+my_job_id = '000-000-111'
+owner = 'host-1'
+proteus_logger = ProteusLogger(fixed_template={
+    'running with job id {job_id} on {owner}': {
+        'job_id': my_job_id,
+        'owner': owner
+    }
+}, fixed_template_delimiter='|') \
+    .add_log_source(log_source_name='proteus_test_logger_1', min_log_level=LogLevel.INFO,
+                    log_handlers=[DataDogApiHandler(), SafeStreamHandler()], is_default=True)
+
+# messages emitted by the logger will look like this:
+# a message is here | running with job id 000-000-111 on host-1
+# another message is here | running with job id 000-000-111 on host-1
+# ...
 ```
 
-Remember to set `DD_API_KEY`, `DD_APP_KEY` and `DD_SITE` environment variables before creating an instance
+Note: StreamHandler from logging package should not be used together with stdout redirection, it could lead
+to duplicated messages in datadog. If you want to print log messages to stdout, you should use SafeStreamHandler.
+
+Remember to set `PROTEUS__DD_API_KEY`, `PROTEUS__DD_APP_KEY` and `PROTEUS__DD_SITE` environment variables before creating an instance
 of `DataDogApiHandler()`.

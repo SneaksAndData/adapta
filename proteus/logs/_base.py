@@ -9,9 +9,10 @@ import sys
 import tempfile
 
 from contextlib import contextmanager
+from functools import partial
 
 from logging import Handler, StreamHandler
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 
 import json_log_formatter
 
@@ -23,12 +24,21 @@ class ProteusLogger:
      Proteus Proxy for Python logging library.
     """
 
-    def __init__(self):
+    def __init__(
+            self,
+            fixed_template: Optional[Dict[str, Dict[str, str]]] = None,
+            fixed_template_delimiter=', '
+    ):
         """
           Creates a new instance of a ProteusLogger
+
+        :param fixed_template: Additional template to append to message templates provided via logging methods.
+        :param fixed_template_delimiter: Optional delimiter to use when appending fixed templates.
         """
         self._loggers = {}
         self._default_log_source = None
+        self._fixed_template = fixed_template
+        self._fixed_template_delimiter = fixed_template_delimiter
 
     def add_log_source(self, *, log_source_name: str, min_log_level: LogLevel,
                        log_handlers: Optional[List[Handler]] = None,
@@ -66,7 +76,7 @@ class ProteusLogger:
         return None
 
     @staticmethod
-    def _prepare_message(template: str, tags: Optional[str] = None, diagnostics: Optional[str] = None,
+    def _prepare_message(template: str, tags: Optional[Dict[str, str]] = None, diagnostics: Optional[str] = None,
                          **kwargs) -> str:
         """
          Returns message dictionary to be used by handler formatter.
@@ -74,7 +84,7 @@ class ProteusLogger:
 
         :return:
         """
-        base_object = {
+        base_object: Dict[str, Any] = {
             'template': template,
             'text': template.format(**kwargs)
         }
@@ -101,7 +111,23 @@ class ProteusLogger:
 
         return self._loggers[log_source_name or self._default_log_source]
 
-    def info(self, template: str, tags: Optional[str] = None, log_source_name: Optional[str] = None, **kwargs) -> None:
+    def _get_fixed_args(self) -> Dict:
+        fixed_args = {}
+        if self._fixed_template:
+            for fixed_value in self._fixed_template.values():
+                fixed_args = {**fixed_args, **fixed_value}
+
+        return fixed_args
+
+    def _get_template(self, template) -> str:
+        return self._fixed_template_delimiter.join(
+            [template, ', '.join(self._fixed_template.keys())]) if self._fixed_template else template
+
+    def info(self,
+             template: str,
+             tags: Optional[Dict[str, str]] = None,
+             log_source_name: Optional[str] = None,
+             **kwargs) -> None:
         """
           Sends an INFO level message to configured log sources.
 
@@ -112,10 +138,21 @@ class ProteusLogger:
         :return:
         """
         logger = self._get_logger(log_source_name)
-        logger.info(msg=self._prepare_message(template=template, tags=tags, diagnostics=None, **kwargs))
 
-    def warning(self, template: str, exception: BaseException, tags: Optional[str] = None,
-                log_source_name: Optional[str] = None, **kwargs) -> None:
+        logger.info(
+            msg=self._prepare_message(
+                template=self._get_template(template),
+                tags=tags,
+                diagnostics=None,
+                **self._get_fixed_args(),
+                **kwargs))
+
+    def warning(self,
+                template: str,
+                exception: Optional[BaseException] = None,
+                tags: Optional[Dict[str, str]] = None,
+                log_source_name: Optional[str] = None,
+                **kwargs) -> None:
         """
           Sends a WARNING level message to configured log sources.
 
@@ -127,11 +164,21 @@ class ProteusLogger:
         :return:
         """
         logger = self._get_logger(log_source_name)
-        logger.warning(msg=self._prepare_message(template=template, tags=tags, diagnostics=None, **kwargs),
-                       exc_info=exception, stack_info=True)
+        logger.warning(
+            msg=self._prepare_message(
+                template=self._get_template(template),
+                tags=tags,
+                diagnostics=None,
+                **self._get_fixed_args(),
+                **kwargs),
+            exc_info=exception, stack_info=True)
 
-    def error(self, template: str, exception: BaseException, tags: Optional[str] = None,
-              log_source_name: Optional[str] = None, **kwargs) -> None:
+    def error(self,
+              template: str,
+              exception: Optional[BaseException] = None,
+              tags: Optional[Dict[str, str]] = None,
+              log_source_name: Optional[str] = None,
+              **kwargs) -> None:
         """
           Sends an ERROR level message to configured log sources.
 
@@ -143,11 +190,20 @@ class ProteusLogger:
         :return:
         """
         logger = self._get_logger(log_source_name)
-        logger.error(msg=self._prepare_message(template=template, tags=tags, diagnostics=None, **kwargs),
-                     exc_info=exception, stack_info=True)
+        logger.error(
+            msg=self._prepare_message(
+                template=self._get_template(template),
+                tags=tags,
+                diagnostics=None,
+                **self._get_fixed_args(),
+                **kwargs),
+            exc_info=exception, stack_info=True)
 
-    def debug(self, template: str, exception: BaseException, diagnostics: Optional[str] = None,  # pylint: disable=R0913
-              tags: Optional[str] = None,
+    def debug(self,
+              template: str,
+              exception: Optional[BaseException] = None,
+              diagnostics: Optional[str] = None,  # pylint: disable=R0913
+              tags: Optional[Dict[str, str]] = None,
               log_source_name: Optional[str] = None, **kwargs) -> None:
         """
           Sends a DEBUG level message to configured log sources.
@@ -161,13 +217,20 @@ class ProteusLogger:
         :return:
         """
         logger = self._get_logger(log_source_name)
-        logger.error(msg=self._prepare_message(template=template, tags=tags, diagnostics=diagnostics, **kwargs),
-                     exc_info=exception, stack_info=True)
+        logger.debug(
+            msg=self._prepare_message(
+                template=self._get_template(template),
+                tags=tags,
+                diagnostics=diagnostics,
+                **self._get_fixed_args(),
+                **kwargs),
+            exc_info=exception, stack_info=True)
 
     @contextmanager
     def redirect(self,
-                 tags: Optional[str] = None,
-                 log_source_name: Optional[str] = None):
+                 tags: Optional[Dict[str, str]] = None,
+                 log_source_name: Optional[str] = None,
+                 log_level=LogLevel.INFO):
         """
          Redirects stdout to a temporary file and dumps its contents as INFO messages
          once the wrapped code block finishes execution. Stdout is restored after the block completes execution.
@@ -187,12 +250,13 @@ class ProteusLogger:
 
         :param tags: Optional message tags.
         :param log_source_name: Optional name of a log source, if not using a default.
+        :param log_level: Optional logging level for a redirected log source. Defaults to INFO.
         :return:
         """
 
         if sys.platform == "win32":
             self.info(
-                '>> Output redirection not supported on this platform: {platform} <<',
+                self._get_template('>> Output redirection not supported on this platform: {platform} <<'),
                 platform=sys.platform,
                 tags=tags,
                 log_source_name=log_source_name
@@ -212,10 +276,32 @@ class ProteusLogger:
             libc.close(redirected_fd)
             yield None
         finally:
+            sys.stdout.flush()
             libc.dup2(saved_stdout, 1)
             os.chmod(tmp_file, 420)
-            self.info('>> Redirected output {state} <<', state='BEGIN', tags=tags, log_source_name=log_source_name)
+
+            logger = self._get_logger(log_source_name)
+            log_header = partial(self._prepare_message,
+                                 template=self._get_template('>> Redirected output {state} <<'),
+                                 tags=tags,
+                                 **self._get_fixed_args(),
+                                 diagnostics=None)
+            log_message = partial(self._prepare_message,
+                                  template=self._get_template('Redirected output: {message}'),
+                                  tags=tags,
+                                  **self._get_fixed_args(),
+                                  diagnostics=None)
+            log_method = {
+                LogLevel.INFO: logger.info,
+                LogLevel.WARN: logger.warning,
+                LogLevel.ERROR: logger.error,
+                LogLevel.DEBUG: logger.debug
+            }
+
+            log_method[log_level](log_header(state='BEGIN'))
+
             with open(tmp_file, encoding='utf-8') as output:
                 for line in output.readlines():
-                    self.info('Redirected output: {msg}', msg=line, tags=tags, log_source_name=log_source_name)
-            self.info('>> Redirected output {state} <<', state='END', tags=tags, log_source_name=log_source_name)
+                    log_method[log_level](log_message(message=line))
+
+            log_method[log_level](log_header(state='END'))

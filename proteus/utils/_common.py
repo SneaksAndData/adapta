@@ -1,6 +1,6 @@
 """Common utility functions. All of these are imported into __init__.py"""
 import time
-from typing import List, Optional
+from typing import List, Optional, Dict
 from argparse import ArgumentParser, Namespace
 
 import requests
@@ -62,9 +62,12 @@ def add_crystal_args(parser: Optional[ArgumentParser] = None) -> ArgumentParser:
 
     parser.add_argument('--sas-uri', required=True, type=str, help='SAS URI for input data')
     parser.add_argument('--request-id', required=True, type=str, help='ID of the task')
-    parser.add_argument('--results-receiver', required=True, type=str, help='HTTP(s) endpoint to which output SAS URI is passed')
-    parser.add_argument('--results-receiver-user', required=False, type=str, help='User for results receiver (authentication)')
-    parser.add_argument('--results-receiver-password', required=False, type=str, help='Password for results receiver (authentication)')
+    parser.add_argument('--results-receiver', required=True, type=str,
+                        help='HTTP(s) endpoint to which output SAS URI is passed')
+    parser.add_argument('--results-receiver-user', required=False, type=str,
+                        help='User for results receiver (authentication)')
+    parser.add_argument('--results-receiver-password', required=False, type=str,
+                        help='Password for results receiver (authentication)')
     parser.add_argument('--sign-result', dest='sign_result', required=False, action='store_true')
     parser.set_defaults(sign_result=False)
 
@@ -83,3 +86,15 @@ def extract_crystal_args(args: Namespace) -> CrystalEntrypointArguments:
         results_receiver=args.results_receiver,
         sign_result=args.sign_result
     )
+
+
+def convert_datadog_tags(tag_dict: Optional[Dict[str, str]]) -> Optional[List[str]]:
+    """
+     Converts tags dictionary to Datadog tag format.
+
+    :param tag_dict: Dictionary of tags.
+    :return: A list of tag_key:tag_value
+    """
+    if not tag_dict:
+        return None
+    return [f"{k}:{v}" for k, v in tag_dict.items()]

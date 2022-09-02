@@ -25,7 +25,7 @@ from proteus.logs.models import LogLevel
             {'index': 1},
             None,
             None,
-            '{"template": "This a unit test logger {index}", "text": "This a unit test logger 1", "index": 1}'
+            '{"template": "This a unit test logger {index}, Fixed message1 {message1}, Fixed message2 {message2}", "text": "This a unit test logger 1, Fixed message1 this is a fixed message1, Fixed message2 this is a fixed message2", "message1": "this is a fixed message1", "message2": "this is a fixed message2", "index": 1}'
     ),
     (
             LogLevel.WARN,
@@ -33,7 +33,7 @@ from proteus.logs.models import LogLevel
             {'index': 1},
             ValueError("test warning"),
             None,
-            '{"template": "This a unit test logger {index}", "text": "This a unit test logger 1", "index": 1}'
+            '{"template": "This a unit test logger {index}, Fixed message1 {message1}, Fixed message2 {message2}", "text": "This a unit test logger 1, Fixed message1 this is a fixed message1, Fixed message2 this is a fixed message2", "message1": "this is a fixed message1", "message2": "this is a fixed message2", "index": 1}'
     ),
     (
             LogLevel.ERROR,
@@ -41,7 +41,7 @@ from proteus.logs.models import LogLevel
             {'index': 1},
             ValueError("test error"),
             None,
-            '{"template": "This a unit test logger {index}", "text": "This a unit test logger 1", "index": 1}'
+            '{"template": "This a unit test logger {index}, Fixed message1 {message1}, Fixed message2 {message2}", "text": "This a unit test logger 1, Fixed message1 this is a fixed message1, Fixed message2 this is a fixed message2", "message1": "this is a fixed message1", "message2": "this is a fixed message2", "index": 1}'
     ),
     (
             LogLevel.DEBUG,
@@ -49,14 +49,21 @@ from proteus.logs.models import LogLevel
             {'index': 1},
             ValueError("test error"),
             'additional debug info',
-            '{"template": "This a unit test logger {index}", "text": "This a unit test logger 1", "diagnostics": "additional debug info", "index": 1}'
+            '{"template": "This a unit test logger {index}, Fixed message1 {message1}, Fixed message2 {message2}", "text": "This a unit test logger 1, Fixed message1 this is a fixed message1, Fixed message2 this is a fixed message2", "diagnostics": "additional debug info", "message1": "this is a fixed message1", "message2": "this is a fixed message2", "index": 1}'
     )
 ])
 def test_log_format(level: LogLevel, template: str, args: Dict, exception: BaseException, diagnostics: str,
                     expected_message: str):
     test_file_path = os.path.join(tempfile.gettempdir(), str(uuid.uuid4()))
     with open(test_file_path, 'w') as log_stream:
-        stream_logger = ProteusLogger() \
+        stream_logger = ProteusLogger(fixed_template={
+            'Fixed message1 {message1}': {
+                'message1': 'this is a fixed message1'
+            },
+            'Fixed message2 {message2}': {
+                'message2': 'this is a fixed message2'
+            },
+        }) \
             .add_log_source(log_source_name=str(uuid.uuid4()), min_log_level=LogLevel.DEBUG, is_default=True,
                             log_handlers=[StreamHandler(stream=log_stream)])
 
@@ -78,9 +85,9 @@ def test_log_format(level: LogLevel, template: str, args: Dict, exception: BaseE
 
 
 def test_datadog_api_handler(mocker: MockerFixture):
-    os.environ.setdefault('DD_API_KEY', 'some-key')
-    os.environ.setdefault('DD_APP_KEY', 'some-app-key')
-    os.environ.setdefault('DD_SITE', 'some-site.dog')
+    os.environ.setdefault('PROTEUS__DD_API_KEY', 'some-key')
+    os.environ.setdefault('PROTEUS__DD_APP_KEY', 'some-app-key')
+    os.environ.setdefault('PROTEUS__DD_SITE', 'some-site.dog')
 
     mocker.patch('proteus.logs.handlers.datadog_api_handler.DataDogApiHandler._flush', return_value=None)
     mock_handler = DataDogApiHandler(buffer_size=1)

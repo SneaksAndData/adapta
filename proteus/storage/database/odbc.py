@@ -9,11 +9,10 @@ import pandas
 import sqlalchemy
 from sqlalchemy.connectors import pyodbc
 from sqlalchemy.engine import URL
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import SQLAlchemyError, OperationalError
 
 from proteus.logs import ProteusLogger
-from proteus.storage.database.models import DatabaseType
-from proteus.storage.database.models import SqlAlchemyDialect
+from proteus.storage.database.models import DatabaseType, SqlAlchemyDialect
 
 
 class OdbcClient(ABC):
@@ -53,7 +52,7 @@ class OdbcClient(ABC):
         self._connection = None
         pyodbc.pooling = False
 
-    def __enter__(self):
+    def __enter__(self) -> Optional['OdbcClient']:
         connection_url: sqlalchemy.engine.URL = URL.create(
             drivername=self._dialect.dialect,
             host=self._host,
@@ -73,6 +72,7 @@ class OdbcClient(ABC):
         try:
             self._engine: sqlalchemy.engine.Engine = sqlalchemy.create_engine(connection_url, pool_pre_ping=True)
             self._connection: sqlalchemy.engine.Connection = self._engine.connect()
+            return self
         except SQLAlchemyError as ex:
             self._logger.error(
                 'Error connecting to {host}:{port} using dialect {dialect} and driver {driver}',
@@ -82,6 +82,8 @@ class OdbcClient(ABC):
                 driver=self._dialect.driver,
                 exception=ex
             )
+
+            return None
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self._connection.close()
@@ -136,7 +138,8 @@ class OdbcClient(ABC):
             data: pandas.DataFrame,
             schema: str,
             name: str,
-            overwrite: bool = True
+            overwrite: bool = False,
+            chunksize: Optional[int] = None
     ) -> Optional[int]:
         """
           Materialize dataframe as a table in a database.
@@ -144,21 +147,34 @@ class OdbcClient(ABC):
         :param data: Dataframe to materialize as a table.
         :param schema: Schema of a table.
         :param name: Name of a table.
-        :param overwrite: Whether to append or overwrite the data, including schema.
+        :param overwrite: Whether to overwrite or append the data.
+        :param chunksize: Use this to split a dataframe into chunks and append them sequentially to the target table.
         :return:
         """
-
         try:
             if overwrite:
-                self._get_connection().execute(f"DROP TABLE IF EXISTS {schema}.{name}")
+                try:
+                    if self._dialect.dialect == DatabaseType.SQLITE_ODBC.value.dialect:
+                        self._get_connection().execute(f'DELETE FROM {schema}.{name}')
+                    else:
+                        self._get_connection().execute(f'TRUNCATE TABLE {schema}.{name}')
+                except OperationalError as ex:
+                    # The table does not exist. Do nothing and let the Pandas API handle the creation of the table.
+                    self._logger.warning("Error truncating {schema}.{table}, now creating table without truncating.", schema=schema, table=name, exception=ex)
 
             return data.to_sql(
                 name=name,
                 schema=schema,
                 con=self._get_connection(),
                 index=False,
-                if_exists='append' if not overwrite else 'replace',
+                chunksize=chunksize,
+                if_exists='append',
             )
         except SQLAlchemyError as ex:
             self._logger.error("Error while materializing a dataframe into {schema}.{table}", schema=schema, table=name, exception=ex)
             return None
+        finally:
+            active_tran: sqlalchemy.engine.RootTransaction = self._get_connection().get_transaction()
+            if active_tran and active_tran.is_active:
+                self._logger.debug('Found an active transaction for {schema}.{table}. Committing it.', schema=schema, table=name)
+                active_tran.commit()

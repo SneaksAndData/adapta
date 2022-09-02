@@ -25,29 +25,28 @@ proteus_logger = ProteusLogger().add_log_source(
     log_handlers=[]  # don't forget to provide log handlers if you need to log outside stdout
 )
 
-azsql = AzureSqlClient(
+with AzureSqlClient(
     logger=proteus_logger,
     host_name='my-sql-host',
     user_name='my-sql-user',
     password='my-sql-password',
     database='my-database'
-)
-
-# read from dbo.big_data into an iterable of pandas dataframes
-some_data = azsql.query('select * from dbo.big_data', chunksize=1000)
-
-for chunk in some_data:
-    print(chunk)
-
-# write data to dbo.small_data
-data_to_write = pandas.DataFrame(data={
-    'id': ["1", "2", "3"],
-    'name': ["Exostrike", "BIOM", "Collin"]
-})
-
-azsql.materialize(data_to_write, 'dbo', 'small_data', True)
-
-# scale Azure SQL instance
-result = azsql.scale_instance(target_objective='HS_Gen4_1', max_wait_time=300)
+) as azsql:
+    # read from dbo.big_data into an iterable of pandas dataframes
+    some_data = azsql.query('select * from dbo.big_data', chunksize=1000)
+    
+    for chunk in some_data:
+        print(chunk)
+    
+    # write data to dbo.small_data
+    data_to_write = pandas.DataFrame(data={
+        'id': ["1", "2", "3"],
+        'name': ["Exostrike", "BIOM", "Collin"]
+    })
+    
+    azsql.materialize(data_to_write, 'dbo', 'small_data', True)
+    
+    # scale Azure SQL instance
+    result = azsql.scale_instance(target_objective='HS_Gen4_1', max_wait_time=300)
 ```
 

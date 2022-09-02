@@ -12,6 +12,7 @@ class DataProtocols(Enum):
     AZURE_BLOB = 'wasbs'
     ADLS2 = 'abfss'
     FILE = 'file'
+    HIVE = 'hive'
 
 
 class DataPath(ABC):
