@@ -14,7 +14,7 @@ class VaultClient(ProteusClient):
         client = hvac.Client(url=f"https://{self.TEST}/")
         auth_url_response = client.auth.oidc.oidc_authorization_url_request(
             role=None,
-            redirect_uri=f'https://{self.TEST}/ui/vault/auth/oidc/oidc/callback',
+            redirect_uri='http://localhost:8250/oidc/callback',
             path='oidc'
         )
         auth_url = auth_url_response['data']['auth_url']
@@ -26,7 +26,12 @@ class VaultClient(ProteusClient):
         auth_url_state = params['state'][0]
 
         webbrowser.open(auth_url)
-        #token = login_odic_get_token()
+        token = self.login_odic_get_token()
+        auth_result = client.auth.oidc.oidc_callback(
+            code=token, path='oidc', nonce=auth_url_nonce, state=auth_url_state
+        )
+
+        print('Client token returned: %s' % auth_result['auth']['client_token'])
         return auth_url_response
 
     def get_access_token(self, scope: Optional[str] = None) -> str:
@@ -37,3 +42,27 @@ class VaultClient(ProteusClient):
 
     def connect_account(self):
         pass
+
+    # handles the callback
+    def login_odic_get_token(self):
+        from http.server import BaseHTTPRequestHandler, HTTPServer
+
+        class HttpServ(HTTPServer):
+            def __init__(self, *args, **kwargs):
+                HTTPServer.__init__(self, *args, **kwargs)
+                self.token = None
+
+        class AuthHandler(BaseHTTPRequestHandler):
+            token = ''
+
+            def do_GET(self):
+                params = parse.parse_qs(self.path.split('?')[1])
+                self.server.token = params['code'][0]
+                self.send_response(200)
+                self.end_headers()
+                self.wfile.write(str.encode('<div>Authentication successful, you can close the browser now.</div>'))
+
+        server_address = ('', 8250)
+        httpd = HttpServ(server_address, AuthHandler)
+        httpd.handle_request()
+        return httpd.token
