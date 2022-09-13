@@ -1,6 +1,7 @@
 """
  Abstraction for storage operations.
 """
+import tempfile
 from abc import ABC, abstractmethod
 from typing import Optional, Dict, Type, TypeVar, Iterator
 
@@ -81,4 +82,17 @@ class StorageClient(ABC):
         :param blob_path: Path to blob(s).
         :param serialization_format: Format to deserialize blobs into.
         :return: An iterator over deserialized blobs
+        """
+
+    @abstractmethod
+    def download_blobs(self, blob_path: DataPath, local_path: str, threads: Optional[int] = None) -> None:
+        """
+         Reads data under provided path into the given format.
+
+         Be aware that this method does not validate file checksums or download integrity. When using threads, download failures
+
+        :param blob_path: Path to blob(s).
+        :param local_path: Path to download blobs to.
+        :param threads: Optional number of threads to use when downloading. If not provided, files will be downloaded sequentially.
+        :return:
         """
