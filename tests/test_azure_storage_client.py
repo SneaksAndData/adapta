@@ -1,6 +1,6 @@
 import os
 import tempfile
-from unittest.mock import patch, MagicMock, Mock
+from unittest.mock import patch, MagicMock
 
 from azure.storage.blob import BlobProperties
 
@@ -11,11 +11,10 @@ from proteus.security.clients import AzureClient
 
 @patch('azure.storage.blob._download.StorageStreamDownloader')
 @patch('azure.storage.blob.BlobClient')
-@patch('azure.storage.blob.ContainerClient')
 @patch('azure.storage.blob.BlobServiceClient')
 @patch('proteus.security.clients.AzureClient')
-def test_download_blobs(mock_client: MagicMock, mock_blob_service_client: MagicMock, mock_container: MagicMock,
-                        mock_blob: MagicMock, mock_downloader: MagicMock):
+def test_download_blobs(mock_client: MagicMock, mock_blob_service_client: MagicMock, mock_blob: MagicMock,
+                        mock_downloader: MagicMock):
     def _list_blobs(v):
         return [BlobProperties(**{
             "name": f"test{i}",
@@ -33,7 +32,6 @@ def test_download_blobs(mock_client: MagicMock, mock_blob_service_client: MagicM
     mock_storage_client = AzureStorageClient(base_client=mock_client_instance, path=data_path)
 
     mock_storage_client._blob_service_client = mock_blob_service_client
-    mock_blob_service_client.get_container_client.return_value = mock_container
     mock_blob_service_client.get_blob_client.return_value = mock_blob
 
     mock_blob.download_blob = mock_downloader
