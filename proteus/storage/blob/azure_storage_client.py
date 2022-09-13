@@ -110,6 +110,7 @@ class AzureStorageClient(StorageClient):
                 if blob_from_list:
                     download_blob(blob_from_list, container)
 
+        os.makedirs(local_path, exist_ok=True)
         blobs_on_path, azure_path = self._list_blobs(blob_path)
 
         if not threads:
