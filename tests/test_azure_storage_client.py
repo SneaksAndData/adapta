@@ -29,11 +29,11 @@ def test_download_blobs(mock_client: MagicMock, mock_blob_service_client: MagicM
 
     azure_storage_client._blob_service_client = mock_blob_service_client
     mock_blob_service_client.get_blob_client.return_value = mock_blob
-    mock_blob_service_client.return_value.get_container_client.return_value = mock_container_client
-    mock_container_client.return_value.list_blobs.return_value = [BlobProperties(**{
+    mock_blob_service_client.get_container_client.return_value = mock_container_client
+    mock_container_client.list_blobs.return_value = [BlobProperties(**{
         "name": f"test{i}",
         "Content-Length": 1
-    }) for i in range(10)], data_path
+    }) for i in range(10)]
 
     mock_blob.download_blob = mock_downloader
     mock_downloader.return_value.readall.return_value = b''
