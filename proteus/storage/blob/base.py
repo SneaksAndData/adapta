@@ -1,7 +1,6 @@
 """
  Abstraction for storage operations.
 """
-import tempfile
 from abc import ABC, abstractmethod
 from typing import Optional, Dict, Type, TypeVar, Iterator
 
@@ -89,10 +88,13 @@ class StorageClient(ABC):
         """
          Reads data under provided path into the given format.
 
-         Be aware that this method does not validate file checksums or download integrity. When using threads, download failures
+         Be aware that this method does not validate file checksums or download integrity.
+         When using threads, download failures will or will not be retried based
+         on underlying implementation of a http retry policy.
 
         :param blob_path: Path to blob(s).
         :param local_path: Path to download blobs to.
-        :param threads: Optional number of threads to use when downloading. If not provided, files will be downloaded sequentially.
+        :param threads: Optional number of threads to use when downloading.
+                        If not provided, files will be downloaded sequentially.
         :return:
         """

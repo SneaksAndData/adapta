@@ -99,7 +99,7 @@ class AzureStorageClient(StorageClient):
             if blob.size == 0:
                 os.makedirs(write_path, exist_ok=True)
             else:
-                with open(os.path.join(local_path, blob.name), 'wb') as downloaded_blob:
+                with open(write_path, 'wb') as downloaded_blob:
                     downloaded_blob.write(self._blob_service_client.get_blob_client(
                         container=container,
                         blob=blob.name,
@@ -130,10 +130,10 @@ class AzureStorageClient(StorageClient):
                 zip_longest(*[iter(blob_files)] * threads, fillvalue=None))
             thread_list = [Thread(target=download_blob_list, args=(blob_list, azure_path.container)) for blob_list in
                            blob_lists]
-            for th in thread_list:
-                th.start()
-            for th in thread_list:
-                th.join()
+            for download_thread in thread_list:
+                download_thread.start()
+            for download_thread in thread_list:
+                download_thread.join()
 
     def list_blobs(
             self,
