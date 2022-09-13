@@ -76,6 +76,9 @@ class AzureStorageClient(StorageClient):
         sas_uri = f'{blob_client.url}?{sas_token}'
         return sas_uri
 
+    def blob_exists(self, blob_path: DataPath, **kwargs) -> bool:
+        return self._get_blob_client(blob_path).exists(**kwargs)
+
     def _list_blobs(self, blob_path: DataPath) -> (ItemPaged[BlobProperties], Union[AdlsGen2Path, WasbPath]):
         azure_path = cast_path(blob_path)
 
