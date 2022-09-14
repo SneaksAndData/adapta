@@ -5,7 +5,7 @@ import os
 from typing import List
 
 import mlflow
-from mlflow.entities.model_registry import RegisteredModel, ModelVersion
+from mlflow.entities.model_registry import ModelVersion
 from mlflow.pyfunc import PyFuncModel
 from mlflow.store.artifact.artifact_repository_registry import get_artifact_repository
 from mlflow.store.entities import PagedList
