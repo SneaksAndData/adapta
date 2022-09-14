@@ -7,8 +7,11 @@ from typing import List
 import mlflow
 from mlflow.entities.model_registry import RegisteredModel, ModelVersion
 from mlflow.pyfunc import PyFuncModel
+from mlflow.store.artifact.artifact_repository_registry import get_artifact_repository
 from mlflow.store.entities import PagedList
 from mlflow.tracking import MlflowClient
+
+MLFLOW_ARTIFACT_STORE_SCHEME = "mlflow-artifacts"
 
 
 class MlflowBasicClient:
@@ -34,19 +37,26 @@ class MlflowBasicClient:
         """
         return sorted(self._get_model_versions(model_name), key=lambda m: m.version, reverse=True)[0]
 
-    def download_artifact(self,
-                          model_name: str,
-                          model_version: str,
-                          artifact_path: str):
+    def _get_artifact_repo_backported(self, run_id) -> mlflow.store.artifact_repo.ArtifactRepository:
+        run = self._client.get_run(run_id)
+
+        artifact_uri = run.info.artifact_uri \
+            if run.info.artifact_uri.startswith(MLFLOW_ARTIFACT_STORE_SCHEME) \
+            else f"{MLFLOW_ARTIFACT_STORE_SCHEME}:/{run.info.experiment_id}/{run.info.run_id}"
+
+        return get_artifact_repository(artifact_uri)
+
+    def download_artifact(self, model_name: str, model_version: str, artifact_path: str):
         """
           Download an artifact from mlflow model registry for the latest version of this model
 
         :param model_name: Name of a model.
         :param model_version: Version of a model.
-        :param artifact_path: Path to the desired artifact.
+        :param artifact_path: Path to a desired artifact.
         """
         run_id = self._client.get_model_version(model_name, model_version).run_id
-        return self._client.download_artifacts(run_id, artifact_path)
+        repository = self._get_artifact_repo_backported(run_id)
+        return repository.download_artifacts(f"artifacts/{artifact_path}")
 
     def search_model_versions(self, model_name: str) -> PagedList[ModelVersion]:
         """
