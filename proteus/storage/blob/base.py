@@ -30,7 +30,7 @@ class StorageClient(ABC):
         """
 
     @abstractmethod
-    def blob_exists(self, blob_path: DataPath, **kwargs) -> bool:
+    def blob_exists(self, blob_path: DataPath) -> bool:
         """Checks if blob located at blob_path exists
 
         :param blob_path: Path to blob
