@@ -2,6 +2,9 @@
  Azure Cloud implementation of Proteus Client.
 """
 import os
+
+import logging
+
 from typing import Optional, List, Dict, Tuple
 
 from adlfs import AzureBlobFileSystem
@@ -33,8 +36,11 @@ class AzureClient(ProteusClient):
      Azure Credentials provider for various Azure resources.
     """
 
-    def __init__(self, *, subscription_id: str):
+    def __init__(self, *, subscription_id: str, default_log_level=logging.ERROR):
         self.subscription_id = subscription_id
+
+        logger = logging.getLogger('azure')
+        logger.setLevel(default_log_level)
 
     @classmethod
     def from_base_client(cls, client: ProteusClient) -> Optional['AzureClient']:
