@@ -34,7 +34,7 @@ JSON-log-formatter = "~0.5.1"
 SQLAlchemy = { version = "~1.4", optional = true }
 pyodbc = { version = "~4.0", optional = true }
 
-mlflow = { version = "~1.28", optional = true }
+mlflow-skinny = { version = "~1.28", optional = true }
 
 [tool.poetry.extras]
 azure = [
@@ -55,7 +55,7 @@ databases = [
     'pyodbc'
 ]
 ml = [
-    'mlflow'
+    'mlflow-skinny'
 ]
 
 [tool.poetry.dev-dependencies]
