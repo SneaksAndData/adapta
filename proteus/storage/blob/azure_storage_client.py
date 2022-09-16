@@ -2,10 +2,11 @@
  Storage Client implementation for Azure Cloud.
 """
 import os.path
+from time import time, sleep
 from datetime import datetime, timedelta
 from itertools import zip_longest
 from threading import Thread
-from typing import Union, Optional, Dict, Type, TypeVar, Iterator, List
+from typing import Union, Optional, Dict, Type, TypeVar, Iterator, List, Tuple
 
 from azure.core.paging import ItemPaged
 from azure.storage.blob import BlobServiceClient, BlobSasPermissions, BlobClient, generate_blob_sas, BlobProperties, \
@@ -158,3 +159,68 @@ class AzureStorageClient(StorageClient):
         self._blob_service_client \
             .get_container_client(azure_path.container) \
             .delete_blob(blob_path.path)
+
+    def _copy_blob(
+        self,
+        source_blob_path: DataPath,
+        destination_blob_path: DataPath,
+    ) -> BlobClient:
+        """Starts asynchronous copying of blob from source_blob_path to destination_blob_path.
+        Returns blob client of destination blob
+
+        :param source_blob_path: Source blob path
+        :param destination_blob_path: Destination blob path
+        """
+        destination_blob_path = cast_path(destination_blob_path)
+        source_blob_path = cast_path(source_blob_path)
+
+        if source_blob_path.account != destination_blob_path.account:
+            raise NotImplementedError('Copying between accounts is not yet supported!')
+
+        source_blob = self._get_blob_client(blob_path=source_blob_path)
+        destination_blob = self._get_blob_client(blob_path=destination_blob_path)
+
+        destination_blob.start_copy_from_url(source_blob.url)
+        return destination_blob
+
+    def copy_blob(
+        self,
+        source_blob_path: DataPath,
+        destination_blob_path: DataPath,
+        asynchronous: bool = True,
+        time_out_seconds: float = 600.
+    ):
+        destination_blob = self._copy_blob(
+            source_blob_path=source_blob_path,
+            destination_blob_path=destination_blob_path,
+        )
+
+        if not asynchronous:
+            copy_props = destination_blob.get_blob_properties().copy
+            t_start = time()
+            while (copy_props.status == 'pending') & (time() - t_start < time_out_seconds):
+                sleep(0.1)
+                copy_props = destination_blob.get_blob_properties().copy
+            if copy_props.status != 'success':
+                raise ValueError(f'Blob copy failed with status {copy_props.stats}: {copy_props.status_description}')
+
+    def copy_blobs(
+        self,
+        blob_pairs: List[Tuple[DataPath, DataPath]],
+        time_out_seconds: float = 600.
+    ):
+        destination_blobs: List[BlobClient] = []
+        for source, destination in blob_pairs:
+            destination_blobs.append(
+                self._copy_blob(
+                    source_blob_path=source,
+                    destination_blob_path=destination,
+            ))
+
+        t_start = time()
+        while (len(destination_blobs) > 0) & (time() - t_start < time_out_seconds):
+            sleep(0.1)
+            destination_blobs = [b for b in destination_blobs if b.get_blob_properties().copy.status != 'success']
+
+        if len(destination_blobs) > 0:
+            raise ValueError(f'{len(destination_blobs)} copy operations did not complete within the time limit!')

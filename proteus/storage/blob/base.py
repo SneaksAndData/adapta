@@ -2,7 +2,7 @@
  Abstraction for storage operations.
 """
 from abc import ABC, abstractmethod
-from typing import Optional, Dict, Type, TypeVar, Iterator
+from typing import Optional, Dict, Type, TypeVar, Iterator, Tuple, List
 
 from proteus.security.clients import ProteusClient
 from proteus.storage.models.base import DataPath
@@ -69,6 +69,66 @@ class StorageClient(ABC):
 
         :param blob_path: Blob path as DataPath object
         """
+
+    def move_blob(
+        self,
+        source_blob_path: DataPath,
+        destination_blob_path: DataPath,
+    ):
+        """
+        Moves blob from source_blob_path to destination_blob_path
+
+        :param source_blob_path: Path to blob to move
+        :param destination_blob_path: Path to blob destination
+        """
+        self.copy_blob(
+            source_blob_path=source_blob_path,
+            destination_blob_path=destination_blob_path
+        )
+        self.delete_blob(source_blob_path)
+
+    @abstractmethod
+    def copy_blob(
+        self,
+        source_blob_path: DataPath,
+        destination_blob_path: DataPath,
+        asynchronous: bool = True,
+        time_out_seconds: float = 600,
+    ):
+        """
+        Copies blob from source_blob_path to destination_blob_path
+
+        :param source_blob_path: Path to blob to copy
+        :param destination_blob_path: Path to blob destination
+        :param asynchronous: Whether to start blob copy asynchronously
+        :param time_out_seconds: Maximum seconds to wait for copy operation when asynchronous = False
+        """
+
+    @abstractmethod
+    def copy_blobs(
+        self,
+        blob_pairs: List[Tuple[DataPath, DataPath]],
+        time_out_seconds: float = 600.
+    ):
+        """
+        Asynchronously copies a list of blobs. Waits for completion.
+
+        :param blob_pairs: List of tuple of blobs to copy. First value in tuple is the source path while second value is the destination
+        :param time_out_seconds: Maximum seconds to wait for copy operations
+        """
+
+    def move_blobs(
+        self,
+        blob_pairs: List[Tuple[DataPath, DataPath]],
+    ):
+        """
+        Moves a set of blobs.
+
+        :param blob_pairs: List of tuple of blobs to move. First value in tuple is the source path while second value is the destination
+        """
+        self.copy_blobs(blob_pairs)
+        for source, _ in blob_pairs:
+            self.delete_blob(source)
 
     @abstractmethod
     def list_blobs(
