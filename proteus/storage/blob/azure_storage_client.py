@@ -2,6 +2,7 @@
  Storage Client implementation for Azure Cloud.
 """
 import os.path
+from math import ceil
 from time import time, sleep
 from datetime import datetime, timedelta
 from itertools import zip_longest
@@ -130,10 +131,9 @@ class AzureStorageClient(StorageClient):
             for blob_dir in blob_dirs:
                 os.makedirs(os.path.join(local_path, blob_dir.name), exist_ok=True)
 
-            blob_lists: List[List[BlobProperties]] = list(
-                zip_longest(*[iter(blob_files)] * threads, fillvalue=None))
-            thread_list = [Thread(target=download_blob_list, args=(blob_list, azure_path.container)) for blob_list in
-                           blob_lists]
+            blobs_per_thread = ceil(len(blob_files) / threads)
+            blob_lists: List[List[BlobProperties]] = [blob_files[blobs_per_thread * ii:blobs_per_thread * (ii + 1)] for ii in range(threads)]
+            thread_list = [Thread(target=download_blob_list, args=(blob_list, azure_path.container)) for blob_list in blob_lists]
             for download_thread in thread_list:
                 download_thread.start()
             for download_thread in thread_list:
