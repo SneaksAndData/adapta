@@ -207,6 +207,7 @@ class AzureStorageClient(StorageClient):
     def copy_blobs(
         self,
         blob_pairs: List[Tuple[DataPath, DataPath]],
+        asynchronous: bool = False,
         time_out_seconds: float = 600.
     ):
         destination_blobs: List[BlobClient] = []
@@ -217,10 +218,11 @@ class AzureStorageClient(StorageClient):
                     destination_blob_path=destination,
             ))
 
-        t_start = time()
-        while (len(destination_blobs) > 0) & (time() - t_start < time_out_seconds):
-            sleep(0.1)
-            destination_blobs = [b for b in destination_blobs if b.get_blob_properties().copy.status != 'success']
+        if not asynchronous:
+            t_start = time()
+            while (len(destination_blobs) > 0) & (time() - t_start < time_out_seconds):
+                sleep(0.1)
+                destination_blobs = [b for b in destination_blobs if b.get_blob_properties().copy.status != 'success']
 
-        if len(destination_blobs) > 0:
-            raise ValueError(f'{len(destination_blobs)} copy operations did not complete within the time limit!')
+            if len(destination_blobs) > 0:
+                raise ValueError(f'{len(destination_blobs)} copy operations did not complete within the time limit!')

@@ -83,7 +83,8 @@ class StorageClient(ABC):
         """
         self.copy_blob(
             source_blob_path=source_blob_path,
-            destination_blob_path=destination_blob_path
+            destination_blob_path=destination_blob_path,
+            asynchronous=False,
         )
         self.delete_blob(source_blob_path)
 
@@ -92,7 +93,7 @@ class StorageClient(ABC):
         self,
         source_blob_path: DataPath,
         destination_blob_path: DataPath,
-        asynchronous: bool = True,
+        asynchronous: bool = False,
         time_out_seconds: float = 600,
     ):
         """
@@ -100,7 +101,7 @@ class StorageClient(ABC):
 
         :param source_blob_path: Path to blob to copy
         :param destination_blob_path: Path to blob destination
-        :param asynchronous: Whether to start blob copy asynchronously
+        :param asynchronous: Whether to run blob copy asynchronously
         :param time_out_seconds: Maximum seconds to wait for copy operation when asynchronous = False
         """
 
@@ -108,12 +109,14 @@ class StorageClient(ABC):
     def copy_blobs(
         self,
         blob_pairs: List[Tuple[DataPath, DataPath]],
-        time_out_seconds: float = 600.
+        asynchronous: bool = False,
+        time_out_seconds: float = 600.,
     ):
         """
-        Asynchronously copies a list of blobs. Waits for completion.
+        Asynchronously copies a list of blobs.
 
         :param blob_pairs: List of tuple of blobs to copy. First value in tuple is the source path while second value is the destination
+        :param asynchronous: Whether to run blob copy operations asynchronously
         :param time_out_seconds: Maximum seconds to wait for copy operations
         """
 
