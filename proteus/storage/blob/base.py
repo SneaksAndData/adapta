@@ -30,6 +30,15 @@ class StorageClient(ABC):
         """
 
     @abstractmethod
+    def blob_exists(self, blob_path: DataPath) -> bool:
+        """Checks if blob located at blob_path exists
+
+        :param blob_path: Path to blob
+
+        :return: Boolean indicator of blob existence
+        """
+
+    @abstractmethod
     def save_data_as_blob(  # pylint: disable=R0913,R0801
         self,
         data: T,
