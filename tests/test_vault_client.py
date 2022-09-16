@@ -1,7 +1,7 @@
-from proteus.security.clients import VaultClient
+from proteus.security.clients import HashicorpVaultClient
 
 
 def test_get_credentials():
-    client = VaultClient()
+    client = HashicorpVaultClient(HashicorpVaultClient.TEST_VAULT_ADDRESS)
     credentials = client.get_credentials()
     assert credentials is not None
