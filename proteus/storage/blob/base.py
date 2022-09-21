@@ -30,6 +30,15 @@ class StorageClient(ABC):
         """
 
     @abstractmethod
+    def blob_exists(self, blob_path: DataPath) -> bool:
+        """Checks if blob located at blob_path exists
+
+        :param blob_path: Path to blob
+
+        :return: Boolean indicator of blob existence
+        """
+
+    @abstractmethod
     def save_data_as_blob(  # pylint: disable=R0913,R0801
         self,
         data: T,
@@ -81,4 +90,20 @@ class StorageClient(ABC):
         :param blob_path: Path to blob(s).
         :param serialization_format: Format to deserialize blobs into.
         :return: An iterator over deserialized blobs
+        """
+
+    @abstractmethod
+    def download_blobs(self, blob_path: DataPath, local_path: str, threads: Optional[int] = None) -> None:
+        """
+         Reads data under provided path into the given format.
+
+         Be aware that this method does not validate file checksums or download integrity.
+         When using threads, download failures will or will not be retried based
+         on underlying implementation of a http retry policy.
+
+        :param blob_path: Path to blob(s).
+        :param local_path: Path to download blobs to.
+        :param threads: Optional number of threads to use when downloading.
+                        If not provided, files will be downloaded sequentially.
+        :return:
         """
