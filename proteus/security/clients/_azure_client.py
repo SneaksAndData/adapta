@@ -102,7 +102,7 @@ class AzureClient(ProteusClient):
         connection_options = self.connect_storage(path=path)
         file_system = AzureBlobFileSystem(
             account_name = connection_options['AZURE_STORAGE_ACCOUNT_NAME'],
-            credential = connection_options['AZURE_STORAGE_ACCOUNT_KEY']
+            account_key = connection_options['AZURE_STORAGE_ACCOUNT_KEY']
         )
 
         return PyFileSystem(FSSpecHandler(file_system))
