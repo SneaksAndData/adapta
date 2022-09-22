@@ -2,7 +2,7 @@
   Thin wrapper for Mlflow operations.
 """
 import os
-from typing import List
+from typing import List, Optional
 
 import mlflow
 from mlflow.entities.model_registry import ModelVersion
@@ -26,16 +26,20 @@ class MlflowBasicClient:
         mlflow.set_tracking_uri(tracking_server_uri)
         self._client = MlflowClient()
 
-    def _get_model_versions(self, model_name: str) -> List[mlflow.entities.model_registry.ModelVersion]:
+    def _get_latest_model_versions(self, model_name: str) -> List[mlflow.entities.model_registry.ModelVersion]:
         return self._client.get_registered_model(model_name).latest_versions
 
-    def get_latest_model_version(self, model_name: str) -> ModelVersion:
+    def get_latest_model_version(self, model_name: str, model_stage: Optional[str] = None) -> ModelVersion:
         """
           Get model version using mlflow client
 
         :param model_name: Name of a model.
+        :param model_stage: Stage of a model.
         """
-        return sorted(self._get_model_versions(model_name), key=lambda m: m.version, reverse=True)[0]
+        if model_stage:
+            return [m.version for m in self._get_latest_model_versions(model_name) if m.current_stage == model_stage][0]
+        
+        return sorted(self._get_latest_model_versions(model_name), key=lambda m: m.version, reverse=True)[0]
 
     def _get_artifact_repo_backported(self, run_id) -> mlflow.store.artifact_repo.ArtifactRepository:
         run = self._client.get_run(run_id)
