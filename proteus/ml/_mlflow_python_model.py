@@ -1,4 +1,4 @@
-"""Mlflow python model muodule"""
+"""Mlflow python model module"""
 import configparser
 import importlib
 import pathlib
@@ -7,11 +7,12 @@ from abc import abstractmethod, ABC
 from typing import Optional, Dict
 
 import mlflow
+from mlflow.pyfunc import PythonModel
 
 from proteus.ml import MlflowBasicClient
 
 
-class ProteusMlflowModel(ABC):
+class MachineLearningModel(ABC):
     """"""
 
     @abstractmethod
@@ -23,28 +24,28 @@ class ProteusMlflowModel(ABC):
         pass
 
     @abstractmethod
+    def fit(self, **kwargs):
+        pass
+
+    @abstractmethod
     def predict(self, **kwargs):
         pass
 
 
-class ProteusMlflowModelWrapper(mlflow.pyfunc.PythonModel):
-    """Mlflow wrapper for proteus Mlflow models"""
-
+class _MlflowMachineLearningModel(PythonModel):
     def load_context(self, context):
         config = configparser.ConfigParser()
         config.read(context.artifacts['config'])
         module = importlib.import_module(config['model']['module_name'])
-        class_: ProteusMlflowModel = getattr(module, config['model']['class_name'])
+        class_ = getattr(module, config['model']['class_name'])
         self.model = class_.load_model(context.artifacts['model'])  # pylint: disable=W0201
 
-    def predict(self, context, model_input: dict):
-
-        fc_df = self.model.predict(**model_input)
-        return fc_df
+    def predict(self, context, model_input):
+        return self.model.predict(**model_input)
 
 
 def register_mlflow_model(
-    model: ProteusMlflowModel,
+    model: MachineLearningModel,
     mlflow_client: MlflowBasicClient,
     model_name: str,
     experiment: str,
@@ -67,8 +68,8 @@ def register_mlflow_model(
         'module_name': model.__module__,
         'class_name': model.__class__.__qualname__,
     }
-    with open(path_config, 'w') as f:
-        config.write(f)
+    with open(path_config, 'w') as file_stream:
+        config.write(file_stream)
 
     artifacts = {
         'model': path_model,
@@ -79,7 +80,7 @@ def register_mlflow_model(
 
         mlflow.pyfunc.log_model(
             artifact_path='mlflow_model',
-            python_model=ProteusMlflowModelWrapper(),
+            python_model=_MlflowMachineLearningModel(),
             registered_model_name=model_name,
             artifacts=artifacts,
         )
