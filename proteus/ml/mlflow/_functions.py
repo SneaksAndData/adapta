@@ -3,33 +3,13 @@ import configparser
 import importlib
 import pathlib
 import tempfile
-from abc import abstractmethod, ABC
 from typing import Optional, Dict
 
 import mlflow
 from mlflow.pyfunc import PythonModel
 
-from proteus.ml import MlflowBasicClient
-
-
-class MachineLearningModel(ABC):
-    """"""
-
-    @abstractmethod
-    def load_model(self):
-        pass
-
-    @abstractmethod
-    def save_model(self):
-        pass
-
-    @abstractmethod
-    def fit(self, **kwargs):
-        pass
-
-    @abstractmethod
-    def predict(self, **kwargs):
-        pass
+from proteus.ml.mlflow._client import MlflowBasicClient
+from proteus.ml._model import MachineLearningModel
 
 
 class _MlflowMachineLearningModel(PythonModel):

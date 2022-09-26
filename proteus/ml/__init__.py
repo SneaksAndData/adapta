@@ -1,5 +1,4 @@
 """
  Import index.
 """
-
-from proteus.ml._mlflow import *
+from proteus.ml._model import *
