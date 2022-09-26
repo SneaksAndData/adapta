@@ -75,7 +75,7 @@ class HashicorpVaultClient(ProteusClient):
         return auth_result
 
     def get_access_token(self, scope: Optional[str] = None) -> str:
-        return self.get_credentials()["auth"]["token"]
+        return self.get_credentials()["auth"]["client_token"]
 
     def connect_storage(self, path: DataPath, set_env: bool = False) -> Optional[Dict]:
         """
@@ -94,4 +94,8 @@ class HashicorpVaultClient(ProteusClient):
          Not supported  in HashicorpVaultClient
         :return:
         """
+
+    @property
+    def vault_address(self):
+        return self._vault_address
 

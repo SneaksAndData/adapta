@@ -11,7 +11,7 @@ def test_get_credentials():
     assert credentials is not None
 
 
-#@pytest.mark.skip("Uses desktop browser to login, should be only run locally")
+@pytest.mark.skip("Uses desktop browser to login, should be only run locally")
 def test_read_secret():
     client = HashicorpSecretStorageClient(base_client=HashicorpVaultClient(HashicorpVaultClient.TEST_VAULT_ADDRESS))
     credentials = client.read_secret("secret", "test/secret/with/path")

@@ -3,7 +3,7 @@
 """
 
 from abc import ABC, abstractmethod
-from typing import Union
+from typing import Union, Dict
 
 from proteus.security.clients import ProteusClient
 
@@ -36,3 +36,14 @@ class SecretStorageClient(ABC):
         :param b64_encode: Whether the value should be b64-encoded
         :return:
         """
+
+    @abstractmethod
+    def create_complex_secret(self, secret_name: str, secret_value: Dict[str, str]) -> None:
+        """
+          Creates a plain text secret in a specified storage.
+
+        :param secret_name: Name of the secret
+        :param secret_value: Secret value as dictionary
+        :return:
+        """
+        pass
