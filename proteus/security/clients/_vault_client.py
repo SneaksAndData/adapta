@@ -34,7 +34,7 @@ def _get_vault_credentials():
 
 class HashicorpVaultClient(ProteusClient):
     TEST_VAULT_ADDRESS = "https://hashicorp-vault.test.sneaksanddata.com/"
-    PRODUCTION_VAULT_ADDRESS = "https://hashicorp-vault.test.sneaksanddata.com/"
+    PRODUCTION_VAULT_ADDRESS = "https://hashicorp-vault.production.sneaksanddata.com/"
 
     def __init__(self, vault_address):
         self._vault_address = vault_address

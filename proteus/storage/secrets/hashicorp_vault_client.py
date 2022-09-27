@@ -7,7 +7,7 @@ from proteus.storage.secrets import SecretStorageClient
 
 
 class HashicorpSecretStorageClient(SecretStorageClient):
-    def __init__(self, *, base_client: ProteusClient, role="default"):
+    def __init__(self, *, base_client: ProteusClient, role: str = "default"):
         super().__init__(base_client=base_client)
         self._base_client = HashicorpVaultClient.from_base_client(self._base_client)
         self._access_token = self._base_client.get_access_token()
