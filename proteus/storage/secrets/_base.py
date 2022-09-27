@@ -46,4 +46,3 @@ class SecretStorageClient(ABC):
         :param secret_value: Secret value as dictionary
         :return:
         """
-        pass

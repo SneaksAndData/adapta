@@ -1,25 +1,33 @@
+"""
+ Hashicorp Vault implementation of Proteus Client.
+"""
 import webbrowser
 from typing import Optional, Dict
 from urllib import parse
+from http.server import BaseHTTPRequestHandler, HTTPServer
 
 import hvac
-from pyarrow._fs import PyFileSystem
 
 from proteus.security.clients import ProteusClient
 from proteus.storage.models.base import DataPath
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from pyarrow.fs import PyFileSystem
 
 
 def _get_vault_credentials():
     class HttpServ(HTTPServer):
+        """Http server for handling login responses"""
+
         def __init__(self, *args, **kwargs):
             HTTPServer.__init__(self, *args, **kwargs)
             self.token = None
 
     class AuthHandler(BaseHTTPRequestHandler):
+        """Authentication handler"""
         token = ''
 
-        def do_GET(self):
+        def do_GET(self):  # pylint: disable=C0103
+            """Handles GET request and collects token"""
+
             params = parse.parse_qs(self.path.split('?')[1])
             self.server.token = params['code'][0]
             self.send_response(200)
@@ -33,6 +41,9 @@ def _get_vault_credentials():
 
 
 class HashicorpVaultClient(ProteusClient):
+    """
+     Hashicorp vault Credentials provider for various Azure resources.
+    """
     TEST_VAULT_ADDRESS = "https://hashicorp-vault.test.sneaksanddata.com/"
     PRODUCTION_VAULT_ADDRESS = "https://hashicorp-vault.production.sneaksanddata.com/"
 
@@ -97,5 +108,5 @@ class HashicorpVaultClient(ProteusClient):
 
     @property
     def vault_address(self):
+        """Returns address of Hashicorp Vault server"""
         return self._vault_address
-

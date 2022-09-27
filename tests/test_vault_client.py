@@ -1,7 +1,7 @@
 import pytest
 
 from proteus.security.clients import HashicorpVaultClient
-from proteus.storage.secrets.hashicorp_vault_client import HashicorpSecretStorageClient
+from proteus.storage.secrets.hashicorp_vault_secret_storage_client import HashicorpSecretStorageClient
 
 
 @pytest.mark.skip("Uses desktop browser to login, should be only run locally")
