@@ -5,12 +5,12 @@ import webbrowser
 from typing import Optional, Dict
 from urllib import parse
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from pyarrow.fs import PyFileSystem
 
 import hvac
 
-from proteus.security.clients import ProteusClient
+from proteus.security.clients._base import ProteusClient
 from proteus.storage.models.base import DataPath
-from pyarrow.fs import PyFileSystem
 
 
 def _get_vault_credentials():

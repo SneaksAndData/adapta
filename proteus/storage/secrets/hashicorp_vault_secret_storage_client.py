@@ -1,3 +1,6 @@
+"""
+ Hashicorp Vault Secret storage client
+"""
 from typing import Union, Dict
 
 import hvac
