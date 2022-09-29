@@ -13,6 +13,9 @@ from proteus.ml._model import MachineLearningModel
 
 
 class _MlflowMachineLearningModel(PythonModel):
+    """Machine learning model wrapper used for logging MachineLearning models
+    as mlflow pyfunc models
+    """
     def load_context(self, context):
         config = configparser.ConfigParser()
         config.read(context.artifacts['config'])
@@ -33,7 +36,16 @@ def register_mlflow_model(
     transition_to_stage: str = None,
     metrics: Optional[Dict[str, float]] = None
 ):
-    """Registers mlflow model"""
+    """Registers mlflow model
+
+    :param model: Machine learning model to register
+    :param mlflow_client: Mlflow client
+    :param model_name: Name of Mlflow model
+    :param experiment: Name of Mlflow experiment
+    :param run_name: Name of Mlflow run
+    :param transition_to_stage: Whether to transition to stage
+    :param metrics: Metrics to log
+    """
     assert transition_to_stage in [None, 'Staging', 'Production']
 
     mlflow.set_experiment(experiment)
