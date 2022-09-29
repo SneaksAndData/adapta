@@ -24,7 +24,12 @@ class MlflowBasicClient:
             'MLFLOW_TRACKING_PASSWORD'), 'Both MLFLOW_TRACKING_USERNAME and MLFLOW_TRACKING_PASSWORD must be set to access MLFlow Tracking Server'
 
         mlflow.set_tracking_uri(tracking_server_uri)
+        self._tracking_server_uri = tracking_server_uri
         self._client = MlflowClient()
+
+    @property
+    def tracking_server_uri(self):
+        return self._tracking_server_uri
 
     def _get_latest_model_versions(self, model_name: str) -> List[mlflow.entities.model_registry.ModelVersion]:
         return self._client.get_registered_model(model_name).latest_versions
@@ -37,9 +42,9 @@ class MlflowBasicClient:
         :param model_stage: Stage of a model.
         """
         if model_stage:
-            return [m.version for m in self._get_latest_model_versions(model_name) if m.current_stage == model_stage][0]
-        
-        return sorted(self._get_latest_model_versions(model_name), key=lambda m: m.version, reverse=True)[0]
+            return [m for m in self._get_latest_model_versions(model_name) if m.current_stage == model_stage][0]
+
+        return sorted(self._get_latest_model_versions(model_name), key=lambda m: int(m.version), reverse=True)[0]
 
     def _get_artifact_repo_backported(self, run_id) -> mlflow.store.artifact_repo.ArtifactRepository:
         run = self._client.get_run(run_id)
@@ -87,12 +92,11 @@ class MlflowBasicClient:
         )
 
     @staticmethod
-    def load_model_by_name(model_name: str, stage: str) -> PyFuncModel:
+    def load_model_by_name(model_name: str, stage_or_version: str) -> PyFuncModel:
         """
          Load model as pyfunc using models:/ api
-
         """
-        return mlflow.pyfunc.load_model(f"models:/{model_name}/{stage}")
+        return mlflow.pyfunc.load_model(f"models:/{model_name}/{stage_or_version}")
 
     @staticmethod
     def load_model_by_uri(model_uri: str) -> PyFuncModel:
