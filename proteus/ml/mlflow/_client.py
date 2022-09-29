@@ -28,10 +28,15 @@ class MlflowBasicClient:
         self._client = MlflowClient()
 
     @property
-    def tracking_server_uri(self):
+    def tracking_server_uri(self) -> str:
+        """Returns tracking server URI"""
         return self._tracking_server_uri
 
     def _get_latest_model_versions(self, model_name: str) -> List[mlflow.entities.model_registry.ModelVersion]:
+        """Gets latest model versions, one for each stage
+
+        :param model_name: Model name
+        """
         return self._client.get_registered_model(model_name).latest_versions
 
     def get_latest_model_version(self, model_name: str, model_stage: Optional[str] = None) -> ModelVersion:
