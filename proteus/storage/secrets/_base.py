@@ -16,7 +16,7 @@ class SecretStorageClient(ABC):
         self._base_client = base_client
 
     @abstractmethod
-    def read_secret(self, storage_name: str, secret_name: str) -> Union[bytes, str]:
+    def read_secret(self, storage_name: str, secret_name: str) -> Union[bytes, str, Dict[str, str]]:
         """
           Reads a secret from the specified storage.
 
@@ -34,15 +34,5 @@ class SecretStorageClient(ABC):
         :param secret_name: Name of the secret
         :param secret_value: Secret value as plain text.
         :param b64_encode: Whether the value should be b64-encoded
-        :return:
-        """
-
-    @abstractmethod
-    def create_complex_secret(self, secret_name: str, secret_value: Dict[str, str]) -> None:
-        """
-          Creates a plain text secret in a specified storage.
-
-        :param secret_name: Name of the secret
-        :param secret_value: Secret value as dictionary
         :return:
         """

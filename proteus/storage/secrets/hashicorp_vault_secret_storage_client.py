@@ -27,7 +27,7 @@ class HashicorpSecretStorageClient(SecretStorageClient):
         self.client.secrets.kv.v2.configure(max_versions=20, mount_point='secret')
         self._role = role
 
-    def read_secret(self, storage_name: str, secret_name: str) -> Union[bytes, str]:
+    def read_secret(self, storage_name: str, secret_name: str) -> Union[bytes, str, Dict[str, str]]:
         secret = self.client.secrets.kv.v2.read_secret_version(path=secret_name)
         return secret["data"]["data"]
 
