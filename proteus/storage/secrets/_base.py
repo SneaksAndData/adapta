@@ -26,7 +26,7 @@ class SecretStorageClient(ABC):
         """
 
     @abstractmethod
-    def create_secret(self, storage_name: str, secret_name: str, secret_value: str, b64_encode=False) -> None:
+    def create_secret(self, storage_name: str, secret_name: str, secret_value: Union[str, Dict[str, str]], b64_encode=False) -> None:
         """
           Creates a plain text secret in a specified storage.
 
