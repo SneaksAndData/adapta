@@ -60,7 +60,7 @@ def register_mlflow_model(
         'module_name': model.__module__,
         'class_name': model.__class__.__qualname__,
     }
-    with open(path_config, 'wb') as file_stream:
+    with open(path_config, 'w', encoding="utf8") as file_stream:
         config.write(file_stream)
 
     artifacts = {
