@@ -33,6 +33,7 @@ class LocalClient(ProteusClient):
         :param set_env:
         :return:
         """
+        return None
 
     def connect_account(self):
         """

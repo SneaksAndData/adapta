@@ -9,12 +9,12 @@ from proteus.storage.delta_lake import load
 from pyarrow.dataset import field as pyarrow_field
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def get_client_and_path():
     test_data_path = f"{pathlib.Path(__file__).parent.resolve()}/delta_table"
 
     client = LocalClient()
-    data_path = LocalPath.from_hdfs_path(f'file:///{test_data_path}')
+    data_path = LocalPath.from_hdfs_path(f'file://{test_data_path}')
 
     return client, data_path
 
