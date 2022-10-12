@@ -1,4 +1,4 @@
-name: Crate development package
+name: Create development package
 
 on: issue_comment
 
