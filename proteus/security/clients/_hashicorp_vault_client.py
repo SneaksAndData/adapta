@@ -42,7 +42,7 @@ def _get_vault_credentials():
 
 class HashicorpVaultClient(ProteusClient):
     """
-     Hashicorp vault Credentials provider for various Azure resources.
+     Hashicorp vault Credentials provider.
     """
     TEST_VAULT_ADDRESS = "https://hashicorp-vault.test.sneaksanddata.com/"
     PRODUCTION_VAULT_ADDRESS = "https://hashicorp-vault.production.sneaksanddata.com/"
