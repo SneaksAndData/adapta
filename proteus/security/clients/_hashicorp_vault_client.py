@@ -18,7 +18,7 @@ def _get_vault_credentials():
         """Http server for handling login responses"""
 
         def __init__(self, *args, **kwargs):
-            super.__init__(self, *args, **kwargs)
+            super(HTTPServer, self).__init__(*args, **kwargs)
             self.token = None
 
     class AuthHandler(BaseHTTPRequestHandler):
