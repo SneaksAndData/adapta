@@ -38,6 +38,8 @@ mlflow-skinny = { version = "~1.28", optional = true }
 
 redis = { version = "~4.3.4", optional = true, extras = ['hiredis'] }
 
+hvac = { version = "0.11.2", optional = true }
+
 [tool.poetry.extras]
 azure = [
     'azure-identity',
@@ -61,6 +63,10 @@ ml = [
 ]
 caching = [
     'redis'
+]
+
+hashicorp = [
+    'hvac'
 ]
 
 [tool.poetry.dev-dependencies]
