@@ -48,3 +48,12 @@ class KeyValueCache(ABC):
         :param return_old_value: Return old value if it was present.
         :return: A value that has been set or replaced.
         """
+
+    @abstractmethod
+    def evict(self, key: str) -> None:
+        """
+          Removes a key from this cache.
+
+        :param key: A key to remove.
+        :return:
+        """

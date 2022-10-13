@@ -24,8 +24,13 @@ class RedisCache(KeyValueCache):
             password=os.environ['PROTEUS__CACHE_REDIS_PASSWORD'],
             ssl_cert_reqs=ssl.CERT_REQUIRED,
             ssl=True,
-            decode_responses=False
+            decode_responses=False,
+            retry_on_timeout=True,
+            retry_on_error=[redis.exceptions.ConnectionError]
         )
+
+    def evict(self, key: str) -> None:
+        self._redis.delete(key)
 
     def exists(self, key: str) -> bool:
         return self._redis.exists(key) == 1

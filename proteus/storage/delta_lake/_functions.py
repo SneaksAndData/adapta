@@ -76,15 +76,15 @@ def history(proteus_client: ProteusClient, path: DataPath, limit: Optional[int] 
 def load_cached(  # pylint: disable=R0913
         proteus_client: ProteusClient,
         path: DataPath,
-        cache: Optional[KeyValueCache] = None,
+        cache: KeyValueCache,
         cache_expires_after: Optional[datetime.timedelta] = datetime.timedelta(hours=1),
+        batch_size=1000,
         version: Optional[int] = None,
         row_filter: Optional[Expression] = None,
         columns: Optional[List[str]] = None,
-        batch_size: Optional[int] = None,
-):
+) -> Union[pandas.DataFrame, Iterator[pandas.DataFrame]]:
     """
-     Loads Delta Lake table from Azure storage and converts it to a pandas dataframe.
+     Loads Delta Lake table from external cache and converts it to a single pandas dataframe. If a cache entry is missing, falls back to reading data from storage path.
 
     :param proteus_client: ProteusClient for target storage.
     :param path: Path to delta table, in HDFS format: abfss://container@account.dfs.core.windows.net/my/path
@@ -95,7 +95,7 @@ def load_cached(  # pylint: disable=R0913
       filter = (pyarrow_field("year") == "2021") & (pyarrow_field("value") > "4")
 
     :param columns: Optional list of columns to select when reading. Defaults to all columns of not provided.
-    :param batch_size: Optional batch size when reading in batches. If not set, whole table will be loaded into memory.
+    :param batch_size: Batch size used to read table in batches.
     :param cache: Optional cache store to read the version from. If not supplied, data will be read from the path. If supplied and cached entry is not present, data will be read from storage and saved in cache.
     :param cache_expires_after: Optional time to live for a cached table entry. Defaults to 1 hour.
     :return: A DeltaTable wrapped Rust class, pandas Dataframe or an iterator of pandas Dataframes, for batched reads.
@@ -103,18 +103,33 @@ def load_cached(  # pylint: disable=R0913
     base_attributes = []
     if version:
         base_attributes.append(str(version))
-    if row_filter:
+    if row_filter is not None:
         base_attributes.append(str(row_filter))
     if columns:
         base_attributes.extend(columns)
-    if batch_size:
-        base_attributes.append(str(batch_size))
 
-    base_cache_key = hashlib.md5('#'.join([path.to_delta_rs_path(), ''.join(base_attributes)])).hexdigest()
+    base_attributes.append(str(batch_size))
+    base_attributes.append(str(list(history(proteus_client, path))[0].version))
 
-    if cache.exists(base_cache_key):
-        return DataFrameParquetSerializationFormat().deserialize(cache.get(f"{base_cache_key}"))
+    base_cache_key = hashlib.md5(
+        '#'.join([path.to_delta_rs_path(), '_'.join(base_attributes)]).encode('utf-8')).hexdigest()
+    print(base_cache_key)
 
+    # first check that we have cached batches for all given inputs
+    # it is enough to check that we have batch 0, due to base_cache_key being unique to version - batch-size pair
+    if cache.exists(f"{base_cache_key}_0"):
+        max_batch_number = 0
+        while cache.exists(f"{base_cache_key}_{max_batch_number}"):
+            max_batch_number += 1
+
+        return pandas.concat(
+            [
+                DataFrameParquetSerializationFormat().deserialize(cached_batch) for cached_batch
+                in cache.multi_get([f"{base_cache_key}_{batch_number}" for batch_number in range(0, max_batch_number)])
+            ]
+        )
+
+    aggregate_batch: Optional[pandas.DataFrame] = None
     data = load(
         proteus_client=proteus_client,
         path=path,
@@ -124,17 +139,14 @@ def load_cached(  # pylint: disable=R0913
         batch_size=batch_size
     )
 
-    if batch_size:
-        cache_keys = {batch_number: f"{base_cache_key}_{batch_number}" for batch_number in range(batch_size)}
-        if all([cache.exists(cache_key) for _, cache_key in cache_keys.items()]):
-            return map(
-                lambda entry: DataFrameParquetSerializationFormat().deserialize(cache.get(entry[1])),
-                cache_keys
-            )
+    batch_index = 0
+    for batch in data:
+        print(f"Received batch of size {len(batch)}")
+        print(f'Setting cache key {base_cache_key}_{batch_index}')
+        cache.set(f"{base_cache_key}_{batch_index}", DataFrameParquetSerializationFormat().serialize(batch),
+                  expires_after=cache_expires_after)
 
-        return map(
-            lambda batch: cache.set(cache_keys[batch[0]], DataFrameParquetSerializationFormat().serialize(batch[1])),
-            enumerate(data))
+        aggregate_batch = pandas.concat([aggregate_batch, batch])
+        batch_index += 1
 
-    cache.set(base_cache_key, DataFrameParquetSerializationFormat().serialize(data), expires_after=cache_expires_after)
-    return data
+    return aggregate_batch
