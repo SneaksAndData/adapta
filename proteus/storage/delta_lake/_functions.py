@@ -83,9 +83,10 @@ def load_cached(  # pylint: disable=R0913
         version: Optional[int] = None,
         row_filter: Optional[Expression] = None,
         columns: Optional[List[str]] = None,
-) -> Union[pandas.DataFrame, Iterator[pandas.DataFrame]]:
+) -> pandas.DataFrame:
     """
-     Loads Delta Lake table from external cache and converts it to a single pandas dataframe. If a cache entry is missing, falls back to reading data from storage path.
+     Loads Delta Lake table from an external cache and converts it to a single pandas dataframe (after applying column projections and row filters).
+     If a cache entry is missing, falls back to reading data from storage path.
 
     :param proteus_client: ProteusClient for target storage.
     :param path: Path to delta table, in HDFS format: abfss://container@account.dfs.core.windows.net/my/path

@@ -8,6 +8,9 @@ from proteus.storage.cache import KeyValueCache
 
 
 class RedisCache(KeyValueCache):
+    """
+      Redis cache.
+    """
 
     def __init__(self, host: str, database_number: int, port=6380):
         """
