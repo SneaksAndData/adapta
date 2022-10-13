@@ -50,8 +50,8 @@ class HashicorpVaultClient(ProteusClient):
     def __init__(self, vault_address):
         self._vault_address = vault_address
 
-    @classmethod
-    def from_base_client(cls, client: ProteusClient) -> Optional['HashicorpVaultClient']:
+    @staticmethod
+    def from_base_client(client: ProteusClient) -> Optional['HashicorpVaultClient']:
         """
          Safe casts ProteusClient to HashicorpVaultClient if type checks out.
 
