@@ -10,12 +10,14 @@ Supported API:
 
 ```python
 import os
+import datetime
 from proteus.security.clients import AzureClient
 from proteus.storage.models.azure import AdlsGen2Path
 from proteus.storage.models.hive import HivePath
-from proteus.storage.delta_lake import load
+from proteus.storage.delta_lake import load, load_cached
 from proteus.logs import ProteusLogger
 from pyarrow.dataset import field as pyarrow_field
+from proteus.storage.cache import RedisCache
 
 # prepare connection
 azure_client = AzureClient(subscription_id='6c5538ce-b24a-4e2a-877f-979ad71287ff')
@@ -40,4 +42,12 @@ adls_path2 = AdlsGen2Path.from_hdfs_path(hive_path.get_physical_path(logger=logg
 
 # get Iterable[pandas.DataFrame]
 batches2 = load(azure_client, adls_path2, batch_size=1000)
+
+# read data using Redis Cache, improves read time by a factor of >10 on single-node Redis.
+# for big tables, choose bigger batch sizes to speed up cache population. General rule:
+# batch_size = row_count / 10
+# if there is no cache hit, load_cached() will fallback to load() behaviour
+r_cache = RedisCache(host="esd-superset-test.redis.cache.windows.net", database_number=1)
+os.environ['PROTEUS__CACHE_REDIS_PASSWORD'] = '...'
+read_raw = load_cached(azure_client, adls_path, r_cache, row_filter=filter, cache_expires_after=datetime.timedelta(minutes=15), batch_size=int(1e6))
 ```

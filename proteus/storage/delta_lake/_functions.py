@@ -3,6 +3,7 @@
 """
 import datetime
 import hashlib
+import time
 from typing import Optional, Union, Iterator, List, Iterable
 
 import pandas
@@ -115,12 +116,10 @@ def load_cached(  # pylint: disable=R0913
         '#'.join([path.to_delta_rs_path(), '_'.join(base_attributes)]).encode('utf-8')).hexdigest()
     print(base_cache_key)
 
-    # first check that we have cached batches for all given inputs
-    # it is enough to check that we have batch 0, due to base_cache_key being unique to version - batch-size pair
-    if cache.exists(f"{base_cache_key}_0"):
-        max_batch_number = 0
-        while cache.exists(f"{base_cache_key}_{max_batch_number}"):
-            max_batch_number += 1
+    # first check that we have cached batches for all given inputs (columns, filters etc.)
+    # we read a special cache entry which tells us number of cached batches for this table query
+    if cache.exists(f"{base_cache_key}_size"):
+        max_batch_number = int(cache.get(f"{base_cache_key}_size"))
 
         return pandas.concat(
             [
@@ -140,13 +139,15 @@ def load_cached(  # pylint: disable=R0913
     )
 
     batch_index = 0
+    cache_start = time.monotonic_ns()
     for batch in data:
-        print(f"Received batch of size {len(batch)}")
-        print(f'Setting cache key {base_cache_key}_{batch_index}')
         cache.set(f"{base_cache_key}_{batch_index}", DataFrameParquetSerializationFormat().serialize(batch),
                   expires_after=cache_expires_after)
 
         aggregate_batch = pandas.concat([aggregate_batch, batch])
         batch_index += 1
+
+    cache_duration = (time.monotonic_ns() - cache_start) / 1e9
+    cache.set(f"{base_cache_key}_size", batch_index, expires_after=cache_expires_after - datetime.timedelta(seconds=cache_duration))
 
     return aggregate_batch

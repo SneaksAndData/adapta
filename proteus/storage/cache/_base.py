@@ -27,6 +27,15 @@ class KeyValueCache(ABC):
         """
 
     @abstractmethod
+    def multi_exists(self, *keys: str) -> bool:
+        """
+         Checks if all keys exist
+
+        :param keys: Keys to check.
+        :return:
+        """
+
+    @abstractmethod
     def multi_get(self, keys: List[str]) -> List[Any]:
         """
           Reads multiple keys in a single call.
