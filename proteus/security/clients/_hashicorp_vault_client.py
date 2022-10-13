@@ -93,18 +93,21 @@ class HashicorpVaultClient(ProteusClient):
          Not supported  in HashicorpVaultClient
         :return:
         """
+        raise NotImplementedError("Not supported  in HashicorpVaultClient")
 
     def connect_account(self):
         """
          Not supported  in HashicorpVaultClient
         :return:
         """
+        raise NotImplementedError("Not supported  in HashicorpVaultClient")
 
     def get_pyarrow_filesystem(self, path: DataPath) -> PyFileSystem:
         """
          Not supported  in HashicorpVaultClient
         :return:
         """
+        raise NotImplementedError("Not supported  in HashicorpVaultClient")
 
     @property
     def vault_address(self):

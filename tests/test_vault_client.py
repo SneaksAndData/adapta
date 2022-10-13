@@ -61,6 +61,24 @@ def test_string_secret():
     client_mock.secrets.kv.v2.configure.asssert_not_called()
 
 
+def test_connect_storage():
+    client = HashicorpVaultClient(HashicorpVaultClient.TEST_VAULT_ADDRESS)
+    with pytest.raises(NotImplementedError):
+        client.connect_storage(MagicMock())
+
+
+def test_connect_account():
+    client = HashicorpVaultClient(HashicorpVaultClient.TEST_VAULT_ADDRESS)
+    with pytest.raises(NotImplementedError):
+        client.connect_account()
+
+
+def test_get_pyarrow_filesystem():
+    client = HashicorpVaultClient(HashicorpVaultClient.TEST_VAULT_ADDRESS)
+    with pytest.raises(NotImplementedError):
+        client.get_pyarrow_filesystem(MagicMock())
+
+
 def generate_hashicorp_vault_mock():
     client_mock = MagicMock()
     client_mock.auth.oidc.oidc_authorization_url_request.return_value = {
