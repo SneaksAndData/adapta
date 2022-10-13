@@ -40,8 +40,6 @@ def load(  # pylint: disable=R0913
 
     :param columns: Optional list of columns to select when reading. Defaults to all columns of not provided.
     :param batch_size: Optional batch size when reading in batches. If not set, whole table will be loaded into memory.
-    :param cache: Optional cache store to read the version from. If not supplied, data will be read from the path. If supplied and cached entry is not present, data will be read from storage and saved in cache.
-    :param cache_expires_after: Optional time to live for a cached table entry. Defaults to 1 hour.
     :return: A DeltaTable wrapped Rust class, pandas Dataframe or an iterator of pandas Dataframes, for batched reads.
     """
     pyarrow_ds = DeltaTable(path.to_delta_rs_path(), version=version,
