@@ -18,6 +18,15 @@ class KeyValueCache(ABC):
         """
 
     @abstractmethod
+    def exists(self, key: str) -> bool:
+        """
+          Checks if a cache key is present.
+
+        :param key: A cache key.
+        :return:
+        """
+
+    @abstractmethod
     def multi_get(self, keys: List[str]) -> List[Any]:
         """
           Reads multiple keys in a single call.
@@ -27,7 +36,7 @@ class KeyValueCache(ABC):
         """
 
     @abstractmethod
-    def set(self, key: str, value: Any, expires_after=timedelta(seconds=60)):
+    def set(self, key: str, value: Any, expires_after=timedelta(seconds=60), return_old_value=False) -> Any:
         """
           Saves or updates a key-value pair to this cache. Supported value types differ based on implementation.
 
@@ -35,6 +44,7 @@ class KeyValueCache(ABC):
 
         :param key: A key.
         :param value: A value.
-        :param expires_after: Period after which the value expires
-        :return:
+        :param expires_after: Period after which the value expires.
+        :param return_old_value: Return old value if it was present.
+        :return: A value that has been set or replaced.
         """
