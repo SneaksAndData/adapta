@@ -3,7 +3,7 @@ import configparser
 import importlib
 import pathlib
 import tempfile
-from typing import Optional, Dict, Any
+from typing import Optional, Dict
 
 import mlflow
 from mlflow.pyfunc import PythonModel
@@ -36,7 +36,7 @@ def register_mlflow_model(
         run_name: str = None,
         transition_to_stage: str = None,
         metrics: Optional[Dict[str, float]] = None,
-        artifact: Dict[Any, Any] = None,
+        artifacts_to_log: Dict[str, str] = None,
     ):
     """Registers mlflow model
 
@@ -47,7 +47,7 @@ def register_mlflow_model(
     :param run_name: Name of Mlflow run
     :param transition_to_stage: Whether to transition to stage
     :param metrics: Metrics to log
-    :param artifact: Artifact to log
+    :param artifacts_to_log: Additional artifacts to log
     """
     assert transition_to_stage in [None, 'Staging', 'Production']
 
@@ -71,8 +71,9 @@ def register_mlflow_model(
         'config': str(path_config),
     }
 
-    if artifact is not None:
-        artifacts.update(artifact)
+    if artifacts_to_log is not None:
+        assert any(list(artifacts_to_log.keys())) not in ['model', 'config']
+        artifacts.update(artifacts_to_log)
 
     with mlflow.start_run(nested=True, run_name=run_name):
         mlflow.pyfunc.log_model(
