@@ -37,7 +37,7 @@ def register_mlflow_model(
         transition_to_stage: str = None,
         metrics: Optional[Dict[str, float]] = None,
         artifact: Dict[Any] = None,
-        ):
+    ):
     """Registers mlflow model
 
     :param model: Machine learning model to register
@@ -48,7 +48,6 @@ def register_mlflow_model(
     :param transition_to_stage: Whether to transition to stage
     :param metrics: Metrics to log
     :param artifact: Artifact to log
-    :param artifact_name: Name of the artifact
     """
     assert transition_to_stage in [None, 'Staging', 'Production']
 
@@ -63,14 +62,14 @@ def register_mlflow_model(
     config['model'] = {
         'module_name': model.__module__,
         'class_name': model.__class__.__qualname__,
-        }
+    }
     with open(path_config, 'w', encoding="utf8") as file_stream:
         config.write(file_stream)
 
     artifacts = {
         'model': path_model,
         'config': str(path_config),
-        }
+    }
 
     if artifact is not None:
         artifacts.update(artifact)
@@ -81,7 +80,7 @@ def register_mlflow_model(
             python_model=_MlflowMachineLearningModel(),
             registered_model_name=model_name,
             artifacts=artifacts,
-            )
+        )
 
         if metrics is not None:
             mlflow.log_metrics(metrics)
@@ -91,4 +90,4 @@ def register_mlflow_model(
                 model_name=model_name,
                 model_version=mlflow_client.get_latest_model_version(model_name).version,
                 stage=transition_to_stage,
-                )
+            )

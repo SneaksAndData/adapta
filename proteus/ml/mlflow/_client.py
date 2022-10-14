@@ -70,8 +70,7 @@ class MlflowBasicClient:
         """
         run_id = self._client.get_model_version(model_name, model_version).run_id
         repository = self._get_artifact_repo_backported(run_id)
-        return repository.download_artifacts(f"{artifact_path}")  # need to remove 'artifacts' it is
-        # included in the repository
+        return repository.download_artifacts(artifact_path)
 
     def search_model_versions(self, model_name: str) -> PagedList[ModelVersion]:
         """
