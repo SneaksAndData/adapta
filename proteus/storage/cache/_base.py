@@ -1,3 +1,6 @@
+"""
+  Generic key-value cache.
+"""
 from abc import ABC, abstractmethod
 from datetime import timedelta
 from typing import Any, List

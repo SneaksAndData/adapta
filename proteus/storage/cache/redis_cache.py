@@ -1,3 +1,6 @@
+"""
+  Key-value cache based on Redis.
+"""
 import os
 import ssl
 from datetime import timedelta

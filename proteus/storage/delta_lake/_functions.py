@@ -12,6 +12,7 @@ from pyarrow import RecordBatch, Table
 from pyarrow._compute import Expression  # pylint: disable=E0611
 from pyarrow._dataset_parquet import ParquetReadOptions  # pylint: disable=E0611
 
+from proteus.logs import ProteusLogger
 from proteus.security.clients._base import ProteusClient
 from proteus.storage.models.base import DataPath
 from proteus.storage.delta_lake._models import DeltaTransaction
@@ -81,6 +82,7 @@ def load_cached(  # pylint: disable=R0913
         version: Optional[int] = None,
         row_filter: Optional[Expression] = None,
         columns: Optional[List[str]] = None,
+        logger: Optional[ProteusLogger] = None
 ) -> pandas.DataFrame:
     """
      Loads Delta Lake table from an external cache and converts it to a single pandas dataframe (after applying column projections and row filters).
@@ -98,6 +100,7 @@ def load_cached(  # pylint: disable=R0913
     :param batch_size: Batch size used to read table in batches.
     :param cache: Optional cache store to read the version from. If not supplied, data will be read from the path. If supplied and cached entry is not present, data will be read from storage and saved in cache.
     :param cache_expires_after: Optional time to live for a cached table entry. Defaults to 1 hour.
+    :param logger: Optional logger for debugging purposes.
     :return: A DeltaTable wrapped Rust class, pandas Dataframe or an iterator of pandas Dataframes, for batched reads.
     """
     base_attributes = []
@@ -113,18 +116,37 @@ def load_cached(  # pylint: disable=R0913
 
     base_cache_key = hashlib.md5(
         '#'.join([path.to_delta_rs_path(), '_'.join(base_attributes)]).encode('utf-8')).hexdigest()
-    print(base_cache_key)
+
+    if logger:
+        logger.debug(
+            'Generated cache key {cache_key} for {table_path}',
+            cache_key=base_cache_key,
+            table_path=path.to_delta_rs_path()
+        )
 
     # first check that we have cached batches for all given inputs (columns, filters etc.)
     # we read a special cache entry which tells us number of cached batches for this table query
     if cache.exists(f"{base_cache_key}_size"):
         max_batch_number = int(cache.get(f"{base_cache_key}_size"))
 
+        if logger:
+            logger.debug(
+                'Cache hit for {cache_key}, stored chunks {chunk_count}',
+                cache_key=base_cache_key,
+                chunk_count=max_batch_number
+            )
+
         return pandas.concat(
             [
                 DataFrameParquetSerializationFormat().deserialize(cached_batch) for cached_batch
                 in cache.multi_get([f"{base_cache_key}_{batch_number}" for batch_number in range(0, max_batch_number)])
             ]
+        )
+
+    if logger:
+        logger.debug(
+            'Cache miss for {cache_key}, populating cache.',
+            cache_key=base_cache_key
         )
 
     aggregate_batch: Optional[pandas.DataFrame] = None
@@ -147,6 +169,14 @@ def load_cached(  # pylint: disable=R0913
         batch_index += 1
 
     cache_duration = (time.monotonic_ns() - cache_start) / 1e9
-    cache.set(f"{base_cache_key}_size", batch_index, expires_after=cache_expires_after - datetime.timedelta(seconds=cache_duration))
+    cache.set(f"{base_cache_key}_size", batch_index,
+              expires_after=cache_expires_after - datetime.timedelta(seconds=cache_duration))
+
+    if logger:
+        logger.debug(
+            'Cache updated for {cache_key}, total chunks {chunk_count}',
+            cache_key=base_cache_key,
+            chunk_count=batch_index
+        )
 
     return aggregate_batch

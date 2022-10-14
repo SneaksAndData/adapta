@@ -17,7 +17,7 @@ from proteus.storage.models.hive import HivePath
 from proteus.storage.delta_lake import load, load_cached
 from proteus.logs import ProteusLogger
 from pyarrow.dataset import field as pyarrow_field
-from proteus.storage.cache import RedisCache
+from proteus.storage.cache.redis_cache import RedisCache
 
 # prepare connection
 azure_client = AzureClient(subscription_id='6c5538ce-b24a-4e2a-877f-979ad71287ff')
