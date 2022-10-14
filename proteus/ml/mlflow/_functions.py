@@ -36,7 +36,7 @@ def register_mlflow_model(
         run_name: str = None,
         transition_to_stage: str = None,
         metrics: Optional[Dict[str, float]] = None,
-        artifact: Dict[Any] = None,
+        artifact: Dict[Any, Any] = None,
     ):
     """Registers mlflow model
 
