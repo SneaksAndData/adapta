@@ -3,8 +3,7 @@ import configparser
 import importlib
 import pathlib
 import tempfile
-import pickle
-from typing import Optional, Dict
+from typing import Optional, Dict, Any
 
 import mlflow
 from mlflow.pyfunc import PythonModel
@@ -37,8 +36,8 @@ def register_mlflow_model(
         run_name: str = None,
         transition_to_stage: str = None,
         metrics: Optional[Dict[str, float]] = None,
-        artifact: Optional[Dict[str, float]] = None,
-        artifact_name: str = None):
+        artifact: Dict[Any] = None,
+        ):
     """Registers mlflow model
 
     :param model: Machine learning model to register
@@ -74,13 +73,7 @@ def register_mlflow_model(
         }
 
     if artifact is not None:
-        # save the artifact as pkl
-        assert artifact_name
-        path_artifact = pathlib.PurePath(tempfile.gettempdir(), f'{artifact_name}.pkl')
-        path_artifact = path_artifact.as_posix().replace(path_artifact.drive, '')
-        with open(path_artifact, 'wb') as output:
-            pickle.dump(artifact, output)
-        artifacts['artifact'] = path_artifact
+        artifacts.update(artifact)
 
     with mlflow.start_run(nested=True, run_name=run_name):
         mlflow.pyfunc.log_model(
@@ -89,11 +82,6 @@ def register_mlflow_model(
             registered_model_name=model_name,
             artifacts=artifacts,
             )
-        if artifact is not None:
-            mlflow.log_artifact(
-                artifacts['artifact'],
-                artifact_path='mlflow_model'
-                )
 
         if metrics is not None:
             mlflow.log_metrics(metrics)
