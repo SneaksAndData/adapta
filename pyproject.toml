@@ -9,7 +9,7 @@ readme = "README.md"
 repository = 'https://github.com/SneaksAndData/proteus'
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = ">=3.9, <3.11"
 requests = "^2.26"
 cryptography = "~36.0"
 deltalake = "<0.6.2"
@@ -37,6 +37,8 @@ pyodbc = { version = "~4.0", optional = true }
 mlflow-skinny = { version = "~1.28", optional = true }
 
 hvac = { version = "0.11.2", optional = true }
+
+fsspec = { version = "2022.8.2" }
 
 [tool.poetry.extras]
 azure = [
