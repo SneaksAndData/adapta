@@ -72,7 +72,8 @@ def register_mlflow_model(
     }
 
     if artifacts_to_log is not None:
-        assert any(list(artifacts_to_log.keys())) not in ['model', 'config']
+    if not any(list(artifacts_to_log.keys())) not in ['model', 'config']:
+        raise ValueError('Artifact names "model" and "config" are reserved for internal proteus usage')
         artifacts.update(artifacts_to_log)
 
     with mlflow.start_run(nested=True, run_name=run_name):
