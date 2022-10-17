@@ -4,7 +4,7 @@
 from abc import ABC, abstractmethod
 from typing import Optional, Dict
 
-from pyarrow.fs import PyFileSystem
+from pyarrow.fs import FileSystem
 from proteus.storage.models.base import DataPath
 
 
@@ -48,7 +48,7 @@ class ProteusClient(ABC):
         """
 
     @abstractmethod
-    def get_pyarrow_filesystem(self, path: DataPath) -> PyFileSystem:
+    def get_pyarrow_filesystem(self, path: DataPath) -> FileSystem:
         """
         Returns a `PyFileSystem` object that's authenticated for the provided path
 

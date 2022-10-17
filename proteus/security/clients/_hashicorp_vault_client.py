@@ -5,7 +5,7 @@ import webbrowser
 from typing import Optional, Dict
 from urllib import parse
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from pyarrow.fs import PyFileSystem
+from pyarrow.fs import FileSystem
 
 import hvac
 
@@ -102,7 +102,7 @@ class HashicorpVaultClient(ProteusClient):
         """
         raise NotImplementedError("Not supported  in HashicorpVaultClient")
 
-    def get_pyarrow_filesystem(self, path: DataPath) -> PyFileSystem:
+    def get_pyarrow_filesystem(self, path: DataPath) -> FileSystem:
         """
          Not supported  in HashicorpVaultClient
         :return:
