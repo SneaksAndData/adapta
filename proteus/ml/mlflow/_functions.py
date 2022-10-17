@@ -16,6 +16,7 @@ class _MlflowMachineLearningModel(PythonModel):
     """Machine learning model wrapper used for logging MachineLearning models
     as mlflow pyfunc models
     """
+
     def load_context(self, context):
         config = configparser.ConfigParser()
         config.read(context.artifacts['config'])
@@ -28,14 +29,15 @@ class _MlflowMachineLearningModel(PythonModel):
 
 
 def register_mlflow_model(
-    model: MachineLearningModel,
-    mlflow_client: MlflowBasicClient,
-    model_name: str,
-    experiment: str,
-    run_name: str = None,
-    transition_to_stage: str = None,
-    metrics: Optional[Dict[str, float]] = None
-):
+        model: MachineLearningModel,
+        mlflow_client: MlflowBasicClient,
+        model_name: str,
+        experiment: str,
+        run_name: str = None,
+        transition_to_stage: str = None,
+        metrics: Optional[Dict[str, float]] = None,
+        artifacts_to_log: Dict[str, str] = None,
+    ):
     """Registers mlflow model
 
     :param model: Machine learning model to register
@@ -45,6 +47,7 @@ def register_mlflow_model(
     :param run_name: Name of Mlflow run
     :param transition_to_stage: Whether to transition to stage
     :param metrics: Metrics to log
+    :param artifacts_to_log: Additional artifacts to log
     """
     assert transition_to_stage in [None, 'Staging', 'Production']
 
@@ -68,8 +71,12 @@ def register_mlflow_model(
         'config': str(path_config),
     }
 
-    with mlflow.start_run(nested=True, run_name=run_name):
+    if artifacts_to_log is not None:
+        if not any(list(artifacts_to_log.keys())) not in ['model', 'config']:
+            raise ValueError('Artifact names "model" and "config" are reserved for internal proteus usage')
+        artifacts.update(artifacts_to_log)
 
+    with mlflow.start_run(nested=True, run_name=run_name):
         mlflow.pyfunc.log_model(
             artifact_path='mlflow_model',
             python_model=_MlflowMachineLearningModel(),
