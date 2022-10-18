@@ -20,7 +20,8 @@ class AdlsGen2Path(DataPath):
     @classmethod
     def from_hdfs_path(cls, hdfs_path: str) -> "AdlsGen2Path":
         assert '@' in hdfs_path and 'dfs.core.windows.net' in hdfs_path and hdfs_path.startswith(
-            'abfss://'), 'Invalid HDFS (ALDS2) path supplied. Please use the following format: abfss://<container>@<account>.dfs.core.windows.net/my/data'
+            'abfss://'), f"Invalid HDFS (ALDS2) path supplied. Please use the following format: " \
+                         f"abfss://<container>@<account>.dfs.core.windows.net/my/data, but was: '{hdfs_path}'"
 
         return AdlsGen2Path(
             account=hdfs_path.split('@')[1].split('.')[0],
