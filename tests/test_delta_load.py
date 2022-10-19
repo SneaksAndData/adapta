@@ -6,7 +6,7 @@ import pytest
 
 from proteus.security.clients import LocalClient
 from proteus.storage.models.local import LocalPath
-from proteus.storage.delta_lake import load, load_cached
+from proteus.storage.delta_lake import load, load_cached, get_cache_key
 from proteus.storage.cache import KeyValueCache
 from proteus.storage.models.format import DataFrameParquetSerializationFormat
 
@@ -64,11 +64,13 @@ def test_delta_load_cached(mock_cache: MagicMock, get_client_and_path):
     cache.multi_get.return_value = [
         DataFrameParquetSerializationFormat().serialize(pandas.DataFrame([{'a': 1, 'b': 2}]))]
 
+    cache_key = get_cache_key(client, data_path, batch_size=1)
+
     _ = load_cached(client, data_path, cache=cache, batch_size=1)
 
-    cache.exists.assert_called_with("a17f7076c19d1ab033418f32c9be4e0c_size")
+    cache.exists.assert_called_with(f"{cache_key}_size")
     cache.multi_get.assert_called_with(
-        [f"a17f7076c19d1ab033418f32c9be4e0c_{batch_number}" for batch_number in range(0, 10)])
+        [f"{cache_key}_{batch_number}" for batch_number in range(0, 10)])
 
 
 @patch('proteus.storage.cache.KeyValueCache')
@@ -80,11 +82,13 @@ def test_delta_populate_cache(mock_cache: MagicMock, get_client_and_path):
     cache.exists.return_value = False
     cache.set.return_value = None
 
+    cache_key = get_cache_key(client, data_path, batch_size=1)
+
     _ = load_cached(client, data_path, cache=cache, batch_size=1)
 
-    cache.exists.assert_called_once_with("a17f7076c19d1ab033418f32c9be4e0c_size")
+    cache.exists.assert_called_once_with(f"{cache_key}_size")
 
-    set_calls = [call(key=f"a17f7076c19d1ab033418f32c9be4e0c_{batch_number}", value=ANY, expires_after=ANY) for batch_number in range(17)]
-    set_calls.append(call(key="a17f7076c19d1ab033418f32c9be4e0c_size", value=17, expires_after=ANY))
+    set_calls = [call(key=f"{cache_key}_{batch_number}", value=ANY, expires_after=ANY) for batch_number in range(17)]
+    set_calls.append(call(key=f"{cache_key}_size", value=17, expires_after=ANY))
 
     cache.set.assert_has_calls(set_calls)

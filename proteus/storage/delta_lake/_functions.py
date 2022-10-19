@@ -73,6 +73,43 @@ def history(proteus_client: ProteusClient, path: DataPath, limit: Optional[int] 
     return [DeltaTransaction.from_dict(tran) for tran in delta_table.history(limit=limit)]
 
 
+def get_cache_key(
+        proteus_client: ProteusClient,
+        path: DataPath,
+        batch_size=1000,
+        version: Optional[int] = None,
+        row_filter: Optional[Expression] = None,
+        columns: Optional[List[str]] = None
+) -> str:
+    """
+      Returns a cache key for the path and data read arguments
+
+    :param proteus_client: ProteusClient for target storage.
+    :param path: Path to delta table, in HDFS format: abfss://container@account.dfs.core.windows.net/my/path
+    :param version: Optional version to read. Defaults to latest.
+    :param row_filter: Optional filter to apply, as pyarrow expression. Example:
+      from pyarrow.dataset import field as pyarrow_field
+
+      filter = (pyarrow_field("year") == "2021") & (pyarrow_field("value") > "4")
+
+    :param columns: Optional list of columns to select when reading. Defaults to all columns of not provided.
+    :param batch_size: Batch size used to read table in batches.
+    :return: A cache key (string)
+    """
+    base_attributes = []
+    if version:
+        base_attributes.append(str(version))
+    if row_filter is not None:
+        base_attributes.append(str(row_filter))
+    if columns:
+        base_attributes.extend(columns)
+
+    base_attributes.append(str(batch_size))
+    base_attributes.append(str(list(history(proteus_client, path))[0].version))
+
+    return hashlib.md5('#'.join([path.to_delta_rs_path(), '_'.join(base_attributes)]).encode('utf-8')).hexdigest()
+
+
 def load_cached(  # pylint: disable=R0913
         proteus_client: ProteusClient,
         path: DataPath,
@@ -103,19 +140,15 @@ def load_cached(  # pylint: disable=R0913
     :param logger: Optional logger for debugging purposes.
     :return: A DeltaTable wrapped Rust class, pandas Dataframe or an iterator of pandas Dataframes, for batched reads.
     """
-    base_attributes = []
-    if version:
-        base_attributes.append(str(version))
-    if row_filter is not None:
-        base_attributes.append(str(row_filter))
-    if columns:
-        base_attributes.extend(columns)
 
-    base_attributes.append(str(batch_size))
-    base_attributes.append(str(list(history(proteus_client, path))[0].version))
-
-    base_cache_key = hashlib.md5(
-        '#'.join([path.to_delta_rs_path(), '_'.join(base_attributes)]).encode('utf-8')).hexdigest()
+    base_cache_key = get_cache_key(
+        proteus_client=proteus_client,
+        path=path,
+        batch_size=batch_size,
+        version=version,
+        row_filter=row_filter,
+        columns=columns
+    )
 
     if logger:
         logger.debug(
