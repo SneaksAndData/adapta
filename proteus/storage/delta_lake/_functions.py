@@ -162,14 +162,14 @@ def load_cached(  # pylint: disable=R0913
     batch_index = 0
     cache_start = time.monotonic_ns()
     for batch in data:
-        cache.set(f"{base_cache_key}_{batch_index}", DataFrameParquetSerializationFormat().serialize(batch),
+        cache.set(key=f"{base_cache_key}_{batch_index}", value=DataFrameParquetSerializationFormat().serialize(batch),
                   expires_after=cache_expires_after)
 
         aggregate_batch = pandas.concat([aggregate_batch, batch])
         batch_index += 1
 
     cache_duration = (time.monotonic_ns() - cache_start) / 1e9
-    cache.set(f"{base_cache_key}_size", batch_index,
+    cache.set(key=f"{base_cache_key}_size", value=batch_index,
               expires_after=cache_expires_after - datetime.timedelta(seconds=cache_duration))
 
     if logger:

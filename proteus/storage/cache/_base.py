@@ -30,7 +30,7 @@ class KeyValueCache(ABC):
         """
 
     @abstractmethod
-    def multi_exists(self, *keys: str) -> bool:
+    def multi_exists(self, keys: List[str]) -> bool:
         """
          Checks if all keys exist
 

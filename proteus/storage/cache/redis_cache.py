@@ -35,7 +35,7 @@ class RedisCache(KeyValueCache):
             retry_on_error=[redis.exceptions.ConnectionError]
         )
 
-    def multi_exists(self, *keys: str) -> bool:
+    def multi_exists(self, keys: List[str]) -> bool:
         return self._redis.exists(*keys) == len(keys)
 
     def evict(self, key: str) -> None:
