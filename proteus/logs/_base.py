@@ -15,30 +15,34 @@ from logging import Handler, StreamHandler
 from typing import List, Optional, Dict, Any
 
 import json_log_formatter
+from proteus.logs.handlers.datadog_api_handler import DataDogApiHandler
 
 from proteus.logs.models import LogLevel
 
 
-class ProteusLogger:
+class ProteusLogger(logging.Logger):
     """
      Proteus Proxy for Python logging library.
     """
 
-    def __init__(
-            self,
-            fixed_template: Optional[Dict[str, Dict[str, str]]] = None,
-            fixed_template_delimiter=', '
-    ):
+    def __init__(self, name: str):
+
+        super().__init__(name)
+        self._loggers = {name: self}
+        self._default_log_source = name
+        self.addHandler(DataDogApiHandler())
+
+    @staticmethod
+    def get_proteus_logger(fixed_template: Optional[Dict[str, Dict[str, str]]] = None, fixed_template_delimiter=', '):
         """
           Creates a new instance of a ProteusLogger
 
         :param fixed_template: Additional template to append to message templates provided via logging methods.
         :param fixed_template_delimiter: Optional delimiter to use when appending fixed templates.
         """
-        self._loggers = {}
-        self._default_log_source = None
-        self._fixed_template = fixed_template
-        self._fixed_template_delimiter = fixed_template_delimiter
+        proteus_logger = ProteusLogger("proteus")
+        proteus_logger._fixed_template = fixed_template
+        proteus_logger._fixed_template_delimiter = fixed_template_delimiter
 
     def add_log_source(self, *, log_source_name: str, min_log_level: LogLevel,
                        log_handlers: Optional[List[Handler]] = None,
@@ -127,6 +131,7 @@ class ProteusLogger:
              template: str,
              tags: Optional[Dict[str, str]] = None,
              log_source_name: Optional[str] = None,
+             *args,
              **kwargs) -> None:
         """
           Sends an INFO level message to configured log sources.
@@ -137,21 +142,22 @@ class ProteusLogger:
         :param kwargs: Templated arguments (key=value).
         :return:
         """
+        full_tags = tags or {}
+        extra = {
+            'proteus': {
+                'tags': full_tags.update(self._get_fixed_args()),
+                'template': self._get_template(template)
+            }
+        }
         logger = self._get_logger(log_source_name)
-
-        logger.info(
-            msg=self._prepare_message(
-                template=self._get_template(template),
-                tags=tags,
-                diagnostics=None,
-                **self._get_fixed_args(),
-                **kwargs))
+        logger._log(logging.INFO, msg=self._get_template(template).format(**kwargs), args=args, extra=extra)
 
     def warning(self,
                 template: str,
                 exception: Optional[BaseException] = None,
                 tags: Optional[Dict[str, str]] = None,
                 log_source_name: Optional[str] = None,
+                *args,
                 **kwargs) -> None:
         """
           Sends a WARNING level message to configured log sources.
@@ -163,15 +169,22 @@ class ProteusLogger:
         :param kwargs: Templated arguments (key=value).
         :return:
         """
+        full_tags = tags or {}
+        full_tags.update(self._get_fixed_args())
+        extra = {
+            'proteus': {
+                'tags': full_tags,
+                'template': self._get_template(template)
+            }
+        }
+        extra['proteus'].update(kwargs)
         logger = self._get_logger(log_source_name)
-        logger.warning(
-            msg=self._prepare_message(
-                template=self._get_template(template),
-                tags=tags,
-                diagnostics=None,
-                **self._get_fixed_args(),
-                **kwargs),
-            exc_info=exception, stack_info=True)
+        logger._log(logging.WARN,
+                    msg=self._get_template(template).format(**kwargs),
+                    exc_info=exception if isinstance(exception, BaseException) else sys.exc_info(),
+                    extra=extra,
+                    stack_info=True,
+                    args=args)
 
     def error(self,
               template: str,

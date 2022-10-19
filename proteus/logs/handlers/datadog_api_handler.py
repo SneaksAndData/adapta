@@ -6,6 +6,7 @@ import os
 import signal
 import socket
 import platform
+import traceback
 from logging import LogRecord, Handler
 from typing import List, Optional, Dict
 
@@ -99,20 +100,24 @@ class DataDogApiHandler(Handler):
     def emit(self, record: LogRecord) -> None:
         def convert_record(rec: LogRecord) -> HTTPLogItem:
 
-            record_json = json.loads(self.format(rec))
-            record_message = json.loads(record_json['message'])
+            metadata = rec.__dict__.get('proteus', {})
 
-            tags: Dict[str, str] = record_message.get('tags', {})
-
-            if len(tags) > 0:
-                record_message.pop('tags')
-
+            tags = {}
+            if "tags" in metadata.keys():
+                tags.update(metadata.pop("tags"))
             tags.update(self._fixed_tags)
 
+            formatted_message = {
+                "text": rec.msg,
+            }
+            for k, v in metadata.items():
+                formatted_message[k] = v
+            if "template" in metadata:
+                formatted_message["template"] = metadata["template"]
             if rec.exc_info:
-                ex_type, _, _ = rec.exc_info
-                record_message.setdefault('error', {
-                    'stack': record_json['exc_info'],
+                ex_type, _, trace = rec.exc_info
+                formatted_message.setdefault('error', {
+                    'stack': "".join(traceback.format_exception(*rec.exc_info, chain=True)).strip("\n"),
                     'message': rec.exc_text,
                     'kind': ex_type.__name__
                 })
@@ -121,7 +126,7 @@ class DataDogApiHandler(Handler):
                 ddsource=rec.name,
                 ddtags=','.join(convert_datadog_tags(tags)),
                 hostname=socket.gethostname(),
-                message=json.dumps(record_message),
+                message=json.dumps(formatted_message),
                 status=rec.levelname
             )
 

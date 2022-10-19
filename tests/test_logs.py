@@ -1,20 +1,23 @@
 import json
+import logging
 import os
 import socket
+import sys
 import traceback
+from collections import OrderedDict
 from logging import StreamHandler
 
 import tempfile
 from typing import Dict
-
+from jsonformatter import JsonFormatter
 import pytest
 import uuid
 
 from datadog_api_client.v2.model.http_log_item import HTTPLogItem
 from pytest_mock import MockerFixture
 
-from proteus.logs.handlers.datadog_api_handler import DataDogApiHandler
 from proteus.logs import ProteusLogger
+from proteus.logs.handlers.datadog_api_handler import DataDogApiHandler
 from proteus.logs.models import LogLevel
 
 
@@ -93,7 +96,7 @@ def test_datadog_api_handler(mocker: MockerFixture):
     mock_handler = DataDogApiHandler(buffer_size=1)
     mock_source = str(uuid.uuid4())
 
-    dd_logger = ProteusLogger() \
+    dd_logger = ProteusLogger(__name__) \
         .add_log_source(log_source_name=mock_source, min_log_level=LogLevel.INFO,
                         log_handlers=[mock_handler], is_default=True)
 
@@ -104,10 +107,48 @@ def test_datadog_api_handler(mocker: MockerFixture):
         dd_logger.warning(template='This a unit test logger {index}', exception=ex, index=1)
         ex_str = traceback.format_exc().removesuffix("\n")
 
-    assert mock_handler._buffer[0] == HTTPLogItem(
-        ddsource=mock_source,
-        ddtags='environment:local',
-        hostname=socket.gethostname(),
-        message=json.dumps({"template": "This a unit test logger {index}", "text": "This a unit test logger 1", "index": 1, "error": {"stack": ex_str, "message": None, ''"kind": "ValueError"}}),
-        status='WARNING'
-    )
+    log_item = mock_handler._buffer[0]
+    message = json.loads(log_item.message)
+
+    assert log_item.ddsource == mock_source
+    assert log_item.ddtags == 'environment:local'
+    assert log_item.status == 'WARNING'
+    assert message["text"] == "This a unit test logger 1"
+    assert message["index"] == 1
+    assert message["error"] == {"stack": ex_str, "message": None, ''"kind": "ValueError"}
+    assert message["template"] == "This a unit test logger {index}"
+    assert "tags" not in message
+
+
+def test_proteus_logger_replacement(mocker: MockerFixture):
+    os.environ.setdefault('PROTEUS__DD_API_KEY', 'some-key')
+    os.environ.setdefault('PROTEUS__DD_APP_KEY', 'some-app-key')
+    os.environ.setdefault('PROTEUS__DD_SITE', 'some-site.dog')
+
+    mocker.patch('proteus.logs.handlers.datadog_api_handler.DataDogApiHandler._flush', return_value=None)
+    mock_handler = DataDogApiHandler(buffer_size=1)
+    mock_source = "third.party.library"
+
+    klass = logging.getLoggerClass()
+    try:
+        logging.setLoggerClass(ProteusLogger)
+        dd_logger = logging.getLogger(mock_source)
+        dd_logger.addHandler(mock_handler)
+        ex_str = None
+        try:
+            raise ValueError("test warning")
+        except BaseException as ex:
+            dd_logger.warning("Something bad happened!", exc_info=True)
+            ex_str = traceback.format_exc().removesuffix("\n")
+
+        log_item = mock_handler._buffer[0]
+        message = json.loads(log_item.message)
+
+        assert log_item.ddsource == mock_source
+        assert log_item.ddtags == 'environment:local'
+        assert log_item.status == 'WARNING'
+        assert message["text"] == "Something bad happened!"
+        assert message["error"] == {"stack": ex_str, "message": None, ''"kind": "ValueError"}
+        assert "tags" not in message
+    finally:
+        logging.setLoggerClass(klass)
