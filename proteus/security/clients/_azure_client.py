@@ -11,7 +11,7 @@ from adlfs import AzureBlobFileSystem
 from azure.mgmt.storage.v2021_08_01.models import StorageAccountKey, StorageAccount
 from azure.mgmt.storage import StorageManagementClient
 from azure.identity import DefaultAzureCredential
-from pyarrow.fs import PyFileSystem, FSSpecHandler
+from pyarrow.fs import PyFileSystem, FSSpecHandler, SubTreeFileSystem, FileSystem
 
 from proteus.security.clients._base import ProteusClient
 from proteus.storage.models.azure import AdlsGen2Path
@@ -97,12 +97,12 @@ class AzureClient(ProteusClient):
     def get_credentials(self) -> DefaultAzureCredential:
         return _get_azure_credentials()
 
-    def get_pyarrow_filesystem(self, path: DataPath) -> PyFileSystem:
+    def get_pyarrow_filesystem(self, path: DataPath) -> FileSystem:
 
         connection_options = self.connect_storage(path=path)
         file_system = AzureBlobFileSystem(
-            account_name = connection_options['AZURE_STORAGE_ACCOUNT_NAME'],
-            credential = connection_options['AZURE_STORAGE_ACCOUNT_KEY']
+            account_name=connection_options['AZURE_STORAGE_ACCOUNT_NAME'],
+            account_key=connection_options['AZURE_STORAGE_ACCOUNT_KEY']
         )
 
-        return PyFileSystem(FSSpecHandler(file_system))
+        return SubTreeFileSystem(path.to_hdfs_path(), PyFileSystem(FSSpecHandler(file_system)))
