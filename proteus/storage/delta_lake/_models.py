@@ -28,6 +28,7 @@ class DeltaTransaction:
     """
      A subset of Delta table transaction entry properties.
     """
+    version: int
     timestamp: int
     operation: DeltaOperation
     operation_parameters: Dict
@@ -44,7 +45,8 @@ class DeltaTransaction:
         delta_op = value.get('operation', DeltaOperation.UNDEFINED.value)
         supported_ops = set(item.value for item in DeltaOperation)
 
-        return DeltaTransaction(
+        return cls(
+            version=value.get('version', -1),
             timestamp=value['timestamp'],
             operation=DeltaOperation(delta_op) if delta_op in supported_ops else DeltaOperation.UNDEFINED,
             operation_parameters=value.get('operationParameters', {}),
