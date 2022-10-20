@@ -11,7 +11,7 @@ import uuid
 
 from pytest_mock import MockerFixture
 
-from proteus.logs import ProteusLogger
+from proteus.logs import ProteusLogger, inject_datadog_logging
 from proteus.logs.handlers.datadog_api_handler import DataDogApiHandler
 from proteus.logs.models import LogLevel
 
@@ -126,7 +126,7 @@ def test_proteus_logger_replacement(mocker: MockerFixture):
 
     klass = logging.getLoggerClass()
     try:
-        logging.setLoggerClass(ProteusLogger)
+        inject_datadog_logging()
         dd_logger = logging.getLogger(mock_source)
         dd_logger.addHandler(mock_handler)
         ex_str = None

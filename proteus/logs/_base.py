@@ -20,11 +20,17 @@ from proteus.logs.models import LogLevel
 
 
 class DatadogTemplatedLogger(logging.Logger):
+    """
+    Inserts metadata to log entry for datadog
+    """
     def __init__(self, name: str):
         super().__init__(name)
         self.addHandler(DataDogApiHandler())
 
     def log_with_metadata(self, log_level, msg, template, args, tags, diagnostics, exception, stack_info):
+        """
+        Log with metadata
+        """
         proteus_metadata = {'template': template}
         if diagnostics:
             proteus_metadata["diagnostics"] = diagnostics
@@ -39,6 +45,9 @@ class DatadogTemplatedLogger(logging.Logger):
 
 
 def inject_datadog_logging():
+    """
+    Injects logging to datadog for external libraries
+    """
     logging.setLoggerClass(DatadogTemplatedLogger)
 
 
@@ -52,18 +61,6 @@ class ProteusLogger:
         super().__init__(name)
         self._loggers = {name: self}
         self._default_log_source = name
-
-    @staticmethod
-    def get_proteus_logger(fixed_template: Optional[Dict[str, Dict[str, str]]] = None, fixed_template_delimiter=', '):
-        """
-          Creates a new instance of a ProteusLogger
-
-        :param fixed_template: Additional template to append to message templates provided via logging methods.
-        :param fixed_template_delimiter: Optional delimiter to use when appending fixed templates.
-        """
-        proteus_logger = ProteusLogger("proteus")
-        proteus_logger._fixed_template = fixed_template
-        proteus_logger._fixed_template_delimiter = fixed_template_delimiter
 
     def add_log_source(self, *, log_source_name: str, min_log_level: LogLevel,
                        log_handlers: Optional[List[Handler]] = None,
@@ -234,7 +231,7 @@ class ProteusLogger:
                                  template=template,
                                  args=None,
                                  tags=tags,
-                                 diagnostics=None,
+                                 diagnostics=diagnostics,
                                  exception=exception,
                                  stack_info=True)
 
