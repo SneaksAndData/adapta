@@ -38,6 +38,7 @@ class DatadogTemplatedLogger(logging.Logger):
             proteus_metadata["tags"] = tags
         self._log(log_level,
                   msg=msg,
+                  args=None,
                   extra={'proteus': proteus_metadata},
                   exc_info=exception,
                   stack_info=stack_info)
