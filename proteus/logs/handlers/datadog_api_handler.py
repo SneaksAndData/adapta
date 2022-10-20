@@ -110,12 +110,12 @@ class DataDogApiHandler(Handler):
             formatted_message = {
                 "text": rec.msg,
             }
-            for k, v in metadata.items():
-                formatted_message[k] = v
+            for key, value in metadata.items():
+                formatted_message[key] = value
             if "template" in metadata:
                 formatted_message["template"] = metadata["template"]
             if rec.exc_info:
-                ex_type, _, trace = rec.exc_info
+                ex_type, _, _ = rec.exc_info
                 formatted_message.setdefault('error', {
                     'stack': "".join(traceback.format_exception(*rec.exc_info, chain=True)).strip("\n"),
                     'message': rec.exc_text,

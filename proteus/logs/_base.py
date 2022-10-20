@@ -1,7 +1,6 @@
 """
  Proteus Logging Interface.
 """
-import json
 import logging
 import ctypes
 import os.path
@@ -12,7 +11,7 @@ from contextlib import contextmanager
 from functools import partial
 
 from logging import Handler, StreamHandler
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict
 
 from proteus.logs.handlers.datadog_api_handler import DataDogApiHandler
 
@@ -23,11 +22,12 @@ class DatadogTemplatedLogger(logging.Logger):
     """
     Inserts metadata to log entry for datadog
     """
+
     def __init__(self, name: str):
         super().__init__(name)
         self.addHandler(DataDogApiHandler())
 
-    def log_with_metadata(self, log_level, msg, template, args, tags, diagnostics, exception, stack_info):
+    def log_with_metadata(self, log_level, msg, template, tags, diagnostics, exception, stack_info):
         """
         Log with metadata
         """
@@ -56,11 +56,21 @@ class ProteusLogger:
      Proteus Proxy for Python logging library.
     """
 
-    def __init__(self, name: str):
+    def __init__(
+            self,
+            fixed_template: Optional[Dict[str, Dict[str, str]]] = None,
+            fixed_template_delimiter=', '
+    ):
+        """
+          Creates a new instance of a ProteusLogger
 
-        super().__init__(name)
-        self._loggers = {name: self}
-        self._default_log_source = name
+        :param fixed_template: Additional template to append to message templates provided via logging methods.
+        :param fixed_template_delimiter: Optional delimiter to use when appending fixed templates.
+        """
+        self._loggers = {}
+        self._default_log_source = None
+        self._fixed_template = fixed_template
+        self._fixed_template_delimiter = fixed_template_delimiter
 
     def add_log_source(self, *, log_source_name: str, min_log_level: LogLevel,
                        log_handlers: Optional[List[Handler]] = None,
@@ -130,7 +140,6 @@ class ProteusLogger:
              template: str,
              tags: Optional[Dict[str, str]] = None,
              log_source_name: Optional[str] = None,
-             *args,
              **kwargs) -> None:
         """
           Sends an INFO level message to configured log sources.
@@ -145,7 +154,6 @@ class ProteusLogger:
         logger.log_with_metadata(
             logging.INFO,
             msg=self._get_template(template).format(**kwargs),
-            args=args,
             template=self._get_template(template),
             tags=tags,
             diagnostics=None,
@@ -158,7 +166,6 @@ class ProteusLogger:
                 exception: Optional[BaseException] = None,
                 tags: Optional[Dict[str, str]] = None,
                 log_source_name: Optional[str] = None,
-                *args,
                 **kwargs) -> None:
         """
           Sends a WARNING level message to configured log sources.
@@ -175,7 +182,6 @@ class ProteusLogger:
                                  msg=self._get_template(template).format(**kwargs),
                                  exception=exception,
                                  tags=tags,
-                                 args=args,
                                  template=template,
                                  diagnostics=None,
                                  stack_info=False)
@@ -201,7 +207,6 @@ class ProteusLogger:
         logger.log_with_metadata(logging.ERROR,
                                  msg=msg,
                                  template=template,
-                                 args=None,
                                  tags=tags,
                                  diagnostics=None,
                                  exception=exception,
@@ -229,7 +234,6 @@ class ProteusLogger:
         logger.log_with_metadata(logging.DEBUG,
                                  msg=msg,
                                  template=template,
-                                 args=None,
                                  tags=tags,
                                  diagnostics=diagnostics,
                                  exception=exception,
