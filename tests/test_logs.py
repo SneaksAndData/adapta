@@ -1,19 +1,14 @@
 import json
 import logging
 import os
-import socket
-import sys
 import traceback
-from collections import OrderedDict
 from logging import StreamHandler
 
 import tempfile
 from typing import Dict
-from jsonformatter import JsonFormatter
 import pytest
 import uuid
 
-from datadog_api_client.v2.model.http_log_item import HTTPLogItem
 from pytest_mock import MockerFixture
 
 from proteus.logs import ProteusLogger

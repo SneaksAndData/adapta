@@ -14,13 +14,35 @@ from functools import partial
 from logging import Handler, StreamHandler
 from typing import List, Optional, Dict, Any
 
-import json_log_formatter
 from proteus.logs.handlers.datadog_api_handler import DataDogApiHandler
 
 from proteus.logs.models import LogLevel
 
 
-class ProteusLogger(logging.Logger):
+class DatadogTemplatedLogger(logging.Logger):
+    def __init__(self, name: str):
+        super().__init__(name)
+        self.addHandler(DataDogApiHandler())
+
+    def log_with_metadata(self, log_level, msg, template, args, tags, diagnostics, exception, stack_info):
+        proteus_metadata = {'template': template}
+        if diagnostics:
+            proteus_metadata["diagnostics"] = diagnostics
+        if tags:
+            proteus_metadata["tags"] = tags
+        self._log(log_level,
+                  msg=msg,
+                  args=args,
+                  extra={'proteus': proteus_metadata},
+                  exc_info=exception,
+                  stack_info=stack_info)
+
+
+def inject_datadog_logging():
+    logging.setLoggerClass(DatadogTemplatedLogger)
+
+
+class ProteusLogger:
     """
      Proteus Proxy for Python logging library.
     """
@@ -30,7 +52,6 @@ class ProteusLogger(logging.Logger):
         super().__init__(name)
         self._loggers = {name: self}
         self._default_log_source = name
-        self.addHandler(DataDogApiHandler())
 
     @staticmethod
     def get_proteus_logger(fixed_template: Optional[Dict[str, Dict[str, str]]] = None, fixed_template_delimiter=', '):
@@ -63,7 +84,6 @@ class ProteusLogger(logging.Logger):
             log_handlers = [StreamHandler()]
 
         for log_handler in log_handlers:
-            log_handler.setFormatter(json_log_formatter.JSONFormatter())
             new_logger.addHandler(log_handler)
 
         self._loggers.setdefault(log_source_name, new_logger)
@@ -80,28 +100,10 @@ class ProteusLogger(logging.Logger):
         return None
 
     @staticmethod
-    def _prepare_message(template: str, tags: Optional[Dict[str, str]] = None, diagnostics: Optional[str] = None,
-                         **kwargs) -> str:
-        """
-         Returns message dictionary to be used by handler formatter.
-         :param exclude_fields: Fields to exclude from export
+    def _prepare_message(template: str, **kwargs) -> str:
+        return template.format(**kwargs)
 
-        :return:
-        """
-        base_object: Dict[str, Any] = {
-            'template': template,
-            'text': template.format(**kwargs)
-        }
-        if tags:
-            base_object.setdefault('tags', tags)
-        if diagnostics:
-            base_object.setdefault('diagnostics', diagnostics)
-
-        base_object.update(**kwargs)
-
-        return json.dumps(base_object)
-
-    def _get_logger(self, log_source_name: Optional[str] = None) -> logging.Logger:
+    def _get_logger(self, log_source_name: Optional[str] = None) -> DatadogTemplatedLogger:
         """
           Retrieves a logger by log source name, or a default logger is log source name is not provided.
 
@@ -142,15 +144,17 @@ class ProteusLogger(logging.Logger):
         :param kwargs: Templated arguments (key=value).
         :return:
         """
-        full_tags = tags or {}
-        extra = {
-            'proteus': {
-                'tags': full_tags.update(self._get_fixed_args()),
-                'template': self._get_template(template)
-            }
-        }
         logger = self._get_logger(log_source_name)
-        logger._log(logging.INFO, msg=self._get_template(template).format(**kwargs), args=args, extra=extra)
+        logger.log_with_metadata(
+            logging.INFO,
+            msg=self._get_template(template).format(**kwargs),
+            args=args,
+            template=self._get_template(template),
+            tags=tags,
+            diagnostics=None,
+            exception=None,
+            stack_info=False
+        )
 
     def warning(self,
                 template: str,
@@ -169,22 +173,15 @@ class ProteusLogger(logging.Logger):
         :param kwargs: Templated arguments (key=value).
         :return:
         """
-        full_tags = tags or {}
-        full_tags.update(self._get_fixed_args())
-        extra = {
-            'proteus': {
-                'tags': full_tags,
-                'template': self._get_template(template)
-            }
-        }
-        extra['proteus'].update(kwargs)
         logger = self._get_logger(log_source_name)
-        logger._log(logging.WARN,
-                    msg=self._get_template(template).format(**kwargs),
-                    exc_info=exception if isinstance(exception, BaseException) else sys.exc_info(),
-                    extra=extra,
-                    stack_info=True,
-                    args=args)
+        logger.log_with_metadata(logging.WARN,
+                                 msg=self._get_template(template).format(**kwargs),
+                                 exception=exception,
+                                 tags=tags,
+                                 args=args,
+                                 template=template,
+                                 diagnostics=None,
+                                 stack_info=False)
 
     def error(self,
               template: str,
@@ -203,14 +200,15 @@ class ProteusLogger(logging.Logger):
         :return:
         """
         logger = self._get_logger(log_source_name)
-        logger.error(
-            msg=self._prepare_message(
-                template=self._get_template(template),
-                tags=tags,
-                diagnostics=None,
-                **self._get_fixed_args(),
-                **kwargs),
-            exc_info=exception, stack_info=True)
+        msg = self._prepare_message(template=self._get_template(template), **self._get_fixed_args(), **kwargs)
+        logger.log_with_metadata(logging.ERROR,
+                                 msg=msg,
+                                 template=template,
+                                 args=None,
+                                 tags=tags,
+                                 diagnostics=None,
+                                 exception=exception,
+                                 stack_info=False)
 
     def debug(self,
               template: str,
@@ -230,14 +228,15 @@ class ProteusLogger(logging.Logger):
         :return:
         """
         logger = self._get_logger(log_source_name)
-        logger.debug(
-            msg=self._prepare_message(
-                template=self._get_template(template),
-                tags=tags,
-                diagnostics=diagnostics,
-                **self._get_fixed_args(),
-                **kwargs),
-            exc_info=exception, stack_info=True)
+        msg = self._prepare_message(template=self._get_template(template), **self._get_fixed_args(), **kwargs)
+        logger.log_with_metadata(logging.DEBUG,
+                                 msg=msg,
+                                 template=template,
+                                 args=None,
+                                 tags=tags,
+                                 diagnostics=None,
+                                 exception=exception,
+                                 stack_info=True)
 
     @contextmanager
     def redirect(self,
