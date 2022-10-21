@@ -34,6 +34,8 @@ pyodbc = { version = "~4.0", optional = true }
 
 mlflow-skinny = { version = "~1.28", optional = true }
 
+redis = { version = "~4.3.4", optional = true, extras = ['hiredis'] }
+
 hvac = { version = "0.11.2", optional = true }
 
 fsspec = { version = "2022.8.2" }
@@ -58,6 +60,9 @@ databases = [
 ]
 ml = [
     'mlflow-skinny'
+]
+caching = [
+    'redis'
 ]
 
 hashicorp = [
