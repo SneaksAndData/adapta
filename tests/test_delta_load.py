@@ -1,11 +1,15 @@
 import pathlib
+from unittest.mock import patch, MagicMock, ANY, call
 
 import pandas
 import pytest
 
 from proteus.security.clients import LocalClient
 from proteus.storage.models.local import LocalPath
-from proteus.storage.delta_lake import load
+from proteus.storage.delta_lake import load, load_cached, get_cache_key
+from proteus.storage.cache import KeyValueCache
+from proteus.storage.models.format import DataFrameParquetSerializationFormat
+
 from pyarrow.dataset import field as pyarrow_field
 
 
@@ -47,3 +51,44 @@ def test_column_project(get_client_and_path):
     table = load(client, data_path, columns=["B"])
 
     assert len(table.columns.to_list()) == 1
+
+
+@patch('proteus.storage.cache.KeyValueCache')
+def test_delta_load_cached(mock_cache: MagicMock, get_client_and_path):
+    client, data_path = get_client_and_path
+
+    cache: KeyValueCache = mock_cache.return_value
+
+    cache.exists.return_value = True
+    cache.get.return_value = 10
+    cache.multi_get.return_value = [
+        DataFrameParquetSerializationFormat().serialize(pandas.DataFrame([{'a': 1, 'b': 2}]))]
+
+    cache_key = get_cache_key(client, data_path, batch_size=1)
+
+    _ = load_cached(client, data_path, cache=cache, batch_size=1)
+
+    cache.exists.assert_called_with(f"{cache_key}_size")
+    cache.multi_get.assert_called_with(
+        [f"{cache_key}_{batch_number}" for batch_number in range(0, 10)])
+
+
+@patch('proteus.storage.cache.KeyValueCache')
+def test_delta_populate_cache(mock_cache: MagicMock, get_client_and_path):
+    client, data_path = get_client_and_path
+
+    cache: KeyValueCache = mock_cache.return_value
+
+    cache.exists.return_value = False
+    cache.set.return_value = None
+
+    cache_key = get_cache_key(client, data_path, batch_size=1)
+
+    _ = load_cached(client, data_path, cache=cache, batch_size=1)
+
+    cache.exists.assert_called_once_with(f"{cache_key}_size")
+
+    set_calls = [call(key=f"{cache_key}_{batch_number}", value=ANY, expires_after=ANY) for batch_number in range(17)]
+    set_calls.append(call(key=f"{cache_key}_size", value=17, expires_after=ANY))
+
+    cache.set.assert_has_calls(set_calls)
