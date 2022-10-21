@@ -8,6 +8,7 @@ import sys
 import tempfile
 
 from contextlib import contextmanager
+from dataclasses import dataclass
 from functools import partial
 
 from logging import Handler, StreamHandler
@@ -16,9 +17,27 @@ from typing import List, Optional, Dict
 from proteus.logs.handlers.datadog_api_handler import DataDogApiHandler
 
 from proteus.logs.models import LogLevel
+from proteus.logs.models import ProteusLogMetadata
 
 
-class DatadogTemplatedLogger(logging.Logger):
+class MetadataLogger(logging.Logger):
+    def __init__(self, name: str):
+        super().__init__(name)
+
+    def log_with_metadata(self, log_level, msg, template, tags, diagnostics, exception, stack_info, metadata_fields):
+        """
+        Log with metadata
+        """
+        log_metadata = ProteusLogMetadata(template=template, diagnostics=diagnostics, tags=tags, fields=metadata_fields)
+        self._log(log_level,
+                  msg=msg,
+                  args=None,
+                  extra={ProteusLogMetadata.__name__: log_metadata},
+                  exc_info=exception,
+                  stack_info=stack_info)
+
+
+class DatadogTemplatedLogger(MetadataLogger):
     """
     Inserts metadata to log entry for datadog
     """
@@ -26,22 +45,6 @@ class DatadogTemplatedLogger(logging.Logger):
     def __init__(self, name: str):
         super().__init__(name)
         self.addHandler(DataDogApiHandler())
-
-    def log_with_metadata(self, log_level, msg, template, tags, diagnostics, exception, stack_info):
-        """
-        Log with metadata
-        """
-        proteus_metadata = {'template': template}
-        if diagnostics:
-            proteus_metadata["diagnostics"] = diagnostics
-        if tags:
-            proteus_metadata["tags"] = tags
-        self._log(log_level,
-                  msg=msg,
-                  args=None,
-                  extra={'proteus': proteus_metadata},
-                  exc_info=exception,
-                  stack_info=stack_info)
 
 
 def inject_datadog_logging():
@@ -71,6 +74,7 @@ class ProteusLogger:
         self._default_log_source = None
         self._fixed_template = fixed_template
         self._fixed_template_delimiter = fixed_template_delimiter
+        logging.setLoggerClass(MetadataLogger)
 
     def add_log_source(self, *, log_source_name: str, min_log_level: LogLevel,
                        log_handlers: Optional[List[Handler]] = None,
@@ -151,15 +155,16 @@ class ProteusLogger:
         :return:
         """
         logger = self._get_logger(log_source_name)
+        msg = self._prepare_message(template=self._get_template(template), **self._get_fixed_args(), **kwargs)
         logger.log_with_metadata(
             logging.INFO,
-            msg=self._get_template(template).format(**kwargs),
+            msg=msg,
             template=self._get_template(template),
             tags=tags,
             diagnostics=None,
             exception=None,
-            stack_info=False
-        )
+            stack_info=False,
+            metadata_fields=kwargs)
 
     def warning(self,
                 template: str,
@@ -178,13 +183,15 @@ class ProteusLogger:
         :return:
         """
         logger = self._get_logger(log_source_name)
+        msg = self._prepare_message(template=self._get_template(template), **self._get_fixed_args(), **kwargs)
         logger.log_with_metadata(logging.WARN,
-                                 msg=self._get_template(template).format(**kwargs),
+                                 msg=msg,
                                  exception=exception,
                                  tags=tags,
                                  template=template,
                                  diagnostics=None,
-                                 stack_info=False)
+                                 stack_info=False,
+                                 metadata_fields=kwargs)
 
     def error(self,
               template: str,
@@ -210,7 +217,8 @@ class ProteusLogger:
                                  tags=tags,
                                  diagnostics=None,
                                  exception=exception,
-                                 stack_info=False)
+                                 stack_info=False,
+                                 metadata_fields=kwargs)
 
     def debug(self,
               template: str,
@@ -237,7 +245,8 @@ class ProteusLogger:
                                  tags=tags,
                                  diagnostics=diagnostics,
                                  exception=exception,
-                                 stack_info=True)
+                                 stack_info=True,
+                                 metadata_fields=kwargs)
 
     @contextmanager
     def redirect(self,

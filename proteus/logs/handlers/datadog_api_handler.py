@@ -8,7 +8,7 @@ import socket
 import platform
 import traceback
 from logging import LogRecord, Handler
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Any
 
 import kubernetes.config.kube_config
 from datadog_api_client import Configuration, ApiClient
@@ -19,6 +19,7 @@ from datadog_api_client.v2.model.http_log_item import HTTPLogItem
 from kubernetes import config
 from kubernetes.config import ConfigException
 
+from proteus.logs.models import ProteusLogMetadata
 from proteus.utils import convert_datadog_tags
 
 
@@ -42,9 +43,12 @@ class DataDogApiHandler(Handler):
             - environment: Environment sending logs. If not provided, will be inferred depending on the actual runtime.
         """
         super().__init__()
-        assert os.getenv('PROTEUS__DD_API_KEY'), 'PROTEUS__DD_API_KEY environment variable must be set in order to use DataDogApiHandler'
-        assert os.getenv('PROTEUS__DD_APP_KEY'), 'PROTEUS__DD_APP_KEY environment variable must be set in order to use DataDogApiHandler'
-        assert os.getenv('PROTEUS__DD_SITE'), 'PROTEUS__DD_SITE environment variable must be set in order to use DataDogApiHandler'
+        assert os.getenv(
+            'PROTEUS__DD_API_KEY'), 'PROTEUS__DD_API_KEY environment variable must be set in order to use DataDogApiHandler'
+        assert os.getenv(
+            'PROTEUS__DD_APP_KEY'), 'PROTEUS__DD_APP_KEY environment variable must be set in order to use DataDogApiHandler'
+        assert os.getenv(
+            'PROTEUS__DD_SITE'), 'PROTEUS__DD_SITE environment variable must be set in order to use DataDogApiHandler'
 
         configuration = Configuration()
         configuration.server_variables["site"] = os.getenv('PROTEUS__DD_SITE')
@@ -100,20 +104,21 @@ class DataDogApiHandler(Handler):
     def emit(self, record: LogRecord) -> None:
         def convert_record(rec: LogRecord) -> HTTPLogItem:
 
-            metadata = rec.__dict__.get('proteus', {})
-
+            metadata: Optional[ProteusLogMetadata] = rec.__dict__.get(ProteusLogMetadata.__name__, {})
             tags = {}
-            if "tags" in metadata.keys():
-                tags.update(metadata.pop("tags"))
-            tags.update(self._fixed_tags)
-
-            formatted_message = {
+            formatted_message: Dict[str, Any] = {
                 "text": rec.msg,
             }
-            for key, value in metadata.items():
-                formatted_message[key] = value
-            if "template" in metadata:
-                formatted_message["template"] = metadata["template"]
+            if metadata:
+                if metadata.tags:
+                    tags.update(metadata.tags)
+                for key, value in metadata.fields.items():
+                    formatted_message[key] = value
+                if metadata.template:
+                    formatted_message["template"] = metadata.template
+                if metadata.diagnostics:
+                    formatted_message["diagnostics"] = metadata.diagnostics
+            tags.update(self._fixed_tags)
             if rec.exc_info:
                 ex_type, _, _ = rec.exc_info
                 formatted_message.setdefault('error', {

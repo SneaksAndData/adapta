@@ -16,6 +16,7 @@ from proteus.logs.handlers.datadog_api_handler import DataDogApiHandler
 from proteus.logs.models import LogLevel
 
 
+EXPECTED_MESSAGE = 'This a unit test logger 1, Fixed message1 this is a fixed message1, Fixed message2 this is a fixed message2\n'
 @pytest.mark.parametrize('level,template,args,exception,diagnostics,expected_message', [
     (
             LogLevel.INFO,
@@ -23,7 +24,7 @@ from proteus.logs.models import LogLevel
             {'index': 1},
             None,
             None,
-            '{"template": "This a unit test logger {index}, Fixed message1 {message1}, Fixed message2 {message2}", "text": "This a unit test logger 1, Fixed message1 this is a fixed message1, Fixed message2 this is a fixed message2", "message1": "this is a fixed message1", "message2": "this is a fixed message2", "index": 1}'
+            EXPECTED_MESSAGE
     ),
     (
             LogLevel.WARN,
@@ -31,7 +32,7 @@ from proteus.logs.models import LogLevel
             {'index': 1},
             ValueError("test warning"),
             None,
-            '{"template": "This a unit test logger {index}, Fixed message1 {message1}, Fixed message2 {message2}", "text": "This a unit test logger 1, Fixed message1 this is a fixed message1, Fixed message2 this is a fixed message2", "message1": "this is a fixed message1", "message2": "this is a fixed message2", "index": 1}'
+            EXPECTED_MESSAGE
     ),
     (
             LogLevel.ERROR,
@@ -39,7 +40,7 @@ from proteus.logs.models import LogLevel
             {'index': 1},
             ValueError("test error"),
             None,
-            '{"template": "This a unit test logger {index}, Fixed message1 {message1}, Fixed message2 {message2}", "text": "This a unit test logger 1, Fixed message1 this is a fixed message1, Fixed message2 this is a fixed message2", "message1": "this is a fixed message1", "message2": "this is a fixed message2", "index": 1}'
+            EXPECTED_MESSAGE
     ),
     (
             LogLevel.DEBUG,
@@ -47,7 +48,7 @@ from proteus.logs.models import LogLevel
             {'index': 1},
             ValueError("test error"),
             'additional debug info',
-            '{"template": "This a unit test logger {index}, Fixed message1 {message1}, Fixed message2 {message2}", "text": "This a unit test logger 1, Fixed message1 this is a fixed message1, Fixed message2 this is a fixed message2", "diagnostics": "additional debug info", "message1": "this is a fixed message1", "message2": "this is a fixed message2", "index": 1}'
+            EXPECTED_MESSAGE
     )
 ])
 def test_log_format(level: LogLevel, template: str, args: Dict, exception: BaseException, diagnostics: str,
@@ -75,11 +76,7 @@ def test_log_format(level: LogLevel, template: str, args: Dict, exception: BaseE
             stream_logger.debug(template=template, exception=exception, diagnostics=diagnostics, **args)
 
     logged_lines = open(test_file_path, 'r').readlines()
-    try:
-        entry = json.loads(''.join(logged_lines))
-        assert entry['message'] == expected_message
-    except Exception as ex:
-        raise ex
+    assert expected_message in logged_lines
 
 
 def test_datadog_api_handler(mocker: MockerFixture):
@@ -91,7 +88,7 @@ def test_datadog_api_handler(mocker: MockerFixture):
     mock_handler = DataDogApiHandler(buffer_size=1)
     mock_source = str(uuid.uuid4())
 
-    dd_logger = ProteusLogger(__name__) \
+    dd_logger = ProteusLogger() \
         .add_log_source(log_source_name=mock_source, min_log_level=LogLevel.INFO,
                         log_handlers=[mock_handler], is_default=True)
 
