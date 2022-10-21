@@ -3,7 +3,8 @@ Models for log messages
 """
 
 from dataclasses import dataclass
-from typing import Optional, Dict
+from types import TracebackType
+from typing import Optional, Dict, Tuple
 
 
 @dataclass
@@ -14,4 +15,5 @@ class ProteusLogMetadata:
     template: str
     diagnostics: Optional[str] = None
     tags: Optional[Dict[str, str]] = None
-    fields: Dict[str, str] = None
+    fields: Optional[Dict[str, str]] = None
+    exc_info: Optional[Tuple[type, BaseException, Optional[TracebackType]]] = None

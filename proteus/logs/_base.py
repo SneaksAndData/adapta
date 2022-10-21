@@ -6,6 +6,7 @@ import ctypes
 import os.path
 import sys
 import tempfile
+import threading
 
 from contextlib import contextmanager
 from functools import partial
@@ -23,19 +24,24 @@ class MetadataLogger(logging.Logger):
     """
     Wrapper for standard python logger that enriches messages with proteus metadata
     """
-    def __init__(self, name: str):
-        super().__init__(name)
 
-    def log_with_metadata(self, log_level, msg, template, tags, diagnostics, exception, stack_info, metadata_fields):
+    def __init__(self, name: str, level=logging.NOTSET):
+        super().__init__(name, level)
+
+    def log_with_metadata(self, log_level, msg, template, tags, diagnostics, stack_info, metadata_fields):
         """
         Log with metadata
         """
-        log_metadata = ProteusLogMetadata(template=template, diagnostics=diagnostics, tags=tags, fields=metadata_fields)
+        log_metadata = ProteusLogMetadata(
+            template=template,
+            diagnostics=diagnostics,
+            tags=tags,
+            fields=metadata_fields,
+            exc_info=sys.exc_info())
         self._log(log_level,
                   msg=msg,
                   args=None,
                   extra={ProteusLogMetadata.__name__: log_metadata},
-                  exc_info=exception,
                   stack_info=stack_info)
 
 
@@ -44,16 +50,8 @@ class DatadogTemplatedLogger(MetadataLogger):
     Inserts metadata to log entry for datadog
     """
 
-    def __init__(self, name: str):
-        super().__init__(name)
-        self.addHandler(DataDogApiHandler())
-
-
-def inject_datadog_logging():
-    """
-    Injects logging to datadog for external libraries
-    """
-    logging.setLoggerClass(DatadogTemplatedLogger)
+    def __init__(self, name: str, level=logging.NOTSET):
+        super().__init__(name, level)
 
 
 class ProteusLogger:
@@ -157,14 +155,13 @@ class ProteusLogger:
         :return:
         """
         logger = self._get_logger(log_source_name)
-        msg = self._prepare_message(template=self._get_template(template), **self._get_fixed_args(), **kwargs)
+        msg = self._get_template(template).format(**self._get_fixed_args(), **kwargs)
         logger.log_with_metadata(
             logging.INFO,
             msg=msg,
             template=self._get_template(template),
             tags=tags,
             diagnostics=None,
-            exception=None,
             stack_info=False,
             metadata_fields=kwargs)
 
@@ -185,10 +182,9 @@ class ProteusLogger:
         :return:
         """
         logger = self._get_logger(log_source_name)
-        msg = self._prepare_message(template=self._get_template(template), **self._get_fixed_args(), **kwargs)
+        msg = self._get_template(template).format(**self._get_fixed_args(), **kwargs)
         logger.log_with_metadata(logging.WARN,
                                  msg=msg,
-                                 exception=exception,
                                  tags=tags,
                                  template=template,
                                  diagnostics=None,
@@ -212,13 +208,12 @@ class ProteusLogger:
         :return:
         """
         logger = self._get_logger(log_source_name)
-        msg = self._prepare_message(template=self._get_template(template), **self._get_fixed_args(), **kwargs)
+        msg = self._get_template(template).format(**self._get_fixed_args(), **kwargs)
         logger.log_with_metadata(logging.ERROR,
                                  msg=msg,
                                  template=template,
                                  tags=tags,
                                  diagnostics=None,
-                                 exception=exception,
                                  stack_info=False,
                                  metadata_fields=kwargs)
 
@@ -240,13 +235,12 @@ class ProteusLogger:
         :return:
         """
         logger = self._get_logger(log_source_name)
-        msg = self._prepare_message(template=self._get_template(template), **self._get_fixed_args(), **kwargs)
+        msg = self._get_template(template).format(**self._get_fixed_args(), **kwargs)
         logger.log_with_metadata(logging.DEBUG,
                                  msg=msg,
                                  template=template,
                                  tags=tags,
                                  diagnostics=diagnostics,
-                                 exception=exception,
                                  stack_info=True,
                                  metadata_fields=kwargs)
 

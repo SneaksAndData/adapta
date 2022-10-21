@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import sys
 import traceback
 from logging import StreamHandler
 
@@ -9,14 +10,18 @@ from typing import Dict
 import pytest
 import uuid
 
+import requests
 from pytest_mock import MockerFixture
 
-from proteus.logs import ProteusLogger, inject_datadog_logging
+from proteus.logs import ProteusLogger
 from proteus.logs.handlers.datadog_api_handler import DataDogApiHandler
 from proteus.logs.models import LogLevel
-
+from proteus.security.clients import AzureClient
+from proteus.storage.models.azure import AdlsGen2Path
 
 EXPECTED_MESSAGE = 'This a unit test logger 1, Fixed message1 this is a fixed message1, Fixed message2 this is a fixed message2\n'
+
+
 @pytest.mark.parametrize('level,template,args,exception,diagnostics,expected_message', [
     (
             LogLevel.INFO,
@@ -112,35 +117,19 @@ def test_datadog_api_handler(mocker: MockerFixture):
     assert "tags" not in message
 
 
-def test_proteus_logger_replacement(mocker: MockerFixture):
+def test_proteus_logger_replacement(mocker: MockerFixture, restore_logger_class):
     os.environ.setdefault('PROTEUS__DD_API_KEY', 'some-key')
     os.environ.setdefault('PROTEUS__DD_APP_KEY', 'some-app-key')
     os.environ.setdefault('PROTEUS__DD_SITE', 'some-site.dog')
 
     mocker.patch('proteus.logs.handlers.datadog_api_handler.DataDogApiHandler._flush', return_value=None)
-    mock_handler = DataDogApiHandler(buffer_size=1)
-    mock_source = "third.party.library"
 
-    klass = logging.getLoggerClass()
-    try:
-        inject_datadog_logging()
-        dd_logger = logging.getLogger(mock_source)
-        dd_logger.addHandler(mock_handler)
-        ex_str = None
-        try:
-            raise ValueError("test warning")
-        except BaseException as ex:
-            dd_logger.warning("Something bad happened!", exc_info=True)
-            ex_str = traceback.format_exc().removesuffix("\n")
+    log = ProteusLogger().add_log_source(log_source_name="urllib3",
+                                         min_log_level=LogLevel.DEBUG,
+                                         log_handlers=[DataDogApiHandler()])
+    requests.get("http://example.com")
 
-        log_item = mock_handler._buffer[0]
-        message = json.loads(log_item.message)
-
-        assert log_item.ddsource == mock_source
-        assert log_item.ddtags == 'environment:local'
-        assert log_item.status == 'WARNING'
-        assert message["text"] == "Something bad happened!"
-        assert message["error"] == {"stack": ex_str, "message": None, ''"kind": "ValueError"}
-        assert "tags" not in message
-    finally:
-        logging.setLoggerClass(klass)
+    requests_log = logging.getLogger("urllib3")
+    handler = [handler for handler in requests_log.handlers if isinstance(handler, DataDogApiHandler)][0]
+    buffers = [json.loads(msg.message) for msg in handler._buffer]
+    assert {'text': 'Starting new HTTP connection (1): example.com:80'} in buffers

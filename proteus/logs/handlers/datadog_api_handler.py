@@ -107,7 +107,7 @@ class DataDogApiHandler(Handler):
             metadata: Optional[ProteusLogMetadata] = rec.__dict__.get(ProteusLogMetadata.__name__, {})
             tags = {}
             formatted_message: Dict[str, Any] = {
-                "text": rec.msg,
+                "text": self.format(rec),
             }
             if metadata:
                 if metadata.tags:
@@ -119,10 +119,10 @@ class DataDogApiHandler(Handler):
                 if metadata.diagnostics:
                     formatted_message["diagnostics"] = metadata.diagnostics
             tags.update(self._fixed_tags)
-            if rec.exc_info:
-                ex_type, _, _ = rec.exc_info
+            if metadata.exc_info:
+                ex_type, _, _ = metadata.exc_info
                 formatted_message.setdefault('error', {
-                    'stack': "".join(traceback.format_exception(*rec.exc_info, chain=True)).strip("\n"),
+                    'stack': "".join(traceback.format_exception(*metadata.exc_info, chain=True)).strip("\n"),
                     'message': rec.exc_text,
                     'kind': ex_type.__name__
                 })
