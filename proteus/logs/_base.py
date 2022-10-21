@@ -8,7 +8,6 @@ import sys
 import tempfile
 
 from contextlib import contextmanager
-from dataclasses import dataclass
 from functools import partial
 
 from logging import Handler, StreamHandler
@@ -21,6 +20,9 @@ from proteus.logs.models import ProteusLogMetadata
 
 
 class MetadataLogger(logging.Logger):
+    """
+    Wrapper for standard python logger that enriches messages with proteus metadata
+    """
     def __init__(self, name: str):
         super().__init__(name)
 
