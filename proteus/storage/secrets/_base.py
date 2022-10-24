@@ -36,3 +36,13 @@ class SecretStorageClient(ABC):
         :param b64_encode: Whether the value should be b64-encoded
         :return:
         """
+
+    @abstractmethod
+    def list_secrets(self, storage_name: str, name_prefix: str) -> None:
+        """
+          Creates a plain text secret in a specified storage.
+
+        :param storage_name: Name of a storage service hosting the secret.
+        :param name_prefix: Prefix for filtering secrets
+        :return:
+        """

@@ -3,6 +3,7 @@ from unittest.mock import patch, MagicMock
 import pytest
 
 from proteus.security.clients import HashicorpVaultClient
+from proteus.security.clients._hashicorp_vault_kubernetes_client import HashicorpVaultKubernetesClient
 from proteus.storage.secrets.hashicorp_vault_secret_storage_client import HashicorpSecretStorageClient
 
 
@@ -94,3 +95,17 @@ def generate_hashicorp_vault_mock():
     client_mock.secrets.kv.v2.create_or_update_secret = MagicMock()
     client_mock.secrets.kv.v2.configure = MagicMock()
     return client_mock
+
+
+# @pytest.mark.skip("Uses desktop browser to login, should be only run locally")
+def test_kubernetes_auth():
+    client = HashicorpVaultKubernetesClient(HashicorpVaultKubernetesClient.TEST_VAULT_ADDRESS, 'esd-spark-dev')
+    assert client.get_credentials() is None
+
+
+def test_list_secrets():
+    client = HashicorpVaultKubernetesClient(HashicorpVaultKubernetesClient.TEST_VAULT_ADDRESS, 'esd-spark-dev')
+    client.get_credentials()
+    secret_client = HashicorpSecretStorageClient(base_client=client, role="application")
+    secrets = list(secret_client.list_secrets("secret", "test"))
+    assert secrets == ['test/secret/with/other_path', 'test/secret/with/path']
