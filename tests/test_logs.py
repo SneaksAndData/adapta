@@ -7,6 +7,8 @@ from logging import StreamHandler
 
 import tempfile
 from typing import Dict
+from unittest.mock import patch
+
 import pytest
 import uuid
 
@@ -112,24 +114,26 @@ def test_datadog_api_handler(mocker: MockerFixture):
     assert log_item.status == 'WARNING'
     assert message["text"] == "This a unit test logger 1"
     assert message["index"] == 1
-    assert message["error"] == {"stack": ex_str, "message": None, ''"kind": "ValueError"}
+    assert message["error"] == {"stack": ex_str, "message": "test warning", "kind": "ValueError"}
     assert message["template"] == "This a unit test logger {index}"
     assert "tags" not in message
 
 
 def test_proteus_logger_replacement(mocker: MockerFixture, restore_logger_class):
-    os.environ.setdefault('PROTEUS__DD_API_KEY', 'some-key')
-    os.environ.setdefault('PROTEUS__DD_APP_KEY', 'some-app-key')
-    os.environ.setdefault('PROTEUS__DD_SITE', 'some-site.dog')
-
     mocker.patch('proteus.logs.handlers.datadog_api_handler.DataDogApiHandler._flush', return_value=None)
 
-    log = ProteusLogger().add_log_source(log_source_name="urllib3",
-                                         min_log_level=LogLevel.DEBUG,
-                                         log_handlers=[DataDogApiHandler()])
-    requests.get("http://example.com")
+    mock_environment = {
+        'PROTEUS__DD_API_KEY': 'some-key',
+        'PROTEUS__DD_APP_KEY': 'some-app-key',
+        'PROTEUS__DD_SITE': 'some-site.dog'
+    }
+    with patch.dict(os.environ, mock_environment):
+        ProteusLogger().add_log_source(log_source_name="urllib3",
+                                       min_log_level=LogLevel.DEBUG,
+                                       log_handlers=[DataDogApiHandler()])
+        requests.get("https://example.com")
 
     requests_log = logging.getLogger("urllib3")
     handler = [handler for handler in requests_log.handlers if isinstance(handler, DataDogApiHandler)][0]
     buffers = [json.loads(msg.message) for msg in handler._buffer]
-    assert {'text': 'Starting new HTTP connection (1): example.com:80'} in buffers
+    assert {'text': 'Starting new HTTPS connection (1): example.com:443'} in buffers

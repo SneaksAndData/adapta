@@ -6,7 +6,6 @@ import ctypes
 import os.path
 import sys
 import tempfile
-import threading
 
 from contextlib import contextmanager
 from functools import partial
@@ -14,45 +13,8 @@ from functools import partial
 from logging import Handler, StreamHandler
 from typing import List, Optional, Dict
 
-from proteus.logs.handlers.datadog_api_handler import DataDogApiHandler
-
 from proteus.logs.models import LogLevel
-from proteus.logs.models import ProteusLogMetadata
-
-
-class MetadataLogger(logging.Logger):
-    """
-    Wrapper for standard python logger that enriches messages with proteus metadata
-    """
-
-    def __init__(self, name: str, level=logging.NOTSET):
-        super().__init__(name, level)
-
-    def log_with_metadata(self, log_level, msg, template, tags, diagnostics, stack_info, metadata_fields, exception):
-        """
-        Log with metadata
-        """
-        log_metadata = ProteusLogMetadata(
-            template=template,
-            diagnostics=diagnostics,
-            tags=tags,
-            fields=metadata_fields,
-            exc_info=sys.exc_info(),
-            exception=exception)
-        self._log(log_level,
-                  msg=msg,
-                  args=None,
-                  extra={ProteusLogMetadata.__name__: log_metadata},
-                  stack_info=stack_info)
-
-
-class DatadogTemplatedLogger(MetadataLogger):
-    """
-    Inserts metadata to log entry for datadog
-    """
-
-    def __init__(self, name: str, level=logging.NOTSET):
-        super().__init__(name, level)
+from proteus.logs._internal import MetadataLogger
 
 
 class ProteusLogger:
@@ -115,7 +77,7 @@ class ProteusLogger:
     def _prepare_message(template: str, **kwargs) -> str:
         return template.format(**kwargs)
 
-    def _get_logger(self, log_source_name: Optional[str] = None) -> DatadogTemplatedLogger:
+    def _get_logger(self, log_source_name: Optional[str] = None) -> MetadataLogger:
         """
           Retrieves a logger by log source name, or a default logger is log source name is not provided.
 

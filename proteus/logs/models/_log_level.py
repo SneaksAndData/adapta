@@ -12,4 +12,3 @@ class LogLevel(Enum):
     WARN = 'WARN'
     ERROR = 'ERROR'
     DEBUG = 'DEBUG'
-    NOTSET = 'NOTSET'

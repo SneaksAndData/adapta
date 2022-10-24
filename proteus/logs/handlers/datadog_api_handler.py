@@ -43,12 +43,9 @@ class DataDogApiHandler(Handler):
             - environment: Environment sending logs. If not provided, will be inferred depending on the actual runtime.
         """
         super().__init__()
-        assert os.getenv(
-            'PROTEUS__DD_API_KEY'), 'PROTEUS__DD_API_KEY environment variable must be set in order to use DataDogApiHandler'
-        assert os.getenv(
-            'PROTEUS__DD_APP_KEY'), 'PROTEUS__DD_APP_KEY environment variable must be set in order to use DataDogApiHandler'
-        assert os.getenv(
-            'PROTEUS__DD_SITE'), 'PROTEUS__DD_SITE environment variable must be set in order to use DataDogApiHandler'
+        assert os.getenv('PROTEUS__DD_API_KEY'), 'PROTEUS__DD_API_KEY environment variable must be set in order to use DataDogApiHandler'
+        assert os.getenv('PROTEUS__DD_APP_KEY'), 'PROTEUS__DD_APP_KEY environment variable must be set in order to use DataDogApiHandler'
+        assert os.getenv('PROTEUS__DD_SITE'), 'PROTEUS__DD_SITE environment variable must be set in order to use DataDogApiHandler'
 
         configuration = Configuration()
         configuration.server_variables["site"] = os.getenv('PROTEUS__DD_SITE')
@@ -104,10 +101,10 @@ class DataDogApiHandler(Handler):
     def emit(self, record: LogRecord) -> None:
         def convert_record(rec: LogRecord) -> HTTPLogItem:
 
-            metadata: Optional[ProteusLogMetadata] = rec.__dict__.get(ProteusLogMetadata.__name__, {})
+            metadata: Optional[ProteusLogMetadata] = rec.__dict__.get(ProteusLogMetadata.__name__)
             tags = {}
             formatted_message: Dict[str, Any] = {
-                "text": self.format(rec),
+                "text": rec.getMessage()
             }
             if metadata:
                 if metadata.tags:
@@ -118,13 +115,13 @@ class DataDogApiHandler(Handler):
                     formatted_message["template"] = metadata.template
                 if metadata.diagnostics:
                     formatted_message["diagnostics"] = metadata.diagnostics
+                if metadata.exc_info:
+                    formatted_message.setdefault('error', {
+                        'stack': "".join(traceback.format_exception(*metadata.exc_info, chain=True)).strip("\n"),
+                        'message': str(metadata.exception),
+                        'kind': type(metadata.exception).__name__
+                    })
             tags.update(self._fixed_tags)
-            if metadata.exc_info:
-                formatted_message.setdefault('error', {
-                    'stack': "".join(traceback.format_exception(*metadata.exc_info, chain=True)).strip("\n"),
-                    'message': str(metadata.exception),
-                    'kind': type(metadata.exception).__name__
-                })
 
             return HTTPLogItem(
                 ddsource=rec.name,
