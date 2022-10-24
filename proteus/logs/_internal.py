@@ -1,6 +1,7 @@
 """Classes for internal use by `proteus.logs` module. Should not be imported outside this module"""
 import logging
 import sys
+from typing import Optional, Dict
 
 from proteus.logs.models import ProteusLogMetadata, LogLevel
 
@@ -12,14 +13,22 @@ class MetadataLogger(logging.Logger):
 
     def __init__(self, name: str, level=logging.NOTSET):
         """
-            Creates instance, see logging.Logger.__init.py
+            Creates instance, see logging.Logger.__init__
 
             :param name: Logger name
             :param level: Log level
         """
         super().__init__(name, level)
 
-    def log_with_metadata(self, log_level, msg, template, tags, diagnostics, stack_info, metadata_fields, exception):
+    def log_with_metadata(self,
+                          log_level: int,
+                          msg: str,
+                          template: str,
+                          tags: Optional[Dict[str, str]],
+                          diagnostics: Optional[str],
+                          stack_info: bool,
+                          metadata_fields: Optional[Dict[str, str]],
+                          exception: Optional[BaseException]):
         """
             Creates log entry with metadata from Proteus Logger
 

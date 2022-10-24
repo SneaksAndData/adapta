@@ -72,10 +72,6 @@ class ProteusLogger:
 
         return None
 
-    @staticmethod
-    def _prepare_message(template: str, **kwargs) -> str:
-        return template.format(**kwargs)
-
     def _get_logger(self, log_source_name: Optional[str] = None) -> MetadataLogger:
         """
           Retrieves a logger by log source name, or a default logger is log source name is not provided.
