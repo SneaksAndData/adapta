@@ -2,16 +2,13 @@
  Hashicorp Vault implementation of Proteus Client.
 """
 import webbrowser
-from typing import Optional, Dict
-from urllib import parse
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from pyarrow.fs import FileSystem
+from typing import Optional
+from urllib import parse
 
 import hvac
 
 from proteus.security.clients import HashicorpVaultClient
-from proteus.security.clients._base import ProteusClient
-from proteus.storage.models.base import DataPath
 
 
 def _get_vault_credentials():

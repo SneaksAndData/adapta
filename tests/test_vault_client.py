@@ -97,12 +97,13 @@ def generate_hashicorp_vault_mock():
     return client_mock
 
 
-# @pytest.mark.skip("Uses desktop browser to login, should be only run locally")
+@pytest.mark.skip("Uses desktop browser to login, should be only run locally")
 def test_kubernetes_auth():
     client = HashicorpVaultKubernetesClient(HashicorpVaultKubernetesClient.TEST_VAULT_ADDRESS, 'esd-spark-dev')
     assert client.get_credentials() is None
 
 
+@pytest.mark.skip("Uses desktop browser to login, should be only run locally")
 def test_list_secrets():
     client = HashicorpVaultKubernetesClient(HashicorpVaultKubernetesClient.TEST_VAULT_ADDRESS, 'esd-spark-dev')
     client.get_credentials()

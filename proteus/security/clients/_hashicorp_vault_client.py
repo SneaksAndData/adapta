@@ -1,14 +1,10 @@
 """
  Hashicorp Vault implementation of Proteus Client.
 """
-import webbrowser
 from abc import ABC
 from typing import Optional, Dict
-from urllib import parse
-from http.server import BaseHTTPRequestHandler, HTTPServer
-from pyarrow.fs import FileSystem
 
-import hvac
+from pyarrow.fs import FileSystem
 
 from proteus.security.clients._base import ProteusClient
 from proteus.storage.models.base import DataPath
