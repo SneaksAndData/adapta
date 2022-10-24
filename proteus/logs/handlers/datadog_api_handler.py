@@ -120,11 +120,10 @@ class DataDogApiHandler(Handler):
                     formatted_message["diagnostics"] = metadata.diagnostics
             tags.update(self._fixed_tags)
             if metadata.exc_info:
-                ex_type, _, _ = metadata.exc_info
                 formatted_message.setdefault('error', {
                     'stack': "".join(traceback.format_exception(*metadata.exc_info, chain=True)).strip("\n"),
-                    'message': rec.exc_text,
-                    'kind': ex_type.__name__
+                    'message': str(metadata.exception),
+                    'kind': type(metadata.exception).__name__
                 })
 
             return HTTPLogItem(

@@ -28,7 +28,7 @@ class MetadataLogger(logging.Logger):
     def __init__(self, name: str, level=logging.NOTSET):
         super().__init__(name, level)
 
-    def log_with_metadata(self, log_level, msg, template, tags, diagnostics, stack_info, metadata_fields):
+    def log_with_metadata(self, log_level, msg, template, tags, diagnostics, stack_info, metadata_fields, exception):
         """
         Log with metadata
         """
@@ -37,7 +37,8 @@ class MetadataLogger(logging.Logger):
             diagnostics=diagnostics,
             tags=tags,
             fields=metadata_fields,
-            exc_info=sys.exc_info())
+            exc_info=sys.exc_info(),
+            exception=exception)
         self._log(log_level,
                   msg=msg,
                   args=None,
@@ -163,6 +164,7 @@ class ProteusLogger:
             tags=tags,
             diagnostics=None,
             stack_info=False,
+            exception=None,
             metadata_fields=kwargs)
 
     def warning(self,
@@ -189,6 +191,7 @@ class ProteusLogger:
                                  template=template,
                                  diagnostics=None,
                                  stack_info=False,
+                                 exception=exception,
                                  metadata_fields=kwargs)
 
     def error(self,
@@ -215,6 +218,7 @@ class ProteusLogger:
                                  tags=tags,
                                  diagnostics=None,
                                  stack_info=False,
+                                 exception=exception,
                                  metadata_fields=kwargs)
 
     def debug(self,
@@ -242,6 +246,7 @@ class ProteusLogger:
                                  tags=tags,
                                  diagnostics=diagnostics,
                                  stack_info=True,
+                                 exception=exception,
                                  metadata_fields=kwargs)
 
     @contextmanager

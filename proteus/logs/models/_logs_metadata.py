@@ -17,3 +17,4 @@ class ProteusLogMetadata:
     tags: Optional[Dict[str, str]] = None
     fields: Optional[Dict[str, str]] = None
     exc_info: Optional[Tuple[type, BaseException, Optional[TracebackType]]] = None
+    exception: Optional[Exception] = None
