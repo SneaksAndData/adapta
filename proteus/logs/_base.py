@@ -8,13 +8,12 @@ import sys
 import tempfile
 
 from contextlib import contextmanager
-from functools import partial
 
 from logging import Handler, StreamHandler
 from typing import List, Optional, Dict
 
 from proteus.logs.models import LogLevel
-from proteus.logs._internal import MetadataLogger
+from proteus.logs._internal import MetadataLogger, from_log_level
 
 
 class ProteusLogger:
@@ -211,6 +210,34 @@ class ProteusLogger:
                                  exception=exception,
                                  metadata_fields=kwargs)
 
+    def _print_redirect_state(self, logger, log_level, state, tags):
+        template = self._get_template('>> Redirected output {state} <<')
+        msg = template.format(**self._get_fixed_args(), state=state),
+        logger.log_with_metadata(
+            from_log_level(log_level),
+            msg=msg,
+            tags=tags,
+            diagnostics=None,
+            stack_info=None,
+            exception=None,
+            metadata_fields=None,
+            template=template
+        )
+
+    def _print_redirect_message(self, logger, log_level, message, tags):
+        template = self._get_template('Redirected output: {message}')
+        msg = template.format(**self._get_fixed_args(), message=message),
+        logger.log_with_metadata(
+            from_log_level(log_level),
+            msg=msg,
+            tags=tags,
+            diagnostics=None,
+            stack_info=None,
+            exception=None,
+            metadata_fields=None,
+            template=template
+        )
+
     @contextmanager
     def redirect(self,
                  tags: Optional[Dict[str, str]] = None,
@@ -266,27 +293,9 @@ class ProteusLogger:
             os.chmod(tmp_file, 420)
 
             logger = self._get_logger(log_source_name)
-            log_header = partial(self._prepare_message,
-                                 template=self._get_template('>> Redirected output {state} <<'),
-                                 tags=tags,
-                                 **self._get_fixed_args(),
-                                 diagnostics=None)
-            log_message = partial(self._prepare_message,
-                                  template=self._get_template('Redirected output: {message}'),
-                                  tags=tags,
-                                  **self._get_fixed_args(),
-                                  diagnostics=None)
-            log_method = {
-                LogLevel.INFO: logger.info,
-                LogLevel.WARN: logger.warning,
-                LogLevel.ERROR: logger.error,
-                LogLevel.DEBUG: logger.debug
-            }
 
-            log_method[log_level](log_header(state='BEGIN'))
-
+            self._print_redirect_state(logger, log_level, "BEGIN", tags)
             with open(tmp_file, encoding='utf-8') as output:
                 for line in output.readlines():
-                    log_method[log_level](log_message(message=line))
-
-            log_method[log_level](log_header(state='END'))
+                    self._print_redirect_message(logger, log_level, line, tags)
+            self._print_redirect_state(logger, log_level, "END", tags)
