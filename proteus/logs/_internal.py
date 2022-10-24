@@ -32,7 +32,6 @@ class MetadataLogger(logging.Logger):
             :param stack_info: True if message should contain stack trace information
             :param metadata_fields: Templated arguments (key=value).
             :param exception: Optional exception for warning and error levels
-            :
         """
         log_metadata = ProteusLogMetadata(
             template=template,
@@ -49,6 +48,12 @@ class MetadataLogger(logging.Logger):
 
 
 def from_log_level(log_level: LogLevel) -> int:
+    """
+    Converts from proteus log level to python logging loglevel
+
+    :param log_level: Log level defined in Proteus
+    :return log level defined in python logging module
+    """
     log_method = {
         LogLevel.INFO: logging.INFO,
         LogLevel.WARN: logging.WARN,

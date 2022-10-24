@@ -212,7 +212,7 @@ class ProteusLogger:
 
     def _print_redirect_state(self, logger, log_level, state, tags):
         template = self._get_template('>> Redirected output {state} <<')
-        msg = template.format(**self._get_fixed_args(), state=state),
+        msg = template.format(**self._get_fixed_args(), state=state)
         logger.log_with_metadata(
             from_log_level(log_level),
             msg=msg,
@@ -226,7 +226,7 @@ class ProteusLogger:
 
     def _print_redirect_message(self, logger, log_level, message, tags):
         template = self._get_template('Redirected output: {message}')
-        msg = template.format(**self._get_fixed_args(), message=message),
+        msg = template.format(**self._get_fixed_args(), message=message)
         logger.log_with_metadata(
             from_log_level(log_level),
             msg=msg,
