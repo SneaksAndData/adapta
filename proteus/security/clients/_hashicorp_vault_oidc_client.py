@@ -42,7 +42,9 @@ class HashicorpVaultOidcClient(HashicorpVaultClient):
     """
      Hashicorp vault Credentials provider.
     """
+
     def __init__(self, vault_address):
+        # pylint disable=W0246
         super().__init__(vault_address)
 
     def get_credentials(self):
