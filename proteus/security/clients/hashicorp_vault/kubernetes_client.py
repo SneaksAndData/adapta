@@ -6,8 +6,8 @@ from typing import Optional
 import hvac
 from hvac.api.auth_methods import Kubernetes
 
-from proteus.security.clients import ProteusClient
-from proteus.security.clients.hashicorp_vault._hashicorp_vault_abstract_client import AbstractHashicorpVaultClient
+from proteus.security.clients._base import ProteusClient
+from proteus.security.clients.hashicorp_vault.abstract_client import AbstractHashicorpVaultClient
 
 
 class HashicorpVaultKubernetesClient(AbstractHashicorpVaultClient):

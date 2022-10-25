@@ -8,8 +8,8 @@ from urllib import parse
 
 import hvac
 
-from proteus.security.clients import ProteusClient
-from proteus.security.clients.hashicorp_vault._hashicorp_vault_abstract_client import AbstractHashicorpVaultClient
+from proteus.security.clients._base import ProteusClient
+from proteus.security.clients.hashicorp_vault.abstract_client import AbstractHashicorpVaultClient
 
 
 def _get_vault_credentials():
@@ -56,10 +56,6 @@ class HashicorpVaultClient(AbstractHashicorpVaultClient):
             return client
 
         return None
-
-    def __init__(self, vault_address):
-        # pylint disable=W0246
-        super().__init__(vault_address)
 
     def get_credentials(self):
         client = hvac.Client(url=self._vault_address)

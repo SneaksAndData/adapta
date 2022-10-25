@@ -5,12 +5,17 @@
 from proteus.security.clients._local_client import LocalClient
 from proteus.security.clients._base import ProteusClient
 try:
-    from proteus.security.clients.hashicorp_vault._hashicorp_vault_client import HashicorpVaultClient
+    from proteus.security.clients.hashicorp_vault.vault_client import HashicorpVaultClient
 except ImportError:
     pass
 
 try:
-    from proteus.security.clients.hashicorp_vault._hashicorp_vault_kubernetes_client import HashicorpVaultKubernetesClientClient
+    from proteus.security.clients.hashicorp_vault.kubernetes_client import HashicorpVaultKubernetesClientClient
+except ImportError:
+    pass
+
+try:
+    from proteus.security.clients.hashicorp_vault.abstract_client import HashicorpVaultAbstractClientClient
 except ImportError:
     pass
 

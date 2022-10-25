@@ -3,7 +3,7 @@ from unittest.mock import patch, MagicMock
 import pytest
 
 from proteus.security.clients import HashicorpVaultClient
-from proteus.security.clients.hashicorp_vault._hashicorp_vault_kubernetes_client import HashicorpVaultKubernetesClient
+from proteus.security.clients.hashicorp_vault.kubernetes_client import HashicorpVaultKubernetesClient
 from proteus.storage.secrets.hashicorp_vault_secret_storage_client import HashicorpSecretStorageClient
 
 
