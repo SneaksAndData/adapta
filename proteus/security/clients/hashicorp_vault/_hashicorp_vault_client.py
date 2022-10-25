@@ -8,7 +8,8 @@ from urllib import parse
 
 import hvac
 
-from proteus.security.clients import AbstractHashicorpVaultClient
+from proteus.security.clients import ProteusClient
+from proteus.security.clients.hashicorp_vault._hashicorp_vault_abstract_client import AbstractHashicorpVaultClient
 
 
 def _get_vault_credentials():
@@ -43,8 +44,22 @@ class HashicorpVaultClient(AbstractHashicorpVaultClient):
      Hashicorp vault Credentials provider.
     """
 
+    @staticmethod
+    def from_base_client(client: ProteusClient) -> Optional['HashicorpVaultClient']:
+        """
+         Safe casts ProteusClient to HashicorpVaultClient if type checks out.
+
+        :param client: ProteusClient
+        :return: HashicorpVaultClient or None if type does not check out
+        """
+        if isinstance(client, HashicorpVaultClient):
+            return client
+
+        return None
+
     def __init__(self, vault_address):
-        super().__init__(vault_address)  # pylint disable=W0246
+        # pylint disable=W0246
+        super().__init__(vault_address)
 
     def get_credentials(self):
         client = hvac.Client(url=self._vault_address)

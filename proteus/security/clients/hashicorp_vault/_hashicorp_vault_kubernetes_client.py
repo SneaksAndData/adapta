@@ -6,13 +6,27 @@ from typing import Optional
 import hvac
 from hvac.api.auth_methods import Kubernetes
 
-from proteus.security.clients import AbstractHashicorpVaultClient
+from proteus.security.clients import ProteusClient
+from proteus.security.clients.hashicorp_vault._hashicorp_vault_abstract_client import AbstractHashicorpVaultClient
 
 
 class HashicorpVaultKubernetesClient(AbstractHashicorpVaultClient):
     """
      Hashicorp vault Credentials provider.
     """
+
+    @staticmethod
+    def from_base_client(client: ProteusClient) -> Optional['HashicorpVaultKubernetesClient']:
+        """
+         Safe casts ProteusClient to HashicorpVaultClient if type checks out.
+
+        :param client: ProteusClient
+        :return: HashicorpVaultClient or None if type does not check out
+        """
+        if isinstance(client, HashicorpVaultKubernetesClient):
+            return client
+
+        return None
 
     def __init__(self, vault_address, deployment_cluster_name):
         super().__init__(vault_address)
