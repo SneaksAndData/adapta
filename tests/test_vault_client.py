@@ -2,21 +2,21 @@ from unittest.mock import patch, MagicMock
 
 import pytest
 
-from proteus.security.clients import HashicorpVaultClient
+from proteus.security.clients import AbstractHashicorpVaultClient
 from proteus.security.clients._hashicorp_vault_kubernetes_client import HashicorpVaultKubernetesClient
 from proteus.storage.secrets.hashicorp_vault_secret_storage_client import HashicorpSecretStorageClient
 
 
 @pytest.mark.skip("Uses desktop browser to login, should be only run locally")
 def test_oidc_credentials():
-    client = HashicorpVaultClient(HashicorpVaultClient.TEST_VAULT_ADDRESS)
+    client = AbstractHashicorpVaultClient(AbstractHashicorpVaultClient.TEST_VAULT_ADDRESS)
     credentials = client.get_credentials()
     assert credentials is not None
 
 
 @pytest.mark.skip("Uses desktop browser to login, should be only run locally")
 def test_oidc_auth():
-    client = HashicorpSecretStorageClient(base_client=HashicorpVaultClient(HashicorpVaultClient.TEST_VAULT_ADDRESS))
+    client = HashicorpSecretStorageClient(base_client=AbstractHashicorpVaultClient(AbstractHashicorpVaultClient.TEST_VAULT_ADDRESS))
     secret = client.read_secret("secret", "test/secret/with/path")
     assert secret["key"] == "value"
 
@@ -25,7 +25,7 @@ def test_read_secret_with_mock():
     with patch("hvac.Client", MagicMock(return_value=generate_hashicorp_vault_mock())), \
             patch("webbrowser.open"), \
             patch("proteus.security.clients._hashicorp_vault_client._get_vault_credentials"):
-        client = HashicorpSecretStorageClient(base_client=HashicorpVaultClient(HashicorpVaultClient.TEST_VAULT_ADDRESS))
+        client = HashicorpSecretStorageClient(base_client=AbstractHashicorpVaultClient(AbstractHashicorpVaultClient.TEST_VAULT_ADDRESS))
         secret = client.read_secret("secret", "test/secret/with/path")
     assert secret["key"] == "value"
 
@@ -36,7 +36,7 @@ def test_create_secret_with_mock():
     with patch("hvac.Client", MagicMock(return_value=client_mock)), \
             patch("webbrowser.open"), \
             patch("proteus.security.clients._hashicorp_vault_client._get_vault_credentials"):
-        client = HashicorpSecretStorageClient(base_client=HashicorpVaultClient(HashicorpVaultClient.TEST_VAULT_ADDRESS))
+        client = HashicorpSecretStorageClient(base_client=AbstractHashicorpVaultClient(AbstractHashicorpVaultClient.TEST_VAULT_ADDRESS))
         client.create_secret("secret", "path/to/secret", {"key": "value"})
 
     client_mock.secrets.kv.v2.create_or_update_secret.assert_called_once_with(
@@ -52,7 +52,7 @@ def test_string_secret():
     with patch("hvac.Client", MagicMock(return_value=client_mock)), \
             patch("webbrowser.open"), \
             patch("proteus.security.clients._hashicorp_vault_client._get_vault_credentials"):
-        client = HashicorpSecretStorageClient(base_client=HashicorpVaultClient(HashicorpVaultClient.TEST_VAULT_ADDRESS))
+        client = HashicorpSecretStorageClient(base_client=AbstractHashicorpVaultClient(AbstractHashicorpVaultClient.TEST_VAULT_ADDRESS))
 
         with pytest.raises(ValueError) as e:
             client.create_secret("secret", "path/to/secret", '{"key": "value"}')
@@ -63,19 +63,19 @@ def test_string_secret():
 
 
 def test_connect_storage():
-    client = HashicorpVaultClient(HashicorpVaultClient.TEST_VAULT_ADDRESS)
+    client = AbstractHashicorpVaultClient(AbstractHashicorpVaultClient.TEST_VAULT_ADDRESS)
     with pytest.raises(NotImplementedError):
         client.connect_storage(MagicMock())
 
 
 def test_connect_account():
-    client = HashicorpVaultClient(HashicorpVaultClient.TEST_VAULT_ADDRESS)
+    client = AbstractHashicorpVaultClient(AbstractHashicorpVaultClient.TEST_VAULT_ADDRESS)
     with pytest.raises(NotImplementedError):
         client.connect_account()
 
 
 def test_get_pyarrow_filesystem():
-    client = HashicorpVaultClient(HashicorpVaultClient.TEST_VAULT_ADDRESS)
+    client = AbstractHashicorpVaultClient(AbstractHashicorpVaultClient.TEST_VAULT_ADDRESS)
     with pytest.raises(NotImplementedError):
         client.get_pyarrow_filesystem(MagicMock())
 

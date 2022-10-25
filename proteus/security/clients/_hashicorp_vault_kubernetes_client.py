@@ -6,10 +6,10 @@ from typing import Optional
 import hvac
 from hvac.api.auth_methods import Kubernetes
 
-from proteus.security.clients import HashicorpVaultClient
+from proteus.security.clients import AbstractHashicorpVaultClient
 
 
-class HashicorpVaultKubernetesClient(HashicorpVaultClient):
+class HashicorpVaultKubernetesClient(AbstractHashicorpVaultClient):
     """
      Hashicorp vault Credentials provider.
     """
