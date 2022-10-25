@@ -24,7 +24,7 @@ def test_oidc_auth():
 def test_read_secret_with_mock():
     with patch("hvac.Client", MagicMock(return_value=generate_hashicorp_vault_mock())), \
             patch("webbrowser.open"), \
-            patch("proteus.security.clients._hashicorp_vault_client._get_vault_credentials"):
+            patch("proteus.security.clients.hashicorp_vault.vault_client._get_vault_credentials"):
         client = HashicorpSecretStorageClient(base_client=HashicorpVaultClient(HashicorpVaultClient.TEST_VAULT_ADDRESS))
         secret = client.read_secret("secret", "test/secret/with/path")
     assert secret["key"] == "value"
@@ -35,7 +35,7 @@ def test_create_secret_with_mock():
 
     with patch("hvac.Client", MagicMock(return_value=client_mock)), \
             patch("webbrowser.open"), \
-            patch("proteus.security.clients._hashicorp_vault_client._get_vault_credentials"):
+            patch("proteus.security.clients.hashicorp_vault.vault_client._get_vault_credentials"):
         client = HashicorpSecretStorageClient(base_client=HashicorpVaultClient(HashicorpVaultClient.TEST_VAULT_ADDRESS))
         client.create_secret("secret", "path/to/secret", {"key": "value"})
 
@@ -43,7 +43,6 @@ def test_create_secret_with_mock():
         path="path/to/secret",
         secret={'key': 'value'}
     )
-    client_mock.secrets.kv.v2.configure.assert_called_once_with(max_versions=20, mount_point="secret")
 
 
 def test_string_secret():
@@ -51,7 +50,7 @@ def test_string_secret():
 
     with patch("hvac.Client", MagicMock(return_value=client_mock)), \
             patch("webbrowser.open"), \
-            patch("proteus.security.clients._hashicorp_vault_client._get_vault_credentials"):
+            patch("proteus.security.clients.hashicorp_vault.vault_client._get_vault_credentials"):
         client = HashicorpSecretStorageClient(base_client=HashicorpVaultClient(HashicorpVaultClient.TEST_VAULT_ADDRESS))
 
         with pytest.raises(ValueError) as e:
@@ -64,19 +63,19 @@ def test_string_secret():
 
 def test_connect_storage():
     client = HashicorpVaultClient(HashicorpVaultClient.TEST_VAULT_ADDRESS)
-    with pytest.raises(NotImplementedError):
+    with pytest.raises(ValueError):
         client.connect_storage(MagicMock())
 
 
 def test_connect_account():
     client = HashicorpVaultClient(HashicorpVaultClient.TEST_VAULT_ADDRESS)
-    with pytest.raises(NotImplementedError):
+    with pytest.raises(ValueError):
         client.connect_account()
 
 
 def test_get_pyarrow_filesystem():
     client = HashicorpVaultClient(HashicorpVaultClient.TEST_VAULT_ADDRESS)
-    with pytest.raises(NotImplementedError):
+    with pytest.raises(ValueError):
         client.get_pyarrow_filesystem(MagicMock())
 
 
