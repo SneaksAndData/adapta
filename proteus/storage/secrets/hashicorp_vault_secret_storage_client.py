@@ -5,7 +5,8 @@ from typing import Union, Dict, Any
 
 import hvac
 
-from proteus.security.clients import ProteusClient, AbstractHashicorpVaultClient
+from proteus.security.clients import ProteusClient
+from proteus.security.clients.hashicorp_vault.abstract_client import AbstractHashicorpVaultClient
 from proteus.storage.secrets import SecretStorageClient
 
 
