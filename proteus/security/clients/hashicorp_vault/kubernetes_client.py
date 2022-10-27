@@ -15,8 +15,6 @@ class HashicorpVaultKubernetesClient(HashicorpVaultClient):
      Hashicorp vault Credentials provider for K8S.
     """
 
-    KUBERNETES_TOKEN_PATH = '/var/run/secrets/kubernetes.io/serviceaccount/token'
-
     @staticmethod
     def from_base_client(client: ProteusClient) -> Optional['HashicorpVaultKubernetesClient']:
         """
@@ -30,7 +28,10 @@ class HashicorpVaultKubernetesClient(HashicorpVaultClient):
 
         return None
 
-    def __init__(self, vault_address, deployment_cluster_name):
+    def __init__(self,
+                 vault_address: str,
+                 deployment_cluster_name: str,
+                 kubernetes_token_path: str = '/var/run/secrets/kubernetes.io/serviceaccount/token'):
         """
         Initialization logic for Kubernetes auth method
         :param vault_address: Address of hashicorp vault instance
@@ -39,9 +40,10 @@ class HashicorpVaultKubernetesClient(HashicorpVaultClient):
         super().__init__(vault_address)
         self._client = hvac.Client(url=self._vault_address)
         self.deployment_cluster_name = deployment_cluster_name
+        self.token_path = kubernetes_token_path
 
     def get_credentials(self):
-        with open(HashicorpVaultKubernetesClient.KUBERNETES_TOKEN_PATH, encoding='utf-8') as token_file:
+        with open(self.token_path, encoding='utf-8') as token_file:
             Kubernetes(self._client.adapter).login(
                 role='application',
                 jwt=token_file.read(),
