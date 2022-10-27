@@ -40,7 +40,7 @@ class SecretStorageClient(ABC):
     @abstractmethod
     def list_secrets(self, storage_name: str, name_prefix: str) -> Iterable[Any]:
         """
-          Creates a plain text secret in a specified storage.
+          List secrets with in specified storage.
 
         :param storage_name: Name of a storage service hosting the secret.
         :param name_prefix: Prefix for filtering secrets
