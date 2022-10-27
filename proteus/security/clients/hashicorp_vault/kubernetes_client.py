@@ -12,7 +12,7 @@ from proteus.security.clients.hashicorp_vault.abstract_client import AbstractHas
 
 class HashicorpVaultKubernetesClient(HashicorpVaultClient):
     """
-     Hashicorp vault Credentials provider.
+     Hashicorp vault Credentials provider for K8S.
     """
 
     KUBERNETES_TOKEN_PATH = '/var/run/secrets/kubernetes.io/serviceaccount/token'
