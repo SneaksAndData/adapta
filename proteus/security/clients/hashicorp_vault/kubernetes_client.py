@@ -18,10 +18,10 @@ class HashicorpVaultKubernetesClient(HashicorpVaultClient):
     @staticmethod
     def from_base_client(client: ProteusClient) -> Optional['HashicorpVaultKubernetesClient']:
         """
-         Safe casts ProteusClient to AbstractHashicorpVaultClient if type checks out.
+         Safe casts ProteusClient to HashicorpVaultClient if type checks out.
 
         :param client: ProteusClient
-        :return: AbstractHashicorpVaultClient or None if type does not check out
+        :return: HashicorpVaultKubernetesClient or None if type does not check out
         """
         if isinstance(client, HashicorpVaultKubernetesClient):
             return client

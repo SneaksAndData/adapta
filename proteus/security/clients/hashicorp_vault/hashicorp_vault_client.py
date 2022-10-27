@@ -21,7 +21,7 @@ class HashicorpVaultClient(ProteusClient):
          Safe casts ProteusClient to HashicorpVaultClient if type checks out.
 
         :param client: ProteusClient
-        :return: AbstractHashicorpVaultClient or None if type does not check out
+        :return: HashicorpVaultClient or None if type does not check out
         """
         if isinstance(client, HashicorpVaultClient):
             return client
@@ -42,21 +42,21 @@ class HashicorpVaultClient(ProteusClient):
 
     def connect_storage(self, path: DataPath, set_env: bool = False) -> Optional[Dict]:
         """
-         Not supported  in AbstractHashicorpVaultClient
+         Not supported  in HashicorpVaultClient
         :return:
         """
         raise ValueError("Not supported  in HashicorpVaultClient")
 
     def connect_account(self):
         """
-         Not supported  in AbstractHashicorpVaultClient
+         Not supported  in HashicorpVaultClient
         :return:
         """
         raise ValueError("Not supported  in HashicorpVaultClient")
 
     def get_pyarrow_filesystem(self, path: DataPath) -> FileSystem:
         """
-         Not supported  in AbstractHashicorpVaultClient
+         Not supported  in HashicorpVaultClient
         :return:
         """
         raise ValueError("Not supported  in HashicorpVaultClient")
