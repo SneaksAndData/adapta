@@ -39,7 +39,7 @@ def _get_vault_credentials():
     return httpd.token
 
 
-class HashicorpVaultClient(AbstractHashicorpVaultClient):
+class HashicorpVaultHttpClient(HashicorpVaultClient):
     """
     Credentials provider for `oidc` auth method in hashicorp vault.
     """
