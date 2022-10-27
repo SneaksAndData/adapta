@@ -10,7 +10,7 @@ from proteus.security.clients._base import ProteusClient
 from proteus.storage.models.base import DataPath
 
 
-class AbstractHashicorpVaultClient(ProteusClient, ABC):
+class HashicorpVaultClient(ProteusClient):
     """
      Hashicorp vault Credentials provider.
     """
