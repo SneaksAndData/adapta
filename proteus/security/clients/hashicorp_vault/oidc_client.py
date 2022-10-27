@@ -2,15 +2,14 @@
  Hashicorp Vault implementation of Proteus Client.
 """
 import webbrowser
-from typing import Optional, Dict
-from urllib import parse
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from pyarrow.fs import FileSystem
+from typing import Optional
+from urllib import parse
 
 import hvac
 
 from proteus.security.clients._base import ProteusClient
-from proteus.storage.models.base import DataPath
+from proteus.security.clients.hashicorp_vault.hashicorp_vault_client import HashicorpVaultClient
 
 
 def _get_vault_credentials():
@@ -40,15 +39,10 @@ def _get_vault_credentials():
     return httpd.token
 
 
-class HashicorpVaultClient(ProteusClient):
+class HashicorpVaultOidcClient(HashicorpVaultClient):
     """
-     Hashicorp vault Credentials provider.
+    Credentials provider for OIDC.
     """
-    TEST_VAULT_ADDRESS = "https://hashicorp-vault.test.sneaksanddata.com/"
-    PRODUCTION_VAULT_ADDRESS = "https://hashicorp-vault.production.sneaksanddata.com/"
-
-    def __init__(self, vault_address):
-        self._vault_address = vault_address
 
     @staticmethod
     def from_base_client(client: ProteusClient) -> Optional['HashicorpVaultClient']:
@@ -87,29 +81,3 @@ class HashicorpVaultClient(ProteusClient):
 
     def get_access_token(self, scope: Optional[str] = None) -> str:
         return self.get_credentials()["auth"]["client_token"]
-
-    def connect_storage(self, path: DataPath, set_env: bool = False) -> Optional[Dict]:
-        """
-         Not supported  in HashicorpVaultClient
-        :return:
-        """
-        raise NotImplementedError("Not supported  in HashicorpVaultClient")
-
-    def connect_account(self):
-        """
-         Not supported  in HashicorpVaultClient
-        :return:
-        """
-        raise NotImplementedError("Not supported  in HashicorpVaultClient")
-
-    def get_pyarrow_filesystem(self, path: DataPath) -> FileSystem:
-        """
-         Not supported  in HashicorpVaultClient
-        :return:
-        """
-        raise NotImplementedError("Not supported  in HashicorpVaultClient")
-
-    @property
-    def vault_address(self):
-        """Returns address of Hashicorp Vault server"""
-        return self._vault_address
