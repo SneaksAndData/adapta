@@ -10,7 +10,7 @@ from proteus.security.clients._base import ProteusClient
 from proteus.security.clients.hashicorp_vault.abstract_client import AbstractHashicorpVaultClient
 
 
-class HashicorpVaultKubernetesClient(AbstractHashicorpVaultClient):
+class HashicorpVaultKubernetesClient(HashicorpVaultClient):
     """
      Hashicorp vault Credentials provider.
     """
