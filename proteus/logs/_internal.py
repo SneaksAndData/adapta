@@ -1,6 +1,5 @@
 """Classes for internal use by `proteus.logs` module. Should not be imported outside this module"""
 import logging
-import sys
 from typing import Optional, Dict
 
 from proteus.logs.models import ProteusLogMetadata, LogLevel
@@ -46,13 +45,12 @@ class MetadataLogger(logging.Logger):
             template=template,
             diagnostics=diagnostics,
             tags=tags,
-            fields=metadata_fields,
-            exc_info=sys.exc_info(),
-            exception=exception)
+            fields=metadata_fields)
         self._log(log_level,
                   msg=msg,
                   args=None,
                   extra={ProteusLogMetadata.__name__: log_metadata},
+                  exc_info=exception,
                   stack_info=stack_info)
 
 

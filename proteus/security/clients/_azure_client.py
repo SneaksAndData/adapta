@@ -13,6 +13,9 @@ from azure.mgmt.storage import StorageManagementClient
 from azure.identity import DefaultAzureCredential
 from pyarrow.fs import PyFileSystem, FSSpecHandler, SubTreeFileSystem, FileSystem
 
+from proteus.logs import ProteusLogger
+from proteus.logs.handlers.datadog_api_handler import DataDogApiHandler
+from proteus.logs.models import LogLevel
 from proteus.security.clients._base import ProteusClient
 from proteus.storage.models.azure import AdlsGen2Path
 from proteus.storage.models.base import DataPath
@@ -38,9 +41,11 @@ class AzureClient(ProteusClient):
 
     def __init__(self, *, subscription_id: str, default_log_level=logging.ERROR):
         self.subscription_id = subscription_id
-
-        logger = logging.getLogger('azure')
-        logger.setLevel(default_log_level)
+        self._logger = ProteusLogger.add_log_source(
+            log_source_name="azure",
+            min_log_level=LogLevel.ERROR,
+            log_handlers=[logging.StreamHandler(), DataDogApiHandler()]
+        )
 
     @classmethod
     def from_base_client(cls, client: ProteusClient) -> Optional['AzureClient']:
