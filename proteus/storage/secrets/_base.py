@@ -3,7 +3,7 @@
 """
 
 from abc import ABC, abstractmethod
-from typing import Union, Dict
+from typing import Union, Dict, Iterable, Any
 
 from proteus.security.clients import ProteusClient
 
@@ -34,5 +34,15 @@ class SecretStorageClient(ABC):
         :param secret_name: Name of the secret
         :param secret_value: Secret value as plain text.
         :param b64_encode: Whether the value should be b64-encoded
+        :return:
+        """
+
+    @abstractmethod
+    def list_secrets(self, storage_name: str, name_prefix: str) -> Iterable[Any]:
+        """
+          List secrets with in specified storage.
+
+        :param storage_name: Name of a storage service hosting the secret.
+        :param name_prefix: Prefix for filtering secrets
         :return:
         """
