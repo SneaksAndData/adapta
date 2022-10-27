@@ -7,7 +7,7 @@ import hvac
 from hvac.api.auth_methods import Kubernetes
 
 from proteus.security.clients._base import ProteusClient
-from proteus.security.clients.hashicorp_vault.abstract_client import AbstractHashicorpVaultClient
+from proteus.security.clients.hashicorp_vault.hashicorp_vault_client import HashicorpVaultClient
 
 
 class HashicorpVaultKubernetesClient(HashicorpVaultClient):

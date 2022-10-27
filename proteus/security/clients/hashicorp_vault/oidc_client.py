@@ -9,7 +9,8 @@ from urllib import parse
 import hvac
 
 from proteus.security.clients._base import ProteusClient
-from proteus.security.clients.hashicorp_vault.abstract_client import AbstractHashicorpVaultClient
+from proteus.security.clients.hashicorp_vault.hashicorp_vault_client import AbstractHashicorpVaultClient, \
+    HashicorpVaultClient
 
 
 def _get_vault_credentials():
@@ -39,7 +40,7 @@ def _get_vault_credentials():
     return httpd.token
 
 
-class HashicorpVaultHttpClient(HashicorpVaultClient):
+class HashicorpVaultOidcClient(HashicorpVaultClient):
     """
     Credentials provider for `oidc` auth method in hashicorp vault.
     """

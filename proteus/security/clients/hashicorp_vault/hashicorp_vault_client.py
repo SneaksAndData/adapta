@@ -1,7 +1,7 @@
 """
  Hashicorp Vault implementation of Proteus Client.
 """
-from abc import ABC
+from abc import abstractmethod
 from typing import Optional, Dict
 
 from pyarrow.fs import FileSystem
@@ -14,18 +14,19 @@ class HashicorpVaultClient(ProteusClient):
     """
      Hashicorp vault Credentials provider.
     """
+
     TEST_VAULT_ADDRESS = "https://hashicorp-vault.test.sneaksanddata.com/"
     PRODUCTION_VAULT_ADDRESS = "https://hashicorp-vault.production.sneaksanddata.com/"
 
     @staticmethod
-    def from_base_client(client: ProteusClient) -> Optional['AbstractHashicorpVaultClient']:
+    def from_base_client(client: ProteusClient) -> Optional['HashicorpVaultClient']:
         """
          Safe casts ProteusClient to HashicorpVaultClient if type checks out.
 
         :param client: ProteusClient
         :return: AbstractHashicorpVaultClient or None if type does not check out
         """
-        if isinstance(client, AbstractHashicorpVaultClient):
+        if isinstance(client, HashicorpVaultClient):
             return client
 
         return None
@@ -62,3 +63,11 @@ class HashicorpVaultClient(ProteusClient):
         :return:
         """
         raise ValueError("Not supported  in HashicorpVaultClient")
+
+    @abstractmethod
+    def get_credentials(self):
+        pass
+
+    @abstractmethod
+    def get_access_token(self, scope: Optional[str] = None) -> str:
+        pass
