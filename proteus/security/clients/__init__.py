@@ -15,7 +15,7 @@ except ImportError:
     pass
 
 try:
-    from proteus.security.clients.hashicorp_vault.abstract_client import HashicorpVaultAbstractClientClient
+    from proteus.security.clients.hashicorp_vault.abstract_client import HashicorpVaultAbstractClient
 except ImportError:
     pass
 
