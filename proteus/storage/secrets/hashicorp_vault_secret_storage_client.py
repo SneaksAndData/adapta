@@ -5,14 +5,13 @@ from typing import Union, Dict, Iterable
 
 import hvac
 
-from proteus.security.clients import ProteusClient
-from proteus.security.clients.hashicorp_vault.hashicorp_vault_client import AbstractHashicorpVaultClient
+from proteus.security.clients import ProteusClient, HashicorpVaultClient
 from proteus.storage.secrets import SecretStorageClient
 
 
 class HashicorpSecretStorageClient(SecretStorageClient):
     """
-    Credentials provider for `kubernetes` auth method in hashicorp vault.
+    Hashicorp vault client.
     """
 
     def __init__(self, *, base_client: ProteusClient, role: str = "default"):

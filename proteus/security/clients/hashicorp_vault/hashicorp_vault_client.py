@@ -15,9 +15,6 @@ class HashicorpVaultClient(ProteusClient):
      Hashicorp vault Credentials provider.
     """
 
-    TEST_VAULT_ADDRESS = "https://hashicorp-vault.test.sneaksanddata.com/"
-    PRODUCTION_VAULT_ADDRESS = "https://hashicorp-vault.production.sneaksanddata.com/"
-
     @staticmethod
     def from_base_client(client: ProteusClient) -> Optional['HashicorpVaultClient']:
         """
