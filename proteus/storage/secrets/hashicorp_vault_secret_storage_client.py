@@ -1,7 +1,7 @@
 """
  Hashicorp Vault Secret storage client
 """
-from typing import Union, Dict, Any, Iterable
+from typing import Union, Dict, Iterable
 
 import hvac
 
