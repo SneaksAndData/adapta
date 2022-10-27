@@ -22,7 +22,7 @@ class HashicorpSecretStorageClient(SecretStorageClient):
         :param role: Name of role to log in with
         """
         super().__init__(base_client=base_client)
-        self._base_client = AbstractHashicorpVaultClient.from_base_client(self._base_client)
+        self._base_client = HashicorpVaultClient.from_base_client(self._base_client)
         self._access_token = self._base_client.get_access_token()
         self.client = hvac.Client(self._base_client.vault_address, self._access_token)
         self._role = role
