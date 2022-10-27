@@ -83,7 +83,9 @@ def test_list_secrets():
             patch("builtins.open", mock_open(read_data="data")),\
             patch("hvac.api.auth_methods.kubernetes", Mock()):
         client = HashicorpSecretStorageClient(
-            base_client=HashicorpVaultKubernetesClient(HashicorpVaultClient.TEST_VAULT_ADDRESS, "kubernetes-cluster")
+            base_client=HashicorpVaultKubernetesClient(
+                HashicorpVaultKubernetesClient.TEST_VAULT_ADDRESS, "kubernetes-cluster"
+            )
         )
     secrets = client.list_secrets("storage_name", "/")
     assert list(secrets) == ['/key2', 'key1/subkey1', 'key1/subkey2/subkey3', 'key1/subkey2/subkey4']

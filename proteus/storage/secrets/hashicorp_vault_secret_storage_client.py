@@ -39,7 +39,7 @@ class HashicorpSecretStorageClient(SecretStorageClient):
             )
         self.client.secrets.kv.v2.create_or_update_secret(path=secret_name, secret=secret_value)
 
-    def list_secrets(self, storage_name: str, name_prefix: str) -> Iterable[Any]:
+    def list_secrets(self, storage_name: str, name_prefix: str) -> Iterable[str]:
         stack = [name_prefix]
         while stack:
             name = stack.pop(0)
