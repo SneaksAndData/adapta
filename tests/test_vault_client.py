@@ -1,4 +1,4 @@
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, mock_open, Mock
 
 import pytest
 
@@ -19,6 +19,21 @@ def test_oidc_auth():
     client = HashicorpSecretStorageClient(base_client=HashicorpVaultClient(HashicorpVaultClient.TEST_VAULT_ADDRESS))
     secret = client.read_secret("secret", "test/secret/with/path")
     assert secret["key"] == "value"
+
+
+@pytest.mark.skip("This test should be run inside a pod within a kubernetes cluster")
+def test_kubernetes_auth():
+    client = HashicorpVaultKubernetesClient(HashicorpVaultKubernetesClient.TEST_VAULT_ADDRESS, 'esd-spark-dev')
+    assert client.get_credentials() is None
+
+
+@pytest.mark.skip("This test should be run inside a pod within a kubernetes cluster")
+def test_list_secrets_with_kubernetes():
+    client = HashicorpVaultKubernetesClient(HashicorpVaultKubernetesClient.TEST_VAULT_ADDRESS, 'esd-spark-dev')
+    client.get_credentials()
+    secret_client = HashicorpSecretStorageClient(base_client=client, role="application")
+    secrets = list(secret_client.list_secrets("secret", "test"))
+    assert secrets == ['test/secret/with/other_path', 'test/secret/with/path']
 
 
 def test_read_secret_with_mock():
@@ -61,6 +76,20 @@ def test_string_secret():
     client_mock.secrets.kv.v2.configure.asssert_not_called()
 
 
+def test_list_secrets():
+    client_mock = generate_hashicorp_vault_mock()
+
+    with patch("hvac.Client", MagicMock(return_value=client_mock)), \
+            patch("builtins.open", mock_open(read_data="data")),\
+            patch("hvac.api.auth_methods.kubernetes", Mock()):
+        client = HashicorpSecretStorageClient(
+            base_client=HashicorpVaultKubernetesClient(HashicorpVaultClient.TEST_VAULT_ADDRESS, "kubernetes-cluster")
+        )
+    secrets = client.list_secrets("storage_name", "/")
+    assert list(secrets) == ['/key2', 'key1/subkey1', 'key1/subkey2/subkey3', 'key1/subkey2/subkey4']
+
+
+
 def test_connect_storage():
     client = HashicorpVaultClient(HashicorpVaultClient.TEST_VAULT_ADDRESS)
     with pytest.raises(ValueError):
@@ -91,21 +120,11 @@ def generate_hashicorp_vault_mock():
             }
         }
     }
+    client_mock.secrets.kv.v2.list_secrets.side_effect = [
+        {"data": {"keys": ["key1/", "key2"]}},
+        {"data": {"keys": ["subkey1", "subkey2/"]}},
+        {"data": {"keys": ["subkey3", "subkey4"]}}
+    ]
     client_mock.secrets.kv.v2.create_or_update_secret = MagicMock()
     client_mock.secrets.kv.v2.configure = MagicMock()
     return client_mock
-
-
-@pytest.mark.skip("Uses desktop browser to login, should be only run locally")
-def test_kubernetes_auth():
-    client = HashicorpVaultKubernetesClient(HashicorpVaultKubernetesClient.TEST_VAULT_ADDRESS, 'esd-spark-dev')
-    assert client.get_credentials() is None
-
-
-@pytest.mark.skip("Uses desktop browser to login, should be only run locally")
-def test_list_secrets():
-    client = HashicorpVaultKubernetesClient(HashicorpVaultKubernetesClient.TEST_VAULT_ADDRESS, 'esd-spark-dev')
-    client.get_credentials()
-    secret_client = HashicorpSecretStorageClient(base_client=client, role="application")
-    secrets = list(secret_client.list_secrets("secret", "test"))
-    assert secrets == ['test/secret/with/other_path', 'test/secret/with/path']

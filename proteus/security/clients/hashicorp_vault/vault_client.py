@@ -41,7 +41,7 @@ def _get_vault_credentials():
 
 class HashicorpVaultClient(AbstractHashicorpVaultClient):
     """
-     Hashicorp vault Credentials provider.
+    Credentials provider for `oidc` auth method in hashicorp vault.
     """
 
     @staticmethod

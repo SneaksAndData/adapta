@@ -1,7 +1,7 @@
 """
  Hashicorp Vault Secret storage client
 """
-from typing import Union, Dict, Any
+from typing import Union, Dict, Any, Iterable
 
 import hvac
 
@@ -12,7 +12,7 @@ from proteus.storage.secrets import SecretStorageClient
 
 class HashicorpSecretStorageClient(SecretStorageClient):
     """
-    Hashicorp vault client
+    Credentials provider for `kubernetes` auth method in hashicorp vault.
     """
 
     def __init__(self, *, base_client: ProteusClient, role: str = "default"):
@@ -39,7 +39,7 @@ class HashicorpSecretStorageClient(SecretStorageClient):
             )
         self.client.secrets.kv.v2.create_or_update_secret(path=secret_name, secret=secret_value)
 
-    def list_secrets(self, storage_name: str, name_prefix: str) -> Any:
+    def list_secrets(self, storage_name: str, name_prefix: str) -> Iterable[Any]:
         stack = [name_prefix]
         while stack:
             name = stack.pop(0)

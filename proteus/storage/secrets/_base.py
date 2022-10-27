@@ -3,7 +3,7 @@
 """
 
 from abc import ABC, abstractmethod
-from typing import Union, Dict
+from typing import Union, Dict, Iterable, Any
 
 from proteus.security.clients import ProteusClient
 
@@ -38,7 +38,7 @@ class SecretStorageClient(ABC):
         """
 
     @abstractmethod
-    def list_secrets(self, storage_name: str, name_prefix: str) -> None:
+    def list_secrets(self, storage_name: str, name_prefix: str) -> Iterable[Any]:
         """
           Creates a plain text secret in a specified storage.
 
