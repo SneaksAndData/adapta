@@ -39,11 +39,11 @@ class AzureClient(ProteusClient):
      Azure Credentials provider for various Azure resources.
     """
 
-    def __init__(self, *, subscription_id: str, default_log_level=logging.ERROR):
+    def __init__(self, *, subscription_id: str, default_log_level=LogLevel.ERROR):
         self.subscription_id = subscription_id
         self._logger = ProteusLogger().add_log_source(
             log_source_name="azure",
-            min_log_level=LogLevel.ERROR,
+            min_log_level=default_log_level,
             log_handlers=[logging.StreamHandler(), DataDogApiHandler()]
         )
 
