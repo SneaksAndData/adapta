@@ -41,7 +41,7 @@ class AzureClient(ProteusClient):
 
     def __init__(self, *, subscription_id: str, default_log_level=logging.ERROR):
         self.subscription_id = subscription_id
-        self._logger = ProteusLogger.add_log_source(
+        self._logger = ProteusLogger().add_log_source(
             log_source_name="azure",
             min_log_level=LogLevel.ERROR,
             log_handlers=[logging.StreamHandler(), DataDogApiHandler()]

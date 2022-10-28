@@ -79,3 +79,26 @@ to duplicated messages in datadog. If you want to print log messages to stdout, 
 
 Remember to set `PROTEUS__DD_API_KEY`, `PROTEUS__DD_APP_KEY` and `PROTEUS__DD_SITE` environment variables before creating an instance
 of `DataDogApiHandler()`.
+
+### Overriding existing loggers
+This module supports integration with existing logger, you can use it as following:
+```python
+from proteus.logs import ProteusLogger
+from proteus.logs.models import LogLevel
+from proteus.logs.handlers.datadog_api_handler import DataDogApiHandler
+from proteus.logs.handlers.safe_stream_handler import StreamHandler
+
+logger = ProteusLogger().add_log_source(
+    log_source_name="azure",
+    min_log_level=LogLevel.ERROR,
+    log_handlers=[StreamHandler(), DataDogApiHandler()]
+)\
+.add_log_source(
+    log_source_name="my-app",
+    min_log_level=LogLevel.INFO,
+    log_handlers=[StreamHandler(), DataDogApiHandler()]
+)
+```
+
+This will add `ProteusLogger` for logging source `my-app` and reconfigure python Logger with name `azure` to use 
+supplied handlers and `ERROR` as minimum log level.

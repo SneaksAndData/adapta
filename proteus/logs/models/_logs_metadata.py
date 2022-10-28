@@ -3,8 +3,7 @@ Models for log messages
 """
 
 from dataclasses import dataclass
-from types import TracebackType
-from typing import Optional, Dict, Tuple
+from typing import Optional, Dict
 
 
 @dataclass
