@@ -1,7 +1,7 @@
 """Common utility functions. All of these are imported into __init__.py"""
 import time
-from functools import partial
-from typing import List, Optional, Dict
+from functools import partial, wraps
+from typing import List, Optional, Dict, Callable
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -59,3 +59,19 @@ def convert_datadog_tags(tag_dict: Optional[Dict[str, str]]) -> Optional[List[st
     if not tag_dict:
         return None
     return [f"{k}:{v}" for k, v in tag_dict.items()]
+
+
+def operation_time(operation: Callable):
+    """
+      Decorator that adds execution time measurement to a provided operation.
+
+    :param operation: A method to measure execution time for.
+    :return: A tuple of (method_execution_time_ns, method_result)
+    """
+    @wraps(operation)
+    def wrapper(*args, **kwargs):
+        start = time.monotonic_ns()
+        result = operation(*args, **kwargs)
+        return time.monotonic_ns() - start, result
+
+    return wrapper
