@@ -41,6 +41,9 @@ class MetadataLogger(logging.Logger):
             :param metadata_fields: Templated arguments (key=value).
             :param exception: Optional exception for warning and error levels
         """
+
+        if not self.isEnabledFor(level=log_level):
+            return
         log_metadata = ProteusLogMetadata(
             template=template,
             diagnostics=diagnostics,

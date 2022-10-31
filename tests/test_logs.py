@@ -137,3 +137,25 @@ def test_proteus_logger_replacement(mocker: MockerFixture, restore_logger_class)
     handler = [handler for handler in requests_log.handlers if isinstance(handler, DataDogApiHandler)][0]
     buffers = [json.loads(msg.message) for msg in handler._buffer]
     assert {'text': 'Starting new HTTPS connection (1): example.com:443'} in buffers
+
+
+def test_log_level(mocker: MockerFixture, restore_logger_class):
+    mocker.patch('proteus.logs.handlers.datadog_api_handler.DataDogApiHandler._flush', return_value=None)
+
+    mock_environment = {
+        'PROTEUS__DD_API_KEY': 'some-key',
+        'PROTEUS__DD_APP_KEY': 'some-app-key',
+        'PROTEUS__DD_SITE': 'some-site.dog'
+    }
+    with patch.dict(os.environ, mock_environment):
+        logger = ProteusLogger()\
+            .add_log_source(log_source_name="test",
+                            min_log_level=LogLevel.INFO,
+                            log_handlers=[DataDogApiHandler()])
+        logger.debug("Debug message", log_source_name="test")
+        logger.info("Info message", log_source_name="test")
+
+    requests_log = logging.getLogger("test")
+    handler = [handler for handler in requests_log.handlers if isinstance(handler, DataDogApiHandler)][0]
+    buffers = [json.loads(msg.message) for msg in handler._buffer]
+    assert buffers == [{'template': 'Info message', 'text': 'Info message'}]
