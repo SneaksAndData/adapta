@@ -7,7 +7,6 @@ import os
 import signal
 import socket
 import platform
-import traceback
 from logging import LogRecord, Handler
 from typing import List, Optional, Dict, Any
 
