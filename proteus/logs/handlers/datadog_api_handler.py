@@ -2,6 +2,7 @@
   Logging handler for DataDog.
 """
 import json
+import logging
 import os
 import signal
 import socket
@@ -85,16 +86,22 @@ class DataDogApiHandler(Handler):
 
         :return:
         """
-        result = self._logs_api.submit_log(
-            body=HTTPLog(value=self._buffer),
-            content_encoding='gzip',
-            async_req=self._async_handler
-        )
-        if self._async_handler:
-            result = result.get()
+        logger = logging.getLogger("urllib3")
+        old_level = logger.getEffectiveLevel()
+        logger.setLevel(logging.INFO)
+        try:
+            result = self._logs_api.submit_log(
+                body=HTTPLog(value=self._buffer),
+                content_encoding='gzip',
+                async_req=self._async_handler
+            )
+            if self._async_handler:
+                result = result.get()
 
-        if self._debug:
-            print(f"DataDog response: {result}")
+            if self._debug:
+                print(f"DataDog response: {result}")
+        finally:
+            logger.setLevel(old_level)
 
         self._buffer = []
 
