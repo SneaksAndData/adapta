@@ -1,5 +1,6 @@
 """Common utility functions. All of these are imported into __init__.py"""
 import time
+from functools import partial
 from typing import List, Optional, Dict
 
 import requests
@@ -27,7 +28,7 @@ def doze(seconds: int, doze_period_ms: int = 100) -> int:
     return time.monotonic_ns() - start
 
 
-def session_with_retries(method_list: Optional[List[str]] = None):
+def session_with_retries(method_list: Optional[List[str]] = None, request_timeout: Optional[float] = 300):
     """
      Provisions http session manager with retries.
     :return:
@@ -42,6 +43,8 @@ def session_with_retries(method_list: Optional[List[str]] = None):
     http = requests.Session()
     http.mount("https://", adapter)
     http.mount("http://", adapter)
+    http.request = partial(http.request, timeout=request_timeout)
+    http.send = partial(http.send, timeout=request_timeout)
 
     return http
 
