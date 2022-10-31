@@ -55,19 +55,3 @@ class MetadataLogger(logging.Logger):
                   extra={ProteusLogMetadata.__name__: log_metadata},
                   exc_info=exception,
                   stack_info=stack_info)
-
-
-def from_log_level(log_level: LogLevel) -> int:
-    """
-    Converts from proteus log level to python logging loglevel
-
-    :param log_level: Log level defined in Proteus
-    :return log level defined in python logging module
-    """
-    log_method = {
-        LogLevel.INFO: logging.INFO,
-        LogLevel.WARN: logging.WARN,
-        LogLevel.ERROR: logging.ERROR,
-        LogLevel.DEBUG: logging.DEBUG
-    }
-    return log_method[log_level]

@@ -13,7 +13,7 @@ from logging import Handler, StreamHandler
 from typing import List, Optional, Dict
 
 from proteus.logs.models import LogLevel
-from proteus.logs._internal import MetadataLogger, from_log_level
+from proteus.logs._internal import MetadataLogger
 
 
 class ProteusLogger:
@@ -210,7 +210,7 @@ class ProteusLogger:
         template = self._get_template('>> Redirected output {state} <<')
         msg = template.format(**self._get_fixed_args(), state=state)
         logger.log_with_metadata(
-            from_log_level(log_level),
+            log_level.value,
             msg=msg,
             tags=tags,
             diagnostics=None,
@@ -224,7 +224,7 @@ class ProteusLogger:
         template = self._get_template('Redirected output: {message}')
         msg = template.format(**self._get_fixed_args(), message=message)
         logger.log_with_metadata(
-            from_log_level(log_level),
+            log_level.value,
             msg=msg,
             tags=tags,
             diagnostics=None,
