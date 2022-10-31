@@ -44,6 +44,7 @@ def session_with_retries(method_list: Optional[List[str]] = None, request_timeou
     http.mount("https://", adapter)
     http.mount("http://", adapter)
     http.request = partial(http.request, timeout=request_timeout)
+    http.send = partial(http.send, timeout=request_timeout)
 
     return http
 
