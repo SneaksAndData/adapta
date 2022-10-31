@@ -1,7 +1,9 @@
 """Common utility functions. All of these are imported into __init__.py"""
+import contextlib
 import time
-from functools import partial, wraps
-from typing import List, Optional, Dict, Callable
+from collections import namedtuple
+from functools import partial
+from typing import List, Optional, Dict
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -61,17 +63,21 @@ def convert_datadog_tags(tag_dict: Optional[Dict[str, str]]) -> Optional[List[st
     return [f"{k}:{v}" for k, v in tag_dict.items()]
 
 
-def operation_time(operation: Callable):
+@contextlib.contextmanager
+def operation_time():
     """
-      Decorator that adds execution time measurement to a provided operation.
+      Returns execution time for the context block.
 
     :param operation: A method to measure execution time for.
     :return: A tuple of (method_execution_time_ns, method_result)
     """
-    @wraps(operation)
-    def wrapper(*args, **kwargs):
-        start = time.monotonic_ns()
-        result = operation(*args, **kwargs)
-        return time.monotonic_ns() - start, result
-
-    return wrapper
+    result = namedtuple('OperationDuration', ['start', 'end', 'elapsed'])
+    try:
+        result.start = time.monotonic_ns()
+        result.end = 0
+        result.elapsed = 0
+        yield result
+    finally:
+        result.end = time.monotonic_ns()
+        result.elapsed = result.end - result.start
+        return result

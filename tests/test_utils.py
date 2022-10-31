@@ -12,11 +12,11 @@ def test_doze(sleep_period: int, doze_interval: int):
 
 
 def test_operation_time():
-    @operation_time
     def custom_method():
         time.sleep(5)
         return {'exit_code': 0}
 
-    run_time, result = custom_method()
+    with operation_time() as ot:
+        result = custom_method()
 
-    assert (run_time // 1e9, result) == (5, {'exit_code': 0})
+    assert (ot.elapsed // 1e9, result) == (5, {'exit_code': 0})
