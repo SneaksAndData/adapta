@@ -2,7 +2,7 @@
 import logging
 from typing import Optional, Dict
 
-from proteus.logs.models import ProteusLogMetadata, LogLevel
+from proteus.logs.models import ProteusLogMetadata
 
 
 class MetadataLogger(logging.Logger):
