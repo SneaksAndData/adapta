@@ -102,6 +102,3 @@ logger = ProteusLogger().add_log_source(
 
 This will add `ProteusLogger` for logging source `my-app` and reconfigure python Logger with name `azure` to use 
 supplied handlers and `ERROR` as minimum log level.
-
- :warning: Do not enable proteus logger for **urllib3** with **DEBUG** level and `DattaDogApiHandler`,
- this could cause overwhelming in `DattaDogApiHandler`.
