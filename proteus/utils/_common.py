@@ -72,12 +72,9 @@ def operation_time():
     :return: A tuple of (method_execution_time_ns, method_result)
     """
     result = namedtuple('OperationDuration', ['start', 'end', 'elapsed'])
-    try:
-        result.start = time.monotonic_ns()
-        result.end = 0
-        result.elapsed = 0
-        yield result
-    finally:
-        result.end = time.monotonic_ns()
-        result.elapsed = result.end - result.start
-        return result
+    result.start = time.monotonic_ns()
+    result.end = 0
+    result.elapsed = 0
+    yield result
+    result.end = time.monotonic_ns()
+    result.elapsed = result.end - result.start
