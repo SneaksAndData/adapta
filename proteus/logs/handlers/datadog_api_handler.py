@@ -125,7 +125,7 @@ class DataDogApiHandler(Handler):
             if rec.exc_info:
                 ex_type, ex_value, _ = rec.exc_info
                 formatted_message.setdefault('error', {
-                    'stack': rec.exc_info,
+                    'stack': "".join(traceback.format_exception(*rec.exc_info, chain=True)).strip("\n"),
                     'message': str(ex_value),
                     'kind': ex_type.__name__
                 })
