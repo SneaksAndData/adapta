@@ -58,6 +58,9 @@ class MetadataLogger(logging.Logger):
 
 
 def from_log_level(log_level: LogLevel) -> int:
+    """
+    Converts proteus log level to logging log level
+    """
     log_method = {
         LogLevel.INFO: logging.INFO,
         LogLevel.WARN: logging.WARN,
