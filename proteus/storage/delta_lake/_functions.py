@@ -4,7 +4,7 @@
 import datetime
 import hashlib
 import time
-from typing import Optional, Union, Iterator, List, Iterable
+from typing import Optional, Union, Iterator, List, Iterable, Tuple
 
 import pandas
 from deltalake import DeltaTable
@@ -26,7 +26,8 @@ def load(  # pylint: disable=R0913
         version: Optional[int] = None,
         row_filter: Optional[Expression] = None,
         columns: Optional[List[str]] = None,
-        batch_size: Optional[int] = None
+        batch_size: Optional[int] = None,
+        partition_filter_expressions: Optional[List[Tuple]] = None
 ) -> Union[DeltaTable, pandas.DataFrame, Iterator[pandas.DataFrame]]:
     """
      Loads Delta Lake table from Azure storage and converts it to a pandas dataframe.
@@ -41,12 +42,21 @@ def load(  # pylint: disable=R0913
 
     :param columns: Optional list of columns to select when reading. Defaults to all columns of not provided.
     :param batch_size: Optional batch size when reading in batches. If not set, whole table will be loaded into memory.
+    :param partition_filter_expressions: Optional partitions filters. Examples:
+       partition_filter_expressions = [("day", "=", "3")]
+       partition_filters = [("day", "in", ["3", "20"])]
+       partition_filters = [("day", "not in", ["3", "20"]), ("year", "=", "2021")]
     :return: A DeltaTable wrapped Rust class, pandas Dataframe or an iterator of pandas Dataframes, for batched reads.
     """
-    pyarrow_ds = DeltaTable(path.to_delta_rs_path(), version=version,
-                            storage_options=proteus_client.connect_storage(path)) \
-        .to_pyarrow_dataset(parquet_read_options=ParquetReadOptions(coerce_int96_timestamp_unit="ms"),
-                            filesystem=proteus_client.get_pyarrow_filesystem(path))
+    pyarrow_ds = DeltaTable(
+        path.to_delta_rs_path(),
+        version=version,
+        storage_options=proteus_client.connect_storage(path)
+    ).to_pyarrow_dataset(
+        partitions=partition_filter_expressions,
+        parquet_read_options=ParquetReadOptions(coerce_int96_timestamp_unit="ms"),
+        filesystem=proteus_client.get_pyarrow_filesystem(path)
+    )
 
     if batch_size:
         batches: Iterator[RecordBatch] = pyarrow_ds.to_batches(filter=row_filter, columns=columns,
