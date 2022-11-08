@@ -23,6 +23,16 @@ def get_client_and_path():
     return client, data_path
 
 
+@pytest.fixture
+def get_client_and_path_partitioned():
+    test_data_path = f"{pathlib.Path(__file__).parent.resolve()}/delta_table_with_partitions"
+
+    client = LocalClient()
+    data_path = LocalPath.from_hdfs_path(f'file://{test_data_path}')
+
+    return client, data_path
+
+
 def test_delta_load(get_client_and_path):
     client, data_path = get_client_and_path
     table: pandas.DataFrame = load(client, data_path)
@@ -51,6 +61,13 @@ def test_column_project(get_client_and_path):
     table = load(client, data_path, columns=["B"])
 
     assert len(table.columns.to_list()) == 1
+
+
+def test_delta_load_with_partitions(get_client_and_path_partitioned):
+    client, data_path = get_client_and_path_partitioned
+    table = load(client, data_path, partition_filter_expressions=[("colP", "=", "yes")])
+
+    assert table['colA'].to_list() == [1, 3]
 
 
 @patch('proteus.storage.cache.KeyValueCache')
