@@ -13,7 +13,7 @@ from logging import Handler, StreamHandler
 from typing import List, Optional, Dict
 
 from proteus.logs.models import LogLevel
-from proteus.logs._internal import MetadataLogger
+from proteus.logs._internal import MetadataLogger, from_log_level
 
 
 class ProteusLogger:
@@ -86,6 +86,11 @@ class ProteusLogger:
 
         return self._loggers[log_source_name or self._default_log_source]
 
+    def __get_metadata_fields(self, kwargs):
+        fields = kwargs
+        fields.update(self._get_fixed_args())
+        return fields
+
     def _get_fixed_args(self) -> Dict:
         fixed_args = {}
         if self._fixed_template:
@@ -122,7 +127,7 @@ class ProteusLogger:
             diagnostics=None,
             stack_info=False,
             exception=None,
-            metadata_fields=kwargs)
+            metadata_fields=self.__get_metadata_fields(kwargs))
 
     def warning(self,
                 template: str,
@@ -149,7 +154,7 @@ class ProteusLogger:
                                  diagnostics=None,
                                  stack_info=False,
                                  exception=exception,
-                                 metadata_fields=kwargs)
+                                 metadata_fields=self.__get_metadata_fields(kwargs))
 
     def error(self,
               template: str,
@@ -176,7 +181,7 @@ class ProteusLogger:
                                  diagnostics=None,
                                  stack_info=False,
                                  exception=exception,
-                                 metadata_fields=kwargs)
+                                 metadata_fields=self.__get_metadata_fields(kwargs))
 
     def debug(self,
               template: str,
@@ -204,19 +209,19 @@ class ProteusLogger:
                                  diagnostics=diagnostics,
                                  stack_info=True,
                                  exception=exception,
-                                 metadata_fields=kwargs)
+                                 metadata_fields=self.__get_metadata_fields(kwargs))
 
     def _print_redirect_state(self, logger, log_level, state, tags):
         template = self._get_template('>> Redirected output {state} <<')
         msg = template.format(**self._get_fixed_args(), state=state)
         logger.log_with_metadata(
-            log_level.value,
+            from_log_level(log_level),
             msg=msg,
             tags=tags,
             diagnostics=None,
             stack_info=None,
             exception=None,
-            metadata_fields=None,
+            metadata_fields=self.__get_metadata_fields({}),
             template=template
         )
 
@@ -224,13 +229,13 @@ class ProteusLogger:
         template = self._get_template('Redirected output: {message}')
         msg = template.format(**self._get_fixed_args(), message=message)
         logger.log_with_metadata(
-            log_level.value,
+            from_log_level(log_level),
             msg=msg,
             tags=tags,
             diagnostics=None,
             stack_info=None,
             exception=None,
-            metadata_fields=None,
+            metadata_fields=self.__get_metadata_fields({}),
             template=template
         )
 

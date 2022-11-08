@@ -2,7 +2,7 @@
 import logging
 from typing import Optional, Dict
 
-from proteus.logs.models import ProteusLogMetadata
+from proteus.logs.models import ProteusLogMetadata, LogLevel
 
 
 class MetadataLogger(logging.Logger):
@@ -55,3 +55,13 @@ class MetadataLogger(logging.Logger):
                   extra={ProteusLogMetadata.__name__: log_metadata},
                   exc_info=exception,
                   stack_info=stack_info)
+
+
+def from_log_level(log_level: LogLevel) -> int:
+    log_method = {
+        LogLevel.INFO: logging.INFO,
+        LogLevel.WARN: logging.WARN,
+        LogLevel.ERROR: logging.ERROR,
+        LogLevel.DEBUG: logging.DEBUG
+    }
+    return log_method[log_level]

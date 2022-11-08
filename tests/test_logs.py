@@ -18,8 +18,6 @@ from pytest_mock import MockerFixture
 from proteus.logs import ProteusLogger
 from proteus.logs.handlers.datadog_api_handler import DataDogApiHandler
 from proteus.logs.models import LogLevel
-from proteus.security.clients import AzureClient
-from proteus.storage.models.azure import AdlsGen2Path
 
 EXPECTED_MESSAGE = 'This a unit test logger 1, Fixed message1 this is a fixed message1, Fixed message2 this is a fixed message2\n'
 
@@ -148,7 +146,7 @@ def test_log_level(mocker: MockerFixture, restore_logger_class):
         'PROTEUS__DD_SITE': 'some-site.dog'
     }
     with patch.dict(os.environ, mock_environment):
-        logger = ProteusLogger()\
+        logger = ProteusLogger() \
             .add_log_source(log_source_name="test",
                             min_log_level=LogLevel.INFO,
                             log_handlers=[DataDogApiHandler()])
@@ -159,3 +157,32 @@ def test_log_level(mocker: MockerFixture, restore_logger_class):
     handler = [handler for handler in requests_log.handlers if isinstance(handler, DataDogApiHandler)][0]
     buffers = [json.loads(msg.message) for msg in handler._buffer]
     assert buffers == [{'template': 'Info message', 'text': 'Info message'}]
+
+
+def test_fixed_template(mocker: MockerFixture, restore_logger_class):
+    mocker.patch('proteus.logs.handlers.datadog_api_handler.DataDogApiHandler._flush', return_value=None)
+
+    mock_environment = {
+        'PROTEUS__DD_API_KEY': 'some-key',
+        'PROTEUS__DD_APP_KEY': 'some-app-key',
+        'PROTEUS__DD_SITE': 'some-site.dog'
+    }
+    with patch.dict(os.environ, mock_environment):
+        logger = ProteusLogger(
+            fixed_template={'running with job id {job_id} on {owner}': {'job_id': 'my_job_id', 'owner': 'owner'}},
+            fixed_template_delimiter='|'
+        ) \
+            .add_log_source(log_source_name="test",
+                            min_log_level=LogLevel.INFO,
+                            log_handlers=[DataDogApiHandler()])
+        logger.debug("Debug message", log_source_name="test")
+        logger.info("Custom template={custom_value}", log_source_name="test", custom_value="my-value")
+
+    requests_log = logging.getLogger("test")
+    handler = [handler for handler in requests_log.handlers if isinstance(handler, DataDogApiHandler)][0]
+    buffers = [json.loads(msg.message) for msg in handler._buffer]
+    assert buffers == [{'template': 'Custom template={custom_value}|running with job id {job_id} on {owner}',
+                        'custom_value': 'my-value',
+                        'job_id': 'my_job_id',
+                        'owner': 'owner',
+                        'text': 'Custom template=my-value|running with job id my_job_id on owner'}]
