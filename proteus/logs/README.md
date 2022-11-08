@@ -82,21 +82,33 @@ of `DataDogApiHandler()`.
 
 ### Overriding existing loggers
 This module supports integration with existing logger, you can use it as following:
+
 ```python
+import sys
+from logging import StreamHandler, Formatter
 from proteus.logs import ProteusLogger
 from proteus.logs.models import LogLevel
 from proteus.logs.handlers.datadog_api_handler import DataDogApiHandler
-from proteus.logs.handlers.safe_stream_handler import StreamHandler
+
+# Create stream handler for loggers
+stream_handler = StreamHandler(sys.stdout)
+
+# Set up format for stdout logs
+formatter = Formatter('%(asctime)s - %(threadName)s - %(name)s - %(levelname)s - %(message)s')
+stream_handler.setFormatter(formatter)
+
+# Create stream handler for loggers. Datadog handler use REST api to push log messages, so it do not need a formatter
+datadog_handler = DataDogApiHandler()
 
 logger = ProteusLogger().add_log_source(
     log_source_name="azure",
     min_log_level=LogLevel.ERROR,
-    log_handlers=[StreamHandler(), DataDogApiHandler()]
+    log_handlers=[stream_handler, datadog_handler]
 )\
 .add_log_source(
     log_source_name="my-app",
     min_log_level=LogLevel.INFO,
-    log_handlers=[StreamHandler(), DataDogApiHandler()]
+    log_handlers=[stream_handler, datadog_handler]
 )
 ```
 

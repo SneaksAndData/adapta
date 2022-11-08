@@ -38,6 +38,7 @@ class AzureClient(ProteusClient):
 
     def __init__(self, *, subscription_id: str, default_log_level=logging.ERROR):
         self.subscription_id = subscription_id
+
         logger = logging.getLogger('azure')
         logger.setLevel(default_log_level)
 
