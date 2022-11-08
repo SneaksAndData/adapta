@@ -172,13 +172,12 @@ def test_fixed_template(mocker: MockerFixture, restore_logger_class):
             fixed_template={'running with job id {job_id} on {owner}': {'job_id': 'my_job_id', 'owner': 'owner'}},
             fixed_template_delimiter='|'
         ) \
-            .add_log_source(log_source_name="test",
+            .add_log_source(log_source_name="test_fixed_template",
                             min_log_level=LogLevel.INFO,
                             log_handlers=[DataDogApiHandler()])
-        logger.debug("Debug message", log_source_name="test")
-        logger.info("Custom template={custom_value}", log_source_name="test", custom_value="my-value")
+        logger.info("Custom template={custom_value}", log_source_name="test_fixed_template", custom_value="my-value")
 
-    requests_log = logging.getLogger("test")
+    requests_log = logging.getLogger("test_fixed_template")
     handler = [handler for handler in requests_log.handlers if isinstance(handler, DataDogApiHandler)][0]
     buffers = [json.loads(msg.message) for msg in handler._buffer]
     assert buffers == [{'template': 'Custom template={custom_value}|running with job id {job_id} on {owner}',
