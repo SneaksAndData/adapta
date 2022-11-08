@@ -43,9 +43,11 @@ def load(  # pylint: disable=R0913
     :param columns: Optional list of columns to select when reading. Defaults to all columns of not provided.
     :param batch_size: Optional batch size when reading in batches. If not set, whole table will be loaded into memory.
     :param partition_filter_expressions: Optional partitions filters. Examples:
+
        partition_filter_expressions = [("day", "=", "3")]
-       partition_filters = [("day", "in", ["3", "20"])]
-       partition_filters = [("day", "not in", ["3", "20"]), ("year", "=", "2021")]
+       partition_filter_expressions = [("day", "in", ["3", "20"])]
+       partition_filter_expressions = [("day", "not in", ["3", "20"]), ("year", "=", "2021")]
+
     :return: A DeltaTable wrapped Rust class, pandas Dataframe or an iterator of pandas Dataframes, for batched reads.
     """
     pyarrow_ds = DeltaTable(
