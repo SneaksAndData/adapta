@@ -37,7 +37,7 @@ def session_with_retries(method_list: Optional[List[str]] = None, request_timeou
     """
     retry_strategy = Retry(
         total=4,
-        status_forcelist=[429, 500, 502, 503, 504],
+        status_forcelist=[400, 429, 500, 502, 503, 504],
         method_whitelist=method_list or ["HEAD", "GET", "OPTIONS", "TRACE"],
         backoff_factor=1
     )
