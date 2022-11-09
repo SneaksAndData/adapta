@@ -1,5 +1,8 @@
 """Common utility functions. All of these are imported into __init__.py"""
+import contextlib
 import time
+from collections import namedtuple
+from functools import partial
 from typing import List, Optional, Dict
 
 import requests
@@ -27,14 +30,14 @@ def doze(seconds: int, doze_period_ms: int = 100) -> int:
     return time.monotonic_ns() - start
 
 
-def session_with_retries(method_list: Optional[List[str]] = None):
+def session_with_retries(method_list: Optional[List[str]] = None, request_timeout: Optional[float] = 300):
     """
      Provisions http session manager with retries.
     :return:
     """
     retry_strategy = Retry(
         total=4,
-        status_forcelist=[429, 500, 502, 503, 504],
+        status_forcelist=[400, 429, 500, 502, 503, 504],
         method_whitelist=method_list or ["HEAD", "GET", "OPTIONS", "TRACE"],
         backoff_factor=1
     )
@@ -42,6 +45,8 @@ def session_with_retries(method_list: Optional[List[str]] = None):
     http = requests.Session()
     http.mount("https://", adapter)
     http.mount("http://", adapter)
+    http.request = partial(http.request, timeout=request_timeout)
+    http.send = partial(http.send, timeout=request_timeout)
 
     return http
 
@@ -56,3 +61,20 @@ def convert_datadog_tags(tag_dict: Optional[Dict[str, str]]) -> Optional[List[st
     if not tag_dict:
         return None
     return [f"{k}:{v}" for k, v in tag_dict.items()]
+
+
+@contextlib.contextmanager
+def operation_time():
+    """
+      Returns execution time for the context block.
+
+    :param operation: A method to measure execution time for.
+    :return: A tuple of (method_execution_time_ns, method_result)
+    """
+    result = namedtuple('OperationDuration', ['start', 'end', 'elapsed'])
+    result.start = time.monotonic_ns()
+    result.end = 0
+    result.elapsed = 0
+    yield result
+    result.end = time.monotonic_ns()
+    result.elapsed = result.end - result.start

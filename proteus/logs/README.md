@@ -79,3 +79,38 @@ to duplicated messages in datadog. If you want to print log messages to stdout, 
 
 Remember to set `PROTEUS__DD_API_KEY`, `PROTEUS__DD_APP_KEY` and `PROTEUS__DD_SITE` environment variables before creating an instance
 of `DataDogApiHandler()`.
+
+### Overriding existing loggers
+This module supports integration with existing logger, you can use it as following:
+
+```python
+import sys
+from logging import StreamHandler, Formatter
+from proteus.logs import ProteusLogger
+from proteus.logs.models import LogLevel
+from proteus.logs.handlers.datadog_api_handler import DataDogApiHandler
+
+# Create stream handler for loggers
+stream_handler = StreamHandler(sys.stdout)
+
+# Set up format for stdout logs
+formatter = Formatter('%(asctime)s - %(threadName)s - %(name)s - %(levelname)s - %(message)s')
+stream_handler.setFormatter(formatter)
+
+# Create stream handler for loggers. Datadog handler use REST api to push log messages, so it do not need a formatter
+datadog_handler = DataDogApiHandler()
+
+logger = ProteusLogger().add_log_source(
+    log_source_name="azure",
+    min_log_level=LogLevel.ERROR,
+    log_handlers=[stream_handler, datadog_handler]
+)\
+.add_log_source(
+    log_source_name="my-app",
+    min_log_level=LogLevel.INFO,
+    log_handlers=[stream_handler, datadog_handler]
+)
+```
+
+This will add `ProteusLogger` for logging source `my-app` and reconfigure python Logger with name `azure` to use 
+supplied handlers and `ERROR` as minimum log level.
