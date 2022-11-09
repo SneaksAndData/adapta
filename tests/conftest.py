@@ -1,3 +1,5 @@
+import logging
+
 import pytest
 
 from proteus.logs.models import LogLevel
@@ -14,3 +16,11 @@ def sqlite():
         logger=proteus_logger,
         database_type=DatabaseType.SQLITE_ODBC,
     )
+
+
+@pytest.fixture
+def restore_logger_class():
+    _class = logging.getLoggerClass()
+    yield
+    pass
+    logging.setLoggerClass(_class)

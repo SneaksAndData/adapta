@@ -2,12 +2,14 @@
   Logging handler for DataDog.
 """
 import json
+import logging
 import os
 import signal
 import socket
 import platform
+import traceback
 from logging import LogRecord, Handler
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Any
 
 import kubernetes.config.kube_config
 from datadog_api_client import Configuration, ApiClient
@@ -18,6 +20,7 @@ from datadog_api_client.v2.model.http_log_item import HTTPLogItem
 from kubernetes import config
 from kubernetes.config import ConfigException
 
+from proteus.logs.models import ProteusLogMetadata
 from proteus.utils import convert_datadog_tags
 
 
@@ -83,45 +86,56 @@ class DataDogApiHandler(Handler):
 
         :return:
         """
-        result = self._logs_api.submit_log(
-            body=HTTPLog(value=self._buffer),
-            content_encoding='gzip',
-            async_req=self._async_handler
-        )
-        if self._async_handler:
-            result = result.get()
+        logger = logging.getLogger("urllib3")
+        old_level = logger.getEffectiveLevel()
+        logger.setLevel(logging.INFO)
+        try:
+            result = self._logs_api.submit_log(
+                body=HTTPLog(value=self._buffer),
+                content_encoding='gzip',
+                async_req=self._async_handler
+            )
+            if self._async_handler:
+                result = result.get()
 
-        if self._debug:
-            print(f"DataDog response: {result}")
+            if self._debug:
+                print(f"DataDog response: {result}")
+        finally:
+            logger.setLevel(old_level)
 
         self._buffer = []
 
     def emit(self, record: LogRecord) -> None:
         def convert_record(rec: LogRecord) -> HTTPLogItem:
 
-            record_json = json.loads(self.format(rec))
-            record_message = json.loads(record_json['message'])
-
-            tags: Dict[str, str] = record_message.get('tags', {})
-
-            if len(tags) > 0:
-                record_message.pop('tags')
-
-            tags.update(self._fixed_tags)
-
+            metadata: Optional[ProteusLogMetadata] = rec.__dict__.get(ProteusLogMetadata.__name__)
+            tags = {}
+            formatted_message: Dict[str, Any] = {
+                "text": rec.getMessage()
+            }
+            if metadata:
+                if metadata.tags:
+                    tags.update(metadata.tags)
+                for key, value in metadata.fields.items():
+                    formatted_message[key] = value
+                if metadata.template:
+                    formatted_message["template"] = metadata.template
+                if metadata.diagnostics:
+                    formatted_message["diagnostics"] = metadata.diagnostics
             if rec.exc_info:
-                ex_type, _, _ = rec.exc_info
-                record_message.setdefault('error', {
-                    'stack': record_json['exc_info'],
-                    'message': rec.exc_text,
+                ex_type, ex_value, _ = rec.exc_info
+                formatted_message.setdefault('error', {
+                    'stack': "".join(traceback.format_exception(*rec.exc_info, chain=True)).strip("\n"),
+                    'message': str(ex_value),
                     'kind': ex_type.__name__
                 })
+            tags.update(self._fixed_tags)
 
             return HTTPLogItem(
                 ddsource=rec.name,
                 ddtags=','.join(convert_datadog_tags(tags)),
                 hostname=socket.gethostname(),
-                message=json.dumps(record_message),
+                message=json.dumps(formatted_message),
                 status=rec.levelname
             )
 
