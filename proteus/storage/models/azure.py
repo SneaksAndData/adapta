@@ -28,6 +28,20 @@ class AdlsGen2Path(DataPath):
             path=hdfs_path.split('.dfs.core.windows.net')[1][1:]
         )
 
+    @classmethod
+    def from_url(cls, url: str) -> "DataPath":
+        assert url.startswith('https://') and ('dfs.core.windows.net' in url or 'blob.core.windows.net'
+            in url), 'Invalid URL supplied. Please use the following format: https://<accountname>.dfs.core.windows.net or https://<accountname>.blob.core.windows.net'
+
+        return cls(
+            account=url.split('://')[1].split('.')[0],
+            container=url.split('.windows.net/')[1].split('/')[0],
+            path='/'.join(url.split('.windows.net/')[1].split('/')[1:]),
+        )
+
+    def to_url(self):
+        return f'https://{self.account}.dfs.core.windows.net/{self.container}/{self.path}'
+
     def _check_path(self):
         assert not self.path.startswith('/'), 'Path should not start with /'
 
@@ -60,6 +74,20 @@ class WasbPath(DataPath):
             container=hdfs_path.split('@')[0].split('//')[1],
             path=hdfs_path.split('.dfs.core.windows.net')[1][1:]
         )
+
+    @classmethod
+    def from_url(cls, url: str) -> "DataPath":
+        assert url.startswith('https://') and ('dfs.core.windows.net' in url or 'blob.core.windows.net'
+            in url), 'Invalid URL supplied. Please use the following format: https://<accountname>.dfs.core.windows.net or https://<accountname>.blob.core.windows.net'
+
+        return cls(
+            account=url.split('://')[1].split('.')[0],
+            container=url.split('.windows.net/')[1].split('/')[0],
+            path='/'.join(url.split('.windows.net/')[1].split('/')[1:]),
+        )
+
+    def to_url(self):
+        return f'https://{self.account}.dfs.core.windows.net/{self.container}/{self.path}'
 
     def _check_path(self):
         assert not self.path.startswith('/'), 'Path should not start with /'

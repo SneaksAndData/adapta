@@ -31,6 +31,22 @@ class DataPath(ABC):
          :return:
         """
 
+    @classmethod
+    @abstractmethod
+    def from_url(cls, url: str) -> "DataPath":
+        """
+           Converts URL  to this class.
+         :param url: https://...
+         :return:
+        """
+
+    @abstractmethod
+    def to_url(self) -> "DataPath":
+        """
+           Returns valid URL from this class.
+         :return:
+        """
+
     @abstractmethod
     def to_hdfs_path(self) -> str:
         """
