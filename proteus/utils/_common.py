@@ -1,9 +1,10 @@
 """Common utility functions. All of these are imported into __init__.py"""
 import contextlib
+import math
 import time
 from collections import namedtuple
 from functools import partial
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Any
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -78,3 +79,15 @@ def operation_time():
     yield result
     result.end = time.monotonic_ns()
     result.elapsed = result.end - result.start
+
+
+def chunk_list(value: List[Any], num_chunks: int) -> List[List[Any]]:
+    """
+     Chunks the provided list into a specified number of chunks. This method is thread-safe.
+
+    :param value: A list to chunk.
+    :param num_chunks: Number of chunks to generate.
+    :return: A list that has num_chunks lists in it. Total length equals length of the original list.
+    """
+    chunk_size = math.ceil(len(value) / num_chunks)
+    return [value[el_pos:el_pos + chunk_size] for el_pos in range(0, len(value), chunk_size)]
