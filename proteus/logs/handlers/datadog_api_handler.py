@@ -117,7 +117,7 @@ class DataDogApiHandler(Handler):
                 async_req=self._async_handler
             )
             if self._async_handler:
-                return result.get()
+                result.get()
 
             if self._debug:
                 print(f"DataDog response: {result}")
