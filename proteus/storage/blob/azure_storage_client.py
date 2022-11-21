@@ -90,7 +90,7 @@ class AzureStorageClient(StorageClient):
             blob_path:
             DataPath,
             serialization_format: Type[SerializationFormat[T]],
-            filter_predicate: Optional[Callable[[...], bool]] = None
+            filter_predicate: Optional[Callable[[BlobProperties], bool]] = None
     ) -> Iterator[T]:
         blobs_on_path, azure_path = self._list_blobs(blob_path)
 
@@ -108,7 +108,7 @@ class AzureStorageClient(StorageClient):
             blob_path: DataPath,
             local_path: str,
             threads: Optional[int] = None,
-            filter_predicate: Optional[Callable[[...], bool]] = None
+            filter_predicate: Optional[Callable[[BlobProperties], bool]] = None
     ) -> None:
         def download_blob(blob: BlobProperties, container: str) -> None:
             write_path = os.path.join(local_path, blob.name)
@@ -154,7 +154,7 @@ class AzureStorageClient(StorageClient):
     def list_blobs(
             self,
             blob_path: DataPath,
-            filter_predicate: Optional[Callable[[...], bool]] = lambda blob: blob.size != 0  # Skip folders
+            filter_predicate: Optional[Callable[[BlobProperties], bool]] = lambda blob: blob.size != 0  # Skip folders
     ) -> Iterator[DataPath]:
         blobs_on_path, azure_path = self._list_blobs(blob_path)
 

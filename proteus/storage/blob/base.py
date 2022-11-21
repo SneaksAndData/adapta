@@ -119,5 +119,7 @@ class StorageClient(ABC):
         :param threads: Optional number of threads to use when downloading.
                         If not provided, files will be downloaded sequentially.
         :param filter_predicate: Take only blobs that match a supplied predicate.
+                 This function accepts an object that describes a cloud blob (BlobProperties for Azure, S3Object for AWS etc.).
+                 Client implementations will define the exact parameter type to use.
         :return:
         """
