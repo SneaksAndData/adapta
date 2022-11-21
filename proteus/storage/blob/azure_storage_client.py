@@ -3,9 +3,8 @@
 """
 import os.path
 from datetime import datetime, timedelta
-from itertools import zip_longest
 from threading import Thread
-from typing import Union, Optional, Dict, Type, TypeVar, Iterator, List
+from typing import Union, Optional, Dict, Type, TypeVar, Iterator, List, Callable
 
 from azure.core.paging import ItemPaged
 from azure.storage.blob import BlobServiceClient, BlobSasPermissions, BlobClient, generate_blob_sas, BlobProperties, \
@@ -16,6 +15,7 @@ from proteus.security.clients import AzureClient
 from proteus.storage.models.azure import AdlsGen2Path, WasbPath, cast_path
 from proteus.storage.models.base import DataPath
 from proteus.storage.models.format import SerializationFormat
+from proteus.utils import chunk_list
 
 T = TypeVar('T')  # pylint: disable=C0103
 
@@ -85,18 +85,31 @@ class AzureStorageClient(StorageClient):
         return self._blob_service_client.get_container_client(
             azure_path.container).list_blobs(name_starts_with=blob_path.path), azure_path
 
-    def read_blobs(self, blob_path: DataPath, serialization_format: Type[SerializationFormat[T]]) -> Iterator[T]:
+    def read_blobs(
+            self,
+            blob_path:
+            DataPath,
+            serialization_format: Type[SerializationFormat[T]],
+            filter_predicate: Optional[Callable[[BlobProperties], bool]] = None
+    ) -> Iterator[T]:
         blobs_on_path, azure_path = self._list_blobs(blob_path)
 
         for blob in blobs_on_path:
-            blob_data: bytes = self._blob_service_client.get_blob_client(
-                container=azure_path.container,
-                blob=blob.name,
-            ).download_blob().readall()
+            if (filter_predicate or (lambda _: True))(blob):
+                blob_data: bytes = self._blob_service_client.get_blob_client(
+                    container=azure_path.container,
+                    blob=blob.name,
+                ).download_blob().readall()
 
-            yield serialization_format().deserialize(blob_data)
+                yield serialization_format().deserialize(blob_data)
 
-    def download_blobs(self, blob_path: DataPath, local_path: str, threads: Optional[int] = None) -> None:
+    def download_blobs(
+            self,
+            blob_path: DataPath,
+            local_path: str,
+            threads: Optional[int] = None,
+            filter_predicate: Optional[Callable[[BlobProperties], bool]] = None
+    ) -> None:
         def download_blob(blob: BlobProperties, container: str) -> None:
             write_path = os.path.join(local_path, blob.name)
             if blob.size == 0:
@@ -118,9 +131,10 @@ class AzureStorageClient(StorageClient):
 
         if not threads:
             for blob_on_path in blobs_on_path:
-                download_blob(blob_on_path, azure_path.container)
+                if (filter_predicate or (lambda _: True))(blob_on_path):
+                    download_blob(blob_on_path, azure_path.container)
         else:
-            blobs = list(blobs_on_path)
+            blobs = [blob for blob in list(blobs_on_path) if (filter_predicate or (lambda _: True))(blob)]
             blob_dirs = [blob_dir for blob_dir in blobs if blob_dir.size == 0]
             blob_files = [blob_dir for blob_dir in blobs if blob_dir.size > 0]
 
@@ -129,8 +143,7 @@ class AzureStorageClient(StorageClient):
             for blob_dir in blob_dirs:
                 os.makedirs(os.path.join(local_path, blob_dir.name), exist_ok=True)
 
-            blob_lists: List[List[BlobProperties]] = list(
-                zip_longest(*[iter(blob_files)] * threads, fillvalue=None))
+            blob_lists: List[List[BlobProperties]] = chunk_list(blob_files, threads)
             thread_list = [Thread(target=download_blob_list, args=(blob_list, azure_path.container)) for blob_list in
                            blob_lists]
             for download_thread in thread_list:
@@ -141,13 +154,13 @@ class AzureStorageClient(StorageClient):
     def list_blobs(
             self,
             blob_path: DataPath,
+            filter_predicate: Optional[Callable[[BlobProperties], bool]] = lambda blob: blob.size != 0  # Skip folders
     ) -> Iterator[DataPath]:
         blobs_on_path, azure_path = self._list_blobs(blob_path)
 
         for blob in blobs_on_path:
-            if blob.size == 0:  # Skip folders
-                continue
-            yield AdlsGen2Path(account=azure_path.account, container=azure_path.container, path=blob.name)
+            if (filter_predicate or (lambda _: True))(blob):
+                yield AdlsGen2Path(account=azure_path.account, container=azure_path.container, path=blob.name)
 
     def delete_blob(
             self,
