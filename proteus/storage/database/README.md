@@ -60,20 +60,21 @@ import pandas
 from proteus.storage.database.trino_sql import TrinoClient
 
 # use Basic Auth
-# os.environ['PROTEUS__TRINO_USERNAME'] = 'foo'
-# os.environ['PROTEUS__TRINO_PASSWORD'] = 'bar'
+os.environ['PROTEUS__TRINO_USERNAME'] = 'foo'
+os.environ['PROTEUS__TRINO_PASSWORD'] = 'bar'
+tc_basic_auth = TrinoClient(host="trino.production.sneaksanddata.com", catalog="trinodatalake")
 
 # use OAuth2 (interactive browser)
 os.environ['PROTEUS__TRINO_OAUTH2_USERNAME'] = 'ME@ecco.com'
+tc_oauth2 = TrinoClient(host="trino.production.sneaksanddata.com", catalog="trinodatalake")
 
-# query a table and print results
-with TrinoClient(host="trino.production.sneaksanddata.com", catalog="trinodatalake") as tc:
+# query a table using Basic auth and print results
+with tc_basic_auth as tc:
     for frame in tc.query('select * from bronze.tcurr limit 1'):
         print(frame)
 
-# aggregate results into a single dataframe
-
-with TrinoClient(host="trino.production.sneaksanddata.com", catalog="trinodatalake") as tc:
+# query a table using OAuth2 aggregate results into a single dataframe
+with tc_oauth2 as tc:
     result = pandas.concat(tc.query('select * from bronze.tcurr limit 1'))
     print(result)
 ```
