@@ -3,7 +3,7 @@
 """
 
 import os
-from typing import Optional, Iterator
+from typing import Optional, Iterator, Tuple
 
 import pandas
 import sqlalchemy.engine
@@ -27,7 +27,7 @@ class TrinoClient:
             catalog: str,
             port: Optional[int] = 443,
             oauth2_username: Optional[str] = None,
-            credentials_provider: Optional[(str, SecretStorageClient)] = None,
+            credentials_provider: Optional[Tuple[str, SecretStorageClient]] = None,
             logger: ProteusLogger = ProteusLogger().add_log_source(
                 log_source_name='proteus-trino-client',
                 min_log_level=LogLevel.INFO,
