@@ -18,6 +18,8 @@ from datadog_api_client.v2.api.logs_api import LogsApi
 from datadog_api_client.v2.model.http_log import HTTPLog
 from datadog_api_client.v2.model.http_log_item import HTTPLogItem
 
+from urllib3.exceptions import HTTPError
+
 from kubernetes import config
 from kubernetes.config import ConfigException
 
@@ -106,7 +108,8 @@ class DataDogApiHandler(Handler):
 
         @backoff.on_exception(
             wait_gen=backoff.expo,
-            exception=(ConnectionResetError, ConnectionRefusedError, ConnectionAbortedError, ConnectionError),
+            exception=(ConnectionResetError, ConnectionRefusedError, ConnectionAbortedError, ConnectionError,
+                       HTTPError),
             max_time=self._max_flush_retry_time,
             raise_on_giveup=self._ignore_flush_failure
         )
