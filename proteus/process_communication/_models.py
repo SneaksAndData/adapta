@@ -1,17 +1,19 @@
 """
   Models used for inter-process communication in data processing applications.
 """
-
+import re
 from dataclasses import dataclass
-from typing import Optional, List
+from typing import Optional, List, Iterable
 
 from proteus.storage.models.base import DataPath
 from proteus.storage.models.azure import AdlsGen2Path, WasbPath
 from proteus.storage.models.local import LocalPath
 from proteus.storage.models.hive import HivePath
+from proteus.storage.models.format import SerializationFormat, DataFrameParquetSerializationFormat, \
+    DataFrameCsvSerializationFormat, DictJsonSerializationFormat, DataFrameJsonSerializationFormat
 
 
-@dataclass
+@dataclass(frozen=True)
 class DataSocket:
     """
       Defines an input or an output of a data processing application.
@@ -19,8 +21,16 @@ class DataSocket:
 
     # name of a Socket
     alias: str
+
+    # path to data (read-in, write-out)
     data_path: str
+
+    # format of the data (read-in, write-out)
     data_format: str
+
+    def __post_init__(self):
+        assert self.alias and self.data_path and self.data_format, \
+            'All fields must have a value provided to instantiate a DataSocket.'
 
     def parse_data_path(
             self,
@@ -41,7 +51,30 @@ class DataSocket:
 
         return None
 
-    # maybe parse serialization format too
+    def parse_serialization_format(
+            self,
+            candidates: List[SerializationFormat] = (
+                    DataFrameParquetSerializationFormat,
+                    DataFrameCsvSerializationFormat,
+                    DictJsonSerializationFormat,
+                    DataFrameJsonSerializationFormat
+            )
+    ) -> Iterable[SerializationFormat]:
+        """
+         Tries to find one or more matching SerializationFormat for this socket.
+
+        :param candidates: Candidate formats.
+        :return:
+        """
+        for candidate in candidates:
+            candidate_name = candidate.__name__[0].lower() + re.sub(
+                r"[A-Z]",
+                lambda matched: '_' + matched.group(0).lower(),
+                candidate.__name__[1:]
+            )
+
+            if f"_{self.data_format}_" in candidate_name:
+                yield candidate
 
     def serialize(self) -> str:
         """
