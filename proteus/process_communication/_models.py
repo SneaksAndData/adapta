@@ -5,6 +5,8 @@ import re
 from dataclasses import dataclass
 from typing import Optional, List, Iterable
 
+from dataclasses_json import DataClassJsonMixin
+
 from proteus.storage.models.base import DataPath
 from proteus.storage.models.azure import AdlsGen2Path, WasbPath
 from proteus.storage.models.local import LocalPath
@@ -14,7 +16,7 @@ from proteus.storage.models.format import SerializationFormat, DataFrameParquetS
 
 
 @dataclass(frozen=True)
-class DataSocket:
+class DataSocket(DataClassJsonMixin):
     """
       Defines an input or an output of a data processing application.
     """
@@ -28,13 +30,16 @@ class DataSocket:
     # format of the data (read-in, write-out)
     data_format: str
 
+    # optional partitions that exist in the data (read-in, write-out)
+    data_partitions: Optional[List[str]] = None
+
     def __post_init__(self):
         assert self.alias and self.data_path and self.data_format, \
-            'All fields must have a value provided to instantiate a DataSocket.'
+            'Fields alias, data_path and data_format must have a value provided to instantiate a DataSocket.'
 
     def parse_data_path(
             self,
-            candidates: List[DataPath] = (AdlsGen2Path, LocalPath, HivePath, WasbPath)
+            candidates: Iterable[DataPath] = (AdlsGen2Path, LocalPath, HivePath, WasbPath)
     ) -> Optional[DataPath]:
         """
           Attempts to convert this socket's data path to one of the known DataPath types.
@@ -53,7 +58,7 @@ class DataSocket:
 
     def parse_serialization_format(
             self,
-            candidates: List[SerializationFormat] = (
+            candidates: Iterable[SerializationFormat] = (
                     DataFrameParquetSerializationFormat,
                     DataFrameCsvSerializationFormat,
                     DictJsonSerializationFormat,
