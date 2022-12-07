@@ -46,7 +46,7 @@ class DataSocket:
         for candidate in candidates:
             try:
                 return candidate.from_hdfs_path(self.data_path)
-            except:
+            except:  # pylint: disable=W0702
                 continue
 
         return None
