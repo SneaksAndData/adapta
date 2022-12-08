@@ -1,7 +1,6 @@
 """
   Models used for inter-process communication in data processing applications.
 """
-import re
 from dataclasses import dataclass
 from typing import Optional, List, Iterable
 
