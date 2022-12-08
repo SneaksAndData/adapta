@@ -1,4 +1,5 @@
-from typing import Optional, Iterable, Union, Dict
+from contextlib import nullcontext as does_not_raise, AbstractContextManager
+from typing import Optional, Union, Dict
 
 import pytest
 
@@ -6,29 +7,34 @@ from proteus.process_communication import DataSocket
 from proteus.storage.models.azure import AdlsGen2Path
 from proteus.storage.models.base import DataPath
 from proteus.storage.models.local import LocalPath
-from proteus.storage.models.format import SerializationFormat, DataFrameCsvSerializationFormat, \
-    DictJsonSerializationFormat, DataFrameJsonSerializationFormat
 
 
 @pytest.mark.parametrize(
-    'alias,data_path,data_format,expected_ser',
+    'alias,data_path,data_format,expectation_handler',
     [
-        ("test", "file://some-folder/here", "jpg", "test|file://some-folder/here|jpg"),
-        ("", "file://some-folder/here", "jpg", None),
-        (None, "file://some-folder/here", "", None),
+        ("test", "file://some-folder/here", "jpg", does_not_raise("test|file://some-folder/here|jpg")),
+        ("", "file://some-folder/here", "jpg", pytest.raises(AssertionError)),
+        (None, "file://some-folder/here", "", pytest.raises(AssertionError)),
     ]
 )
-def test_data_socket_serialize(alias: str, data_path: str, data_format: str, expected_ser: Optional[str]):
-    try:
+def test_data_socket_serialize(alias: str, data_path: str, data_format: str,
+                               expectation_handler: AbstractContextManager):
+    """
+      DataSocket must instantiate and `serialize()` itself correctly, given correct input.
+
+    :param alias: Alias for the socket.
+    :param data_path: Data path for the socket.
+    :param data_format: Data format represented by the socket.
+    :param expectation_handler: Test expectation handler.
+    :return:
+    """
+    with expectation_handler:
         test_socket = DataSocket(alias, data_path, data_format)
-        assert test_socket.serialize() == expected_ser
-    except AssertionError:
-        if expected_ser:
-            raise
+        assert test_socket.serialize() == expectation_handler.enter_result
 
 
 @pytest.mark.parametrize(
-    'value,expected_deser',
+    'value,expectation_handler',
     [
         (
                 {
@@ -36,42 +42,84 @@ def test_data_socket_serialize(alias: str, data_path: str, data_format: str, exp
                     "data_path": "abfss://some-data@azureaccount.dfs.core.windows.net/some_folder/some_table",
                     "data_format": "delta"
                 },
-                DataSocket(
+                does_not_raise(DataSocket(
                     "test",
                     "abfss://some-data@azureaccount.dfs.core.windows.net/some_folder/some_table",
                     "delta"
-                )
+                ))
         ),
         (
                 '{"alias": "test","data_path": "abfss://some-data@azureaccount.dfs.core.windows.net/some_folder/some_table","data_format": "delta"}',
-                DataSocket(
+                does_not_raise(DataSocket(
                     "test",
                     "abfss://some-data@azureaccount.dfs.core.windows.net/some_folder/some_table",
                     "delta"
-                )
+                ))
+        ),
+        (
+                {
+                    "alias": "test",
+                    "data_path": "abfss://some-data@azureaccount.dfs.core.windows.net/some_folder/some_table",
+                    "data_format": "delta",
+                    "data_partitions": ["colA", "colB"]
+                },
+                does_not_raise(DataSocket(
+                    "test",
+                    "abfss://some-data@azureaccount.dfs.core.windows.net/some_folder/some_table",
+                    "delta",
+                    ["colA", "colB"]
+                ))
+        ),
+        (
+                '{"alias": "test","data_path": "abfss://some-data@azureaccount.dfs.core.windows.net/some_folder/some_table","data_format": "delta","data_partitions":[\"colA\",\"colB\"]}',
+                does_not_raise(DataSocket(
+                    "test",
+                    "abfss://some-data@azureaccount.dfs.core.windows.net/some_folder/some_table",
+                    "delta",
+                    ["colA", "colB"]
+                ))
+        ),
+        (
+                {
+                    "alias": "",
+                    "data_path": "abfss://some-data@azureaccount.dfs.core.windows.net/some_folder/some_table",
+                    "data_format": "delta"
+                },
+                pytest.raises(AssertionError)
         )
     ]
 )
-def test_socket_from_json(value: Union[str, Dict], expected_deser: Optional[DataSocket]):
-    test_socket = DataSocket.from_json(value) if type(value) is str else DataSocket.from_dict(value)
+def test_socket_from_json(value: Union[str, Dict], expectation_handler: AbstractContextManager):
+    """
+      DataSocket must deserialize from json text and from dict correctly. Invalid values must throw an assertion error.
 
-    assert test_socket == expected_deser
+    :param value: Dict or json value to instantiate a DataSocket from.
+    :param expectation_handler: Test expectation handler.
+    :return:
+    """
+    with expectation_handler:
+        test_socket = DataSocket.from_json(value) if type(value) is str else DataSocket.from_dict(value)
+        assert test_socket == expectation_handler.enter_result
 
 
 @pytest.mark.parametrize(
-    'value,expected_deser',
+    'value,expectation_handler',
     [
-        ("test|file://some-folder/here|jpg", DataSocket("test", "file://some-folder/here", "jpg")),
-        ("test|file://some-folder/here|", None),
+        ("test|file://some-folder/here|jpg", does_not_raise(DataSocket("test", "file://some-folder/here", "jpg"))),
+        ("test|file://some-folder/here|", pytest.raises(AssertionError)),
     ]
 )
-def test_data_socket_deserialize(value: str, expected_deser: Optional[DataSocket]):
-    try:
+def test_data_socket_deserialize(value: str, expectation_handler: AbstractContextManager):
+    """
+     DataSocket must deserialize from a |-delimited string value correctly and throw an assertion error if missing any required attributes.
+
+    :param value: A value to deserialize as a DataSocket
+    :param expectation_handler: Test expectation handler.
+    :return:
+    """
+    with expectation_handler:
         test_socket = DataSocket.deserialize(value)
-        assert test_socket == expected_deser
-    except AssertionError:
-        if expected_deser:
-            raise
+        assert test_socket == expectation_handler.enter_result
 
 
 @pytest.mark.parametrize(
@@ -84,6 +132,15 @@ def test_data_socket_deserialize(value: str, expected_deser: Optional[DataSocket
     ]
 )
 def test_path_parse(alias: str, data_path: str, data_format: str, expected_path: Optional[DataPath]):
+    """
+      DataSocket must parse data_path to one of the supported paths or return None if a given path format is unknown.
+
+    :param alias: Alias for the socket.
+    :param data_path: Data path for the socket.
+    :param data_format: Data format represented by the socket.
+    :param expected_path: Instantiated `DataPath` object, if a given format is supported.
+    :return:
+    """
     test_socket = DataSocket(alias, data_path, data_format)
 
     assert test_socket.parse_data_path() == expected_path

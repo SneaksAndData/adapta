@@ -41,7 +41,8 @@ class DataSocket(DataClassJsonMixin):
         """
           Attempts to convert this socket's data path to one of the known DataPath types.
 
-        :param candidates: Conversion candidates.
+        :param candidates: Conversion candidate classes for `DataPath`. Default to all currently supported `DataPath` implementations.
+          If a user has their own `DataPath` implementations, those can be supplied instead for convenience.
 
         :return:
         """
