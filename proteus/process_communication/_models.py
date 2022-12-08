@@ -69,7 +69,7 @@ class DataSocket(DataClassJsonMixin):
 
     @staticmethod
     def find(sockets: List['DataSocket'], alias: str) -> 'DataSocket':
-        """Fetches a job socket from list of sockets.
+        """Fetches a data socket from a list of sockets.
         :param sockets: List of sockets
         :param alias: Alias to look up
 
@@ -78,7 +78,7 @@ class DataSocket(DataClassJsonMixin):
         socket = [s for s in sockets if s.alias == alias]
 
         if len(socket) > 1:
-            raise ValueError(f'Multiple job sockets exist with alias {alias}')
+            raise ValueError(f'Multiple data sockets exist with alias {alias}')
         if len(socket) == 0:
-            raise ValueError(f'No job sockets exist with alias {alias}')
+            raise ValueError(f'No data sockets exist with alias {alias}')
         return socket[0]
