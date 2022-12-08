@@ -56,31 +56,6 @@ class DataSocket(DataClassJsonMixin):
 
         return None
 
-    def parse_serialization_format(
-            self,
-            candidates: Iterable[SerializationFormat] = (
-                    DataFrameParquetSerializationFormat,
-                    DataFrameCsvSerializationFormat,
-                    DictJsonSerializationFormat,
-                    DataFrameJsonSerializationFormat
-            )
-    ) -> Iterable[SerializationFormat]:
-        """
-         Tries to find one or more matching SerializationFormat for this socket.
-
-        :param candidates: Candidate formats.
-        :return:
-        """
-        for candidate in candidates:
-            candidate_name = candidate.__name__[0].lower() + re.sub(
-                r"[A-Z]",
-                lambda matched: '_' + matched.group(0).lower(),
-                candidate.__name__[1:]
-            )
-
-            if f"_{self.data_format}_" in candidate_name:
-                yield candidate
-
     def serialize(self) -> str:
         """
          Serializes to a |-delimited string
