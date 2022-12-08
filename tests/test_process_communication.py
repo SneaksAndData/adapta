@@ -55,17 +55,3 @@ def test_path_parse(alias: str, data_path: str, data_format: str, expected_path:
     test_socket = DataSocket(alias, data_path, data_format)
 
     assert test_socket.parse_data_path() == expected_path
-
-
-@pytest.mark.parametrize(
-    'alias,data_path,data_format,expected_formats',
-    [
-        ("test", "file://some-folder/file", "csv", [DataFrameCsvSerializationFormat]),
-        ("test", "file://some-folder/file", "json", [DictJsonSerializationFormat, DataFrameJsonSerializationFormat]),
-        ("test", "file://some-folder/file", "webp", []),
-    ]
-)
-def test_format_parse(alias: str, data_path: str, data_format: str, expected_formats: Iterable[SerializationFormat]):
-    test_socket = DataSocket(alias, data_path, data_format)
-
-    assert set(test_socket.parse_serialization_format()) == set(expected_formats)
