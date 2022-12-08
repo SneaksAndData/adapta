@@ -50,3 +50,31 @@ with AzureSqlClient(
     result = azsql.scale_instance(target_objective='HS_Gen4_1', max_wait_time=300)
 ```
 
+## Trino (www.trino.io)
+
+Note that each context invocation with OAuth2 will open a browser tab, but all queries performed inside the `with` block will reuse the fetched token.
+
+```python
+import os
+import pandas
+from proteus.storage.database.trino_sql import TrinoClient
+
+# use Basic Auth
+os.environ['PROTEUS__TRINO_USERNAME'] = 'foo'
+os.environ['PROTEUS__TRINO_PASSWORD'] = 'bar'
+tc_basic_auth = TrinoClient(host="trino.production.sneaksanddata.com", catalog="trinodatalake")
+
+# use OAuth2 (interactive browser)
+os.environ['PROTEUS__TRINO_OAUTH2_USERNAME'] = 'ME@ecco.com'
+tc_oauth2 = TrinoClient(host="trino.production.sneaksanddata.com", catalog="trinodatalake")
+
+# query a table using Basic auth and print results
+with tc_basic_auth as tc:
+    for frame in tc.query('select * from bronze.tcurr limit 1'):
+        print(frame)
+
+# query a table using OAuth2 aggregate results into a single dataframe
+with tc_oauth2 as tc:
+    result = pandas.concat(tc.query('select * from bronze.tcurr limit 1'))
+    print(result)
+```

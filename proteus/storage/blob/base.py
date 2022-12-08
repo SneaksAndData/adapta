@@ -2,7 +2,7 @@
  Abstraction for storage operations.
 """
 from abc import ABC, abstractmethod
-from typing import Optional, Dict, Type, TypeVar, Iterator
+from typing import Optional, Dict, Type, TypeVar, Iterator, Callable
 
 from proteus.security.clients import ProteusClient
 from proteus.storage.models.base import DataPath
@@ -74,26 +74,39 @@ class StorageClient(ABC):
     def list_blobs(
         self,
         blob_path: DataPath,
+        filter_predicate: Optional[Callable[[...], bool]] = None
     ) -> Iterator[DataPath]:
         """
         Lists blobs in blob_path
 
         :param blob_path: Blob path as DataPath object
+        :param filter_predicate: Take only blobs that match a supplied predicate.
         :return: An iterator of DataPaths to blobs
         """
 
     @abstractmethod
-    def read_blobs(self, blob_path: DataPath, serialization_format: Type[SerializationFormat[T]]) -> Iterator[T]:
+    def read_blobs(
+            self,
+            blob_path: DataPath,
+            serialization_format: Type[SerializationFormat[T]],
+            filter_predicate: Optional[Callable[[...], bool]] = None
+    ) -> Iterator[T]:
         """
          Reads data under provided path into the given format.
 
         :param blob_path: Path to blob(s).
         :param serialization_format: Format to deserialize blobs into.
+        :param filter_predicate: Take only blobs that match a supplied predicate.
         :return: An iterator over deserialized blobs
         """
 
     @abstractmethod
-    def download_blobs(self, blob_path: DataPath, local_path: str, threads: Optional[int] = None) -> None:
+    def download_blobs(
+            self,
+            blob_path: DataPath,
+            local_path: str,
+            threads: Optional[int] = None,
+            filter_predicate: Optional[Callable[[...], bool]] = None) -> None:
         """
          Reads data under provided path into the given format.
 
@@ -105,5 +118,8 @@ class StorageClient(ABC):
         :param local_path: Path to download blobs to.
         :param threads: Optional number of threads to use when downloading.
                         If not provided, files will be downloaded sequentially.
+        :param filter_predicate: Take only blobs that match a supplied predicate.
+                 This function accepts an object that describes a cloud blob (BlobProperties for Azure, S3Object for AWS etc.).
+                 Client implementations will define the exact parameter type to use.
         :return:
         """
