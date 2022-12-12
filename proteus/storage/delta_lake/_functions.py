@@ -7,6 +7,7 @@ import time
 from typing import Optional, Union, Iterator, List, Iterable, Tuple
 
 import pandas
+import pyarrow
 from deltalake import DeltaTable
 from pyarrow import RecordBatch, Table
 from pyarrow._compute import Expression  # pylint: disable=E0611
@@ -206,7 +207,15 @@ def load_cached(  # pylint: disable=R0913
                     cache.multi_get([f"{base_cache_key}_{batch_number}" for batch_number in range(0, max_batch_number)])
                 ]
             )
-        except Exception as ex:  # pylint: disable=W0703
+        except (
+                pyarrow.ArrowInvalid,
+                ValueError,
+                pyarrow.ArrowException,
+                ConnectionError,
+                ConnectionResetError,
+                ConnectionAbortedError,
+                ConnectionRefusedError,
+        ) as ex:
             logger.warning(
                 'Error when reading data from cache - most likely some cache entries have been evicted. Falling back to storage.',
                 exception=ex
