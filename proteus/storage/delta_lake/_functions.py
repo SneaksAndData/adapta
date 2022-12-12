@@ -206,7 +206,7 @@ def load_cached(  # pylint: disable=R0913
                     cache.multi_get([f"{base_cache_key}_{batch_number}" for batch_number in range(0, max_batch_number)])
                 ]
             )
-        except Exception as ex:
+        except Exception as ex:  # pylint: disable=W0703
             logger.warning(
                 'Error when reading data from cache - most likely some cache entries have been evicted. Falling back to storage.',
                 exception=ex
