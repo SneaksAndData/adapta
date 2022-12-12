@@ -91,7 +91,8 @@ def get_cache_key(
         batch_size=1000,
         version: Optional[int] = None,
         row_filter: Optional[Expression] = None,
-        columns: Optional[List[str]] = None
+        columns: Optional[List[str]] = None,
+        partition_filter_expressions: Optional[List[Tuple]] = None
 ) -> str:
     """
       Returns a cache key for the path and data read arguments
@@ -105,6 +106,12 @@ def get_cache_key(
       filter = (pyarrow_field("year") == "2021") & (pyarrow_field("value") > "4")
 
     :param columns: Optional list of columns to select when reading. Defaults to all columns of not provided.
+    :param partition_filter_expressions: Optional partitions filters. Examples:
+
+           partition_filter_expressions = [("day", "=", "3")]
+           partition_filter_expressions = [("day", "in", ["3", "20"])]
+           partition_filter_expressions = [("day", "not in", ["3", "20"]), ("year", "=", "2021")]
+
     :param batch_size: Batch size used to read table in batches.
     :return: A cache key (string)
     """
@@ -115,6 +122,8 @@ def get_cache_key(
         base_attributes.append(str(row_filter))
     if columns:
         base_attributes.extend(columns)
+    if partition_filter_expressions:
+        base_attributes.append(str(partition_filter_expressions))
 
     base_attributes.append(str(batch_size))
     base_attributes.append(str(list(history(proteus_client, path))[0].version))
@@ -131,6 +140,7 @@ def load_cached(  # pylint: disable=R0913
         version: Optional[int] = None,
         row_filter: Optional[Expression] = None,
         columns: Optional[List[str]] = None,
+        partition_filter_expressions: Optional[List[Tuple]] = None,
         logger: Optional[ProteusLogger] = None
 ) -> pandas.DataFrame:
     """
@@ -146,6 +156,12 @@ def load_cached(  # pylint: disable=R0913
       filter = (pyarrow_field("year") == "2021") & (pyarrow_field("value") > "4")
 
     :param columns: Optional list of columns to select when reading. Defaults to all columns of not provided.
+    :param partition_filter_expressions: Optional partitions filters. Examples:
+
+           partition_filter_expressions = [("day", "=", "3")]
+           partition_filter_expressions = [("day", "in", ["3", "20"])]
+           partition_filter_expressions = [("day", "not in", ["3", "20"]), ("year", "=", "2021")]
+
     :param batch_size: Batch size used to read table in batches.
     :param cache: Optional cache store to read the version from. If not supplied, data will be read from the path. If supplied and cached entry is not present, data will be read from storage and saved in cache.
     :param cache_expires_after: Optional time to live for a cached table entry. Defaults to 1 hour.
@@ -159,7 +175,8 @@ def load_cached(  # pylint: disable=R0913
         batch_size=batch_size,
         version=version,
         row_filter=row_filter,
-        columns=columns
+        columns=columns,
+        partition_filter_expressions=partition_filter_expressions
     )
 
     if logger:
@@ -181,12 +198,19 @@ def load_cached(  # pylint: disable=R0913
                 chunk_count=max_batch_number
             )
 
-        return pandas.concat(
-            [
-                DataFrameParquetSerializationFormat().deserialize(cached_batch) for cached_batch
-                in cache.multi_get([f"{base_cache_key}_{batch_number}" for batch_number in range(0, max_batch_number)])
-            ]
-        )
+        try:
+            return pandas.concat(
+                [
+                    DataFrameParquetSerializationFormat().deserialize(cached_batch) for cached_batch
+                    in
+                    cache.multi_get([f"{base_cache_key}_{batch_number}" for batch_number in range(0, max_batch_number)])
+                ]
+            )
+        except Exception as ex:
+            logger.warning(
+                'Error when reading data from cache - most likely some cache entries have been evicted. Falling back to storage.',
+                exception=ex
+            )
 
     if logger:
         logger.debug(
@@ -201,7 +225,8 @@ def load_cached(  # pylint: disable=R0913
         version=version,
         row_filter=row_filter,
         columns=columns,
-        batch_size=batch_size
+        batch_size=batch_size,
+        partition_filter_expressions=partition_filter_expressions
     )
 
     batch_index = 0
