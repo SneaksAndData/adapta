@@ -8,7 +8,7 @@ from typing import Union, Optional, Dict, Type, TypeVar, Iterator, List, Callabl
 
 from azure.core.paging import ItemPaged
 from azure.storage.blob import BlobServiceClient, BlobSasPermissions, BlobClient, generate_blob_sas, BlobProperties, \
-    ExponentialRetry
+    ExponentialRetry, ContainerClient
 
 from proteus.storage.blob.base import StorageClient
 from proteus.security.clients import AzureClient
@@ -44,9 +44,22 @@ class AzureStorageClient(StorageClient):
     def _get_blob_client(self, blob_path: DataPath) -> BlobClient:
         azure_path = cast_path(blob_path)
 
+        assert azure_path.account == self._blob_service_client.account_name, \
+            'Path provided is in another storage account and cannot be used.'
+
         return self._blob_service_client.get_blob_client(
             container=azure_path.container,
             blob=azure_path.path,
+        )
+
+    def _get_container_client(self, blob_path: DataPath) -> ContainerClient:
+        azure_path = cast_path(blob_path)
+
+        assert azure_path.account == self._blob_service_client.account_name, \
+            'Path provided is in another storage account and cannot be used.'
+
+        return self._blob_service_client.get_container_client(
+            container=azure_path.container
         )
 
     def save_data_as_blob(  # pylint: disable=R0913,R0801
@@ -82,8 +95,8 @@ class AzureStorageClient(StorageClient):
     def _list_blobs(self, blob_path: DataPath) -> (ItemPaged[BlobProperties], Union[AdlsGen2Path, WasbPath]):
         azure_path = cast_path(blob_path)
 
-        return self._blob_service_client.get_container_client(
-            azure_path.container).list_blobs(name_starts_with=blob_path.path), azure_path
+        return self._get_container_client(azure_path) \
+                   .list_blobs(name_starts_with=blob_path.path), azure_path
 
     def read_blobs(
             self,
@@ -168,6 +181,4 @@ class AzureStorageClient(StorageClient):
     ) -> None:
         azure_path = cast_path(blob_path)
 
-        self._blob_service_client \
-            .get_container_client(azure_path.container) \
-            .delete_blob(blob_path.path)
+        self._get_container_client(azure_path).delete_blob(blob_path.path)
