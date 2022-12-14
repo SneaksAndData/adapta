@@ -103,7 +103,8 @@ class AzureStorageClient(StorageClient):
             blob_path:
             DataPath,
             serialization_format: Type[SerializationFormat[T]],
-            filter_predicate: Optional[Callable[[BlobProperties], bool]] = None
+            filter_predicate: Optional[Callable[[BlobProperties], bool]] = None,
+            **kwargs
     ) -> Iterator[T]:
         blobs_on_path, azure_path = self._list_blobs(blob_path)
 
@@ -114,7 +115,8 @@ class AzureStorageClient(StorageClient):
                     blob=blob.name,
                 ).download_blob().readall()
 
-                yield serialization_format().deserialize(blob_data)
+                yield serialization_format().deserialize(blob_data, **kwargs)
+
 
     def download_blobs(
             self,

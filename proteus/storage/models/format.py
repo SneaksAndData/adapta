@@ -66,13 +66,15 @@ class DataFrameCsvSerializationFormat(SerializationFormat[pandas.DataFrame]):
         """
         return data.to_csv(index=False).encode(encoding='utf-8')
 
-    def deserialize(self, data: bytes) -> pandas.DataFrame:
+    def deserialize(self, data: bytes, **kwargs) -> pandas.DataFrame:
         """
         Deserializes dataframe from bytes using CSV format.
         :param data: Dataframe to deserialize in CSV format as bytes.
+        :param kwargs: Optional keyword arguments to pass to pandas.read_csv.
         :return: Deserialized dataframe.
         """
-        return pandas.read_csv(io.BytesIO(data))
+        return pandas.read_csv(io.BytesIO(data), **kwargs)
+
 
 
 class DictJsonSerializationFormat(SerializationFormat[dict]):
