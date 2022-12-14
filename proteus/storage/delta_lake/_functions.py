@@ -120,7 +120,7 @@ def get_cache_key(
     if version:
         base_attributes.append(str(version))
     else:
-        base_attributes.append(str(list(history(proteus_client, path))[0].version))
+        base_attributes.append(str(list(history(proteus_client, path))[0].timestamp))
 
     if row_filter is not None:
         base_attributes.append(str(row_filter))
