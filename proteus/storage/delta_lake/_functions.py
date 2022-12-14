@@ -218,10 +218,11 @@ def load_cached(  # pylint: disable=R0913
                 ConnectionAbortedError,
                 ConnectionRefusedError,
         ) as ex:
-            logger.warning(
-                'Error when reading data from cache - most likely some cache entries have been evicted. Falling back to storage.',
-                exception=ex
-            )
+            if logger:
+                logger.warning(
+                    'Error when reading data from cache - most likely some cache entries have been evicted. Falling back to storage.',
+                    exception=ex
+                )
 
     if logger:
         logger.debug(
