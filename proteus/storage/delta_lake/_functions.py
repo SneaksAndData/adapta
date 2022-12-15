@@ -223,7 +223,7 @@ def load_cached(  # pylint: disable=R0913
                     'Error when reading data from cache - most likely some cache entries have been evicted. Falling back to storage.',
                     exception=ex
                 )
-        except Exception as non_standard_ex:
+        except Exception as non_standard_ex:  # pylint: disable=W0703
             if logger and type(non_standard_ex) in cache_exceptions:
                 logger.warning(
                     'Cache client failed to read the data. Falling back to storage.',
