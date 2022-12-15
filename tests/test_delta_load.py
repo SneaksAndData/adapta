@@ -1,4 +1,5 @@
 import pathlib
+import zlib
 from unittest.mock import patch, MagicMock, ANY, call
 
 import pandas
@@ -77,17 +78,17 @@ def test_delta_load_cached(mock_cache: MagicMock, get_client_and_path):
     cache: KeyValueCache = mock_cache.return_value
 
     cache.exists.return_value = True
-    cache.get.return_value = 10
-    cache.multi_get.return_value = [
-        DataFrameParquetSerializationFormat().serialize(pandas.DataFrame([{'a': 1, 'b': 2}]))]
+    cache.get.return_value = {
+        '0': zlib.compress(DataFrameParquetSerializationFormat().serialize(pandas.DataFrame([{'a': 1, 'b': 2}]))),
+        'completed': 1
+    }
 
     cache_key = get_cache_key(client, data_path, batch_size=1)
 
     _ = load_cached(client, data_path, cache=cache, batch_size=1)
 
-    cache.exists.assert_called_with(f"{cache_key}_size")
-    cache.multi_get.assert_called_with(
-        [f"{cache_key}_{batch_number}" for batch_number in range(0, 10)])
+    cache.exists.assert_called_with(cache_key, 'completed')
+    cache.get.assert_called_with(cache_key, is_map=True)
 
 
 @patch('proteus.storage.cache.KeyValueCache')
