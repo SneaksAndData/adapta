@@ -12,11 +12,12 @@ class KeyValueCache(ABC):
     """
 
     @abstractmethod
-    def get(self, key: str) -> Any:
+    def get(self, key: str, is_map=False) -> Any:
         """
           Retrieve a value associated with the key.
 
         :param key: A cached key.
+        :param is_map: If a value associated with a key is a map where individual fields were added with `include`.
         :return: A value.
         """
 
@@ -67,5 +68,26 @@ class KeyValueCache(ABC):
           Removes a key from this cache.
 
         :param key: A key to remove.
+        :return:
+        """
+
+    @abstractmethod
+    def include(self, key: str, attribute: str, value: Any) -> None:
+        """
+         Adds an attribute to a map stored at a specified key.
+
+        :param key: A cached key.
+        :param attribute: An attribute to add.
+        :param value: A value associated with the attribute.
+        :param expires_after: Period after which the value expires.
+        :return:
+        """
+
+    @abstractmethod
+    def set_expiration(self, key: str, expires_after: timedelta) -> None:
+        """
+          Update
+        :param key: A cached key.
+        :param expires_after: Period after which the value expires.
         :return:
         """
