@@ -4,7 +4,7 @@
 import datetime
 import hashlib
 import zlib
-from typing import Optional, Union, Iterator, List, Iterable, Tuple
+from typing import Optional, Union, Iterator, List, Iterable, Tuple, Type
 
 import pandas
 import pyarrow
@@ -139,7 +139,7 @@ def load_cached(  # pylint: disable=R0913
         path: DataPath,
         cache: KeyValueCache,
         cache_expires_after: Optional[datetime.timedelta] = datetime.timedelta(hours=1),
-        cache_exceptions: Optional[Tuple[Exception]] = None,
+        cache_exceptions: Optional[Tuple[Type[Exception]]] = None,
         batch_size=1000,
         version: Optional[int] = None,
         row_filter: Optional[Expression] = None,
@@ -205,26 +205,32 @@ def load_cached(  # pylint: disable=R0913
                 [
                     DataFrameParquetSerializationFormat().deserialize(
                         zlib.decompress(cached_batch)
-                    ) for batch_key, cached_batch in cache.get(cache_key, is_map=True).items() if batch_key != 'completed'
+                    ) for batch_key, cached_batch in cache.get(cache_key, is_map=True).items() if
+                    batch_key != 'completed'
                 ]
             )
         except (
-                (
-                        pyarrow.ArrowInvalid,
-                        ValueError,
-                        pyarrow.ArrowException,
-                        ConnectionError,
-                        ConnectionResetError,
-                        ConnectionAbortedError,
-                        ConnectionRefusedError
-                ),
-                cache_exceptions or ()
+                pyarrow.ArrowInvalid,
+                ValueError,
+                pyarrow.ArrowException,
+                ConnectionError,
+                ConnectionResetError,
+                ConnectionAbortedError,
+                ConnectionRefusedError
         ) as ex:
             if logger:
                 logger.warning(
                     'Error when reading data from cache - most likely some cache entries have been evicted. Falling back to storage.',
                     exception=ex
                 )
+        except Exception as non_standard_ex:
+            if logger and type(non_standard_ex) in cache_exceptions:
+                logger.warning(
+                    'Cache client failed to read the data. Falling back to storage.',
+                    exception=non_standard_ex
+                )
+            else:
+                raise non_standard_ex
 
     if logger:
         logger.debug(
