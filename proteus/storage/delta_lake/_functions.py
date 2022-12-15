@@ -207,14 +207,17 @@ def load_cached(  # pylint: disable=R0913
                 ]
             )
         except (
-                       pyarrow.ArrowInvalid,
-                       ValueError,
-                       pyarrow.ArrowException,
-                       ConnectionError,
-                       ConnectionResetError,
-                       ConnectionAbortedError,
-                       ConnectionRefusedError,
-               ) + (cache_exceptions or ()) as ex:
+                (
+                        pyarrow.ArrowInvalid,
+                        ValueError,
+                        pyarrow.ArrowException,
+                        ConnectionError,
+                        ConnectionResetError,
+                        ConnectionAbortedError,
+                        ConnectionRefusedError
+                ),
+                cache_exceptions or ()
+        ) as ex:
             if logger:
                 logger.warning(
                     'Error when reading data from cache - most likely some cache entries have been evicted. Falling back to storage.',
