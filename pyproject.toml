@@ -35,7 +35,7 @@ pyodbc = { version = "~4.0", optional = true }
 
 mlflow-skinny = { version = "~1.28", optional = true }
 
-redis = { version = "~4.3.4", optional = true, extras = ['hiredis'] }
+redis = { version = "~4.4.0", optional = true, extras = ['hiredis'] }
 
 hvac = { version = "0.11.2", optional = true }
 
