@@ -3,7 +3,7 @@
 """
 from abc import ABC, abstractmethod
 from datetime import timedelta
-from typing import Any, List
+from typing import Any, List, Optional
 
 
 class KeyValueCache(ABC):
@@ -22,11 +22,13 @@ class KeyValueCache(ABC):
         """
 
     @abstractmethod
-    def exists(self, key: str) -> bool:
+    def exists(self, key: str, attribute: Optional[str] = None) -> bool:
         """
-          Checks if a cache key is present.
+          Checks if a cache key is present. If an attribute is provided, should also check
+          if a value possesses this attributes.
 
         :param key: A cache key.
+        :param attribute: Optional value attribute.
         :return:
         """
 

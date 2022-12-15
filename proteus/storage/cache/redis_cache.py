@@ -4,7 +4,7 @@
 import os
 import ssl
 from datetime import timedelta
-from typing import Any, List
+from typing import Any, List, Optional
 
 import redis
 from redis import default_backoff
@@ -56,8 +56,11 @@ class RedisCache(KeyValueCache):
     def evict(self, key: str) -> None:
         self._redis.delete(key)
 
-    def exists(self, key: str) -> bool:
-        return self._redis.exists(key) == 1
+    def exists(self, key: str, attribute: Optional[str] = None) -> bool:
+        if not attribute:
+            return self._redis.exists(key) == 1
+
+        return self._redis.hexists(name=key, key=attribute)
 
     def get(self, key: str, is_map=False) -> Any:
         if not is_map:

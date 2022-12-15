@@ -192,7 +192,7 @@ def load_cached(  # pylint: disable=R0913
 
     # first check that we have cached batches for all given inputs (columns, filters etc.)
     # we read a special cache entry which tells us number of cached batches for this table query
-    if cache.exists(cache_key):
+    if cache.exists(cache_key, 'completed'):
         if logger:
             logger.debug(
                 'Cache hit for {cache_key}',
@@ -202,8 +202,8 @@ def load_cached(  # pylint: disable=R0913
         try:
             return pandas.concat(
                 [
-                    DataFrameParquetSerializationFormat().deserialize(cached_batch) for _, cached_batch
-                    in cache.get(cache_key, is_map=True).items()
+                    DataFrameParquetSerializationFormat().deserialize(cached_batch) for batch_key, cached_batch
+                    in cache.get(cache_key, is_map=True).items() if batch_key != 'completed'
                 ]
             )
         except (
@@ -249,6 +249,9 @@ def load_cached(  # pylint: disable=R0913
         aggregate_batch = pandas.concat([aggregate_batch, batch])
         batch_index += 1
 
+    # we add a 'completion' indicator to this cached key so clients that now safely read the value
+    # by doing it this way, we avoid doing a transaction - thus this method is non-blocking
+    cache.include(key=cache_key, attribute='completed', value=1)
     cache.set_expiration(cache_key, cache_expires_after)
 
     if logger:
