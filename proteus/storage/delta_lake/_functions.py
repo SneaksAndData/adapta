@@ -119,6 +119,9 @@ def get_cache_key(
     base_attributes = []
     if version:
         base_attributes.append(str(version))
+    else:
+        base_attributes.append(str(list(history(proteus_client, path))[0].timestamp))
+
     if row_filter is not None:
         base_attributes.append(str(row_filter))
     if columns:
@@ -127,7 +130,6 @@ def get_cache_key(
         base_attributes.append(str(partition_filter_expressions))
 
     base_attributes.append(str(batch_size))
-    base_attributes.append(str(list(history(proteus_client, path))[0].version))
 
     return hashlib.md5('#'.join([path.to_delta_rs_path(), '_'.join(base_attributes)]).encode('utf-8')).hexdigest()
 
@@ -216,10 +218,11 @@ def load_cached(  # pylint: disable=R0913
                 ConnectionAbortedError,
                 ConnectionRefusedError,
         ) as ex:
-            logger.warning(
-                'Error when reading data from cache - most likely some cache entries have been evicted. Falling back to storage.',
-                exception=ex
-            )
+            if logger:
+                logger.warning(
+                    'Error when reading data from cache - most likely some cache entries have been evicted. Falling back to storage.',
+                    exception=ex
+                )
 
     if logger:
         logger.debug(
