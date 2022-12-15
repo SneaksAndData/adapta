@@ -3,6 +3,7 @@
 """
 import datetime
 import hashlib
+import zlib
 from typing import Optional, Union, Iterator, List, Iterable, Tuple
 
 import pandas
@@ -202,8 +203,9 @@ def load_cached(  # pylint: disable=R0913
         try:
             return pandas.concat(
                 [
-                    DataFrameParquetSerializationFormat().deserialize(cached_batch) for batch_key, cached_batch
-                    in cache.get(cache_key, is_map=True).items() if batch_key != 'completed'
+                    DataFrameParquetSerializationFormat().deserialize(
+                        zlib.decompress(cached_batch)
+                    ) for batch_key, cached_batch in cache.get(cache_key, is_map=True).items() if batch_key != 'completed'
                 ]
             )
         except (
@@ -243,8 +245,11 @@ def load_cached(  # pylint: disable=R0913
 
     batch_index = 0
     for batch in data:
-        cache.include(key=cache_key, attribute=str(batch_index),
-                      value=DataFrameParquetSerializationFormat().serialize(batch))
+        cache.include(
+            key=cache_key,
+            attribute=str(batch_index),
+            value=zlib.compress(DataFrameParquetSerializationFormat().serialize(batch))
+        )
 
         aggregate_batch = pandas.concat([aggregate_batch, batch])
         batch_index += 1
