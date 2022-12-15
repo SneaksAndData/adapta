@@ -18,7 +18,7 @@ jobs:
           python-version: '3.9.x' # Version range or exact version of a Python version to use, using SemVer's version range syntax
           architecture: 'x64' # optional x64 or x86. Defaults to x64 if not specified
       - name: Install Poetry and dependencies
-        uses: SneaksAndData/github-actions/install_poetry@v0.0.7
+        uses: SneaksAndData/github-actions/install_poetry@v0.0.12
         with:
           pypi_repo_url: ${{ secrets.AZOPS_PYPI_REPO_URL }}
           pypi_token_username: ${{ secrets.AZOPS_PAT_USER }}
