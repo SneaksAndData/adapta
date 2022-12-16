@@ -247,7 +247,7 @@ def load_cached(  # pylint: disable=R0913
             attribute=str(batch_index),
             value=zlib.compress(DataFrameParquetSerializationFormat().serialize(batch))
         ) for batch_index, batch in enumerate(data)
-    ])
+    ], ignore_index=True, copy=False)
 
     # we add a 'completion' indicator to this cached key so clients that now safely read the value
     # by doing it this way, we avoid doing a transaction - thus this method is non-blocking
