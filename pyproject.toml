@@ -77,7 +77,7 @@ trino = [
 ]
 
 [tool.poetry.dev-dependencies]
-pytest = "~6.2"
+pytest = "^7.1"
 pytest-mock = "~3.6.1"
 pytest-cov = "~2.12"
 pylint = "^2.12"

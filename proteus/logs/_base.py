@@ -207,7 +207,7 @@ class ProteusLogger:
                                  template=template,
                                  tags=tags,
                                  diagnostics=diagnostics,
-                                 stack_info=True,
+                                 stack_info=False,
                                  exception=exception,
                                  metadata_fields=self.__get_metadata_fields(kwargs))
 
