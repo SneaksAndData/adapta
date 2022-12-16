@@ -74,9 +74,9 @@ class KeyValueCache(ABC):
         """
 
     @abstractmethod
-    def include(self, key: str, attribute: str, value: Any) -> None:
+    def include(self, key: str, attribute: str, value: Any) -> Any:
         """
-         Adds an attribute to a map stored at a specified key.
+         Adds an attribute to a map stored at a specified key. Returns the supplied value.
 
         :param key: A cached key.
         :param attribute: An attribute to add.

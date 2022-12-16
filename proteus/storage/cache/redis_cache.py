@@ -80,5 +80,7 @@ class RedisCache(KeyValueCache):
     def include(self, key: str, attribute: str, value: Any) -> None:
         self._redis.hsetnx(key, attribute, value)
 
+        return value
+
     def set_expiration(self, key: str, expires_after: timedelta) -> None:
         self._redis.expire(name=key, time=expires_after)

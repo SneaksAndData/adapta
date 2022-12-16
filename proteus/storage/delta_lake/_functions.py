@@ -4,7 +4,7 @@
 import datetime
 import hashlib
 import zlib
-from typing import Optional, Union, Iterator, List, Iterable, Tuple, Type
+from typing import Optional, Union, Iterator, List, Iterable, Tuple
 
 import pandas
 import pyarrow
@@ -231,7 +231,6 @@ def load_cached(  # pylint: disable=R0913
             cache_key=cache_key
         )
 
-    aggregate_batch: Optional[pandas.DataFrame] = None
     data = load(
         proteus_client=proteus_client,
         path=path,
@@ -242,16 +241,13 @@ def load_cached(  # pylint: disable=R0913
         partition_filter_expressions=partition_filter_expressions
     )
 
-    batch_index = 0
-    for batch in data:
+    aggregate_batch = pandas.concat([
         cache.include(
             key=cache_key,
             attribute=str(batch_index),
             value=zlib.compress(DataFrameParquetSerializationFormat().serialize(batch))
-        )
-
-        aggregate_batch = pandas.concat([aggregate_batch, batch])
-        batch_index += 1
+        ) for batch_index, batch in enumerate(data)
+    ])
 
     # we add a 'completion' indicator to this cached key so clients that now safely read the value
     # by doing it this way, we avoid doing a transaction - thus this method is non-blocking
@@ -260,9 +256,9 @@ def load_cached(  # pylint: disable=R0913
 
     if logger:
         logger.debug(
-            'Cache updated for {cache_key}, total chunks {chunk_count}',
+            'Cache updated for {cache_key}, total rows {row_count}',
             cache_key=cache_key,
-            chunk_count=batch_index
+            row_count=len(aggregate_batch)
         )
 
     return aggregate_batch
