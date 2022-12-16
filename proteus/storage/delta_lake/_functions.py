@@ -206,7 +206,7 @@ def load_cached(  # pylint: disable=R0913
                     DataFrameParquetSerializationFormat().deserialize(
                         zlib.decompress(cached_batch)
                     ) for batch_key, cached_batch in cache.get(cache_key, is_map=True).items() if
-                    batch_key != 'completed'
+                    batch_key != b'completed'
                 ]
             )
         except (
