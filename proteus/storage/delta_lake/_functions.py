@@ -3,6 +3,7 @@
 """
 import datetime
 import hashlib
+import os
 import zlib
 from typing import Optional, Union, Iterator, List, Iterable, Tuple, Type
 
@@ -51,14 +52,16 @@ def load(  # pylint: disable=R0913
 
     :return: A DeltaTable wrapped Rust class, pandas Dataframe or an iterator of pandas Dataframes, for batched reads.
     """
+    connection_options = proteus_client.connect_storage(path)
+
     pyarrow_ds = DeltaTable(
         path.to_delta_rs_path(),
         version=version,
-        storage_options=proteus_client.connect_storage(path)
+        storage_options=connection_options
     ).to_pyarrow_dataset(
         partitions=partition_filter_expressions,
         parquet_read_options=ParquetReadOptions(coerce_int96_timestamp_unit="ms"),
-        filesystem=proteus_client.get_pyarrow_filesystem(path)
+        filesystem=proteus_client.get_pyarrow_filesystem(path, connection_options=connection_options)
     )
 
     if batch_size:
@@ -139,7 +142,6 @@ def load_cached(  # pylint: disable=R0913
         path: DataPath,
         cache: KeyValueCache,
         cache_expires_after: Optional[datetime.timedelta] = datetime.timedelta(hours=1),
-        cache_exceptions: Optional[Tuple[Type[Exception]]] = None,
         batch_size=1000,
         version: Optional[int] = None,
         row_filter: Optional[Expression] = None,
@@ -223,14 +225,6 @@ def load_cached(  # pylint: disable=R0913
                     'Error when reading data from cache - most likely some cache entries have been evicted. Falling back to storage.',
                     exception=ex
                 )
-        except Exception as non_standard_ex:  # pylint: disable=W0703
-            if logger and type(non_standard_ex) in cache_exceptions:
-                logger.warning(
-                    'Cache client failed to read the data. Falling back to storage.',
-                    exception=non_standard_ex
-                )
-            else:
-                raise non_standard_ex
 
     if logger:
         logger.debug(

@@ -79,8 +79,8 @@ def test_delta_load_cached(mock_cache: MagicMock, get_client_and_path):
 
     cache.exists.return_value = True
     cache.get.return_value = {
-        '0': zlib.compress(DataFrameParquetSerializationFormat().serialize(pandas.DataFrame([{'a': 1, 'b': 2}]))),
-        'completed': 1
+        b'0': zlib.compress(DataFrameParquetSerializationFormat().serialize(pandas.DataFrame([{'a': 1, 'b': 2}]))),
+        b'completed': 1
     }
 
     cache_key = get_cache_key(client, data_path, batch_size=1)

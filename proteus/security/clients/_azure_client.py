@@ -72,6 +72,16 @@ class AzureClient(ProteusClient):
 
         adls_path: AdlsGen2Path = path
 
+        # rely on mapped env vars, if they exist
+        if f'PROTEUS__{adls_path.account.upper()}_AZURE_STORAGE_ACCOUNT_NAME' and f'PROTEUS__{adls_path.account.upper()}_AZURE_STORAGE_ACCOUNT_KEY' in os.environ:
+            return {
+                'AZURE_STORAGE_ACCOUNT_NAME': os.getenv(
+                    f'PROTEUS__{adls_path.account.upper()}_AZURE_STORAGE_ACCOUNT_NAME'),
+                'AZURE_STORAGE_ACCOUNT_KEY': os.getenv(
+                    f'PROTEUS__{adls_path.account.upper()}_AZURE_STORAGE_ACCOUNT_KEY'),
+            }
+
+        # Auto discover through ARM if env vars are not present for the target account
         storage_client = StorageManagementClient(_get_azure_credentials(), self.subscription_id)
 
         accounts: List[Tuple[str, str]] = list(
@@ -97,9 +107,11 @@ class AzureClient(ProteusClient):
     def get_credentials(self) -> DefaultAzureCredential:
         return _get_azure_credentials()
 
-    def get_pyarrow_filesystem(self, path: DataPath) -> FileSystem:
+    def get_pyarrow_filesystem(self, path: DataPath, connection_options: Optional[Dict[str, str]] = None) -> FileSystem:
 
-        connection_options = self.connect_storage(path=path)
+        if not connection_options:
+            connection_options = self.connect_storage(path=path)
+
         file_system = AzureBlobFileSystem(
             account_name=connection_options['AZURE_STORAGE_ACCOUNT_NAME'],
             account_key=connection_options['AZURE_STORAGE_ACCOUNT_KEY']
