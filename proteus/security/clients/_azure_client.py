@@ -73,10 +73,9 @@ class AzureClient(ProteusClient):
         adls_path: AdlsGen2Path = path
 
         # rely on mapped env vars, if they exist
-        if f'PROTEUS__{adls_path.account.upper()}_AZURE_STORAGE_ACCOUNT_NAME' and f'PROTEUS__{adls_path.account.upper()}_AZURE_STORAGE_ACCOUNT_KEY' in os.environ:
+        if f'PROTEUS__{adls_path.account.upper()}_AZURE_STORAGE_ACCOUNT_KEY' in os.environ:
             return {
-                'AZURE_STORAGE_ACCOUNT_NAME': os.getenv(
-                    f'PROTEUS__{adls_path.account.upper()}_AZURE_STORAGE_ACCOUNT_NAME'),
+                'AZURE_STORAGE_ACCOUNT_NAME': adls_path.account,
                 'AZURE_STORAGE_ACCOUNT_KEY': os.getenv(
                     f'PROTEUS__{adls_path.account.upper()}_AZURE_STORAGE_ACCOUNT_KEY'),
             }
