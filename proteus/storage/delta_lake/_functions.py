@@ -3,7 +3,7 @@
 """
 import datetime
 import hashlib
-import time
+import zlib
 from typing import Optional, Union, Iterator, List, Iterable, Tuple
 
 import pandas
@@ -51,14 +51,16 @@ def load(  # pylint: disable=R0913
 
     :return: A DeltaTable wrapped Rust class, pandas Dataframe or an iterator of pandas Dataframes, for batched reads.
     """
+    connection_options = proteus_client.connect_storage(path)
+
     pyarrow_ds = DeltaTable(
         path.to_delta_rs_path(),
         version=version,
-        storage_options=proteus_client.connect_storage(path)
+        storage_options=connection_options
     ).to_pyarrow_dataset(
         partitions=partition_filter_expressions,
         parquet_read_options=ParquetReadOptions(coerce_int96_timestamp_unit="ms"),
-        filesystem=proteus_client.get_pyarrow_filesystem(path)
+        filesystem=proteus_client.get_pyarrow_filesystem(path, connection_options=connection_options)
     )
 
     if batch_size:
@@ -144,7 +146,7 @@ def load_cached(  # pylint: disable=R0913
         row_filter: Optional[Expression] = None,
         columns: Optional[List[str]] = None,
         partition_filter_expressions: Optional[List[Tuple]] = None,
-        logger: Optional[ProteusLogger] = None
+        logger: Optional[ProteusLogger] = None,
 ) -> pandas.DataFrame:
     """
      Loads Delta Lake table from an external cache and converts it to a single pandas dataframe (after applying column projections and row filters).
@@ -168,11 +170,12 @@ def load_cached(  # pylint: disable=R0913
     :param batch_size: Batch size used to read table in batches.
     :param cache: Optional cache store to read the version from. If not supplied, data will be read from the path. If supplied and cached entry is not present, data will be read from storage and saved in cache.
     :param cache_expires_after: Optional time to live for a cached table entry. Defaults to 1 hour.
+    :param cache_exceptions: Optional additional exceptions on cache level to ignore.
     :param logger: Optional logger for debugging purposes.
     :return: A DeltaTable wrapped Rust class, pandas Dataframe or an iterator of pandas Dataframes, for batched reads.
     """
 
-    base_cache_key = get_cache_key(
+    cache_key = get_cache_key(
         proteus_client=proteus_client,
         path=path,
         batch_size=batch_size,
@@ -185,28 +188,26 @@ def load_cached(  # pylint: disable=R0913
     if logger:
         logger.debug(
             'Generated cache key {cache_key} for {table_path}',
-            cache_key=base_cache_key,
+            cache_key=cache_key,
             table_path=path.to_delta_rs_path()
         )
 
     # first check that we have cached batches for all given inputs (columns, filters etc.)
     # we read a special cache entry which tells us number of cached batches for this table query
-    if cache.exists(f"{base_cache_key}_size"):
-        max_batch_number = int(cache.get(f"{base_cache_key}_size"))
-
+    if cache.exists(cache_key, 'completed'):
         if logger:
             logger.debug(
-                'Cache hit for {cache_key}, stored chunks {chunk_count}',
-                cache_key=base_cache_key,
-                chunk_count=max_batch_number
+                'Cache hit for {cache_key}',
+                cache_key=cache_key
             )
 
         try:
             return pandas.concat(
                 [
-                    DataFrameParquetSerializationFormat().deserialize(cached_batch) for cached_batch
-                    in
-                    cache.multi_get([f"{base_cache_key}_{batch_number}" for batch_number in range(0, max_batch_number)])
+                    DataFrameParquetSerializationFormat().deserialize(
+                        zlib.decompress(cached_batch)
+                    ) for batch_key, cached_batch in cache.get(cache_key, is_map=True).items() if
+                    batch_key != b'completed'
                 ]
             )
         except (
@@ -216,7 +217,7 @@ def load_cached(  # pylint: disable=R0913
                 ConnectionError,
                 ConnectionResetError,
                 ConnectionAbortedError,
-                ConnectionRefusedError,
+                ConnectionRefusedError
         ) as ex:
             if logger:
                 logger.warning(
@@ -227,10 +228,9 @@ def load_cached(  # pylint: disable=R0913
     if logger:
         logger.debug(
             'Cache miss for {cache_key}, populating cache.',
-            cache_key=base_cache_key
+            cache_key=cache_key
         )
 
-    aggregate_batch: Optional[pandas.DataFrame] = None
     data = load(
         proteus_client=proteus_client,
         path=path,
@@ -241,24 +241,24 @@ def load_cached(  # pylint: disable=R0913
         partition_filter_expressions=partition_filter_expressions
     )
 
-    batch_index = 0
-    cache_start = time.monotonic_ns()
-    for batch in data:
-        cache.set(key=f"{base_cache_key}_{batch_index}", value=DataFrameParquetSerializationFormat().serialize(batch),
-                  expires_after=cache_expires_after)
+    aggregate_batch = pandas.concat([
+        cache.include(
+            key=cache_key,
+            attribute=str(batch_index),
+            value=zlib.compress(DataFrameParquetSerializationFormat().serialize(batch))
+        ) for batch_index, batch in enumerate(data)
+    ], ignore_index=True, copy=False)
 
-        aggregate_batch = pandas.concat([aggregate_batch, batch])
-        batch_index += 1
-
-    cache_duration = (time.monotonic_ns() - cache_start) / 1e9
-    cache.set(key=f"{base_cache_key}_size", value=batch_index,
-              expires_after=cache_expires_after - datetime.timedelta(seconds=cache_duration))
+    # we add a 'completion' indicator to this cached key so clients that now safely read the value
+    # by doing it this way, we avoid doing a transaction - thus this method is non-blocking
+    cache.include(key=cache_key, attribute='completed', value=1)
+    cache.set_expiration(cache_key, cache_expires_after)
 
     if logger:
         logger.debug(
-            'Cache updated for {cache_key}, total chunks {chunk_count}',
-            cache_key=base_cache_key,
-            chunk_count=batch_index
+            'Cache updated for {cache_key}, total rows {row_count}',
+            cache_key=cache_key,
+            row_count=len(aggregate_batch)
         )
 
     return aggregate_batch

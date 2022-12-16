@@ -3,7 +3,7 @@
 """
 from abc import ABC, abstractmethod
 from datetime import timedelta
-from typing import Any, List
+from typing import Any, List, Optional
 
 
 class KeyValueCache(ABC):
@@ -12,20 +12,23 @@ class KeyValueCache(ABC):
     """
 
     @abstractmethod
-    def get(self, key: str) -> Any:
+    def get(self, key: str, is_map=False) -> Any:
         """
           Retrieve a value associated with the key.
 
         :param key: A cached key.
+        :param is_map: If a value associated with a key is a map where individual fields were added with `include`.
         :return: A value.
         """
 
     @abstractmethod
-    def exists(self, key: str) -> bool:
+    def exists(self, key: str, attribute: Optional[str] = None) -> bool:
         """
-          Checks if a cache key is present.
+          Checks if a cache key is present. If an attribute is provided, should also check
+          if a value possesses this attributes.
 
         :param key: A cache key.
+        :param attribute: Optional value attribute.
         :return:
         """
 
@@ -67,5 +70,26 @@ class KeyValueCache(ABC):
           Removes a key from this cache.
 
         :param key: A key to remove.
+        :return:
+        """
+
+    @abstractmethod
+    def include(self, key: str, attribute: str, value: Any) -> Any:
+        """
+         Adds an attribute to a map stored at a specified key. Returns the supplied value.
+
+        :param key: A cached key.
+        :param attribute: An attribute to add.
+        :param value: A value associated with the attribute.
+        :param expires_after: Period after which the value expires.
+        :return:
+        """
+
+    @abstractmethod
+    def set_expiration(self, key: str, expires_after: timedelta) -> None:
+        """
+          Update
+        :param key: A cached key.
+        :param expires_after: Period after which the value expires.
         :return:
         """

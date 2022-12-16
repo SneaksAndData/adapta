@@ -39,5 +39,5 @@ class LocalClient(ProteusClient):
         :return:
         """
 
-    def get_pyarrow_filesystem(self, path: DataPath) -> FileSystem:
+    def get_pyarrow_filesystem(self, path: DataPath, connection_options: Optional[Dict[str, str]] = None) -> FileSystem:
         return SubTreeFileSystem(path.path, LocalFileSystem())
