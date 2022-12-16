@@ -3,7 +3,6 @@
 """
 import datetime
 import hashlib
-import os
 import zlib
 from typing import Optional, Union, Iterator, List, Iterable, Tuple, Type
 
