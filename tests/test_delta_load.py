@@ -98,7 +98,7 @@ def test_delta_populate_cache(mock_cache: MagicMock, get_client_and_path):
     cache: KeyValueCache = mock_cache.return_value
 
     cache.exists.return_value = False
-    cache.set.return_value = None
+    cache.include.return_value = pandas.DataFrame([{'a': 1}])
 
     cache_key = get_cache_key(client, data_path, batch_size=1)
 
