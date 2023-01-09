@@ -12,7 +12,7 @@ from proteus.security.clients import AzureClient
 
 class AzureSecretStorageClient(SecretStorageClient):
     """
-     Azure KeyVault Client.
+    Azure KeyVault Client.
     """
 
     def __init__(self, *, base_client: AzureClient):
@@ -31,14 +31,16 @@ class AzureSecretStorageClient(SecretStorageClient):
     def read_secret(self, storage_name: str, secret_name: str) -> Union[bytes, str, Dict[str, str]]:
         return self._get_keyvault(storage_name).get_secret(secret_name).value
 
-    def create_secret(self, storage_name: str, secret_name: str, secret_value: Union[str, Dict[str, str]],
-                      b64_encode=False) -> None:
+    def create_secret(
+        self, storage_name: str, secret_name: str, secret_value: Union[str, Dict[str, str]], b64_encode=False
+    ) -> None:
         if not isinstance(secret_value, str):
             raise ValueError(
                 f"Only str secret type supported in AzureSecretStorageClient but was: {type(secret_value)}"
             )
-        self._get_keyvault(storage_name) \
-            .set_secret(secret_name, secret_value if not b64_encode else base64.b64encode(secret_value.encode('utf-8')))
+        self._get_keyvault(storage_name).set_secret(
+            secret_name, secret_value if not b64_encode else base64.b64encode(secret_value.encode("utf-8"))
+        )
 
     def list_secrets(self, storage_name: str, name_prefix: str) -> None:
         raise NotImplementedError("Not supported  in AzureSecretStorageClient")

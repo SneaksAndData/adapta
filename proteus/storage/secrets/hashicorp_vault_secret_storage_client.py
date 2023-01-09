@@ -30,8 +30,9 @@ class HashicorpSecretStorageClient(SecretStorageClient):
         secret = self.client.secrets.kv.v2.read_secret_version(path=secret_name)
         return secret["data"]["data"]
 
-    def create_secret(self, storage_name: str, secret_name: str, secret_value: Union[str, Dict[str, str]],
-                      b64_encode=False) -> None:
+    def create_secret(
+        self, storage_name: str, secret_name: str, secret_value: Union[str, Dict[str, str]], b64_encode=False
+    ) -> None:
         if not isinstance(secret_value, Dict):
             raise ValueError(
                 f"Only Dict secret type supported in HashicorpSecretStorageClient but was: {type(secret_value)}"
@@ -51,8 +52,8 @@ class HashicorpSecretStorageClient(SecretStorageClient):
 
     @staticmethod
     def _combine_path(*args):
-        return "/".join([arg.strip('/') for arg in args])
+        return "/".join([arg.strip("/") for arg in args])
 
     @staticmethod
     def _is_key(name):
-        return not name.endswith('/')
+        return not name.endswith("/")

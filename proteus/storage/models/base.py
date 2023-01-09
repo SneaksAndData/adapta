@@ -7,18 +7,20 @@ from enum import Enum
 
 class DataProtocols(Enum):
     """
-     HDFS protocol aliases for data path implementations.
+    HDFS protocol aliases for data path implementations.
     """
-    AZURE_BLOB = 'wasbs'
-    ADLS2 = 'abfss'
-    FILE = 'file'
-    HIVE = 'hive'
+
+    AZURE_BLOB = "wasbs"
+    ADLS2 = "abfss"
+    FILE = "file"
+    HIVE = "hive"
 
 
 class DataPath(ABC):
     """
-     Base path to any data entity.
+    Base path to any data entity.
     """
+
     path: str
     protocol: str
 
@@ -26,9 +28,9 @@ class DataPath(ABC):
     @abstractmethod
     def from_hdfs_path(cls, hdfs_path: str) -> "DataPath":
         """
-           Converts HDFS FileSystem path notation to this class.
-         :param hdfs_path: abfss://...
-         :return:
+          Converts HDFS FileSystem path notation to this class.
+        :param hdfs_path: abfss://...
+        :return:
         """
 
     @abstractmethod

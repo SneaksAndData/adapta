@@ -9,8 +9,9 @@ from proteus.storage.models.base import DataPath, DataProtocols
 @dataclass
 class LocalPath(DataPath):
     """
-     Local file system path.
+    Local file system path.
     """
+
     path: str
     protocol: str = DataProtocols.FILE.value
 
@@ -18,9 +19,7 @@ class LocalPath(DataPath):
     def from_hdfs_path(cls, hdfs_path: str) -> "LocalPath":
         assert hdfs_path.startswith("file://"), "HDFS local path should start with file://"
 
-        return LocalPath(
-            path=hdfs_path.replace("file://", "")
-        )
+        return LocalPath(path=hdfs_path.replace("file://", ""))
 
     def to_hdfs_path(self) -> str:
         return f"file://{self.path}"

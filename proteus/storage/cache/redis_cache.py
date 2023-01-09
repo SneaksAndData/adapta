@@ -16,7 +16,7 @@ from proteus.storage.cache import KeyValueCache
 
 class RedisCache(KeyValueCache):
     """
-      Redis cache.
+    Redis cache.
     """
 
     def __init__(self, host: str, database_number: int, port=6380, cluster_mode=False):
@@ -33,18 +33,18 @@ class RedisCache(KeyValueCache):
                 host=host,
                 port=port,
                 db=database_number,
-                password=os.environ['PROTEUS__CACHE_REDIS_PASSWORD'],
+                password=os.environ["PROTEUS__CACHE_REDIS_PASSWORD"],
                 ssl_cert_reqs=ssl.CERT_REQUIRED,
                 ssl=True,
                 decode_responses=False,
                 retry_on_timeout=True,
-                retry_on_error=[redis.exceptions.ConnectionError]
+                retry_on_error=[redis.exceptions.ConnectionError],
             )
         else:
             self._redis = RedisCluster(
                 host=host,
                 port=port,
-                password=os.environ['PROTEUS__CACHE_REDIS_PASSWORD'],
+                password=os.environ["PROTEUS__CACHE_REDIS_PASSWORD"],
                 retry=Retry(default_backoff(), 3),
                 ssl_cert_reqs=ssl.CERT_REQUIRED,
                 ssl=True,

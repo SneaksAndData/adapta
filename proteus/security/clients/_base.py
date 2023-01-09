@@ -10,7 +10,7 @@ from proteus.storage.models.base import DataPath
 
 class ProteusClient(ABC):
     """
-     Base functionality all infrastructure providers must implement.
+    Base functionality all infrastructure providers must implement.
     """
 
     @abstractmethod

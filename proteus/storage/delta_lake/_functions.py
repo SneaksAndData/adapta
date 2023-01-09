@@ -22,13 +22,13 @@ from proteus.storage.models.format import DataFrameParquetSerializationFormat
 
 
 def load(  # pylint: disable=R0913
-        proteus_client: ProteusClient,
-        path: DataPath,
-        version: Optional[int] = None,
-        row_filter: Optional[Expression] = None,
-        columns: Optional[List[str]] = None,
-        batch_size: Optional[int] = None,
-        partition_filter_expressions: Optional[List[Tuple]] = None
+    proteus_client: ProteusClient,
+    path: DataPath,
+    version: Optional[int] = None,
+    row_filter: Optional[Expression] = None,
+    columns: Optional[List[str]] = None,
+    batch_size: Optional[int] = None,
+    partition_filter_expressions: Optional[List[Tuple]] = None,
 ) -> Union[DeltaTable, pandas.DataFrame, Iterator[pandas.DataFrame]]:
     """
      Loads Delta Lake table from Azure storage and converts it to a pandas dataframe.
@@ -54,18 +54,17 @@ def load(  # pylint: disable=R0913
     connection_options = proteus_client.connect_storage(path)
 
     pyarrow_ds = DeltaTable(
-        path.to_delta_rs_path(),
-        version=version,
-        storage_options=connection_options
+        path.to_delta_rs_path(), version=version, storage_options=connection_options
     ).to_pyarrow_dataset(
         partitions=partition_filter_expressions,
         parquet_read_options=ParquetReadOptions(coerce_int96_timestamp_unit="ms"),
-        filesystem=proteus_client.get_pyarrow_filesystem(path, connection_options=connection_options)
+        filesystem=proteus_client.get_pyarrow_filesystem(path, connection_options=connection_options),
     )
 
     if batch_size:
-        batches: Iterator[RecordBatch] = pyarrow_ds.to_batches(filter=row_filter, columns=columns,
-                                                               batch_size=batch_size)
+        batches: Iterator[RecordBatch] = pyarrow_ds.to_batches(
+            filter=row_filter, columns=columns, batch_size=batch_size
+        )
 
         return map(lambda batch: batch.to_pandas(timestamp_as_object=True), batches)
 
@@ -89,13 +88,13 @@ def history(proteus_client: ProteusClient, path: DataPath, limit: Optional[int] 
 
 
 def get_cache_key(
-        proteus_client: ProteusClient,
-        path: DataPath,
-        batch_size=1000,
-        version: Optional[int] = None,
-        row_filter: Optional[Expression] = None,
-        columns: Optional[List[str]] = None,
-        partition_filter_expressions: Optional[List[Tuple]] = None
+    proteus_client: ProteusClient,
+    path: DataPath,
+    batch_size=1000,
+    version: Optional[int] = None,
+    row_filter: Optional[Expression] = None,
+    columns: Optional[List[str]] = None,
+    partition_filter_expressions: Optional[List[Tuple]] = None,
 ) -> str:
     """
       Returns a cache key for the path and data read arguments
@@ -133,20 +132,20 @@ def get_cache_key(
 
     base_attributes.append(str(batch_size))
 
-    return hashlib.md5('#'.join([path.to_delta_rs_path(), '_'.join(base_attributes)]).encode('utf-8')).hexdigest()
+    return hashlib.md5("#".join([path.to_delta_rs_path(), "_".join(base_attributes)]).encode("utf-8")).hexdigest()
 
 
 def load_cached(  # pylint: disable=R0913
-        proteus_client: ProteusClient,
-        path: DataPath,
-        cache: KeyValueCache,
-        cache_expires_after: Optional[datetime.timedelta] = datetime.timedelta(hours=1),
-        batch_size=1000,
-        version: Optional[int] = None,
-        row_filter: Optional[Expression] = None,
-        columns: Optional[List[str]] = None,
-        partition_filter_expressions: Optional[List[Tuple]] = None,
-        logger: Optional[ProteusLogger] = None,
+    proteus_client: ProteusClient,
+    path: DataPath,
+    cache: KeyValueCache,
+    cache_expires_after: Optional[datetime.timedelta] = datetime.timedelta(hours=1),
+    batch_size=1000,
+    version: Optional[int] = None,
+    row_filter: Optional[Expression] = None,
+    columns: Optional[List[str]] = None,
+    partition_filter_expressions: Optional[List[Tuple]] = None,
+    logger: Optional[ProteusLogger] = None,
 ) -> pandas.DataFrame:
     """
      Loads Delta Lake table from an external cache and converts it to a single pandas dataframe (after applying column projections and row filters).
@@ -182,54 +181,45 @@ def load_cached(  # pylint: disable=R0913
         version=version,
         row_filter=row_filter,
         columns=columns,
-        partition_filter_expressions=partition_filter_expressions
+        partition_filter_expressions=partition_filter_expressions,
     )
 
     if logger:
         logger.debug(
-            'Generated cache key {cache_key} for {table_path}',
-            cache_key=cache_key,
-            table_path=path.to_delta_rs_path()
+            "Generated cache key {cache_key} for {table_path}", cache_key=cache_key, table_path=path.to_delta_rs_path()
         )
 
     # first check that we have cached batches for all given inputs (columns, filters etc.)
     # we read a special cache entry which tells us number of cached batches for this table query
-    if cache.exists(cache_key, 'completed'):
+    if cache.exists(cache_key, "completed"):
         if logger:
-            logger.debug(
-                'Cache hit for {cache_key}',
-                cache_key=cache_key
-            )
+            logger.debug("Cache hit for {cache_key}", cache_key=cache_key)
 
         try:
             return pandas.concat(
                 [
-                    DataFrameParquetSerializationFormat().deserialize(
-                        zlib.decompress(cached_batch)
-                    ) for batch_key, cached_batch in cache.get(cache_key, is_map=True).items() if
-                    batch_key != b'completed'
+                    DataFrameParquetSerializationFormat().deserialize(zlib.decompress(cached_batch))
+                    for batch_key, cached_batch in cache.get(cache_key, is_map=True).items()
+                    if batch_key != b"completed"
                 ]
             )
         except (
-                pyarrow.ArrowInvalid,
-                ValueError,
-                pyarrow.ArrowException,
-                ConnectionError,
-                ConnectionResetError,
-                ConnectionAbortedError,
-                ConnectionRefusedError
+            pyarrow.ArrowInvalid,
+            ValueError,
+            pyarrow.ArrowException,
+            ConnectionError,
+            ConnectionResetError,
+            ConnectionAbortedError,
+            ConnectionRefusedError,
         ) as ex:
             if logger:
                 logger.warning(
-                    'Error when reading data from cache - most likely some cache entries have been evicted. Falling back to storage.',
-                    exception=ex
+                    "Error when reading data from cache - most likely some cache entries have been evicted. Falling back to storage.",
+                    exception=ex,
                 )
 
     if logger:
-        logger.debug(
-            'Cache miss for {cache_key}, populating cache.',
-            cache_key=cache_key
-        )
+        logger.debug("Cache miss for {cache_key}, populating cache.", cache_key=cache_key)
 
     data = load(
         proteus_client=proteus_client,
@@ -238,27 +228,30 @@ def load_cached(  # pylint: disable=R0913
         row_filter=row_filter,
         columns=columns,
         batch_size=batch_size,
-        partition_filter_expressions=partition_filter_expressions
+        partition_filter_expressions=partition_filter_expressions,
     )
 
-    aggregate_batch = pandas.concat([
-        cache.include(
-            key=cache_key,
-            attribute=str(batch_index),
-            value=zlib.compress(DataFrameParquetSerializationFormat().serialize(batch))
-        ) for batch_index, batch in enumerate(data)
-    ], ignore_index=True, copy=False)
+    aggregate_batch = pandas.concat(
+        [
+            cache.include(
+                key=cache_key,
+                attribute=str(batch_index),
+                value=zlib.compress(DataFrameParquetSerializationFormat().serialize(batch)),
+            )
+            for batch_index, batch in enumerate(data)
+        ],
+        ignore_index=True,
+        copy=False,
+    )
 
     # we add a 'completion' indicator to this cached key so clients that now safely read the value
     # by doing it this way, we avoid doing a transaction - thus this method is non-blocking
-    cache.include(key=cache_key, attribute='completed', value=1)
+    cache.include(key=cache_key, attribute="completed", value=1)
     cache.set_expiration(cache_key, cache_expires_after)
 
     if logger:
         logger.debug(
-            'Cache updated for {cache_key}, total rows {row_count}',
-            cache_key=cache_key,
-            row_count=len(aggregate_batch)
+            "Cache updated for {cache_key}, total rows {row_count}", cache_key=cache_key, row_count=len(aggregate_batch)
         )
 
     return aggregate_batch

@@ -4,6 +4,7 @@
 
 from proteus.security.clients._local_client import LocalClient
 from proteus.security.clients._base import ProteusClient
+
 try:
     from proteus.security.clients.hashicorp_vault.oidc_client import HashicorpVaultOidcClient
 except ImportError:

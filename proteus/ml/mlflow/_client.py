@@ -16,12 +16,13 @@ MLFLOW_ARTIFACT_STORE_SCHEME = "mlflow-artifacts"
 
 class MlflowBasicClient:
     """
-      Mlflow operations scoped to MlflowClient API.
+    Mlflow operations scoped to MlflowClient API.
     """
 
     def __init__(self, tracking_server_uri: str):
-        assert os.environ.get('MLFLOW_TRACKING_USERNAME') and os.environ.get(
-            'MLFLOW_TRACKING_PASSWORD'), 'Both MLFLOW_TRACKING_USERNAME and MLFLOW_TRACKING_PASSWORD must be set to access MLFlow Tracking Server'
+        assert os.environ.get("MLFLOW_TRACKING_USERNAME") and os.environ.get(
+            "MLFLOW_TRACKING_PASSWORD"
+        ), "Both MLFLOW_TRACKING_USERNAME and MLFLOW_TRACKING_PASSWORD must be set to access MLFlow Tracking Server"
 
         mlflow.set_tracking_uri(tracking_server_uri)
         self._tracking_server_uri = tracking_server_uri
@@ -54,9 +55,11 @@ class MlflowBasicClient:
     def _get_artifact_repo_backported(self, run_id) -> mlflow.store.artifact_repo.ArtifactRepository:
         run = self._client.get_run(run_id)
 
-        artifact_uri = run.info.artifact_uri \
-            if run.info.artifact_uri.startswith(MLFLOW_ARTIFACT_STORE_SCHEME) \
+        artifact_uri = (
+            run.info.artifact_uri
+            if run.info.artifact_uri.startswith(MLFLOW_ARTIFACT_STORE_SCHEME)
             else f"{MLFLOW_ARTIFACT_STORE_SCHEME}:/{run.info.experiment_id}/{run.info.run_id}"
+        )
 
         return get_artifact_repository(artifact_uri)
 
@@ -80,10 +83,7 @@ class MlflowBasicClient:
         """
         return self._client.search_model_versions(f"name='{model_name}'")
 
-    def set_model_stage(self,
-                        model_name: str,
-                        model_version: str,
-                        stage: str) -> ModelVersion:
+    def set_model_stage(self, model_name: str, model_version: str, stage: str) -> ModelVersion:
         """
         inherited the transitioning model version stage in Mlflow
         :param model_name: model name
@@ -99,25 +99,25 @@ class MlflowBasicClient:
     @staticmethod
     def load_model_by_name(model_name: str, stage_or_version: str) -> PyFuncModel:
         """
-         Load model as pyfunc using models:/ api
+        Load model as pyfunc using models:/ api
         """
         return mlflow.pyfunc.load_model(f"models:/{model_name}/{stage_or_version}")
 
     @staticmethod
     def load_model_by_uri(model_uri: str) -> PyFuncModel:
         """
-         Load model as pyfunc using one of the following:
+        Load model as pyfunc using one of the following:
 
-          - ``/Users/me/path/to/local/model``
-          - ``relative/path/to/local/model``
-          - ``s3://my_bucket/path/to/model``
-          - ``runs:/<mlflow_run_id>/run-relative/path/to/model``
-          - ``models:/<model_name>/<model_version>``
-          - ``models:/<model_name>/<stage>``
-          - ``mlflow-artifacts:/path/to/model``
+         - ``/Users/me/path/to/local/model``
+         - ``relative/path/to/local/model``
+         - ``s3://my_bucket/path/to/model``
+         - ``runs:/<mlflow_run_id>/run-relative/path/to/model``
+         - ``models:/<model_name>/<model_version>``
+         - ``models:/<model_name>/<stage>``
+         - ``mlflow-artifacts:/path/to/model``
 
-          For more information about supported URI schemes, see
-          `Referencing Artifacts <https://www.mlflow.org/docs/latest/concepts.html#
-          artifact-locations>`_.
+         For more information about supported URI schemes, see
+         `Referencing Artifacts <https://www.mlflow.org/docs/latest/concepts.html#
+         artifact-locations>`_.
         """
         return mlflow.pyfunc.load_model(model_uri)

@@ -12,11 +12,11 @@ from proteus.security.clients.hashicorp_vault.hashicorp_vault_client import Hash
 
 class HashicorpVaultKubernetesClient(HashicorpVaultClient):
     """
-     Hashicorp vault Credentials provider for K8S.
+    Hashicorp vault Credentials provider for K8S.
     """
 
     @staticmethod
-    def from_base_client(client: ProteusClient) -> Optional['HashicorpVaultKubernetesClient']:
+    def from_base_client(client: ProteusClient) -> Optional["HashicorpVaultKubernetesClient"]:
         """
          Safe casts ProteusClient to HashicorpVaultClient if type checks out.
 
@@ -28,10 +28,12 @@ class HashicorpVaultKubernetesClient(HashicorpVaultClient):
 
         return None
 
-    def __init__(self,
-                 vault_address: str,
-                 deployment_cluster_name: str,
-                 kubernetes_token_path: str = '/var/run/secrets/kubernetes.io/serviceaccount/token'):
+    def __init__(
+        self,
+        vault_address: str,
+        deployment_cluster_name: str,
+        kubernetes_token_path: str = "/var/run/secrets/kubernetes.io/serviceaccount/token",
+    ):
         """
         Initialization logic for Kubernetes auth method
         :param vault_address: Address of hashicorp vault instance
@@ -43,11 +45,9 @@ class HashicorpVaultKubernetesClient(HashicorpVaultClient):
         self.token_path = kubernetes_token_path
 
     def get_credentials(self):
-        with open(self.token_path, encoding='utf-8') as token_file:
+        with open(self.token_path, encoding="utf-8") as token_file:
             Kubernetes(self._client.adapter).login(
-                role='application',
-                jwt=token_file.read(),
-                mount_point=f'kubernetes/{self.deployment_cluster_name}'
+                role="application", jwt=token_file.read(), mount_point=f"kubernetes/{self.deployment_cluster_name}"
             )
 
     def get_access_token(self, scope: Optional[str] = None) -> str:

@@ -7,7 +7,7 @@ from typing import Dict, Optional
 
 class MetricsProvider(ABC):
     """
-      Base class for metrics implementations.
+    Base class for metrics implementations.
     """
 
     @abstractmethod
@@ -68,16 +68,18 @@ class MetricsProvider(ABC):
         :return:
         """
 
-    def event(self,
-              title: str,
-              message: str,
-              alert_type: Optional[str] = None,
-              aggregation_key: Optional[str] = None,
-              source_type_name: Optional[str] = None,
-              date_happened: Optional[int] = None,
-              priority: Optional[str] = None,
-              tags: Optional[Optional[Dict[str, str]]] = None,
-              hostname: Optional[str] = None) -> None:
+    def event(
+        self,
+        title: str,
+        message: str,
+        alert_type: Optional[str] = None,
+        aggregation_key: Optional[str] = None,
+        source_type_name: Optional[str] = None,
+        date_happened: Optional[int] = None,
+        priority: Optional[str] = None,
+        tags: Optional[Optional[Dict[str, str]]] = None,
+        hostname: Optional[str] = None,
+    ) -> None:
         """
           Send an event to statsd.
 

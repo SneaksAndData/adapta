@@ -1,4 +1,6 @@
 # Proteus
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
 This project aim at providing tools needed for everyday activities of data scientists and engineers:
 - Connectors for various cloud APIs
 - Secure secret handlers for various remote storages

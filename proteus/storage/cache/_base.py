@@ -8,7 +8,7 @@ from typing import Any, List, Optional
 
 class KeyValueCache(ABC):
     """
-      Abstract key-value cache store.
+    Abstract key-value cache store.
     """
 
     @abstractmethod

@@ -10,13 +10,14 @@ class AzureServiceBusConnector:
     """
     Connector for Azure Service Bus.
     """
+
     def __init__(self, conn_str: Optional[str] = None, queue_name: Optional[str] = None):
         self.service_bus_client: ServiceBusClient = ServiceBusClient.from_connection_string(
-            conn_str=conn_str if conn_str is not None else os.environ['SERVICE_BUS_CONNECTION_STRING'],
+            conn_str=conn_str if conn_str is not None else os.environ["SERVICE_BUS_CONNECTION_STRING"],
             transport_type=TransportType.Amqp,
         )
         self.sender: ServiceBusSender = self.service_bus_client.get_queue_sender(
-            queue_name=queue_name if queue_name is not None else os.environ['SERVICE_BUS_QUEUE']
+            queue_name=queue_name if queue_name is not None else os.environ["SERVICE_BUS_QUEUE"]
         )
 
     def __enter__(self):

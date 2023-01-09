@@ -40,7 +40,7 @@ def session_with_retries(method_list: Optional[List[str]] = None, request_timeou
         total=4,
         status_forcelist=[400, 429, 500, 502, 503, 504],
         method_whitelist=method_list or ["HEAD", "GET", "OPTIONS", "TRACE"],
-        backoff_factor=1
+        backoff_factor=1,
     )
     adapter = HTTPAdapter(max_retries=retry_strategy)
     http = requests.Session()
@@ -72,7 +72,7 @@ def operation_time():
     :param operation: A method to measure execution time for.
     :return: A tuple of (method_execution_time_ns, method_result)
     """
-    result = namedtuple('OperationDuration', ['start', 'end', 'elapsed'])
+    result = namedtuple("OperationDuration", ["start", "end", "elapsed"])
     result.start = time.monotonic_ns()
     result.end = 0
     result.elapsed = 0
@@ -90,4 +90,4 @@ def chunk_list(value: List[Any], num_chunks: int) -> List[List[Any]]:
     :return: A list that has num_chunks lists in it. Total length equals length of the original list.
     """
     chunk_size = math.ceil(len(value) / num_chunks)
-    return [value[el_pos:el_pos + chunk_size] for el_pos in range(0, len(value), chunk_size)]
+    return [value[el_pos : el_pos + chunk_size] for el_pos in range(0, len(value), chunk_size)]

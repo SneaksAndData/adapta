@@ -18,14 +18,10 @@ from proteus.logs._internal import MetadataLogger, from_log_level
 
 class ProteusLogger:
     """
-     Proteus Proxy for Python logging library.
+    Proteus Proxy for Python logging library.
     """
 
-    def __init__(
-            self,
-            fixed_template: Optional[Dict[str, Dict[str, str]]] = None,
-            fixed_template_delimiter=', '
-    ):
+    def __init__(self, fixed_template: Optional[Dict[str, Dict[str, str]]] = None, fixed_template_delimiter=", "):
         """
           Creates a new instance of a ProteusLogger
 
@@ -38,9 +34,14 @@ class ProteusLogger:
         self._fixed_template_delimiter = fixed_template_delimiter
         logging.setLoggerClass(MetadataLogger)
 
-    def add_log_source(self, *, log_source_name: str, min_log_level: LogLevel,
-                       log_handlers: Optional[List[Handler]] = None,
-                       is_default=False) -> 'ProteusLogger':
+    def add_log_source(
+        self,
+        *,
+        log_source_name: str,
+        min_log_level: LogLevel,
+        log_handlers: Optional[List[Handler]] = None,
+        is_default=False,
+    ) -> "ProteusLogger":
         """
           Adds a new log source.
 
@@ -79,10 +80,14 @@ class ProteusLogger:
         :param log_source_name: Optional name of a log source.
         :return:
         """
-        assert log_source_name or self._default_log_source, 'Argument `log_source` must be provided when no default log source is added. You can add a log source as default by calling `add_log_source(.., is_default=True)`'
+        assert (
+            log_source_name or self._default_log_source
+        ), "Argument `log_source` must be provided when no default log source is added. You can add a log source as default by calling `add_log_source(.., is_default=True)`"
 
         if log_source_name:
-            assert log_source_name in self._loggers, f"{log_source_name} does not have an associated logger. Use add_log_source() to associate a logger with this log source."
+            assert (
+                log_source_name in self._loggers
+            ), f"{log_source_name} does not have an associated logger. Use add_log_source() to associate a logger with this log source."
 
         return self._loggers[log_source_name or self._default_log_source]
 
@@ -100,14 +105,15 @@ class ProteusLogger:
         return fixed_args
 
     def _get_template(self, template) -> str:
-        return self._fixed_template_delimiter.join(
-            [template, ', '.join(self._fixed_template.keys())]) if self._fixed_template else template
+        return (
+            self._fixed_template_delimiter.join([template, ", ".join(self._fixed_template.keys())])
+            if self._fixed_template
+            else template
+        )
 
-    def info(self,
-             template: str,
-             tags: Optional[Dict[str, str]] = None,
-             log_source_name: Optional[str] = None,
-             **kwargs) -> None:
+    def info(
+        self, template: str, tags: Optional[Dict[str, str]] = None, log_source_name: Optional[str] = None, **kwargs
+    ) -> None:
         """
           Sends an INFO level message to configured log sources.
 
@@ -127,14 +133,17 @@ class ProteusLogger:
             diagnostics=None,
             stack_info=False,
             exception=None,
-            metadata_fields=self.__get_metadata_fields(kwargs))
+            metadata_fields=self.__get_metadata_fields(kwargs),
+        )
 
-    def warning(self,
-                template: str,
-                exception: Optional[BaseException] = None,
-                tags: Optional[Dict[str, str]] = None,
-                log_source_name: Optional[str] = None,
-                **kwargs) -> None:
+    def warning(
+        self,
+        template: str,
+        exception: Optional[BaseException] = None,
+        tags: Optional[Dict[str, str]] = None,
+        log_source_name: Optional[str] = None,
+        **kwargs,
+    ) -> None:
         """
           Sends a WARNING level message to configured log sources.
 
@@ -147,21 +156,25 @@ class ProteusLogger:
         """
         logger = self._get_logger(log_source_name)
         msg = self._get_template(template).format(**self._get_fixed_args(), **kwargs)
-        logger.log_with_metadata(logging.WARN,
-                                 msg=msg,
-                                 tags=tags,
-                                 template=template,
-                                 diagnostics=None,
-                                 stack_info=False,
-                                 exception=exception,
-                                 metadata_fields=self.__get_metadata_fields(kwargs))
+        logger.log_with_metadata(
+            logging.WARN,
+            msg=msg,
+            tags=tags,
+            template=template,
+            diagnostics=None,
+            stack_info=False,
+            exception=exception,
+            metadata_fields=self.__get_metadata_fields(kwargs),
+        )
 
-    def error(self,
-              template: str,
-              exception: Optional[BaseException] = None,
-              tags: Optional[Dict[str, str]] = None,
-              log_source_name: Optional[str] = None,
-              **kwargs) -> None:
+    def error(
+        self,
+        template: str,
+        exception: Optional[BaseException] = None,
+        tags: Optional[Dict[str, str]] = None,
+        log_source_name: Optional[str] = None,
+        **kwargs,
+    ) -> None:
         """
           Sends an ERROR level message to configured log sources.
 
@@ -174,21 +187,26 @@ class ProteusLogger:
         """
         logger = self._get_logger(log_source_name)
         msg = self._get_template(template).format(**self._get_fixed_args(), **kwargs)
-        logger.log_with_metadata(logging.ERROR,
-                                 msg=msg,
-                                 template=template,
-                                 tags=tags,
-                                 diagnostics=None,
-                                 stack_info=False,
-                                 exception=exception,
-                                 metadata_fields=self.__get_metadata_fields(kwargs))
+        logger.log_with_metadata(
+            logging.ERROR,
+            msg=msg,
+            template=template,
+            tags=tags,
+            diagnostics=None,
+            stack_info=False,
+            exception=exception,
+            metadata_fields=self.__get_metadata_fields(kwargs),
+        )
 
-    def debug(self,
-              template: str,
-              exception: Optional[BaseException] = None,
-              diagnostics: Optional[str] = None,  # pylint: disable=R0913
-              tags: Optional[Dict[str, str]] = None,
-              log_source_name: Optional[str] = None, **kwargs) -> None:
+    def debug(
+        self,
+        template: str,
+        exception: Optional[BaseException] = None,
+        diagnostics: Optional[str] = None,  # pylint: disable=R0913
+        tags: Optional[Dict[str, str]] = None,
+        log_source_name: Optional[str] = None,
+        **kwargs,
+    ) -> None:
         """
           Sends a DEBUG level message to configured log sources.
 
@@ -202,17 +220,19 @@ class ProteusLogger:
         """
         logger = self._get_logger(log_source_name)
         msg = self._get_template(template).format(**self._get_fixed_args(), **kwargs)
-        logger.log_with_metadata(logging.DEBUG,
-                                 msg=msg,
-                                 template=template,
-                                 tags=tags,
-                                 diagnostics=diagnostics,
-                                 stack_info=False,
-                                 exception=exception,
-                                 metadata_fields=self.__get_metadata_fields(kwargs))
+        logger.log_with_metadata(
+            logging.DEBUG,
+            msg=msg,
+            template=template,
+            tags=tags,
+            diagnostics=diagnostics,
+            stack_info=False,
+            exception=exception,
+            metadata_fields=self.__get_metadata_fields(kwargs),
+        )
 
     def _print_redirect_state(self, logger, log_level, state, tags):
-        template = self._get_template('>> Redirected output {state} <<')
+        template = self._get_template(">> Redirected output {state} <<")
         msg = template.format(**self._get_fixed_args(), state=state)
         logger.log_with_metadata(
             from_log_level(log_level),
@@ -222,11 +242,11 @@ class ProteusLogger:
             stack_info=None,
             exception=None,
             metadata_fields=self.__get_metadata_fields({}),
-            template=template
+            template=template,
         )
 
     def _print_redirect_message(self, logger, log_level, message, tags):
-        template = self._get_template('Redirected output: {message}')
+        template = self._get_template("Redirected output: {message}")
         msg = template.format(**self._get_fixed_args(), message=message)
         logger.log_with_metadata(
             from_log_level(log_level),
@@ -236,14 +256,13 @@ class ProteusLogger:
             stack_info=None,
             exception=None,
             metadata_fields=self.__get_metadata_fields({}),
-            template=template
+            template=template,
         )
 
     @contextmanager
-    def redirect(self,
-                 tags: Optional[Dict[str, str]] = None,
-                 log_source_name: Optional[str] = None,
-                 log_level=LogLevel.INFO):
+    def redirect(
+        self, tags: Optional[Dict[str, str]] = None, log_source_name: Optional[str] = None, log_level=LogLevel.INFO
+    ):
         """
          Redirects stdout to a temporary file and dumps its contents as INFO messages
          once the wrapped code block finishes execution. Stdout is restored after the block completes execution.
@@ -269,10 +288,10 @@ class ProteusLogger:
 
         if sys.platform == "win32":
             self.info(
-                self._get_template('>> Output redirection not supported on this platform: {platform} <<'),
+                self._get_template(">> Output redirection not supported on this platform: {platform} <<"),
                 platform=sys.platform,
                 tags=tags,
-                log_source_name=log_source_name
+                log_source_name=log_source_name,
             )
             try:
                 yield None
@@ -282,7 +301,7 @@ class ProteusLogger:
 
         libc = ctypes.CDLL(None)
         saved_stdout = libc.dup(1)
-        tmp_file = os.path.join(tempfile.gettempdir(), tempfile.mktemp()).encode('utf-8')
+        tmp_file = os.path.join(tempfile.gettempdir(), tempfile.mktemp()).encode("utf-8")
         try:
             redirected_fd = libc.creat(tmp_file)
             libc.dup2(redirected_fd, 1)
@@ -296,7 +315,7 @@ class ProteusLogger:
             logger = self._get_logger(log_source_name)
 
             self._print_redirect_state(logger, log_level, "BEGIN", tags)
-            with open(tmp_file, encoding='utf-8') as output:
+            with open(tmp_file, encoding="utf-8") as output:
                 for line in output.readlines():
                     self._print_redirect_message(logger, log_level, line, tags)
             self._print_redirect_state(logger, log_level, "END", tags)

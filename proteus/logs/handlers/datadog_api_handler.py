@@ -29,18 +29,18 @@ from proteus.utils import convert_datadog_tags
 
 class DataDogApiHandler(Handler):
     """
-      Logging handler for DataDog.
+    Logging handler for DataDog.
     """
 
     def __init__(
-            self,
-            *,
-            buffer_size=10,
-            async_handler=False,
-            debug=False,
-            max_flush_retry_time=30,
-            ignore_flush_failure=False,
-            fixed_tags: Optional[Dict[str, str]] = None
+        self,
+        *,
+        buffer_size=10,
+        async_handler=False,
+        debug=False,
+        max_flush_retry_time=30,
+        ignore_flush_failure=False,
+        fixed_tags: Optional[Dict[str, str]] = None,
     ):
         """
           Creates a handler than can upload log records to DataDog index.
@@ -58,16 +58,19 @@ class DataDogApiHandler(Handler):
         """
         super().__init__()
         assert os.getenv(
-            'PROTEUS__DD_API_KEY'), 'PROTEUS__DD_API_KEY environment variable must be set in order to use DataDogApiHandler'
+            "PROTEUS__DD_API_KEY"
+        ), "PROTEUS__DD_API_KEY environment variable must be set in order to use DataDogApiHandler"
         assert os.getenv(
-            'PROTEUS__DD_APP_KEY'), 'PROTEUS__DD_APP_KEY environment variable must be set in order to use DataDogApiHandler'
+            "PROTEUS__DD_APP_KEY"
+        ), "PROTEUS__DD_APP_KEY environment variable must be set in order to use DataDogApiHandler"
         assert os.getenv(
-            'PROTEUS__DD_SITE'), 'PROTEUS__DD_SITE environment variable must be set in order to use DataDogApiHandler'
+            "PROTEUS__DD_SITE"
+        ), "PROTEUS__DD_SITE environment variable must be set in order to use DataDogApiHandler"
 
         configuration = Configuration()
-        configuration.server_variables["site"] = os.getenv('PROTEUS__DD_SITE')
-        configuration.api_key['apiKeyAuth'] = os.getenv('PROTEUS__DD_API_KEY')
-        configuration.api_key['appKeyAuth'] = os.getenv('PROTEUS__DD_APP_KEY')
+        configuration.server_variables["site"] = os.getenv("PROTEUS__DD_SITE")
+        configuration.api_key["apiKeyAuth"] = os.getenv("PROTEUS__DD_API_KEY")
+        configuration.api_key["appKeyAuth"] = os.getenv("PROTEUS__DD_APP_KEY")
 
         if debug:
             configuration.debug = True
@@ -86,13 +89,13 @@ class DataDogApiHandler(Handler):
 
         # environment tag is inferred from kubernetes context name, if one exists
         self._fixed_tags = fixed_tags or {}
-        if 'environment' not in self._fixed_tags:
-            self._fixed_tags.setdefault('environment', 'local')
+        if "environment" not in self._fixed_tags:
+            self._fixed_tags.setdefault("environment", "local")
             try:
                 config.load_incluster_config()
                 _, current_context = config.list_kube_config_contexts()
                 assert isinstance(current_context, kubernetes.config.kube_config.ConfigNode)
-                self._fixed_tags['environment'] = current_context.name
+                self._fixed_tags["environment"] = current_context.name
             except ConfigException:
                 pass
 
@@ -108,16 +111,19 @@ class DataDogApiHandler(Handler):
 
         @backoff.on_exception(
             wait_gen=backoff.expo,
-            exception=(ConnectionResetError, ConnectionRefusedError, ConnectionAbortedError, ConnectionError,
-                       HTTPError),
+            exception=(
+                ConnectionResetError,
+                ConnectionRefusedError,
+                ConnectionAbortedError,
+                ConnectionError,
+                HTTPError,
+            ),
             max_time=self._max_flush_retry_time,
-            raise_on_giveup=self._ignore_flush_failure
+            raise_on_giveup=self._ignore_flush_failure,
         )
         def _try_flush():
             result = self._logs_api.submit_log(
-                body=HTTPLog(value=self._buffer),
-                content_encoding='gzip',
-                async_req=self._async_handler
+                body=HTTPLog(value=self._buffer), content_encoding="gzip", async_req=self._async_handler
             )
             if self._async_handler:
                 result.get()
@@ -141,9 +147,7 @@ class DataDogApiHandler(Handler):
 
             metadata: Optional[ProteusLogMetadata] = rec.__dict__.get(ProteusLogMetadata.__name__)
             tags = {}
-            formatted_message: Dict[str, Any] = {
-                "text": rec.getMessage()
-            }
+            formatted_message: Dict[str, Any] = {"text": rec.getMessage()}
             if metadata:
                 if metadata.tags:
                     tags.update(metadata.tags)
@@ -155,19 +159,22 @@ class DataDogApiHandler(Handler):
                     formatted_message["diagnostics"] = metadata.diagnostics
             if rec.exc_info:
                 ex_type, ex_value, _ = rec.exc_info
-                formatted_message.setdefault('error', {
-                    'stack': "".join(traceback.format_exception(*rec.exc_info, chain=True)).strip("\n"),
-                    'message': str(ex_value),
-                    'kind': ex_type.__name__
-                })
+                formatted_message.setdefault(
+                    "error",
+                    {
+                        "stack": "".join(traceback.format_exception(*rec.exc_info, chain=True)).strip("\n"),
+                        "message": str(ex_value),
+                        "kind": ex_type.__name__,
+                    },
+                )
             tags.update(self._fixed_tags)
 
             return HTTPLogItem(
                 ddsource=rec.name,
-                ddtags=','.join(convert_datadog_tags(tags)),
+                ddtags=",".join(convert_datadog_tags(tags)),
                 hostname=socket.gethostname(),
                 message=json.dumps(formatted_message),
-                status=rec.levelname
+                status=rec.levelname,
             )
 
         if len(self._buffer) < self._buffer_size:

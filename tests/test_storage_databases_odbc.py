@@ -3,19 +3,23 @@ from proteus.storage.database.odbc import OdbcClient
 
 
 def sku_data():
-    return pandas.DataFrame(data={
-        'sku_id': ["1", "2", "3"],
-        'sku_name': ["Exostrike", "BIOM", "Collin"],
-        'location_id': ["1", "1", "2"],
-        'cost': [100.0, 50.2, 40.6]
-    })
+    return pandas.DataFrame(
+        data={
+            "sku_id": ["1", "2", "3"],
+            "sku_name": ["Exostrike", "BIOM", "Collin"],
+            "location_id": ["1", "1", "2"],
+            "cost": [100.0, 50.2, 40.6],
+        }
+    )
 
 
 def location_data():
-    return pandas.DataFrame(data={
-        'location_id': ["1", "2", "3"],
-        'location_name': ["Østergade", "Bredebro", "Købmagergade"],
-    })
+    return pandas.DataFrame(
+        data={
+            "location_id": ["1", "2", "3"],
+            "location_name": ["Østergade", "Bredebro", "Købmagergade"],
+        }
+    )
 
 
 def test_materialize(sqlite: OdbcClient):
@@ -25,8 +29,8 @@ def test_materialize(sqlite: OdbcClient):
     with sqlite:
         _ = sqlite.materialize(
             data=sku_data(),
-            schema='main',
-            name='sku',
+            schema="main",
+            name="sku",
             overwrite=True,
         )
 
@@ -60,33 +64,23 @@ def test_joined_write_read_frame(sqlite: OdbcClient):
     Test that writing two tables and reading them joined again will return the original dataframes joined as well.
     """
     with sqlite:
-        _ = sqlite.materialize(
-            data=sku_data(),
-            schema="main",
-            name="sku",
-            overwrite=True
-        )
+        _ = sqlite.materialize(data=sku_data(), schema="main", name="sku", overwrite=True)
 
-        _ = sqlite.materialize(
-            data=location_data(),
-            schema="main",
-            name="location",
-            overwrite=True
-        )
+        _ = sqlite.materialize(data=location_data(), schema="main", name="location", overwrite=True)
 
-        result = sqlite.query("""
+        result = sqlite.query(
+            """
           SELECT 
              sku_name, 
              location_name, 
              cost 
           FROM 
              main.sku 
-             INNER JOIN main.location ON sku.location_id = location.location_id""")
+             INNER JOIN main.location ON sku.location_id = location.location_id"""
+        )
 
     assert result.equals(
-        sku_data().merge(
-            location_data(), how='inner', on='location_id'
-        )[['sku_name', 'location_name', 'cost']]
+        sku_data().merge(location_data(), how="inner", on="location_id")[["sku_name", "location_name", "cost"]]
     )
 
 
@@ -111,7 +105,7 @@ def test_write_replace(sqlite: OdbcClient):
     with sqlite:
         sqlite.materialize(data=sku_data(), schema="main", name="sku", overwrite=True)
         sku_df2 = sku_data()
-        sku_df2['location_id'] = '4'
+        sku_df2["location_id"] = "4"
         sqlite.materialize(data=sku_df2, schema="main", name="sku", overwrite=True)
 
         result = sqlite.query("SELECT * FROM main.sku")

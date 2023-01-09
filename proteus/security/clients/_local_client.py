@@ -9,7 +9,7 @@ from proteus.storage.models.base import DataPath
 
 class LocalClient(ProteusClient):
     """
-     Local mode Proteus Client.
+    Local mode Proteus Client.
     """
 
     def get_credentials(self):

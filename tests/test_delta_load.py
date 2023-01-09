@@ -19,7 +19,7 @@ def get_client_and_path():
     test_data_path = f"{pathlib.Path(__file__).parent.resolve()}/delta_table"
 
     client = LocalClient()
-    data_path = LocalPath.from_hdfs_path(f'file://{test_data_path}')
+    data_path = LocalPath.from_hdfs_path(f"file://{test_data_path}")
 
     return client, data_path
 
@@ -29,7 +29,7 @@ def get_client_and_path_partitioned():
     test_data_path = f"{pathlib.Path(__file__).parent.resolve()}/delta_table_with_partitions"
 
     client = LocalClient()
-    data_path = LocalPath.from_hdfs_path(f'file://{test_data_path}')
+    data_path = LocalPath.from_hdfs_path(f"file://{test_data_path}")
 
     return client, data_path
 
@@ -52,7 +52,7 @@ def test_delta_batch_load(get_client_and_path):
 
 def test_delta_filter(get_client_and_path):
     client, data_path = get_client_and_path
-    table = load(client, data_path, row_filter=(pyarrow_field('A') == "b"))
+    table = load(client, data_path, row_filter=(pyarrow_field("A") == "b"))
 
     assert len(table) == 0
 
@@ -68,10 +68,10 @@ def test_delta_load_with_partitions(get_client_and_path_partitioned):
     client, data_path = get_client_and_path_partitioned
     table = load(client, data_path, partition_filter_expressions=[("colP", "=", "yes")])
 
-    assert table['colA'].to_list() == [1, 3]
+    assert table["colA"].to_list() == [1, 3]
 
 
-@patch('proteus.storage.cache.KeyValueCache')
+@patch("proteus.storage.cache.KeyValueCache")
 def test_delta_load_cached(mock_cache: MagicMock, get_client_and_path):
     client, data_path = get_client_and_path
 
@@ -79,34 +79,34 @@ def test_delta_load_cached(mock_cache: MagicMock, get_client_and_path):
 
     cache.exists.return_value = True
     cache.get.return_value = {
-        b'0': zlib.compress(DataFrameParquetSerializationFormat().serialize(pandas.DataFrame([{'a': 1, 'b': 2}]))),
-        b'completed': 1
+        b"0": zlib.compress(DataFrameParquetSerializationFormat().serialize(pandas.DataFrame([{"a": 1, "b": 2}]))),
+        b"completed": 1,
     }
 
     cache_key = get_cache_key(client, data_path, batch_size=1)
 
     _ = load_cached(client, data_path, cache=cache, batch_size=1)
 
-    cache.exists.assert_called_with(cache_key, 'completed')
+    cache.exists.assert_called_with(cache_key, "completed")
     cache.get.assert_called_with(cache_key, is_map=True)
 
 
-@patch('proteus.storage.cache.KeyValueCache')
+@patch("proteus.storage.cache.KeyValueCache")
 def test_delta_populate_cache(mock_cache: MagicMock, get_client_and_path):
     client, data_path = get_client_and_path
 
     cache: KeyValueCache = mock_cache.return_value
 
     cache.exists.return_value = False
-    cache.include.return_value = pandas.DataFrame([{'a': 1}])
+    cache.include.return_value = pandas.DataFrame([{"a": 1}])
 
     cache_key = get_cache_key(client, data_path, batch_size=1)
 
     _ = load_cached(client, data_path, cache=cache, batch_size=1)
 
-    cache.exists.assert_called_once_with(cache_key, 'completed')
+    cache.exists.assert_called_once_with(cache_key, "completed")
 
     set_calls = [call(key=cache_key, attribute=str(batch_number), value=ANY) for batch_number in range(17)]
-    set_calls.append(call(key=cache_key, attribute='completed', value=ANY))
+    set_calls.append(call(key=cache_key, attribute="completed", value=ANY))
 
     cache.include.assert_has_calls(set_calls)

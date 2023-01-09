@@ -14,17 +14,17 @@ from proteus.utils import doze
 
 class AzureSqlClient(OdbcClient):
     """
-     Azure SQL (cloud) ODBC client.
+    Azure SQL (cloud) ODBC client.
     """
 
     def __init__(
-            self,
-            logger: ProteusLogger,
-            host_name: str,
-            user_name: str,
-            password: str,
-            database: Optional[str] = None,
-            port: Optional[int] = 1433
+        self,
+        logger: ProteusLogger,
+        host_name: str,
+        user_name: str,
+        password: str,
+        database: Optional[str] = None,
+        port: Optional[int] = 1433,
     ):
         """
           Creates an instance of an Azure SQL ODBC client.
@@ -43,17 +43,17 @@ class AzureSqlClient(OdbcClient):
             user_name=user_name,
             database=database,
             password=password,
-            port=port
+            port=port,
         )
 
     @property
     def size(self) -> str:
         """
-         Current size (Service Objective) of a database in Azure.
+        Current size (Service Objective) of a database in Azure.
         """
         return get_current_objective(self)
 
-    def scale_instance(self, target_objective='HS_Gen4_8', max_wait_time: Optional[int] = 180) -> bool:
+    def scale_instance(self, target_objective="HS_Gen4_8", max_wait_time: Optional[int] = 180) -> bool:
         """
           Scales up/down the connected database.
 
@@ -65,7 +65,7 @@ class AzureSqlClient(OdbcClient):
           thus a user should perform a self-check if a downstream operation requires a scaled database.
         """
 
-        assert self._database, 'Database name must be provided when constructing a client for this method to execute.'
+        assert self._database, "Database name must be provided when constructing a client for this method to execute."
 
         current_objective = get_current_objective(self)
 
@@ -81,15 +81,15 @@ class AzureSqlClient(OdbcClient):
         if max_wait_time:
             elapsed = 0
             while current_objective != target_objective and max_wait_time > elapsed:
-                elapsed += (doze(60) // 1e9)
+                elapsed += doze(60) // 1e9
                 with self.fork() as client_fork:
                     current_objective = get_current_objective(client_fork)
                     self._logger.info("Waiting for the scale-up to complete, elapsed {elapsed}s", elapsed=elapsed)
 
             self._logger.info(
                 "Scale-up {result} after {elapsed}s",
-                result='completed' if current_objective == target_objective else 'failed',
-                elapsed=elapsed
+                result="completed" if current_objective == target_objective else "failed",
+                elapsed=elapsed,
             )
 
             return current_objective == target_objective
@@ -106,6 +106,8 @@ def get_current_objective(client: AzureSqlClient) -> str:
     :param client: Azure SQL database (ODBC) client.
     :return: Name of an active Azure SQL Service Objective.
     """
-    return client.query(
-        'SELECT service_objective FROM sys.database_service_objectives'
-    ).to_dict().get('service_objective', None)
+    return (
+        client.query("SELECT service_objective FROM sys.database_service_objectives")
+        .to_dict()
+        .get("service_objective", None)
+    )
