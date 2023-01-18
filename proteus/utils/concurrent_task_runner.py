@@ -62,9 +62,8 @@ class ConcurrentTaskRunner(Generic[T]):
                 """
         worker_count = self._num_threads or (
             len(os.sched_getaffinity(0)) if sys.platform != "win32" else os.cpu_count())
-        with ThreadPoolExecutor(max_workers=worker_count) \
-                if not self._use_processes \
-                else ProcessPoolExecutor(max_workers=worker_count) as runner_pool:
+        runner_pool = ProcessPoolExecutor(max_workers=worker_count)  if self._use_processes else ThreadPoolExecutor(max_workers=worker_count)
+        with runner_pool:
             return {
                 executable.alias: runner_pool.submit(executable.func, *executable.args) for executable in
                 self._func_list
