@@ -6,7 +6,7 @@ import os
 import sys
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 from dataclasses import dataclass
-from typing import Callable, Any, List, TypeVar, Generic, Optional, Union, Dict
+from typing import Callable, Any, List, TypeVar, Generic, Optional, Dict
 
 T = TypeVar('T')
 
