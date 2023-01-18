@@ -71,9 +71,20 @@ class ConcurrentTaskRunner(Generic[T]):
             }
 
     def lazy(self) -> Dict[str, concurrent.futures.Future]:
+        """
+         Executes the function list without explicitly collecting the results, allowing them to be retrieved by the client
+         when needed.
+
+        :return: A dictionary of (task_alias, task_future)
+        """
         return self._run_tasks()
 
     def eager(self) -> Dict[str, T]:
+        """
+         Executes the function list and wait for all threads to complete execution before returning
+
+        :return: A dictionary of (task_alias, task_result)
+        """
         return {
             task_name: task.result() for task_name, task in self._run_tasks().items()
         }
