@@ -39,6 +39,12 @@ class AzureClient(ProteusClient):
     def __init__(self, *, subscription_id: str, default_log_level=logging.ERROR):
         self.subscription_id = subscription_id
 
+        # disable Azure CLI telemetry collection as it is not thread-safe
+        os.environ['AZURE_CORE_COLLECT_TELEMETRY'] = '0'
+
+        # disable Azure CLI prompt confirmations
+        os.environ['AZURE_CORE_DISABLE_CONFIRM_PROMPT'] = '0'
+
         logger = logging.getLogger('azure')
         logger.setLevel(default_log_level)
 
