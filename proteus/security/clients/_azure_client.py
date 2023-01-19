@@ -43,7 +43,7 @@ class AzureClient(ProteusClient):
         os.environ['AZURE_CORE_COLLECT_TELEMETRY'] = '0'
 
         # disable Azure CLI prompt confirmations
-        os.environ['AZURE_CORE_DISABLE_CONFIRM_PROMPT'] = '0'
+        os.environ['AZURE_CORE_DISABLE_CONFIRM_PROMPT'] = '1'
 
         logger = logging.getLogger('azure')
         logger.setLevel(default_log_level)
