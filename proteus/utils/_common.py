@@ -4,7 +4,7 @@ import math
 import time
 from collections import namedtuple
 from functools import partial
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Tuple
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -31,15 +31,19 @@ def doze(seconds: int, doze_period_ms: int = 100) -> int:
     return time.monotonic_ns() - start
 
 
-def session_with_retries(method_list: Optional[List[str]] = None, request_timeout: Optional[float] = 300, status_list: Optional[List[str]] = None):
+def session_with_retries(
+        method_list: Tuple[str] = ("HEAD", "GET", "OPTIONS", "TRACE"),
+        request_timeout: Optional[float] = 300,
+        status_list: Tuple[str] = (400, 429, 500, 502, 503, 504)
+):
     """
      Provisions http session manager with retries.
     :return:
     """
     retry_strategy = Retry(
         total=4,
-        status_forcelist=status_list or [400, 429, 500, 502, 503, 504],
-        method_whitelist=method_list or ["HEAD", "GET", "OPTIONS", "TRACE"],
+        status_forcelist=status_list,
+        method_whitelist=method_list,
         backoff_factor=1
     )
     adapter = HTTPAdapter(max_retries=retry_strategy)
