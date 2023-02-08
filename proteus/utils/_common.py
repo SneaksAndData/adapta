@@ -32,9 +32,9 @@ def doze(seconds: int, doze_period_ms: int = 100) -> int:
 
 
 def session_with_retries(
-        method_list: Tuple[str] = ("HEAD", "GET", "OPTIONS", "TRACE"),
+        method_list: Tuple[str, ...] = ("HEAD", "GET", "OPTIONS", "TRACE"),
         request_timeout: Optional[float] = 300,
-        status_list: Tuple[int] = (400, 429, 500, 502, 503, 504)
+        status_list: Tuple[int, ...] = (400, 429, 500, 502, 503, 504)
 ):
     """
      Provisions http session manager with retries.
