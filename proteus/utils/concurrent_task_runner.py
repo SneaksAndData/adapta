@@ -8,14 +8,15 @@ from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 from dataclasses import dataclass
 from typing import Callable, Any, List, TypeVar, Generic, Optional, Dict
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 @dataclass
 class Executable(Generic[T]):
     """
-     A single executable function with arguments, ready to run if invoked.
+    A single executable function with arguments, ready to run if invoked.
     """
+
     func: Callable[[...], T]
     args: List[Any]
     alias: str
@@ -43,30 +44,30 @@ class ConcurrentTaskRunner(Generic[T]):
     :param use_processes: Use processes instead of thread for parallelisation. Preferrable for work that depends on GIL release.
     """
 
-    def __init__(
-            self,
-            func_list: List[Executable[T]],
-            num_threads: Optional[int] = None,
-            use_processes: bool = False
-    ):
+    def __init__(self, func_list: List[Executable[T]], num_threads: Optional[int] = None, use_processes: bool = False):
         self._func_list = func_list
         self._num_threads = num_threads
         self._use_processes = use_processes
 
     def _run_tasks(self) -> Dict[str, concurrent.futures.Future]:
         """
-                 Executes a list of functions in parallel using threads or processes.
+         Executes a list of functions in parallel using threads or processes.
 
-                :param lazy: Whether to collect results right away or leave this to the caller.
-                :return: A dictionary of (callable_name, callable_future)
-                """
+        :param lazy: Whether to collect results right away or leave this to the caller.
+        :return: A dictionary of (callable_name, callable_future)
+        """
         worker_count = self._num_threads or (
-            len(os.sched_getaffinity(0)) if sys.platform != "win32" else os.cpu_count())
-        runner_pool = ProcessPoolExecutor(max_workers=worker_count)  if self._use_processes else ThreadPoolExecutor(max_workers=worker_count)
+            len(os.sched_getaffinity(0)) if sys.platform != "win32" else os.cpu_count()
+        )
+        runner_pool = (
+            ProcessPoolExecutor(max_workers=worker_count)
+            if self._use_processes
+            else ThreadPoolExecutor(max_workers=worker_count)
+        )
         with runner_pool:
             return {
-                executable.alias: runner_pool.submit(executable.func, *executable.args) for executable in
-                self._func_list
+                executable.alias: runner_pool.submit(executable.func, *executable.args)
+                for executable in self._func_list
             }
 
     def lazy(self) -> Dict[str, concurrent.futures.Future]:
@@ -84,6 +85,4 @@ class ConcurrentTaskRunner(Generic[T]):
 
         :return: A dictionary of (task_alias, task_result)
         """
-        return {
-            task_name: task.result() for task_name, task in self._run_tasks().items()
-        }
+        return {task_name: task.result() for task_name, task in self._run_tasks().items()}
