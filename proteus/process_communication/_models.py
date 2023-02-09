@@ -10,13 +10,6 @@ from proteus.storage.models.base import DataPath
 from proteus.storage.models.azure import AdlsGen2Path, WasbPath
 from proteus.storage.models.local import LocalPath
 
-# bypass import error for sqlalchemy for HivePath
-# NB. This should be the case for all paths that require special libraries to facilitate base class functionality.
-try:
-    from proteus.storage.models.hive import HivePath
-except (ModuleNotFoundError, ImportError):
-    pass
-
 
 @dataclass(frozen=True)
 class DataSocket(DataClassJsonMixin):
