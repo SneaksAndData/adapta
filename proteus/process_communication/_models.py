@@ -9,7 +9,6 @@ from dataclasses_json import DataClassJsonMixin
 from proteus.storage.models.base import DataPath
 from proteus.storage.models.azure import AdlsGen2Path, WasbPath
 from proteus.storage.models.local import LocalPath
-from proteus.storage.models.hive import HivePath
 
 
 @dataclass(frozen=True)
@@ -36,7 +35,7 @@ class DataSocket(DataClassJsonMixin):
 
     def parse_data_path(
             self,
-            candidates: Iterable[DataPath] = (AdlsGen2Path, LocalPath, HivePath, WasbPath)
+            candidates: Iterable[DataPath] = (AdlsGen2Path, LocalPath, WasbPath)
     ) -> Optional[DataPath]:
         """
           Attempts to convert this socket's data path to one of the known DataPath types.
