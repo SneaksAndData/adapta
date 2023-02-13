@@ -18,14 +18,14 @@ jobs:
           ref: refs/pull/${{github.event.issue.number}}/merge
           fetch-depth: 0
       - name: Install Poetry and dependencies
-        uses: SneaksAndData/github-actions/install_poetry@v0.0.13
+        uses: SneaksAndData/github-actions/install_poetry@v0.0.17
         with:
           pypi_repo_url: ${{ secrets.AZOPS_PYPI_REPO_URL }}
           pypi_token_username: ${{ secrets.AZOPS_PAT_USER }}
           pypi_token: ${{ secrets.AZOPS_PAT }}
           skip_dependencies: true
       - name: Create package
-        uses: SneaksAndData/github-actions/create_package@v0.0.13
+        uses: SneaksAndData/github-actions/create_package@v0.0.17
         with:
           pypi_repo_url: ${{ secrets.AZOPS_PYPI_UPLOAD }}
           pypi_token_username: ${{ secrets.AZOPS_PAT_USER }}
