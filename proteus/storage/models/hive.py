@@ -35,8 +35,8 @@ class HivePath(DataPath):
             hive_server=hdfs_path.split('@')[1].split('/')[0].split(':')[0],
             hive_server_port=hdfs_path.split('@')[1].split('/')[0].split(':')[1],
             hive_database=hdfs_path.split('@')[1].split('/')[1],
-            hive_schema=hdfs_path.split('@')[1].split('/')[1],
-            hive_table=hdfs_path.split('@')[1].split('/')[2],
+            hive_schema=hdfs_path.split('@')[1].split('/')[2],
+            hive_table=hdfs_path.split('@')[1].split('/')[3],
             hive_engine=hdfs_path.split('@')[0].split('//')[1],
             path='/'.join(hdfs_path.split('@')[1].split('/')[1:])
         )
