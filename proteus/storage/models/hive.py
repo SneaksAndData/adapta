@@ -89,16 +89,16 @@ class HivePath(DataPath):
                     user_name=os.environ['PROTEUS__HIVE_USER'],
                     password=os.environ['PROTEUS__HIVE_PASSWORD']
             ) as hive_db_client:
-                db_info = hive_db_client.query(f"select * from DBS where name = '{self.hive_schema}'").to_dict()
+                db_info = hive_db_client.query(f"select * from DBS where name = '{self.hive_schema}'").iloc[0]
                 db_id, db_location = db_info['DB_ID'], db_info['DB_LOCATION_URI']
 
                 tbl_info = hive_db_client.query(
-                    f"select * from TBLS where db_id = {db_id} and TBL_NAME = '{self.hive_table}'").to_dict()
+                    f"select * from TBLS where db_id = {db_id} and TBL_NAME = '{self.hive_table}'").iloc[0]
                 tbl_id, tbl_type = tbl_info['TBL_ID'], tbl_info['TBL_TYPE']
 
                 if tbl_type == 'EXTERNAL':
                     return hive_db_client.query(
-                        f"select * from SERDE_PARAMS where SERDE_ID = {tbl_id} and PARAM_KEY = 'path'").to_dict()[
+                        f"select * from SERDE_PARAMS where SERDE_ID = {tbl_id} and PARAM_KEY = 'path'").iloc[0][
                         'PARAM_VALUE']
 
                 if tbl_type == 'MANAGED_TABLE':
