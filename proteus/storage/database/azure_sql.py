@@ -24,7 +24,8 @@ class AzureSqlClient(OdbcClient):
             user_name: str,
             password: str,
             database: Optional[str] = None,
-            port: Optional[int] = 1433
+            port: Optional[int] = 1433,
+            database_type: Optional[DatabaseType] = DatabaseType.SQL_SERVER_ODBC
     ):
         """
           Creates an instance of an Azure SQL ODBC client.
@@ -38,7 +39,7 @@ class AzureSqlClient(OdbcClient):
         """
         super().__init__(
             logger=logger,
-            database_type=DatabaseType.SQL_SERVER_ODBC,
+            database_type=database_type,
             host_name=host_name,
             user_name=user_name,
             database=database,
