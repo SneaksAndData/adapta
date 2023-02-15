@@ -25,6 +25,12 @@ class DatabaseType(Enum):
             "driver": "ODBC Driver 17 for SQL Server",
             "LongAsMax": "Yes",
         })
+    SQL_SERVER_ODBC_V18 = SqlAlchemyDialect(
+        dialect='mssql+pyodbc',
+        driver={
+            "driver": "ODBC Driver 18 for SQL Server",
+            "LongAsMax": "Yes",
+        })
     SQLITE_ODBC = SqlAlchemyDialect(
         dialect='sqlite+pysqlite',
         driver={}

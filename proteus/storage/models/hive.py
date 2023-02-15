@@ -7,6 +7,7 @@ from typing import Optional
 
 from proteus.storage.database.azure_sql import AzureSqlClient
 from proteus.storage.models.base import DataPath, DataProtocols
+from proteus.storage.database.models import DatabaseType
 from proteus.logs import ProteusLogger
 
 
@@ -22,10 +23,11 @@ class HivePath(DataPath):
     hive_engine: str
     path: str
     protocol: str = DataProtocols.HIVE.value
+    database_type: DatabaseType = DatabaseType.SQL_SERVER_ODBC
     hive_table: Optional[str] = None
 
     @classmethod
-    def from_hdfs_path(cls, hdfs_path: str) -> "HivePath":
+    def from_hdfs_path(cls, hdfs_path: str, database_type:Optional[DatabaseType]=DatabaseType.SQL_SERVER_ODBC) -> "HivePath":
         # sample path
         # hive://engine@my-hive-server.net:1234/database/schema/table
         assert '@' in hdfs_path and hdfs_path.startswith(
@@ -35,14 +37,15 @@ class HivePath(DataPath):
             hive_server=hdfs_path.split('@')[1].split('/')[0].split(':')[0],
             hive_server_port=hdfs_path.split('@')[1].split('/')[0].split(':')[1],
             hive_database=hdfs_path.split('@')[1].split('/')[1],
-            hive_schema=hdfs_path.split('@')[1].split('/')[1],
-            hive_table=hdfs_path.split('@')[1].split('/')[2],
+            hive_schema=hdfs_path.split('@')[1].split('/')[2],
+            hive_table=hdfs_path.split('@')[1].split('/')[3],
             hive_engine=hdfs_path.split('@')[0].split('//')[1],
-            path='/'.join(hdfs_path.split('@')[1].split('/')[1:])
+            path='/'.join(hdfs_path.split('@')[1].split('/')[1:]),
+            database_type=database_type
         )
 
     @staticmethod
-    def from_hive_name(schema: str, table: str) -> 'HivePath':
+    def from_hive_name(schema: str, table: str, database_type:Optional[DatabaseType]=DatabaseType.SQL_SERVER_ODBC) -> 'HivePath':
         """
          Creates a HivePath from schema and table names. Relies on the rest of Hive connection info being provided through environment.
 
@@ -63,7 +66,8 @@ class HivePath(DataPath):
             hive_engine=os.getenv('PROTEUS__HIVE_SERVER_ENGINE'),
             hive_schema=schema,
             hive_table=table,
-            path=f"{os.getenv('PROTEUS__HIVE_SERVER_DATABASE')}/{schema}/{table}"
+            path=f"{os.getenv('PROTEUS__HIVE_SERVER_DATABASE')}/{schema}/{table}",
+            database_type=database_type
         )
 
     def _check_path(self):
@@ -87,19 +91,23 @@ class HivePath(DataPath):
                     port=int(self.hive_server_port),
                     database=self.hive_database,
                     user_name=os.environ['PROTEUS__HIVE_USER'],
-                    password=os.environ['PROTEUS__HIVE_PASSWORD']
+                    password=os.environ['PROTEUS__HIVE_PASSWORD'],
+                    database_type=self.database_type
             ) as hive_db_client:
-                db_info = hive_db_client.query(f"select * from DBS where name = '{self.hive_schema}'").to_dict()
-                db_id, db_location = db_info['DB_ID'], db_info['DB_LOCATION_URI']
+                db_info = hive_db_client.query(f"select * from DBS where name = '{self.hive_schema}'").to_dict(orient="records")
+                assert len(db_info)==1, 'Hive query for DBS table returned more than 1 row. Hive Metastore database schema version must be >=2.*,<=3.*'
+                db_id, db_location = db_info[0]['DB_ID'], db_info[0]['DB_LOCATION_URI']
 
                 tbl_info = hive_db_client.query(
-                    f"select * from TBLS where db_id = {db_id} and TBL_NAME = '{self.hive_table}'").to_dict()
-                tbl_id, tbl_type = tbl_info['TBL_ID'], tbl_info['TBL_TYPE']
+                    f"select * from TBLS where db_id = {db_id} and TBL_NAME = '{self.hive_table}'").to_dict(orient="records")
+                assert len(tbl_info)==1, 'Hive query for TBLS table returned more than 1 row. Hive Metastore database schema version must be >=2.*,<=3.*'
+                tbl_id, tbl_type = tbl_info[0]['TBL_ID'], tbl_info[0]['TBL_TYPE']
 
                 if tbl_type == 'EXTERNAL':
-                    return hive_db_client.query(
-                        f"select * from SERDE_PARAMS where SERDE_ID = {tbl_id} and PARAM_KEY = 'path'").to_dict()[
-                        'PARAM_VALUE']
+                    path = hive_db_client.query(
+                        f"select * from SERDE_PARAMS where SERDE_ID = {tbl_id} and PARAM_KEY = 'path'").to_dict(orient="records")
+                    assert len(path)==1, 'Hive query for SERDE_PARAMS table returned more than 1 row. Hive Metastore database schema version must be >=2.*,<=3.*'
+                    return path[0]['PARAM_VALUE']
 
                 if tbl_type == 'MANAGED_TABLE':
                     return f"{db_location}/{self.hive_table}"
