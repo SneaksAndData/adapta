@@ -95,18 +95,18 @@ class HivePath(DataPath):
                     database_type=self.database_type
             ) as hive_db_client:
                 db_info = hive_db_client.query(f"select * from DBS where name = '{self.hive_schema}'").to_dict(orient="records")
-                assert len(db_info)==1
+                assert len(db_info)==1, 'Hive query for DBS table returned more than 1 row. Hive Metastore database schema version must be >=2.*,<=3.*'
                 db_id, db_location = db_info[0]['DB_ID'], db_info[0]['DB_LOCATION_URI']
 
                 tbl_info = hive_db_client.query(
                     f"select * from TBLS where db_id = {db_id} and TBL_NAME = '{self.hive_table}'").to_dict(orient="records")
-                assert len(tbl_info)==1
+                assert len(tbl_info)==1, 'Hive query for TBLS table returned more than 1 row. Hive Metastore database schema version must be >=2.*,<=3.*'
                 tbl_id, tbl_type = tbl_info[0]['TBL_ID'], tbl_info[0]['TBL_TYPE']
 
                 if tbl_type == 'EXTERNAL':
                     path = hive_db_client.query(
                         f"select * from SERDE_PARAMS where SERDE_ID = {tbl_id} and PARAM_KEY = 'path'").to_dict(orient="records")
-                    assert len(path)==1
+                    assert len(path)==1, 'Hive query for SERDE_PARAMS table returned more than 1 row. Hive Metastore database schema version must be >=2.*,<=3.*'
                     return path[0]['PARAM_VALUE']
 
                 if tbl_type == 'MANAGED_TABLE':
