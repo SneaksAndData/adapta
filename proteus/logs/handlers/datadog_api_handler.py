@@ -120,6 +120,8 @@ class DataDogApiHandler(Handler):
             return self._existing_sigterm_handler(sig_num, stack_frame)
         if sig_num == signal.SIGINT and self._existing_sigint_handler is not None:
             return self._existing_sigint_handler(sig_num, stack_frame)
+            
+        return
 
     def _flush(self) -> None:
         """
