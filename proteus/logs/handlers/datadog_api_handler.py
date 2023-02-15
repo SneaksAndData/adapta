@@ -39,7 +39,7 @@ class DataDogApiHandler(Handler):
             async_handler=False,
             debug=False,
             max_flush_retry_time=30,
-            ignore_flush_failure=False,
+            ignore_flush_failure=True,
             fixed_tags: Optional[Dict[str, str]] = None
     ):
         """
@@ -80,9 +80,7 @@ class DataDogApiHandler(Handler):
         self._configuration = configuration
 
         # send records even if an application is interrupted
-        if platform.system() != "Windows":
-            signal.signal(signal.SIGINT, self._flush)
-            signal.signal(signal.SIGTERM, self._flush)
+        self._attach_interrupt_handlers()
 
         # environment tag is inferred from kubernetes context name, if one exists
         self._fixed_tags = fixed_tags or {}
@@ -99,6 +97,32 @@ class DataDogApiHandler(Handler):
         self._max_flush_retry_time = max_flush_retry_time
         self._ignore_flush_failure = ignore_flush_failure
 
+    def _attach_interrupt_handlers(self) -> None:
+        # Windows is normally used only on developer workstations
+        # thus log flush is not important to do
+        if platform.system() == "Windows":
+            return
+
+        # save existing handlers that might have been set by user code
+        self._existing_sigterm_handler = signal.getsignal(signal.SIGTERM)
+        self._existing_sigint_handler = signal.getsignal(signal.SIGINT)
+
+        # attach custom handler to flush buffered log records before terminating the app
+        signal.signal(signal.SIGTERM, self._handle_interrupt)
+        signal.signal(signal.SIGINT, self._handle_interrupt)
+
+    def _handle_interrupt(self, sig_num: int, stack_frame: Any) -> None:
+        # flush remaining records in the buffer
+        self.flush()
+
+        # call saved handler
+        if sig_num == signal.SIGTERM and self._existing_sigterm_handler is not None:
+            return self._existing_sigterm_handler(sig_num, stack_frame)
+        if sig_num == signal.SIGINT and self._existing_sigint_handler is not None:
+            return self._existing_sigint_handler(sig_num, stack_frame)
+
+        return None
+
     def _flush(self) -> None:
         """
          Flushes a log buffer to the consumer
@@ -111,7 +135,7 @@ class DataDogApiHandler(Handler):
             exception=(ConnectionResetError, ConnectionRefusedError, ConnectionAbortedError, ConnectionError,
                        HTTPError),
             max_time=self._max_flush_retry_time,
-            raise_on_giveup=self._ignore_flush_failure
+            raise_on_giveup=not self._ignore_flush_failure
         )
         def _try_flush():
             result = self._logs_api.submit_log(
@@ -129,9 +153,11 @@ class DataDogApiHandler(Handler):
         old_level = logger.getEffectiveLevel()
         logger.setLevel(logging.INFO)
 
+        self.acquire()
         try:
             _try_flush()
         finally:
+            self.release()
             logger.setLevel(old_level)
 
         self._buffer = []
