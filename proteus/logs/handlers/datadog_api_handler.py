@@ -151,8 +151,8 @@ class DataDogApiHandler(Handler):
         old_level = logger.getEffectiveLevel()
         logger.setLevel(logging.INFO)
 
+        self.acquire()
         try:
-            self.acquire()
             _try_flush()
         finally:
             self.release()
