@@ -39,7 +39,7 @@ class DataDogApiHandler(Handler):
             async_handler=False,
             debug=False,
             max_flush_retry_time=30,
-            ignore_flush_failure=False,
+            ignore_flush_failure=True,
             fixed_tags: Optional[Dict[str, str]] = None
     ):
         """
@@ -133,7 +133,7 @@ class DataDogApiHandler(Handler):
             exception=(ConnectionResetError, ConnectionRefusedError, ConnectionAbortedError, ConnectionError,
                        HTTPError),
             max_time=self._max_flush_retry_time,
-            raise_on_giveup=self._ignore_flush_failure
+            raise_on_giveup=not self._ignore_flush_failure
         )
         def _try_flush():
             result = self._logs_api.submit_log(
