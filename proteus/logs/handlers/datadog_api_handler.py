@@ -104,8 +104,8 @@ class DataDogApiHandler(Handler):
             return
 
         # save existing handlers that might have been set by user code
-        self._existing_sigterm_handler = signal.getsignal(signal.SIGTERM)
-        self._existing_sigint_handler = signal.getsignal(signal.SIGINT)
+        self._existing_sigterm_handler = signal.getsignal(signal.SIGTERM) if callable(signal.getsignal(signal.SIGTERM)) else None
+        self._existing_sigint_handler = signal.getsignal(signal.SIGINT) if callable(signal.getsignal(signal.SIGINT)) else None
 
         # attach custom handler to flush buffered log records before terminating the app
         signal.signal(signal.SIGTERM, self._handle_interrupt)
