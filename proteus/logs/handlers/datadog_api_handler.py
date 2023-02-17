@@ -116,9 +116,9 @@ class DataDogApiHandler(Handler):
         self.flush()
 
         # call saved handler
-        if sig_num == signal.SIGTERM and self._existing_sigterm_handler is not None:
+        if sig_num == signal.SIGTERM and self._existing_sigterm_handler is not None and callable(self._existing_sigterm_handler):
             return self._existing_sigterm_handler(sig_num, stack_frame)
-        if sig_num == signal.SIGINT and self._existing_sigint_handler is not None:
+        if sig_num == signal.SIGINT and self._existing_sigint_handler is not None and callable(self._existing_sigint_handler):
             return self._existing_sigint_handler(sig_num, stack_frame)
 
         return None
