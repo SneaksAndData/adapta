@@ -34,14 +34,15 @@ def doze(seconds: int, doze_period_ms: int = 100) -> int:
 def session_with_retries(
         method_list: Tuple[str, ...] = ("HEAD", "GET", "OPTIONS", "TRACE"),
         request_timeout: Optional[float] = 300,
-        status_list: Tuple[int, ...] = (400, 429, 500, 502, 503, 504)
+        status_list: Tuple[int, ...] = (400, 429, 500, 502, 503, 504),
+        retry_count: int = 4
 ):
     """
      Provisions http session manager with retries.
     :return:
     """
     retry_strategy = Retry(
-        total=4,
+        total=retry_count,
         status_forcelist=status_list,
         allowed_methods=method_list,
         backoff_factor=1
