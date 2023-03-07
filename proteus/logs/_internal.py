@@ -27,34 +27,36 @@ class MetadataLogger(logging.Logger):
 
     def __init__(self, name: str, level=logging.NOTSET):
         """
-            Creates instance, see logging.Logger.__init__
+        Creates instance, see logging.Logger.__init__
 
-            :param name: Logger name
-            :param level: Log level
+        :param name: Logger name
+        :param level: Log level
         """
         super().__init__(name, level)
 
-    def log_with_metadata(self,
-                          log_level: int,
-                          msg: str,
-                          template: str,
-                          tags: Optional[Dict[str, str]],
-                          diagnostics: Optional[str],
-                          stack_info: bool,
-                          metadata_fields: Optional[Dict[str, str]],
-                          exception: Optional[BaseException]):
+    def log_with_metadata(
+        self,
+        log_level: int,
+        msg: str,
+        template: str,
+        tags: Optional[Dict[str, str]],
+        diagnostics: Optional[str],
+        stack_info: bool,
+        metadata_fields: Optional[Dict[str, str]],
+        exception: Optional[BaseException],
+    ):
         """
-            Creates log entry with metadata from Proteus Logger
+        Creates log entry with metadata from Proteus Logger
 
-            :param log_level: Level defined in logging module.
-            :param msg: Log message after templating.
-            :param template: Raw message template.
-            :param tags: Optional message tags.
-            :param exception: Exception associated with this error.
-            :param diagnostics: Optional additional diagnostics info.
-            :param stack_info: True if message should contain stack trace information
-            :param metadata_fields: Templated arguments (key=value).
-            :param exception: Optional exception for warning and error levels
+        :param log_level: Level defined in logging module.
+        :param msg: Log message after templating.
+        :param template: Raw message template.
+        :param tags: Optional message tags.
+        :param exception: Exception associated with this error.
+        :param diagnostics: Optional additional diagnostics info.
+        :param stack_info: True if message should contain stack trace information
+        :param metadata_fields: Templated arguments (key=value).
+        :param exception: Optional exception for warning and error levels
         """
 
         if not self.isEnabledFor(level=log_level):
@@ -63,13 +65,16 @@ class MetadataLogger(logging.Logger):
             template=template,
             diagnostics=diagnostics,
             tags=tags,
-            fields=metadata_fields)
-        self._log(log_level,
-                  msg=msg,
-                  args=None,
-                  extra={ProteusLogMetadata.__name__: log_metadata},
-                  exc_info=exception,
-                  stack_info=stack_info)
+            fields=metadata_fields,
+        )
+        self._log(
+            log_level,
+            msg=msg,
+            args=None,
+            extra={ProteusLogMetadata.__name__: log_metadata},
+            exc_info=exception,
+            stack_info=stack_info,
+        )
 
 
 def from_log_level(log_level: LogLevel) -> int:
@@ -80,6 +85,6 @@ def from_log_level(log_level: LogLevel) -> int:
         LogLevel.INFO: logging.INFO,
         LogLevel.WARN: logging.WARN,
         LogLevel.ERROR: logging.ERROR,
-        LogLevel.DEBUG: logging.DEBUG
+        LogLevel.DEBUG: logging.DEBUG,
     }
     return log_method[log_level]

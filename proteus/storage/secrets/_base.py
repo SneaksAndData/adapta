@@ -25,13 +25,16 @@ from proteus.security.clients import ProteusClient
 
 class SecretStorageClient(ABC):
     """
-      Base secret storage operations for all backends.
+    Base secret storage operations for all backends.
     """
+
     def __init__(self, *, base_client: ProteusClient):
         self._base_client = base_client
 
     @abstractmethod
-    def read_secret(self, storage_name: str, secret_name: str) -> Union[bytes, str, Dict[str, str]]:
+    def read_secret(
+        self, storage_name: str, secret_name: str
+    ) -> Union[bytes, str, Dict[str, str]]:
         """
           Reads a secret from the specified storage.
 
@@ -41,7 +44,13 @@ class SecretStorageClient(ABC):
         """
 
     @abstractmethod
-    def create_secret(self, storage_name: str, secret_name: str, secret_value: Union[str, Dict[str, str]], b64_encode=False) -> None:
+    def create_secret(
+        self,
+        storage_name: str,
+        secret_name: str,
+        secret_value: Union[str, Dict[str, str]],
+        b64_encode=False,
+    ) -> None:
         """
           Creates a plain text secret in a specified storage.
 

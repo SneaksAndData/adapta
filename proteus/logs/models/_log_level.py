@@ -21,9 +21,10 @@ from enum import Enum
 
 class LogLevel(Enum):
     """
-     Supported log levels.
+    Supported log levels.
     """
-    INFO = 'INFO'
-    WARN = 'WARN'
-    ERROR = 'ERROR'
-    DEBUG = 'DEBUG'
+
+    INFO = "INFO"
+    WARN = "WARN"
+    ERROR = "ERROR"
+    DEBUG = "DEBUG"
