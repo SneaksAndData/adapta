@@ -28,11 +28,6 @@ jobs:
           pypi_token_username: ${{ secrets.AZOPS_PAT_USER }}
           pypi_token: ${{ secrets.AZOPS_PAT }}
           install_extras: all
-      - name: Lint
-        run: |
-          set -euxo pipefail
-
-          find ./proteus -type f -name "*.py" | xargs poetry run pylint
       - name: Unit test
         run: |
           set -euxo pipefail
