@@ -25,6 +25,7 @@ jobs:
           pypi_repo_url: ${{ secrets.AZOPS_PYPI_REPO_URL }}
           pypi_token_username: ${{ secrets.AZOPS_PAT_USER }}
           pypi_token: ${{ secrets.AZOPS_PAT }}
+          install_extras: all
 
       - name: Lint
         env:
