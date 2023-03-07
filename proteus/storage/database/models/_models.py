@@ -24,29 +24,30 @@ from typing import Dict
 @dataclass
 class SqlAlchemyDialect:
     """
-     Configuration for SqlAlchemy Engine Dialect
+    Configuration for SqlAlchemy Engine Dialect
     """
+
     dialect: str
     driver: Dict[str, str]
 
 
 class DatabaseType(Enum):
     """
-     Pre-configured SqlAlchemy dialects for various clients.
+    Pre-configured SqlAlchemy dialects for various clients.
     """
+
     SQL_SERVER_ODBC = SqlAlchemyDialect(
-        dialect='mssql+pyodbc',
+        dialect="mssql+pyodbc",
         driver={
             "driver": "ODBC Driver 17 for SQL Server",
             "LongAsMax": "Yes",
-        })
+        },
+    )
     SQL_SERVER_ODBC_V18 = SqlAlchemyDialect(
-        dialect='mssql+pyodbc',
+        dialect="mssql+pyodbc",
         driver={
             "driver": "ODBC Driver 18 for SQL Server",
             "LongAsMax": "Yes",
-        })
-    SQLITE_ODBC = SqlAlchemyDialect(
-        dialect='sqlite+pysqlite',
-        driver={}
+        },
     )
+    SQLITE_ODBC = SqlAlchemyDialect(dialect="sqlite+pysqlite", driver={})

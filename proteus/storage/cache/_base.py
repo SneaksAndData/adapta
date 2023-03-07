@@ -23,7 +23,7 @@ from typing import Any, List, Optional
 
 class KeyValueCache(ABC):
     """
-      Abstract key-value cache store.
+    Abstract key-value cache store.
     """
 
     @abstractmethod
@@ -66,7 +66,13 @@ class KeyValueCache(ABC):
         """
 
     @abstractmethod
-    def set(self, key: str, value: Any, expires_after=timedelta(seconds=60), return_old_value=False) -> Any:
+    def set(
+        self,
+        key: str,
+        value: Any,
+        expires_after=timedelta(seconds=60),
+        return_old_value=False,
+    ) -> Any:
         """
           Saves or updates a key-value pair to this cache. Supported value types differ based on implementation.
 

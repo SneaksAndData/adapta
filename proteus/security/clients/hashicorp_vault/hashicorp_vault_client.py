@@ -27,11 +27,11 @@ from proteus.storage.models.base import DataPath
 
 class HashicorpVaultClient(ProteusClient):
     """
-     Hashicorp vault Credentials provider.
+    Hashicorp vault Credentials provider.
     """
 
     @staticmethod
-    def from_base_client(client: ProteusClient) -> Optional['HashicorpVaultClient']:
+    def from_base_client(client: ProteusClient) -> Optional["HashicorpVaultClient"]:
         """
          Safe casts ProteusClient to HashicorpVaultClient if type checks out.
 
@@ -69,7 +69,9 @@ class HashicorpVaultClient(ProteusClient):
         """
         raise ValueError("Not supported  in HashicorpVaultClient")
 
-    def get_pyarrow_filesystem(self, path: DataPath, connection_options: Optional[Dict[str, str]] = None) -> FileSystem:
+    def get_pyarrow_filesystem(
+        self, path: DataPath, connection_options: Optional[Dict[str, str]] = None
+    ) -> FileSystem:
         """
          Not supported  in HashicorpVaultClient
         :return:

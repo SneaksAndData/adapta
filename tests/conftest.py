@@ -25,8 +25,9 @@ from proteus.storage.database.models import DatabaseType
 
 @pytest.fixture
 def sqlite():
-    proteus_logger = ProteusLogger() \
-        .add_log_source(log_source_name='sqlite', min_log_level=LogLevel.INFO, is_default=True)
+    proteus_logger = ProteusLogger().add_log_source(
+        log_source_name="sqlite", min_log_level=LogLevel.INFO, is_default=True
+    )
     return OdbcClient(
         logger=proteus_logger,
         database_type=DatabaseType.SQLITE_ODBC,

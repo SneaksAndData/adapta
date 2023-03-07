@@ -31,8 +31,9 @@ from proteus.utils import convert_datadog_tags
 
 class EventAlertType(Enum):
     """
-     Wrapper for alert_type value set in Events API.
+    Wrapper for alert_type value set in Events API.
     """
+
     ERROR = "error"
     WARNING = "warning"
     INFO = "info"
@@ -41,18 +42,22 @@ class EventAlertType(Enum):
 
 class DatadogMetricsProvider(MetricsProvider):
     """
-      DogStatsD projection of Proteus MetricsProvider.
+    DogStatsD projection of Proteus MetricsProvider.
     """
 
-    def __init__(self, metric_namespace: str, fixed_tags: Dict[str, str] = None, debug=False):
+    def __init__(
+        self, metric_namespace: str, fixed_tags: Dict[str, str] = None, debug=False
+    ):
         self._options = {
-            'statsd_host': os.getenv('PROTEUS__DD_STATSD_HOST'),
-            'statsd_port': os.getenv('PROTEUS__DD_STATSD_PORT'),
-            'api_key': os.getenv('PROTEUS__DD_API_KEY'),
-            'app_key': os.getenv('PROTEUS__DD_APP_KEY'),
-            'api_host': os.getenv('PROTEUS__DD_API_HOST'),
-            'statsd_namespace': metric_namespace,
-            'statsd_constant_tags': convert_datadog_tags(fixed_tags) if fixed_tags else None
+            "statsd_host": os.getenv("PROTEUS__DD_STATSD_HOST"),
+            "statsd_port": os.getenv("PROTEUS__DD_STATSD_PORT"),
+            "api_key": os.getenv("PROTEUS__DD_API_KEY"),
+            "app_key": os.getenv("PROTEUS__DD_APP_KEY"),
+            "api_host": os.getenv("PROTEUS__DD_API_HOST"),
+            "statsd_namespace": metric_namespace,
+            "statsd_constant_tags": convert_datadog_tags(fixed_tags)
+            if fixed_tags
+            else None,
         }
 
         initialize(**self._options)
@@ -60,9 +65,13 @@ class DatadogMetricsProvider(MetricsProvider):
         self._api = api
 
         if debug:
-            logging.getLogger("datadog.dogstatsd").addHandler(logging.StreamHandler(sys.stdout))
+            logging.getLogger("datadog.dogstatsd").addHandler(
+                logging.StreamHandler(sys.stdout)
+            )
 
-    def update_metric_metadata(self, metric_name: str, metric_metadata: MetricMetadata) -> None:
+    def update_metric_metadata(
+        self, metric_name: str, metric_metadata: MetricMetadata
+    ) -> None:
         """
           Updates metadata of a published metric in DD.
 
@@ -71,38 +80,67 @@ class DatadogMetricsProvider(MetricsProvider):
         :return:
         """
 
-        self._api.metadata.Metadata.update(metric_name=metric_name, **metric_metadata.to_dict())
+        self._api.metadata.Metadata.update(
+            metric_name=metric_name, **metric_metadata.to_dict()
+        )
 
-    def increment(self, metric_name: str, tags: Optional[Dict[str, str]] = None) -> None:
+    def increment(
+        self, metric_name: str, tags: Optional[Dict[str, str]] = None
+    ) -> None:
         statsd.increment(metric=metric_name, tags=convert_datadog_tags(tags))
 
-    def decrement(self, metric_name: str, tags: Optional[Dict[str, str]] = None) -> None:
+    def decrement(
+        self, metric_name: str, tags: Optional[Dict[str, str]] = None
+    ) -> None:
         statsd.decrement(metric=metric_name, tags=convert_datadog_tags(tags))
 
-    def count(self, metric_name: str, metric_value: int, tags: Optional[Dict[str, str]] = None) -> None:
+    def count(
+        self, metric_name: str, metric_value: int, tags: Optional[Dict[str, str]] = None
+    ) -> None:
         raise NotImplementedError
 
-    def gauge(self, metric_name: str, metric_value: Union[int, float], tags: Optional[Dict[str, str]] = None) -> None:
-        statsd.gauge(metric=metric_name, value=metric_value, tags=convert_datadog_tags(tags))
+    def gauge(
+        self,
+        metric_name: str,
+        metric_value: Union[int, float],
+        tags: Optional[Dict[str, str]] = None,
+    ) -> None:
+        statsd.gauge(
+            metric=metric_name, value=metric_value, tags=convert_datadog_tags(tags)
+        )
 
-    def set(self, metric_name: str, metric_value: Union[str, int, float],
-            tags: Optional[Dict[str, str]] = None) -> None:
-        statsd.set(metric=metric_name, value=metric_value, tags=convert_datadog_tags(tags))
+    def set(
+        self,
+        metric_name: str,
+        metric_value: Union[str, int, float],
+        tags: Optional[Dict[str, str]] = None,
+    ) -> None:
+        statsd.set(
+            metric=metric_name, value=metric_value, tags=convert_datadog_tags(tags)
+        )
 
-    def histogram(self, metric_name: str, metric_value: Union[int, float],
-                  tags: Optional[Dict[str, str]] = None) -> None:
-        statsd.histogram(metric=metric_name, value=metric_value, tags=convert_datadog_tags(tags))
+    def histogram(
+        self,
+        metric_name: str,
+        metric_value: Union[int, float],
+        tags: Optional[Dict[str, str]] = None,
+    ) -> None:
+        statsd.histogram(
+            metric=metric_name, value=metric_value, tags=convert_datadog_tags(tags)
+        )
 
-    def event(self,
-              title: str,
-              message: str,
-              alert_type: Optional[str] = EventAlertType.INFO.value,
-              aggregation_key: Optional[str] = None,
-              source_type_name: Optional[str] = None,
-              date_happened: Optional[int] = None,
-              priority: Optional[str] = None,
-              tags: Optional[Optional[Dict[str, str]]] = None,
-              hostname: Optional[str] = None) -> None:
+    def event(
+        self,
+        title: str,
+        message: str,
+        alert_type: Optional[str] = EventAlertType.INFO.value,
+        aggregation_key: Optional[str] = None,
+        source_type_name: Optional[str] = None,
+        date_happened: Optional[int] = None,
+        priority: Optional[str] = None,
+        tags: Optional[Optional[Dict[str, str]]] = None,
+        hostname: Optional[str] = None,
+    ) -> None:
         statsd.event(
             title=title,
             message=message,
@@ -112,5 +150,5 @@ class DatadogMetricsProvider(MetricsProvider):
             date_happened=date_happened,
             priority=priority,
             tags=convert_datadog_tags(tags),
-            hostname=hostname
+            hostname=hostname,
         )

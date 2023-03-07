@@ -25,15 +25,24 @@ from proteus.storage.models.local import LocalPath
 
 
 @pytest.mark.parametrize(
-    'alias,data_path,data_format,expectation_handler',
+    "alias,data_path,data_format,expectation_handler",
     [
-        ("test", "file://some-folder/here", "jpg", does_not_raise("test|file://some-folder/here|jpg")),
+        (
+            "test",
+            "file://some-folder/here",
+            "jpg",
+            does_not_raise("test|file://some-folder/here|jpg"),
+        ),
         ("", "file://some-folder/here", "jpg", pytest.raises(AssertionError)),
         (None, "file://some-folder/here", "", pytest.raises(AssertionError)),
-    ]
+    ],
 )
-def test_data_socket_serialize(alias: str, data_path: str, data_format: str,
-                               expectation_handler: AbstractContextManager):
+def test_data_socket_serialize(
+    alias: str,
+    data_path: str,
+    data_format: str,
+    expectation_handler: AbstractContextManager,
+):
     """
       DataSocket must instantiate and `serialize()` itself correctly, given correct input.
 
@@ -49,62 +58,72 @@ def test_data_socket_serialize(alias: str, data_path: str, data_format: str,
 
 
 @pytest.mark.parametrize(
-    'value,expectation_handler',
+    "value,expectation_handler",
     [
         (
-                {
-                    "alias": "test",
-                    "data_path": "abfss://some-data@azureaccount.dfs.core.windows.net/some_folder/some_table",
-                    "data_format": "delta"
-                },
-                does_not_raise(DataSocket(
-                    "test",
-                    "abfss://some-data@azureaccount.dfs.core.windows.net/some_folder/some_table",
-                    "delta"
-                ))
-        ),
-        (
-                '{"alias": "test","data_path": "abfss://some-data@azureaccount.dfs.core.windows.net/some_folder/some_table","data_format": "delta"}',
-                does_not_raise(DataSocket(
-                    "test",
-                    "abfss://some-data@azureaccount.dfs.core.windows.net/some_folder/some_table",
-                    "delta"
-                ))
-        ),
-        (
-                {
-                    "alias": "test",
-                    "data_path": "abfss://some-data@azureaccount.dfs.core.windows.net/some_folder/some_table",
-                    "data_format": "delta",
-                    "data_partitions": ["colA", "colB"]
-                },
-                does_not_raise(DataSocket(
+            {
+                "alias": "test",
+                "data_path": "abfss://some-data@azureaccount.dfs.core.windows.net/some_folder/some_table",
+                "data_format": "delta",
+            },
+            does_not_raise(
+                DataSocket(
                     "test",
                     "abfss://some-data@azureaccount.dfs.core.windows.net/some_folder/some_table",
                     "delta",
-                    ["colA", "colB"]
-                ))
+                )
+            ),
         ),
         (
-                '{"alias": "test","data_path": "abfss://some-data@azureaccount.dfs.core.windows.net/some_folder/some_table","data_format": "delta","data_partitions":[\"colA\",\"colB\"]}',
-                does_not_raise(DataSocket(
+            '{"alias": "test","data_path": "abfss://some-data@azureaccount.dfs.core.windows.net/some_folder/some_table","data_format": "delta"}',
+            does_not_raise(
+                DataSocket(
                     "test",
                     "abfss://some-data@azureaccount.dfs.core.windows.net/some_folder/some_table",
                     "delta",
-                    ["colA", "colB"]
-                ))
+                )
+            ),
         ),
         (
-                {
-                    "alias": "",
-                    "data_path": "abfss://some-data@azureaccount.dfs.core.windows.net/some_folder/some_table",
-                    "data_format": "delta"
-                },
-                pytest.raises(AssertionError)
-        )
-    ]
+            {
+                "alias": "test",
+                "data_path": "abfss://some-data@azureaccount.dfs.core.windows.net/some_folder/some_table",
+                "data_format": "delta",
+                "data_partitions": ["colA", "colB"],
+            },
+            does_not_raise(
+                DataSocket(
+                    "test",
+                    "abfss://some-data@azureaccount.dfs.core.windows.net/some_folder/some_table",
+                    "delta",
+                    ["colA", "colB"],
+                )
+            ),
+        ),
+        (
+            '{"alias": "test","data_path": "abfss://some-data@azureaccount.dfs.core.windows.net/some_folder/some_table","data_format": "delta","data_partitions":["colA","colB"]}',
+            does_not_raise(
+                DataSocket(
+                    "test",
+                    "abfss://some-data@azureaccount.dfs.core.windows.net/some_folder/some_table",
+                    "delta",
+                    ["colA", "colB"],
+                )
+            ),
+        ),
+        (
+            {
+                "alias": "",
+                "data_path": "abfss://some-data@azureaccount.dfs.core.windows.net/some_folder/some_table",
+                "data_format": "delta",
+            },
+            pytest.raises(AssertionError),
+        ),
+    ],
 )
-def test_socket_from_json(value: Union[str, Dict], expectation_handler: AbstractContextManager):
+def test_socket_from_json(
+    value: Union[str, Dict], expectation_handler: AbstractContextManager
+):
     """
       DataSocket must deserialize from json text and from dict correctly. Invalid values must throw an assertion error.
 
@@ -113,18 +132,27 @@ def test_socket_from_json(value: Union[str, Dict], expectation_handler: Abstract
     :return:
     """
     with expectation_handler:
-        test_socket = DataSocket.from_json(value) if type(value) is str else DataSocket.from_dict(value)
+        test_socket = (
+            DataSocket.from_json(value)
+            if type(value) is str
+            else DataSocket.from_dict(value)
+        )
         assert test_socket == expectation_handler.enter_result
 
 
 @pytest.mark.parametrize(
-    'value,expectation_handler',
+    "value,expectation_handler",
     [
-        ("test|file://some-folder/here|jpg", does_not_raise(DataSocket("test", "file://some-folder/here", "jpg"))),
+        (
+            "test|file://some-folder/here|jpg",
+            does_not_raise(DataSocket("test", "file://some-folder/here", "jpg")),
+        ),
         ("test|file://some-folder/here|", pytest.raises(AssertionError)),
-    ]
+    ],
 )
-def test_data_socket_deserialize(value: str, expectation_handler: AbstractContextManager):
+def test_data_socket_deserialize(
+    value: str, expectation_handler: AbstractContextManager
+):
     """
      DataSocket must deserialize from a |-delimited string value correctly and throw an assertion error if missing any required attributes.
 
@@ -138,15 +166,23 @@ def test_data_socket_deserialize(value: str, expectation_handler: AbstractContex
 
 
 @pytest.mark.parametrize(
-    'alias,data_path,data_format,expected_path',
+    "alias,data_path,data_format,expected_path",
     [
-        ("test", "file://some-folder/file", "text", LocalPath(path='some-folder/file')),
-        ("test", "abfss://container@account.dfs.core.windows.net/some-folder/file", "text",
-         AdlsGen2Path.from_hdfs_path("abfss://container@account.dfs.core.windows.net/some-folder/file")),
+        ("test", "file://some-folder/file", "text", LocalPath(path="some-folder/file")),
+        (
+            "test",
+            "abfss://container@account.dfs.core.windows.net/some-folder/file",
+            "text",
+            AdlsGen2Path.from_hdfs_path(
+                "abfss://container@account.dfs.core.windows.net/some-folder/file"
+            ),
+        ),
         ("test", "api://some-folder/file", "json", None),
-    ]
+    ],
 )
-def test_path_parse(alias: str, data_path: str, data_format: str, expected_path: Optional[DataPath]):
+def test_path_parse(
+    alias: str, data_path: str, data_format: str, expected_path: Optional[DataPath]
+):
     """
       DataSocket must parse data_path to one of the supported paths or return None if a given path format is unknown.
 

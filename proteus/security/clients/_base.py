@@ -25,7 +25,7 @@ from proteus.storage.models.base import DataPath
 
 class ProteusClient(ABC):
     """
-     Base functionality all infrastructure providers must implement.
+    Base functionality all infrastructure providers must implement.
     """
 
     @abstractmethod
@@ -63,7 +63,9 @@ class ProteusClient(ABC):
         """
 
     @abstractmethod
-    def get_pyarrow_filesystem(self, path: DataPath, connection_options: Optional[Dict[str, str]] = None) -> FileSystem:
+    def get_pyarrow_filesystem(
+        self, path: DataPath, connection_options: Optional[Dict[str, str]] = None
+    ) -> FileSystem:
         """
         Returns a `PyFileSystem` object that's authenticated for the provided path
 

@@ -26,6 +26,7 @@ class ProteusLogMetadata:
     """
     Metadata model for log messages created by ProteusLogger
     """
+
     template: str
     diagnostics: Optional[str] = None
     tags: Optional[Dict[str, str]] = None

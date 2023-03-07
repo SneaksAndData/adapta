@@ -24,7 +24,7 @@ from proteus.storage.models.base import DataPath
 
 class LocalClient(ProteusClient):
     """
-     Local mode Proteus Client.
+    Local mode Proteus Client.
     """
 
     def get_credentials(self):
@@ -54,5 +54,7 @@ class LocalClient(ProteusClient):
         :return:
         """
 
-    def get_pyarrow_filesystem(self, path: DataPath, connection_options: Optional[Dict[str, str]] = None) -> FileSystem:
+    def get_pyarrow_filesystem(
+        self, path: DataPath, connection_options: Optional[Dict[str, str]] = None
+    ) -> FileSystem:
         return SubTreeFileSystem(path.path, LocalFileSystem())

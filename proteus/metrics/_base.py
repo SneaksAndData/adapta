@@ -22,7 +22,7 @@ from typing import Dict, Optional
 
 class MetricsProvider(ABC):
     """
-      Base class for metrics implementations.
+    Base class for metrics implementations.
     """
 
     @abstractmethod
@@ -44,7 +44,9 @@ class MetricsProvider(ABC):
         """
 
     @abstractmethod
-    def count(self, metric_name: str, metric_value: int, tags: Optional[Dict[str, str]]) -> None:
+    def count(
+        self, metric_name: str, metric_value: int, tags: Optional[Dict[str, str]]
+    ) -> None:
         """
 
         :param metric_name:
@@ -54,7 +56,9 @@ class MetricsProvider(ABC):
         """
 
     @abstractmethod
-    def gauge(self, metric_name: str, metric_value: float, tags: Optional[Dict[str, str]]) -> None:
+    def gauge(
+        self, metric_name: str, metric_value: float, tags: Optional[Dict[str, str]]
+    ) -> None:
         """
 
         :param metric_name:
@@ -64,7 +68,9 @@ class MetricsProvider(ABC):
         """
 
     @abstractmethod
-    def set(self, metric_name: str, metric_value: float, tags: Optional[Dict[str, str]]) -> None:
+    def set(
+        self, metric_name: str, metric_value: float, tags: Optional[Dict[str, str]]
+    ) -> None:
         """
 
         :param metric_name:
@@ -74,7 +80,9 @@ class MetricsProvider(ABC):
         """
 
     @abstractmethod
-    def histogram(self, metric_name: str, metric_value: float, tags: Optional[Dict[str, str]]) -> None:
+    def histogram(
+        self, metric_name: str, metric_value: float, tags: Optional[Dict[str, str]]
+    ) -> None:
         """
 
         :param metric_name:
@@ -83,16 +91,18 @@ class MetricsProvider(ABC):
         :return:
         """
 
-    def event(self,
-              title: str,
-              message: str,
-              alert_type: Optional[str] = None,
-              aggregation_key: Optional[str] = None,
-              source_type_name: Optional[str] = None,
-              date_happened: Optional[int] = None,
-              priority: Optional[str] = None,
-              tags: Optional[Optional[Dict[str, str]]] = None,
-              hostname: Optional[str] = None) -> None:
+    def event(
+        self,
+        title: str,
+        message: str,
+        alert_type: Optional[str] = None,
+        aggregation_key: Optional[str] = None,
+        source_type_name: Optional[str] = None,
+        date_happened: Optional[int] = None,
+        priority: Optional[str] = None,
+        tags: Optional[Optional[Dict[str, str]]] = None,
+        hostname: Optional[str] = None,
+    ) -> None:
         """
           Send an event to statsd.
 

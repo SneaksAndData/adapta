@@ -24,13 +24,14 @@ from proteus.storage.models.base import DataPath
 from proteus.storage.models.format import SerializationFormat
 
 
-T = TypeVar('T')  # pylint: disable=C0103
+T = TypeVar("T")  # pylint: disable=C0103
 
 
 class StorageClient(ABC):
     """
-     Base storage operations for all backends.
+    Base storage operations for all backends.
     """
+
     def __init__(self, *, base_client: ProteusClient):
         self._base_client = base_client
 
@@ -89,7 +90,7 @@ class StorageClient(ABC):
     def list_blobs(
         self,
         blob_path: DataPath,
-        filter_predicate: Optional[Callable[[...], bool]] = None
+        filter_predicate: Optional[Callable[[...], bool]] = None,
     ) -> Iterator[DataPath]:
         """
         Lists blobs in blob_path
@@ -101,10 +102,10 @@ class StorageClient(ABC):
 
     @abstractmethod
     def read_blobs(
-            self,
-            blob_path: DataPath,
-            serialization_format: Type[SerializationFormat[T]],
-            filter_predicate: Optional[Callable[[...], bool]] = None
+        self,
+        blob_path: DataPath,
+        serialization_format: Type[SerializationFormat[T]],
+        filter_predicate: Optional[Callable[[...], bool]] = None,
     ) -> Iterator[T]:
         """
          Reads data under provided path into the given format.
@@ -117,11 +118,12 @@ class StorageClient(ABC):
 
     @abstractmethod
     def download_blobs(
-            self,
-            blob_path: DataPath,
-            local_path: str,
-            threads: Optional[int] = None,
-            filter_predicate: Optional[Callable[[...], bool]] = None) -> None:
+        self,
+        blob_path: DataPath,
+        local_path: str,
+        threads: Optional[int] = None,
+        filter_predicate: Optional[Callable[[...], bool]] = None,
+    ) -> None:
         """
          Reads data under provided path into the given format.
 

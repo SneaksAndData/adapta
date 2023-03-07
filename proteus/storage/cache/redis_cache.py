@@ -31,7 +31,7 @@ from proteus.storage.cache import KeyValueCache
 
 class RedisCache(KeyValueCache):
     """
-      Redis cache.
+    Redis cache.
     """
 
     def __init__(self, host: str, database_number: int, port=6380, cluster_mode=False):
@@ -48,18 +48,18 @@ class RedisCache(KeyValueCache):
                 host=host,
                 port=port,
                 db=database_number,
-                password=os.environ['PROTEUS__CACHE_REDIS_PASSWORD'],
+                password=os.environ["PROTEUS__CACHE_REDIS_PASSWORD"],
                 ssl_cert_reqs=ssl.CERT_REQUIRED,
                 ssl=True,
                 decode_responses=False,
                 retry_on_timeout=True,
-                retry_on_error=[redis.exceptions.ConnectionError]
+                retry_on_error=[redis.exceptions.ConnectionError],
             )
         else:
             self._redis = RedisCluster(
                 host=host,
                 port=port,
-                password=os.environ['PROTEUS__CACHE_REDIS_PASSWORD'],
+                password=os.environ["PROTEUS__CACHE_REDIS_PASSWORD"],
                 retry=Retry(default_backoff(), 3),
                 ssl_cert_reqs=ssl.CERT_REQUIRED,
                 ssl=True,
@@ -86,7 +86,13 @@ class RedisCache(KeyValueCache):
     def multi_get(self, keys: List[str]) -> List[Any]:
         return self._redis.mget(keys)
 
-    def set(self, key: str, value: Any, expires_after=timedelta(seconds=60), return_old_value=False) -> Any:
+    def set(
+        self,
+        key: str,
+        value: Any,
+        expires_after=timedelta(seconds=60),
+        return_old_value=False,
+    ) -> Any:
         return_value = self._redis.get(key) if return_old_value else value
         self._redis.set(key, value, ex=expires_after)
 
