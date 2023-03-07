@@ -37,9 +37,9 @@ class _MlflowMachineLearningModel(PythonModel):
         config.read(context.artifacts["config"])
         module = importlib.import_module(config["model"]["module_name"])
         class_ = getattr(module, config["model"]["class_name"])
-        self.model = class_.load_model(
+        self.model = class_.load_model(  # pylint: disable=W0201
             context.artifacts["model"]
-        )  # pylint: disable=W0201
+        )
 
     def predict(self, context, model_input):
         return self.model.predict(**model_input)
