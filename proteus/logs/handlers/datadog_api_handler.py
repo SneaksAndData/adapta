@@ -167,7 +167,7 @@ class DataDogApiHandler(Handler):
                 ConnectionAbortedError,
                 ConnectionError,
                 HTTPError,
-                ServiceException
+                ServiceException,
             ),
             max_time=self._max_flush_retry_time,
             raise_on_giveup=not self._ignore_flush_failure,
