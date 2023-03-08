@@ -29,6 +29,7 @@ from typing import List, Optional, Dict, Any
 import backoff
 import kubernetes.config.kube_config
 from datadog_api_client import Configuration, ApiClient
+from datadog_api_client.exceptions import ServiceException
 from datadog_api_client.v2.api.logs_api import LogsApi
 from datadog_api_client.v2.model.http_log import HTTPLog
 from datadog_api_client.v2.model.http_log_item import HTTPLogItem
@@ -166,6 +167,7 @@ class DataDogApiHandler(Handler):
                 ConnectionAbortedError,
                 ConnectionError,
                 HTTPError,
+                ServiceException
             ),
             max_time=self._max_flush_retry_time,
             raise_on_giveup=not self._ignore_flush_failure,
