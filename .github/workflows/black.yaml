@@ -20,7 +20,7 @@ jobs:
           architecture: 'x64'
 
       - name: Install Poetry and dependencies
-        uses: SneaksAndData/github-actions/install_poetry@v0.0.19
+        uses: SneaksAndData/github-actions/install_poetry@v0.0.21
         with:
           pypi_repo_url: ${{ secrets.AZOPS_PYPI_REPO_URL }}
           pypi_token_username: ${{ secrets.AZOPS_PAT_USER }}
