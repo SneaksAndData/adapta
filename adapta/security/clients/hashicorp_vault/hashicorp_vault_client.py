@@ -1,5 +1,5 @@
 """
- Hashicorp Vault implementation of Proteus Client.
+ Hashicorp Vault implementation of AuthenticationClient.
 """
 #  Copyright (c) 2023. ECCO Sneaks & Data
 #
@@ -33,9 +33,9 @@ class HashicorpVaultClient(AuthenticationClient):
     @staticmethod
     def from_base_client(client: AuthenticationClient) -> Optional["HashicorpVaultClient"]:
         """
-         Safe casts ProteusClient to HashicorpVaultClient if type checks out.
+         Safe casts AuthenticationClient to HashicorpVaultClient if type checks out.
 
-        :param client: ProteusClient
+        :param client: AuthenticationClient
         :return: HashicorpVaultClient or None if type does not check out
         """
         if isinstance(client, HashicorpVaultClient):

@@ -91,7 +91,7 @@ def register_mlflow_model(
     if artifacts_to_log is not None:
         if not any(list(artifacts_to_log.keys())) not in ["model", "config"]:
             raise ValueError(
-                'Artifact names "model" and "config" are reserved for internal proteus usage'
+                'Artifact names "model" and "config" are reserved for internal usage'
             )
         artifacts.update(artifacts_to_log)
 

@@ -28,7 +28,7 @@ from pyarrow import RecordBatch, Table
 from pyarrow._compute import Expression  # pylint: disable=E0611
 from pyarrow._dataset_parquet import ParquetReadOptions  # pylint: disable=E0611
 
-from adapta.logs import ProteusLogger
+from adapta.logs import CompositeLogger
 from adapta.security.clients._base import AuthenticationClient
 from adapta.storage.models.base import DataPath
 from adapta.storage.delta_lake._models import DeltaTransaction
@@ -37,7 +37,7 @@ from adapta.storage.models.format import DataFrameParquetSerializationFormat
 
 
 def load(  # pylint: disable=R0913
-    proteus_client: AuthenticationClient,
+    auth_client: AuthenticationClient,
     path: DataPath,
     version: Optional[int] = None,
     row_filter: Optional[Expression] = None,
@@ -48,7 +48,7 @@ def load(  # pylint: disable=R0913
     """
      Loads Delta Lake table from Azure storage and converts it to a pandas dataframe.
 
-    :param proteus_client: ProteusClient for target storage.
+    :param auth_client: AuthenticationClient for target storage.
     :param path: Path to delta table, in HDFS format: abfss://container@account.dfs.core.windows.net/my/path
     :param version: Optional version to read. Defaults to latest.
     :param row_filter: Optional filter to apply, as pyarrow expression. Example:
@@ -66,14 +66,14 @@ def load(  # pylint: disable=R0913
 
     :return: A DeltaTable wrapped Rust class, pandas Dataframe or an iterator of pandas Dataframes, for batched reads.
     """
-    connection_options = proteus_client.connect_storage(path)
+    connection_options = auth_client.connect_storage(path)
 
     pyarrow_ds = DeltaTable(
         path.to_delta_rs_path(), version=version, storage_options=connection_options
     ).to_pyarrow_dataset(
         partitions=partition_filter_expressions,
         parquet_read_options=ParquetReadOptions(coerce_int96_timestamp_unit="ms"),
-        filesystem=proteus_client.get_pyarrow_filesystem(
+        filesystem=auth_client.get_pyarrow_filesystem(
             path, connection_options=connection_options
         ),
     )
@@ -91,18 +91,18 @@ def load(  # pylint: disable=R0913
 
 
 def history(
-    proteus_client: AuthenticationClient, path: DataPath, limit: Optional[int] = 1
+    auth_client: AuthenticationClient, path: DataPath, limit: Optional[int] = 1
 ) -> Iterable[DeltaTransaction]:
     """
       Returns transaction history for the table under path.
 
-    :param proteus_client: ProteusClient for target storage.
+    :param auth_client: AuthenticationClient for target storage.
     :param path: Path to delta table, in HDFS format: abfss://container@account.dfs.core.windows.net/my/path
     :param limit: Limit number of history records retrieved.
     :return: An iterable of Delta transactions for this table.
     """
     delta_table = DeltaTable(
-        path.to_delta_rs_path(), storage_options=proteus_client.connect_storage(path)
+        path.to_delta_rs_path(), storage_options=auth_client.connect_storage(path)
     )
 
     return [
@@ -111,7 +111,7 @@ def history(
 
 
 def get_cache_key(
-    proteus_client: AuthenticationClient,
+    auth_client: AuthenticationClient,
     path: DataPath,
     batch_size=1000,
     version: Optional[int] = None,
@@ -122,7 +122,7 @@ def get_cache_key(
     """
       Returns a cache key for the path and data read arguments
 
-    :param proteus_client: ProteusClient for target storage.
+    :param auth_client: AuthenticationClient for target storage.
     :param path: Path to delta table, in HDFS format: abfss://container@account.dfs.core.windows.net/my/path
     :param version: Optional version to read. Defaults to latest.
     :param row_filter: Optional filter to apply, as pyarrow expression. Example:
@@ -144,7 +144,7 @@ def get_cache_key(
     if version:
         base_attributes.append(str(version))
     else:
-        base_attributes.append(str(list(history(proteus_client, path))[0].timestamp))
+        base_attributes.append(str(list(history(auth_client, path))[0].timestamp))
 
     if row_filter is not None:
         base_attributes.append(str(row_filter))
@@ -161,7 +161,7 @@ def get_cache_key(
 
 
 def load_cached(  # pylint: disable=R0913
-    proteus_client: AuthenticationClient,
+    auth_client: AuthenticationClient,
     path: DataPath,
     cache: KeyValueCache,
     cache_expires_after: Optional[datetime.timedelta] = datetime.timedelta(hours=1),
@@ -170,13 +170,13 @@ def load_cached(  # pylint: disable=R0913
     row_filter: Optional[Expression] = None,
     columns: Optional[List[str]] = None,
     partition_filter_expressions: Optional[List[Tuple]] = None,
-    logger: Optional[ProteusLogger] = None,
+    logger: Optional[CompositeLogger] = None,
 ) -> pandas.DataFrame:
     """
      Loads Delta Lake table from an external cache and converts it to a single pandas dataframe (after applying column projections and row filters).
      If a cache entry is missing, falls back to reading data from storage path.
 
-    :param proteus_client: ProteusClient for target storage.
+    :param auth_client: AuthenticationClient for target storage.
     :param path: Path to delta table, in HDFS format: abfss://container@account.dfs.core.windows.net/my/path
     :param version: Optional version to read. Defaults to latest.
     :param row_filter: Optional filter to apply, as pyarrow expression. Example:
@@ -200,7 +200,7 @@ def load_cached(  # pylint: disable=R0913
     """
 
     cache_key = get_cache_key(
-        proteus_client=proteus_client,
+        auth_client=auth_client,
         path=path,
         batch_size=batch_size,
         version=version,
@@ -255,7 +255,7 @@ def load_cached(  # pylint: disable=R0913
         )
 
     data = load(
-        proteus_client=proteus_client,
+        auth_client=auth_client,
         path=path,
         version=version,
         row_filter=row_filter,

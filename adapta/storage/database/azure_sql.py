@@ -21,7 +21,7 @@ from typing import Optional
 
 from sqlalchemy import text
 
-from adapta.logs import ProteusLogger
+from adapta.logs import CompositeLogger
 from adapta.storage.database.odbc import OdbcClient
 from adapta.storage.database.models import DatabaseType
 from adapta.utils import doze
@@ -34,7 +34,7 @@ class AzureSqlClient(OdbcClient):
 
     def __init__(
         self,
-        logger: ProteusLogger,
+        logger: CompositeLogger,
         host_name: str,
         user_name: str,
         password: str,

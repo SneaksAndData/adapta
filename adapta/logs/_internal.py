@@ -1,4 +1,4 @@
-"""Classes for internal use by `proteus.logs` module. Should not be imported outside this module"""
+"""Classes for internal use by `adapta.logs` module. Should not be imported outside this module"""
 #  Copyright (c) 2023. ECCO Sneaks & Data
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,12 +17,12 @@
 import logging
 from typing import Optional, Dict
 
-from adapta.logs.models import ProteusLogMetadata, LogLevel
+from adapta.logs.models import CompositeLogMetadata, LogLevel
 
 
 class MetadataLogger(logging.Logger):
     """
-    Wrapper for standard python logger that enriches messages with proteus metadata
+    Wrapper for standard python logger that enriches messages with additional metadata
     """
 
     def __init__(self, name: str, level=logging.NOTSET):
@@ -46,7 +46,7 @@ class MetadataLogger(logging.Logger):
         exception: Optional[BaseException],
     ):
         """
-        Creates log entry with metadata from Proteus Logger
+        Creates log entry with metadata from Composite Logger
 
         :param log_level: Level defined in logging module.
         :param msg: Log message after templating.
@@ -61,7 +61,7 @@ class MetadataLogger(logging.Logger):
 
         if not self.isEnabledFor(level=log_level):
             return
-        log_metadata = ProteusLogMetadata(
+        log_metadata = CompositeLogMetadata(
             template=template,
             diagnostics=diagnostics,
             tags=tags,
@@ -71,7 +71,7 @@ class MetadataLogger(logging.Logger):
             log_level,
             msg=msg,
             args=None,
-            extra={ProteusLogMetadata.__name__: log_metadata},
+            extra={CompositeLogMetadata.__name__: log_metadata},
             exc_info=exception,
             stack_info=stack_info,
         )
@@ -79,7 +79,7 @@ class MetadataLogger(logging.Logger):
 
 def from_log_level(log_level: LogLevel) -> int:
     """
-    Converts proteus log level to logging log level
+    Converts adapta log level to logging log level
     """
     log_method = {
         LogLevel.INFO: logging.INFO,

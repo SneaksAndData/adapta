@@ -18,18 +18,18 @@ import logging
 import pytest
 
 from adapta.logs.models import LogLevel
-from adapta.logs import ProteusLogger
+from adapta.logs import CompositeLogger
 from adapta.storage.database.odbc import OdbcClient
 from adapta.storage.database.models import DatabaseType
 
 
 @pytest.fixture
 def sqlite():
-    proteus_logger = ProteusLogger().add_log_source(
+    c_logger = CompositeLogger().add_log_source(
         log_source_name="sqlite", min_log_level=LogLevel.INFO, is_default=True
     )
     return OdbcClient(
-        logger=proteus_logger,
+        logger=c_logger,
         database_type=DatabaseType.SQLITE_ODBC,
     )
 

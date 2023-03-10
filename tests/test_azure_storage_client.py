@@ -28,7 +28,7 @@ from adapta.security.clients import AzureClient
 @patch("azure.storage.blob.BlobClient")
 @patch("azure.storage.blob.ContainerClient")
 @patch("azure.storage.blob.BlobServiceClient")
-@patch("proteus.security.clients.AzureClient")
+@patch("adapta.security.clients.AzureClient")
 def test_download_blobs(
     mock_client: MagicMock,
     mock_blob_service_client: MagicMock,

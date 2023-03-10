@@ -88,7 +88,7 @@ def test_delta_load_with_partitions(get_client_and_path_partitioned):
     assert table["colA"].to_list() == [1, 3]
 
 
-@patch("proteus.storage.cache.KeyValueCache")
+@patch("adapta.storage.cache.KeyValueCache")
 def test_delta_load_cached(mock_cache: MagicMock, get_client_and_path):
     client, data_path = get_client_and_path
 
@@ -112,7 +112,7 @@ def test_delta_load_cached(mock_cache: MagicMock, get_client_and_path):
     cache.get.assert_called_with(cache_key, is_map=True)
 
 
-@patch("proteus.storage.cache.KeyValueCache")
+@patch("adapta.storage.cache.KeyValueCache")
 def test_delta_populate_cache(mock_cache: MagicMock, get_client_and_path):
     client, data_path = get_client_and_path
 

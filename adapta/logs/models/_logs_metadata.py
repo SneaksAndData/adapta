@@ -22,9 +22,9 @@ from typing import Optional, Dict
 
 
 @dataclass
-class ProteusLogMetadata:
+class CompositeLogMetadata:
     """
-    Metadata model for log messages created by ProteusLogger
+    Metadata model for log messages created by CompositeLogger
     """
 
     template: str

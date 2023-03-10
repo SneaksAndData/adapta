@@ -63,7 +63,7 @@ def test_read_secret_with_mock():
     with patch(
         "hvac.Client", MagicMock(return_value=generate_hashicorp_vault_mock())
     ), patch("webbrowser.open"), patch(
-        "proteus.security.clients.hashicorp_vault.oidc_client._get_vault_credentials"
+        "adapta.security.clients.hashicorp_vault.oidc_client._get_vault_credentials"
     ):
         client = HashicorpSecretStorageClient(
             base_client=HashicorpVaultOidcClient(TEST_VAULT_ADDRESS)
@@ -78,7 +78,7 @@ def test_create_secret_with_mock():
     with patch("hvac.Client", MagicMock(return_value=client_mock)), patch(
         "webbrowser.open"
     ), patch(
-        "proteus.security.clients.hashicorp_vault.oidc_client._get_vault_credentials"
+        "adapta.security.clients.hashicorp_vault.oidc_client._get_vault_credentials"
     ):
         client = HashicorpSecretStorageClient(
             base_client=HashicorpVaultOidcClient(TEST_VAULT_ADDRESS)
@@ -96,7 +96,7 @@ def test_string_secret():
     with patch("hvac.Client", MagicMock(return_value=client_mock)), patch(
         "webbrowser.open"
     ), patch(
-        "proteus.security.clients.hashicorp_vault.oidc_client._get_vault_credentials"
+        "adapta.security.clients.hashicorp_vault.oidc_client._get_vault_credentials"
     ):
         client = HashicorpSecretStorageClient(
             base_client=HashicorpVaultOidcClient(TEST_VAULT_ADDRESS)

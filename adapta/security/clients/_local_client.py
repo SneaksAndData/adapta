@@ -24,7 +24,7 @@ from adapta.storage.models.base import DataPath
 
 class LocalClient(AuthenticationClient):
     """
-    Local mode Proteus Client.
+    Local mode AuthenticationClient.
     """
 
     def get_credentials(self):

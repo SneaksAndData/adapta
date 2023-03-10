@@ -18,4 +18,4 @@
 #
 
 from adapta.logs.models._log_level import LogLevel
-from adapta.logs.models._logs_metadata import ProteusLogMetadata
+from adapta.logs.models._logs_metadata import CompositeLogMetadata

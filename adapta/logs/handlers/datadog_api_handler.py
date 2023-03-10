@@ -39,7 +39,7 @@ from urllib3.exceptions import HTTPError
 from kubernetes import config
 from kubernetes.config import ConfigException
 
-from adapta.logs.models import ProteusLogMetadata
+from adapta.logs.models import CompositeLogMetadata
 from adapta.utils import convert_datadog_tags
 
 
@@ -200,8 +200,8 @@ class DataDogApiHandler(Handler):
     def emit(self, record: LogRecord) -> None:
         def convert_record(rec: LogRecord) -> HTTPLogItem:
 
-            metadata: Optional[ProteusLogMetadata] = rec.__dict__.get(
-                ProteusLogMetadata.__name__
+            metadata: Optional[CompositeLogMetadata] = rec.__dict__.get(
+                CompositeLogMetadata.__name__
             )
             tags = {}
             formatted_message: Dict[str, Any] = {"text": rec.getMessage()}

@@ -1,5 +1,5 @@
 """
- Hashicorp Vault implementation of Proteus Client.
+ Hashicorp Vault implementation of AuthenticationClient.
 """
 #  Copyright (c) 2023. ECCO Sneaks & Data
 #
@@ -37,9 +37,9 @@ class HashicorpVaultKubernetesClient(HashicorpVaultClient):
         client: AuthenticationClient,
     ) -> Optional["HashicorpVaultKubernetesClient"]:
         """
-         Safe casts ProteusClient to HashicorpVaultClient if type checks out.
+         Safe casts AuthenticationClient to HashicorpVaultClient if type checks out.
 
-        :param client: ProteusClient
+        :param client: AuthenticationClient
         :return: HashicorpVaultKubernetesClient or None if type does not check out
         """
         if isinstance(client, HashicorpVaultKubernetesClient):

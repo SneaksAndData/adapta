@@ -27,7 +27,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from trino.auth import OAuth2Authentication
 
 from adapta.logs.models import LogLevel
-from adapta.logs import ProteusLogger
+from adapta.logs import CompositeLogger
 from adapta.storage.secrets import SecretStorageClient
 
 
@@ -43,8 +43,8 @@ class TrinoClient:
         port: Optional[int] = 443,
         oauth2_username: Optional[str] = None,
         credentials_provider: Optional[Tuple[str, SecretStorageClient]] = None,
-        logger: ProteusLogger = ProteusLogger().add_log_source(
-            log_source_name="proteus-trino-client",
+        logger: CompositeLogger = CompositeLogger().add_log_source(
+            log_source_name="adapta-trino-client",
             min_log_level=LogLevel.INFO,
             is_default=True,
         ),
@@ -58,7 +58,7 @@ class TrinoClient:
         :param oauth2_username: Optional username to use if authenticating with interactive OAuth2.
                Can also be provided via PROTEUS__TRINO_OAUTH2_USERNAME.
         :param credentials_provider: Optional secret provider to use to read Basic Auth credentials.
-        :param logger: Proteus logger instance.
+        :param logger: CompositeLogger instance.
         """
 
         self._host = host

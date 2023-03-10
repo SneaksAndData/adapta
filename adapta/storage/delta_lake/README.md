@@ -15,7 +15,7 @@ from adapta.security.clients import AzureClient
 from adapta.storage.models.azure import AdlsGen2Path
 from adapta.storage.models.hive import HivePath
 from adapta.storage.delta_lake import load, load_cached
-from adapta.logs import ProteusLogger
+from adapta.logs import CompositeLogger
 from pyarrow.dataset import field as pyarrow_field
 from adapta.storage.cache.redis_cache import RedisCache
 
@@ -33,10 +33,11 @@ filtered = load(azure_client, adls_path, row_filter=filter, columns=["my_column"
 # filtered is of type pandas.DataFrame
 
 # using with Hive paths
-logger: ProteusLogger  # review proteus.logs readme to learn how to construct a logger instance
+logger: CompositeLogger  # review proteus.logs readme to learn how to construct a logger instance
 os.environ['PROTEUS__HIVE_USER'] = 'delamain'
 os.environ['PROTEUS__HIVE_PASSWORD'] = 'secret'
-hive_path = HivePath.from_hdfs_path("hive://sqlserver@myserver.database.windows.net:1433/sparkdatalake/bronze/bronze_table")
+hive_path = HivePath.from_hdfs_path(
+    "hive://sqlserver@myserver.database.windows.net:1433/sparkdatalake/bronze/bronze_table")
 
 adls_path2 = AdlsGen2Path.from_hdfs_path(hive_path.get_physical_path(logger=logger))
 
@@ -49,5 +50,6 @@ batches2 = load(azure_client, adls_path2, batch_size=1000)
 # if there is no cache hit, load_cached() will fallback to load() behaviour
 r_cache = RedisCache(host="esd-superset-test.redis.cache.windows.net", database_number=1)
 os.environ['PROTEUS__CACHE_REDIS_PASSWORD'] = '...'
-read_raw = load_cached(azure_client, adls_path, r_cache, row_filter=filter, cache_expires_after=datetime.timedelta(minutes=15), batch_size=int(1e6))
+read_raw = load_cached(azure_client, adls_path, r_cache, row_filter=filter,
+                       cache_expires_after=datetime.timedelta(minutes=15), batch_size=int(1e6))
 ```

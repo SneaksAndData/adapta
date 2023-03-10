@@ -4,9 +4,9 @@ version = "0.0.0"
 description = "Logging, data connectors, monitoring, secret handling and general lifehacks to make data people lives easier."
 authors = ["ECCO Sneaks & Data <esdsupport@ecco.com>"]
 maintainers = ['GZU <gzu@ecco.com>', 'JRB <ext-jrb@ecco.com>']
-license = 'Proprietary'
+license = 'Apache 2.0'
 readme = "README.md"
-repository = 'https://github.com/SneaksAndData/proteus'
+repository = 'https://github.com/SneaksAndData/adapta'
 
 [tool.poetry.dependencies]
 python = ">=3.9, <3.11"

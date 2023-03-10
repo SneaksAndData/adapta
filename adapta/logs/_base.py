@@ -1,5 +1,5 @@
 """
- Proteus Logging Interface.
+ Adapta Logging Interface.
 """
 #  Copyright (c) 2023. ECCO Sneaks & Data
 #
@@ -31,9 +31,9 @@ from adapta.logs.models import LogLevel
 from adapta.logs._internal import MetadataLogger, from_log_level
 
 
-class ProteusLogger:
+class CompositeLogger:
     """
-    Proteus Proxy for Python logging library.
+    Proxy for a collection of python loggers that use the same formatting interface.
     """
 
     def __init__(
@@ -42,7 +42,7 @@ class ProteusLogger:
         fixed_template_delimiter=", ",
     ):
         """
-          Creates a new instance of a ProteusLogger
+          Creates a new instance of a CompositeLogger
 
         :param fixed_template: Additional template to append to message templates provided via logging methods.
         :param fixed_template_delimiter: Optional delimiter to use when appending fixed templates.
@@ -60,7 +60,7 @@ class ProteusLogger:
         min_log_level: LogLevel,
         log_handlers: Optional[List[Handler]] = None,
         is_default=False,
-    ) -> "ProteusLogger":
+    ) -> "CompositeLogger":
         """
           Adds a new log source.
 
@@ -298,7 +298,7 @@ class ProteusLogger:
          of the reported message, if one is present in the output. This method works for the whole process,
          including external libraries (C/C++ etc). Example usage:
 
-         with proteus_logger.redirect():
+         with composite_logger.redirect():
              # from here, output will be redirected and collected separately
              call_my_function()
              call_my_other_function()

@@ -23,7 +23,7 @@ import random
 from time import sleep
 from adapta.metrics.providers.datadog_provider import DatadogMetricsProvider
 
-provider = DatadogMetricsProvider(metric_namespace='proteus_test')
+provider = DatadogMetricsProvider(metric_namespace='test')
 
 # report a gauge metric
 for i in range(0, 100):

@@ -42,7 +42,7 @@ class EventAlertType(Enum):
 
 class DatadogMetricsProvider(MetricsProvider):
     """
-    DogStatsD projection of Proteus MetricsProvider.
+    DogStatsD projection of MetricsProvider.
     """
 
     def __init__(

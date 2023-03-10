@@ -1,5 +1,5 @@
 """
- Azure Cloud implementation of Proteus Client.
+ Azure Cloud implementation of AuthenticationClient.
 """
 #  Copyright (c) 2023. ECCO Sneaks & Data
 #
@@ -66,9 +66,9 @@ class AzureClient(AuthenticationClient):
     @classmethod
     def from_base_client(cls, client: AuthenticationClient) -> Optional["AzureClient"]:
         """
-         Safe casts ProteusClient to AzureClient if type checks out.
+         Safe casts AuthenticationClient to AzureClient if type checks out.
 
-        :param client: ProteusClient
+        :param client: AuthenticationClient
         :return: AzureClient or None if type does not check out
         """
         if isinstance(client, AzureClient):
@@ -97,7 +97,7 @@ class AzureClient(AuthenticationClient):
 
         assert isinstance(
             path, AdlsGen2Path
-        ), "Azure Client only works with proteus.storage.models.azure.AdlsGen2Path"
+        ), "Azure Client only works with adapta.storage.models.azure.AdlsGen2Path"
 
         adls_path: AdlsGen2Path = path
 
