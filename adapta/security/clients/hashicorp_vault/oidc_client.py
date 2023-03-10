@@ -67,7 +67,9 @@ class HashicorpVaultOidcClient(HashicorpVaultClient):
     """
 
     @staticmethod
-    def from_base_client(client: AuthenticationClient) -> Optional["HashicorpVaultClient"]:
+    def from_base_client(
+        client: AuthenticationClient,
+    ) -> Optional["HashicorpVaultClient"]:
         """
          Safe casts AuthenticationClient to HashicorpVaultClient if type checks out.
 
