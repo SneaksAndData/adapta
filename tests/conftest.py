@@ -18,14 +18,14 @@ import logging
 import pytest
 
 from adapta.logs.models import LogLevel
-from adapta.logs import CompositeLogger
+from adapta.logs import SemanticLogger
 from adapta.storage.database.odbc import OdbcClient
 from adapta.storage.database.models import DatabaseType
 
 
 @pytest.fixture
 def sqlite():
-    c_logger = CompositeLogger().add_log_source(
+    c_logger = SemanticLogger().add_log_source(
         log_source_name="sqlite", min_log_level=LogLevel.INFO, is_default=True
     )
     return OdbcClient(

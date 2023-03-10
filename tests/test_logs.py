@@ -30,7 +30,7 @@ import uuid
 import requests
 from pytest_mock import MockerFixture
 
-from adapta.logs import CompositeLogger
+from adapta.logs import SemanticLogger
 from adapta.logs.handlers.datadog_api_handler import DataDogApiHandler
 from adapta.logs.models import LogLevel
 
@@ -84,7 +84,7 @@ def test_log_format(
 ):
     test_file_path = os.path.join(tempfile.gettempdir(), str(uuid.uuid4()))
     with open(test_file_path, "w") as log_stream:
-        stream_logger = CompositeLogger(
+        stream_logger = SemanticLogger(
             fixed_template={
                 "Fixed message1 {message1}": {"message1": "this is a fixed message1"},
                 "Fixed message2 {message2}": {"message2": "this is a fixed message2"},
@@ -123,7 +123,7 @@ def test_datadog_api_handler(mocker: MockerFixture):
     mock_handler = DataDogApiHandler(buffer_size=1)
     mock_source = str(uuid.uuid4())
 
-    dd_logger = CompositeLogger().add_log_source(
+    dd_logger = SemanticLogger().add_log_source(
         log_source_name=mock_source,
         min_log_level=LogLevel.INFO,
         log_handlers=[mock_handler],
@@ -168,7 +168,7 @@ def test_adapta_logger_replacement(mocker: MockerFixture, restore_logger_class):
         "PROTEUS__DD_SITE": "some-site.dog",
     }
     with patch.dict(os.environ, mock_environment):
-        CompositeLogger().add_log_source(
+        SemanticLogger().add_log_source(
             log_source_name="urllib3",
             min_log_level=LogLevel.DEBUG,
             log_handlers=[DataDogApiHandler()],
@@ -197,7 +197,7 @@ def test_log_level(mocker: MockerFixture, restore_logger_class):
         "PROTEUS__DD_SITE": "some-site.dog",
     }
     with patch.dict(os.environ, mock_environment):
-        logger = CompositeLogger().add_log_source(
+        logger = SemanticLogger().add_log_source(
             log_source_name="test",
             min_log_level=LogLevel.INFO,
             log_handlers=[DataDogApiHandler()],
@@ -227,7 +227,7 @@ def test_fixed_template(mocker: MockerFixture, restore_logger_class):
         "PROTEUS__DD_SITE": "some-site.dog",
     }
     with patch.dict(os.environ, mock_environment):
-        logger = CompositeLogger(
+        logger = SemanticLogger(
             fixed_template={
                 "running with job id {job_id} on {owner}": {
                     "job_id": "my_job_id",

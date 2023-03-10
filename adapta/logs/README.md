@@ -7,10 +7,10 @@ This module provides a generic interface to plug json-formatted logging into you
 First, create a logger object and add some log sources. Then log on a desired level directly using default handler:
 
 ```python
-from adapta.logs import CompositeLogger
+from adapta.logs import SemanticLogger
 from adapta.logs.models import LogLevel
 
-c_logger = CompositeLogger()
+c_logger = SemanticLogger()
 .add_log_source(log_source_name='test_logger_1', min_log_level=LogLevel.INFO, is_default=True)
 .add_log_source(log_source_name='test_logger_2', min_log_level=LogLevel.ERROR)
 
@@ -31,10 +31,10 @@ except ValueError as ex:
 You can also use `Logger` instances directly:
 
 ```python
-from adapta.logs import CompositeLogger
+from adapta.logs import SemanticLogger
 from adapta.logs.models import LogLevel
 
-c_logger = CompositeLogger()
+c_logger = SemanticLogger()
 .add_log_source(log_source_name='test_logger_1', min_log_level=LogLevel.INFO, is_default=True)
 
 logger = c_logger.test_logger_1
@@ -46,12 +46,12 @@ In order to send logs to DataDog, use `DataDogApiHandler` when adding a log sour
 in `stdout` or `stderr`, add `SafeStreamHandler` on top:
 
 ```python
-from adapta.logs import CompositeLogger
+from adapta.logs import SemanticLogger
 from adapta.logs.models import LogLevel
 from adapta.logs.handlers.datadog_api_handler import DataDogApiHandler
 from adapta.logs.handlers.safe_stream_handler import SafeStreamHandler
 
-c_logger = CompositeLogger()
+c_logger = SemanticLogger()
 .add_log_source(log_source_name='test_logger_1', min_log_level=LogLevel.INFO,
                 log_handlers=[DataDogApiHandler(), SafeStreamHandler()], is_default=True)
 
@@ -59,7 +59,7 @@ c_logger = CompositeLogger()
 
 my_job_id = '000-000-111'
 owner = 'host-1'
-c_logger = CompositeLogger(fixed_template={
+c_logger = SemanticLogger(fixed_template={
     'running with job id {job_id} on {owner}': {
         'job_id': my_job_id,
         'owner': owner
@@ -86,7 +86,7 @@ This module supports integration with existing logger, you can use it as followi
 ```python
 import sys
 from logging import StreamHandler, Formatter
-from adapta.logs import CompositeLogger
+from adapta.logs import SemanticLogger
 from adapta.logs.models import LogLevel
 from adapta.logs.handlers.datadog_api_handler import DataDogApiHandler
 
@@ -100,12 +100,12 @@ stream_handler.setFormatter(formatter)
 # Create stream handler for loggers. Datadog handler use REST api to push log messages, so it do not need a formatter
 datadog_handler = DataDogApiHandler()
 
-logger = CompositeLogger().add_log_source(
+logger = SemanticLogger().add_log_source(
     log_source_name="azure",
     min_log_level=LogLevel.ERROR,
     log_handlers=[stream_handler, datadog_handler]
 )
-    .add_log_source(
+.add_log_source(
     log_source_name="my-app",
     min_log_level=LogLevel.INFO,
     log_handlers=[stream_handler, datadog_handler]

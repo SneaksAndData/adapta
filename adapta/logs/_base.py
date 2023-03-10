@@ -31,7 +31,7 @@ from adapta.logs.models import LogLevel
 from adapta.logs._internal import MetadataLogger, from_log_level
 
 
-class CompositeLogger:
+class SemanticLogger:
     """
     Proxy for a collection of python loggers that use the same formatting interface.
     """
@@ -60,7 +60,7 @@ class CompositeLogger:
         min_log_level: LogLevel,
         log_handlers: Optional[List[Handler]] = None,
         is_default=False,
-    ) -> "CompositeLogger":
+    ) -> "SemanticLogger":
         """
           Adds a new log source.
 

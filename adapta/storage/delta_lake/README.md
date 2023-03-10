@@ -15,7 +15,7 @@ from adapta.security.clients import AzureClient
 from adapta.storage.models.azure import AdlsGen2Path
 from adapta.storage.models.hive import HivePath
 from adapta.storage.delta_lake import load, load_cached
-from adapta.logs import CompositeLogger
+from adapta.logs import SemanticLogger
 from pyarrow.dataset import field as pyarrow_field
 from adapta.storage.cache.redis_cache import RedisCache
 
@@ -33,7 +33,7 @@ filtered = load(azure_client, adls_path, row_filter=filter, columns=["my_column"
 # filtered is of type pandas.DataFrame
 
 # using with Hive paths
-logger: CompositeLogger  # review proteus.logs readme to learn how to construct a logger instance
+logger: SemanticLogger  # review proteus.logs readme to learn how to construct a logger instance
 os.environ['PROTEUS__HIVE_USER'] = 'delamain'
 os.environ['PROTEUS__HIVE_PASSWORD'] = 'secret'
 hive_path = HivePath.from_hdfs_path(

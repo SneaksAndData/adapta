@@ -16,4 +16,4 @@
 #  limitations under the License.
 #
 
-from adapta.logs._base import CompositeLogger
+from adapta.logs._base import SemanticLogger

@@ -28,7 +28,7 @@ from pyarrow import RecordBatch, Table
 from pyarrow._compute import Expression  # pylint: disable=E0611
 from pyarrow._dataset_parquet import ParquetReadOptions  # pylint: disable=E0611
 
-from adapta.logs import CompositeLogger
+from adapta.logs import SemanticLogger
 from adapta.security.clients._base import AuthenticationClient
 from adapta.storage.models.base import DataPath
 from adapta.storage.delta_lake._models import DeltaTransaction
@@ -170,7 +170,7 @@ def load_cached(  # pylint: disable=R0913
     row_filter: Optional[Expression] = None,
     columns: Optional[List[str]] = None,
     partition_filter_expressions: Optional[List[Tuple]] = None,
-    logger: Optional[CompositeLogger] = None,
+    logger: Optional[SemanticLogger] = None,
 ) -> pandas.DataFrame:
     """
      Loads Delta Lake table from an external cache and converts it to a single pandas dataframe (after applying column projections and row filters).

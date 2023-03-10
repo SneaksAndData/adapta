@@ -27,7 +27,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from trino.auth import OAuth2Authentication
 
 from adapta.logs.models import LogLevel
-from adapta.logs import CompositeLogger
+from adapta.logs import SemanticLogger
 from adapta.storage.secrets import SecretStorageClient
 
 
@@ -43,7 +43,7 @@ class TrinoClient:
         port: Optional[int] = 443,
         oauth2_username: Optional[str] = None,
         credentials_provider: Optional[Tuple[str, SecretStorageClient]] = None,
-        logger: CompositeLogger = CompositeLogger().add_log_source(
+        logger: SemanticLogger = SemanticLogger().add_log_source(
             log_source_name="adapta-trino-client",
             min_log_level=LogLevel.INFO,
             is_default=True,

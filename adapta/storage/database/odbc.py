@@ -26,7 +26,7 @@ from sqlalchemy.connectors import pyodbc
 from sqlalchemy.engine import URL
 from sqlalchemy.exc import SQLAlchemyError, OperationalError
 
-from adapta.logs import CompositeLogger
+from adapta.logs import SemanticLogger
 from adapta.storage.database.models import DatabaseType, SqlAlchemyDialect
 
 
@@ -37,7 +37,7 @@ class OdbcClient(ABC):
 
     def __init__(
         self,
-        logger: CompositeLogger,
+        logger: SemanticLogger,
         database_type: DatabaseType,
         host_name: Optional[str] = None,
         user_name: Optional[str] = None,

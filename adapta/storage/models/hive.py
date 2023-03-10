@@ -23,7 +23,7 @@ from typing import Optional
 from adapta.storage.database.azure_sql import AzureSqlClient
 from adapta.storage.models.base import DataPath, DataProtocols
 from adapta.storage.database.models import DatabaseType
-from adapta.logs import CompositeLogger
+from adapta.logs import SemanticLogger
 
 
 @dataclass
@@ -103,7 +103,7 @@ class HivePath(DataPath):
         self._check_path()
         return f"{self.protocol}://{self.hive_engine}@{self.hive_server}:{self.hive_server_port}/{self.path}"
 
-    def get_physical_path(self, logger: CompositeLogger) -> Optional[str]:
+    def get_physical_path(self, logger: SemanticLogger) -> Optional[str]:
         """
          Converts this virtual HivePath to a physical HDFS path.
 

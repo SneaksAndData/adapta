@@ -15,10 +15,10 @@ Instantiate a new client, query, write data out and scale database:
 import pandas
 
 from adapta.storage.database.azure_sql import AzureSqlClient
-from adapta.logs import CompositeLogger
+from adapta.logs import SemanticLogger
 from adapta.logs.models import LogLevel
 
-c_logger = CompositeLogger().add_log_source(
+c_logger = SemanticLogger().add_log_source(
     log_source_name='azsql',
     min_log_level=LogLevel.INFO,
     is_default=True,
