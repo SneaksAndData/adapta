@@ -19,9 +19,9 @@ from unittest.mock import patch, MagicMock
 
 from azure.storage.blob import BlobProperties
 
-from proteus.storage.blob.azure_storage_client import AzureStorageClient
-from proteus.storage.models.azure import AdlsGen2Path
-from proteus.security.clients import AzureClient
+from adapta.storage.blob.azure_storage_client import AzureStorageClient
+from adapta.storage.models.azure import AdlsGen2Path
+from adapta.security.clients import AzureClient
 
 
 @patch("azure.storage.blob._download.StorageStreamDownloader")

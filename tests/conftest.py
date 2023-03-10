@@ -17,10 +17,10 @@ import logging
 
 import pytest
 
-from proteus.logs.models import LogLevel
-from proteus.logs import ProteusLogger
-from proteus.storage.database.odbc import OdbcClient
-from proteus.storage.database.models import DatabaseType
+from adapta.logs.models import LogLevel
+from adapta.logs import ProteusLogger
+from adapta.storage.database.odbc import OdbcClient
+from adapta.storage.database.models import DatabaseType
 
 
 @pytest.fixture

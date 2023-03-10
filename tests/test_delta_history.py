@@ -17,9 +17,9 @@ import pathlib
 
 import pytest
 
-from proteus.security.clients import LocalClient
-from proteus.storage.models.local import LocalPath
-from proteus.storage.delta_lake import history, DeltaOperation
+from adapta.security.clients import LocalClient
+from adapta.storage.models.local import LocalPath
+from adapta.storage.delta_lake import history, DeltaOperation
 
 
 @pytest.fixture

@@ -18,10 +18,10 @@ from typing import Optional, Union, Dict
 
 import pytest
 
-from proteus.process_communication import DataSocket
-from proteus.storage.models.azure import AdlsGen2Path
-from proteus.storage.models.base import DataPath
-from proteus.storage.models.local import LocalPath
+from adapta.process_communication import DataSocket
+from adapta.storage.models.azure import AdlsGen2Path
+from adapta.storage.models.base import DataPath
+from adapta.storage.models.local import LocalPath
 
 
 @pytest.mark.parametrize(

@@ -30,9 +30,9 @@ import uuid
 import requests
 from pytest_mock import MockerFixture
 
-from proteus.logs import ProteusLogger
-from proteus.logs.handlers.datadog_api_handler import DataDogApiHandler
-from proteus.logs.models import LogLevel
+from adapta.logs import ProteusLogger
+from adapta.logs.handlers.datadog_api_handler import DataDogApiHandler
+from adapta.logs.models import LogLevel
 
 EXPECTED_MESSAGE = "This a unit test logger 1, Fixed message1 this is a fixed message1, Fixed message2 this is a fixed message2\n"
 

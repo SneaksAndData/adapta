@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "proteus"
+name = "adapta"
 version = "0.0.0"
 description = "Logging, data connectors, monitoring, secret handling and general lifehacks to make data people lives easier."
 authors = ["ECCO Sneaks & Data <esdsupport@ecco.com>"]

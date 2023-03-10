@@ -20,11 +20,11 @@ from unittest.mock import patch, MagicMock, ANY, call
 import pandas
 import pytest
 
-from proteus.security.clients import LocalClient
-from proteus.storage.models.local import LocalPath
-from proteus.storage.delta_lake import load, load_cached, get_cache_key
-from proteus.storage.cache import KeyValueCache
-from proteus.storage.models.format import DataFrameParquetSerializationFormat
+from adapta.security.clients import LocalClient
+from adapta.storage.models.local import LocalPath
+from adapta.storage.delta_lake import load, load_cached, get_cache_key
+from adapta.storage.cache import KeyValueCache
+from adapta.storage.models.format import DataFrameParquetSerializationFormat
 
 from pyarrow.dataset import field as pyarrow_field
 
