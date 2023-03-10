@@ -1,4 +1,5 @@
-name: Release to Azure Artifacts
+name: Publish to PyPi
+run-name: Publish ${{github.ref_name}} to PyPi by @${{ github.actor }}
 
 on: workflow_dispatch
 jobs:
