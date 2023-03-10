@@ -16,7 +16,7 @@
 import pytest
 from typing import Type
 import pandas
-from proteus.storage.models.format import (
+from adapta.storage.models.format import (
     DictJsonSerializationFormat,
     SerializationFormat,
     DataFrameParquetSerializationFormat,

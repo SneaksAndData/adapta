@@ -17,11 +17,11 @@ from unittest.mock import patch, MagicMock, mock_open, Mock
 
 import pytest
 
-from proteus.security.clients import HashicorpVaultClient, HashicorpVaultOidcClient
-from proteus.security.clients.hashicorp_vault.kubernetes_client import (
+from adapta.security.clients import HashicorpVaultClient, HashicorpVaultOidcClient
+from adapta.security.clients.hashicorp_vault.kubernetes_client import (
     HashicorpVaultKubernetesClient,
 )
-from proteus.storage.secrets.hashicorp_vault_secret_storage_client import (
+from adapta.storage.secrets.hashicorp_vault_secret_storage_client import (
     HashicorpSecretStorageClient,
 )
 
@@ -63,7 +63,7 @@ def test_read_secret_with_mock():
     with patch(
         "hvac.Client", MagicMock(return_value=generate_hashicorp_vault_mock())
     ), patch("webbrowser.open"), patch(
-        "proteus.security.clients.hashicorp_vault.oidc_client._get_vault_credentials"
+        "adapta.security.clients.hashicorp_vault.oidc_client._get_vault_credentials"
     ):
         client = HashicorpSecretStorageClient(
             base_client=HashicorpVaultOidcClient(TEST_VAULT_ADDRESS)
@@ -78,7 +78,7 @@ def test_create_secret_with_mock():
     with patch("hvac.Client", MagicMock(return_value=client_mock)), patch(
         "webbrowser.open"
     ), patch(
-        "proteus.security.clients.hashicorp_vault.oidc_client._get_vault_credentials"
+        "adapta.security.clients.hashicorp_vault.oidc_client._get_vault_credentials"
     ):
         client = HashicorpSecretStorageClient(
             base_client=HashicorpVaultOidcClient(TEST_VAULT_ADDRESS)
@@ -96,7 +96,7 @@ def test_string_secret():
     with patch("hvac.Client", MagicMock(return_value=client_mock)), patch(
         "webbrowser.open"
     ), patch(
-        "proteus.security.clients.hashicorp_vault.oidc_client._get_vault_credentials"
+        "adapta.security.clients.hashicorp_vault.oidc_client._get_vault_credentials"
     ):
         client = HashicorpSecretStorageClient(
             base_client=HashicorpVaultOidcClient(TEST_VAULT_ADDRESS)

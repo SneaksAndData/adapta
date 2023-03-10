@@ -15,7 +15,7 @@
 
 import sys
 
-from proteus.logs.handlers.safe_stream_handler import SafeStreamHandler
+from adapta.logs.handlers.safe_stream_handler import SafeStreamHandler
 
 
 def test_does_not_close_stderr():

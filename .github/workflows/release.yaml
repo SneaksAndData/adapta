@@ -15,5 +15,5 @@ jobs:
       - name: Create Release
         uses: SneaksAndData/github-actions/semver_release@v0.0.13
         with:
-          major_v: 1
-          minor_v: 3
+          major_v: 2
+          minor_v: 0

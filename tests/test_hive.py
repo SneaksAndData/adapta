@@ -13,7 +13,7 @@
 #  limitations under the License.
 #
 
-from proteus.storage.models.hive import HivePath
+from adapta.storage.models.hive import HivePath
 
 
 def test_from_hdfs_path():

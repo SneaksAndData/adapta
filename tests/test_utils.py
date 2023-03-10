@@ -17,8 +17,8 @@ import time
 from typing import List, Any, Dict
 
 import pytest
-from proteus.utils import doze, operation_time, chunk_list
-from proteus.utils.concurrent_task_runner import Executable, ConcurrentTaskRunner
+from adapta.utils import doze, operation_time, chunk_list
+from adapta.utils.concurrent_task_runner import Executable, ConcurrentTaskRunner
 
 
 @pytest.mark.parametrize("sleep_period,doze_interval", [(1, 50), (2, 10)])

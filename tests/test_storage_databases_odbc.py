@@ -14,7 +14,7 @@
 #
 
 import pandas
-from proteus.storage.database.odbc import OdbcClient
+from adapta.storage.database.odbc import OdbcClient
 
 
 def sku_data():

@@ -20,11 +20,11 @@ from unittest.mock import patch, MagicMock, ANY, call
 import pandas
 import pytest
 
-from proteus.security.clients import LocalClient
-from proteus.storage.models.local import LocalPath
-from proteus.storage.delta_lake import load, load_cached, get_cache_key
-from proteus.storage.cache import KeyValueCache
-from proteus.storage.models.format import DataFrameParquetSerializationFormat
+from adapta.security.clients import LocalClient
+from adapta.storage.models.local import LocalPath
+from adapta.storage.delta_lake import load, load_cached, get_cache_key
+from adapta.storage.cache import KeyValueCache
+from adapta.storage.models.format import DataFrameParquetSerializationFormat
 
 from pyarrow.dataset import field as pyarrow_field
 
@@ -88,7 +88,7 @@ def test_delta_load_with_partitions(get_client_and_path_partitioned):
     assert table["colA"].to_list() == [1, 3]
 
 
-@patch("proteus.storage.cache.KeyValueCache")
+@patch("adapta.storage.cache.KeyValueCache")
 def test_delta_load_cached(mock_cache: MagicMock, get_client_and_path):
     client, data_path = get_client_and_path
 
@@ -112,7 +112,7 @@ def test_delta_load_cached(mock_cache: MagicMock, get_client_and_path):
     cache.get.assert_called_with(cache_key, is_map=True)
 
 
-@patch("proteus.storage.cache.KeyValueCache")
+@patch("adapta.storage.cache.KeyValueCache")
 def test_delta_populate_cache(mock_cache: MagicMock, get_client_and_path):
     client, data_path = get_client_and_path
 

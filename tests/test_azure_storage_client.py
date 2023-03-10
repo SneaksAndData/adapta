@@ -19,16 +19,16 @@ from unittest.mock import patch, MagicMock
 
 from azure.storage.blob import BlobProperties
 
-from proteus.storage.blob.azure_storage_client import AzureStorageClient
-from proteus.storage.models.azure import AdlsGen2Path
-from proteus.security.clients import AzureClient
+from adapta.storage.blob.azure_storage_client import AzureStorageClient
+from adapta.storage.models.azure import AdlsGen2Path
+from adapta.security.clients import AzureClient
 
 
 @patch("azure.storage.blob._download.StorageStreamDownloader")
 @patch("azure.storage.blob.BlobClient")
 @patch("azure.storage.blob.ContainerClient")
 @patch("azure.storage.blob.BlobServiceClient")
-@patch("proteus.security.clients.AzureClient")
+@patch("adapta.security.clients.AzureClient")
 def test_download_blobs(
     mock_client: MagicMock,
     mock_blob_service_client: MagicMock,

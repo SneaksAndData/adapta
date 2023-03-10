@@ -30,9 +30,9 @@ import uuid
 import requests
 from pytest_mock import MockerFixture
 
-from proteus.logs import ProteusLogger
-from proteus.logs.handlers.datadog_api_handler import DataDogApiHandler
-from proteus.logs.models import LogLevel
+from adapta.logs import SemanticLogger
+from adapta.logs.handlers.datadog_api_handler import DataDogApiHandler
+from adapta.logs.models import LogLevel
 
 EXPECTED_MESSAGE = "This a unit test logger 1, Fixed message1 this is a fixed message1, Fixed message2 this is a fixed message2\n"
 
@@ -84,7 +84,7 @@ def test_log_format(
 ):
     test_file_path = os.path.join(tempfile.gettempdir(), str(uuid.uuid4()))
     with open(test_file_path, "w") as log_stream:
-        stream_logger = ProteusLogger(
+        stream_logger = SemanticLogger(
             fixed_template={
                 "Fixed message1 {message1}": {"message1": "this is a fixed message1"},
                 "Fixed message2 {message2}": {"message2": "this is a fixed message2"},
@@ -117,13 +117,13 @@ def test_datadog_api_handler(mocker: MockerFixture):
     os.environ.setdefault("PROTEUS__DD_SITE", "some-site.dog")
 
     mocker.patch(
-        "proteus.logs.handlers.datadog_api_handler.DataDogApiHandler._flush",
+        "adapta.logs.handlers.datadog_api_handler.DataDogApiHandler._flush",
         return_value=None,
     )
     mock_handler = DataDogApiHandler(buffer_size=1)
     mock_source = str(uuid.uuid4())
 
-    dd_logger = ProteusLogger().add_log_source(
+    dd_logger = SemanticLogger().add_log_source(
         log_source_name=mock_source,
         min_log_level=LogLevel.INFO,
         log_handlers=[mock_handler],
@@ -156,9 +156,9 @@ def test_datadog_api_handler(mocker: MockerFixture):
     assert "tags" not in message
 
 
-def test_proteus_logger_replacement(mocker: MockerFixture, restore_logger_class):
+def test_adapta_logger_replacement(mocker: MockerFixture, restore_logger_class):
     mocker.patch(
-        "proteus.logs.handlers.datadog_api_handler.DataDogApiHandler._flush",
+        "adapta.logs.handlers.datadog_api_handler.DataDogApiHandler._flush",
         return_value=None,
     )
 
@@ -168,7 +168,7 @@ def test_proteus_logger_replacement(mocker: MockerFixture, restore_logger_class)
         "PROTEUS__DD_SITE": "some-site.dog",
     }
     with patch.dict(os.environ, mock_environment):
-        ProteusLogger().add_log_source(
+        SemanticLogger().add_log_source(
             log_source_name="urllib3",
             min_log_level=LogLevel.DEBUG,
             log_handlers=[DataDogApiHandler()],
@@ -187,7 +187,7 @@ def test_proteus_logger_replacement(mocker: MockerFixture, restore_logger_class)
 
 def test_log_level(mocker: MockerFixture, restore_logger_class):
     mocker.patch(
-        "proteus.logs.handlers.datadog_api_handler.DataDogApiHandler._flush",
+        "adapta.logs.handlers.datadog_api_handler.DataDogApiHandler._flush",
         return_value=None,
     )
 
@@ -197,7 +197,7 @@ def test_log_level(mocker: MockerFixture, restore_logger_class):
         "PROTEUS__DD_SITE": "some-site.dog",
     }
     with patch.dict(os.environ, mock_environment):
-        logger = ProteusLogger().add_log_source(
+        logger = SemanticLogger().add_log_source(
             log_source_name="test",
             min_log_level=LogLevel.INFO,
             log_handlers=[DataDogApiHandler()],
@@ -217,7 +217,7 @@ def test_log_level(mocker: MockerFixture, restore_logger_class):
 
 def test_fixed_template(mocker: MockerFixture, restore_logger_class):
     mocker.patch(
-        "proteus.logs.handlers.datadog_api_handler.DataDogApiHandler._flush",
+        "adapta.logs.handlers.datadog_api_handler.DataDogApiHandler._flush",
         return_value=None,
     )
 
@@ -227,7 +227,7 @@ def test_fixed_template(mocker: MockerFixture, restore_logger_class):
         "PROTEUS__DD_SITE": "some-site.dog",
     }
     with patch.dict(os.environ, mock_environment):
-        logger = ProteusLogger(
+        logger = SemanticLogger(
             fixed_template={
                 "running with job id {job_id} on {owner}": {
                     "job_id": "my_job_id",
