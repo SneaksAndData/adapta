@@ -16,8 +16,6 @@ jobs:
           python-version: '3.9.x' # Version range or exact version of a Python version to use, using SemVer's version range syntax
           architecture: 'x64' # optional x64 or x86. Defaults to x64 if not specified
       - name: Install and Configure Poetry and Prepare Publish
-        env:
-          REPO_URL: ${{ secrets.AZOPS_PYPI_UPLOAD }}
         run: |
           set -e
           
