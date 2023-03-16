@@ -34,7 +34,9 @@ from adapta.logs import SemanticLogger
 from adapta.logs.handlers.datadog_api_handler import DataDogApiHandler
 from adapta.logs.models import LogLevel
 
-EXPECTED_MESSAGE = "This a unit test logger 1, Fixed message1 this is a fixed message1, Fixed message2 this is a fixed message2\n"
+EXPECTED_MESSAGE = (
+    "This a unit test logger 1, Fixed message1 this is a fixed message1, Fixed message2 this is a fixed message2\n"
+)
 
 
 @pytest.mark.parametrize(
@@ -103,9 +105,7 @@ def test_log_format(
         if level == LogLevel.ERROR:
             stream_logger.error(template=template, exception=exception, **args)
         if level == LogLevel.DEBUG:
-            stream_logger.debug(
-                template=template, exception=exception, diagnostics=diagnostics, **args
-            )
+            stream_logger.debug(template=template, exception=exception, diagnostics=diagnostics, **args)
 
     logged_lines = open(test_file_path, "r").readlines()
     assert expected_message in logged_lines
@@ -134,9 +134,7 @@ def test_datadog_api_handler(mocker: MockerFixture):
     try:
         raise ValueError("test warning")
     except BaseException as ex:
-        dd_logger.warning(
-            template="This a unit test logger {index}", exception=ex, index=1
-        )
+        dd_logger.warning(template="This a unit test logger {index}", exception=ex, index=1)
         ex_str = traceback.format_exc().removesuffix("\n")
 
     log_item = mock_handler._buffer[0]
@@ -176,11 +174,7 @@ def test_adapta_logger_replacement(mocker: MockerFixture, restore_logger_class):
         requests.get("https://example.com")
 
     requests_log = logging.getLogger("urllib3")
-    handler = [
-        handler
-        for handler in requests_log.handlers
-        if isinstance(handler, DataDogApiHandler)
-    ][0]
+    handler = [handler for handler in requests_log.handlers if isinstance(handler, DataDogApiHandler)][0]
     buffers = [json.loads(msg.message) for msg in handler._buffer]
     assert {"text": "Starting new HTTPS connection (1): example.com:443"} in buffers
 
@@ -206,11 +200,7 @@ def test_log_level(mocker: MockerFixture, restore_logger_class):
         logger.info("Info message", log_source_name="test")
 
     requests_log = logging.getLogger("test")
-    handler = [
-        handler
-        for handler in requests_log.handlers
-        if isinstance(handler, DataDogApiHandler)
-    ][0]
+    handler = [handler for handler in requests_log.handlers if isinstance(handler, DataDogApiHandler)][0]
     buffers = [json.loads(msg.message) for msg in handler._buffer]
     assert buffers == [{"template": "Info message", "text": "Info message"}]
 
@@ -247,11 +237,7 @@ def test_fixed_template(mocker: MockerFixture, restore_logger_class):
         )
 
     requests_log = logging.getLogger("test_fixed_template")
-    handler = [
-        handler
-        for handler in requests_log.handlers
-        if isinstance(handler, DataDogApiHandler)
-    ][0]
+    handler = [handler for handler in requests_log.handlers if isinstance(handler, DataDogApiHandler)][0]
     buffers = [json.loads(msg.message) for msg in handler._buffer]
     assert buffers == [
         {

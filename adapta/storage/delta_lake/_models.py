@@ -65,9 +65,7 @@ class DeltaTransaction:
         return cls(
             version=value.get("version", -1),
             timestamp=value["timestamp"],
-            operation=DeltaOperation(delta_op)
-            if delta_op in supported_ops
-            else DeltaOperation.UNDEFINED,
+            operation=DeltaOperation(delta_op) if delta_op in supported_ops else DeltaOperation.UNDEFINED,
             operation_parameters=value.get("operationParameters", {}),
             read_version=value.get("readVersion", -1),
             is_blind_append=value.get("isBlindAppend", False),

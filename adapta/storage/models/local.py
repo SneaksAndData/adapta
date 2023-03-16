@@ -32,9 +32,7 @@ class LocalPath(DataPath):
 
     @classmethod
     def from_hdfs_path(cls, hdfs_path: str) -> "LocalPath":
-        assert hdfs_path.startswith(
-            "file://"
-        ), "HDFS local path should start with file://"
+        assert hdfs_path.startswith("file://"), "HDFS local path should start with file://"
 
         return LocalPath(path=hdfs_path.replace("file://", ""))
 

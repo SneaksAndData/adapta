@@ -84,13 +84,9 @@ def test_joined_write_read_frame(sqlite: OdbcClient):
     Test that writing two tables and reading them joined again will return the original dataframes joined as well.
     """
     with sqlite:
-        _ = sqlite.materialize(
-            data=sku_data(), schema="main", name="sku", overwrite=True
-        )
+        _ = sqlite.materialize(data=sku_data(), schema="main", name="sku", overwrite=True)
 
-        _ = sqlite.materialize(
-            data=location_data(), schema="main", name="location", overwrite=True
-        )
+        _ = sqlite.materialize(data=location_data(), schema="main", name="location", overwrite=True)
 
         result = sqlite.query(
             """
@@ -104,9 +100,7 @@ def test_joined_write_read_frame(sqlite: OdbcClient):
         )
 
     assert result.equals(
-        sku_data().merge(location_data(), how="inner", on="location_id")[
-            ["sku_name", "location_name", "cost"]
-        ]
+        sku_data().merge(location_data(), how="inner", on="location_id")[["sku_name", "location_name", "cost"]]
     )
 
 

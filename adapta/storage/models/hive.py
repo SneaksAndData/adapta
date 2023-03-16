@@ -120,9 +120,9 @@ class HivePath(DataPath):
                 password=os.environ["PROTEUS__HIVE_PASSWORD"],
                 database_type=self.database_type,
             ) as hive_db_client:
-                db_info = hive_db_client.query(
-                    f"select * from DBS where name = '{self.hive_schema}'"
-                ).to_dict(orient="records")
+                db_info = hive_db_client.query(f"select * from DBS where name = '{self.hive_schema}'").to_dict(
+                    orient="records"
+                )
                 assert (
                     len(db_info) == 1
                 ), "Hive query for DBS table returned more than 1 row. Hive Metastore database schema version must be >=2.*,<=3.*"

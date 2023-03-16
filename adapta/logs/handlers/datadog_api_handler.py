@@ -108,9 +108,7 @@ class DataDogApiHandler(Handler):
             try:
                 config.load_incluster_config()
                 _, current_context = config.list_kube_config_contexts()
-                assert isinstance(
-                    current_context, kubernetes.config.kube_config.ConfigNode
-                )
+                assert isinstance(current_context, kubernetes.config.kube_config.ConfigNode)
                 self._fixed_tags["environment"] = current_context.name
             except ConfigException:
                 pass
@@ -200,9 +198,7 @@ class DataDogApiHandler(Handler):
     def emit(self, record: LogRecord) -> None:
         def convert_record(rec: LogRecord) -> HTTPLogItem:
 
-            metadata: Optional[CompositeLogMetadata] = rec.__dict__.get(
-                CompositeLogMetadata.__name__
-            )
+            metadata: Optional[CompositeLogMetadata] = rec.__dict__.get(CompositeLogMetadata.__name__)
             tags = {}
             formatted_message: Dict[str, Any] = {"text": rec.getMessage()}
             if metadata:
@@ -219,9 +215,7 @@ class DataDogApiHandler(Handler):
                 formatted_message.setdefault(
                     "error",
                     {
-                        "stack": "".join(
-                            traceback.format_exception(*rec.exc_info, chain=True)
-                        ).strip("\n"),
+                        "stack": "".join(traceback.format_exception(*rec.exc_info, chain=True)).strip("\n"),
                         "message": str(ex_value),
                         "kind": ex_type.__name__,
                     },

@@ -105,6 +105,4 @@ class ConcurrentTaskRunner(Generic[T]):
 
         :return: A dictionary of (task_alias, task_result)
         """
-        return {
-            task_name: task.result() for task_name, task in self._run_tasks().items()
-        }
+        return {task_name: task.result() for task_name, task in self._run_tasks().items()}

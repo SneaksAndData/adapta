@@ -121,9 +121,7 @@ def test_data_socket_serialize(
         ),
     ],
 )
-def test_socket_from_json(
-    value: Union[str, Dict], expectation_handler: AbstractContextManager
-):
+def test_socket_from_json(value: Union[str, Dict], expectation_handler: AbstractContextManager):
     """
       DataSocket must deserialize from json text and from dict correctly. Invalid values must throw an assertion error.
 
@@ -132,11 +130,7 @@ def test_socket_from_json(
     :return:
     """
     with expectation_handler:
-        test_socket = (
-            DataSocket.from_json(value)
-            if type(value) is str
-            else DataSocket.from_dict(value)
-        )
+        test_socket = DataSocket.from_json(value) if type(value) is str else DataSocket.from_dict(value)
         assert test_socket == expectation_handler.enter_result
 
 
@@ -150,9 +144,7 @@ def test_socket_from_json(
         ("test|file://some-folder/here|", pytest.raises(AssertionError)),
     ],
 )
-def test_data_socket_deserialize(
-    value: str, expectation_handler: AbstractContextManager
-):
+def test_data_socket_deserialize(value: str, expectation_handler: AbstractContextManager):
     """
      DataSocket must deserialize from a |-delimited string value correctly and throw an assertion error if missing any required attributes.
 
@@ -173,16 +165,12 @@ def test_data_socket_deserialize(
             "test",
             "abfss://container@account.dfs.core.windows.net/some-folder/file",
             "text",
-            AdlsGen2Path.from_hdfs_path(
-                "abfss://container@account.dfs.core.windows.net/some-folder/file"
-            ),
+            AdlsGen2Path.from_hdfs_path("abfss://container@account.dfs.core.windows.net/some-folder/file"),
         ),
         ("test", "api://some-folder/file", "json", None),
     ],
 )
-def test_path_parse(
-    alias: str, data_path: str, data_format: str, expected_path: Optional[DataPath]
-):
+def test_path_parse(alias: str, data_path: str, data_format: str, expected_path: Optional[DataPath]):
     """
       DataSocket must parse data_path to one of the supported paths or return None if a given path format is unknown.
 

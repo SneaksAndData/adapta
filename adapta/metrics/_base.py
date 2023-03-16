@@ -44,9 +44,7 @@ class MetricsProvider(ABC):
         """
 
     @abstractmethod
-    def count(
-        self, metric_name: str, metric_value: int, tags: Optional[Dict[str, str]]
-    ) -> None:
+    def count(self, metric_name: str, metric_value: int, tags: Optional[Dict[str, str]]) -> None:
         """
 
         :param metric_name:
@@ -56,9 +54,7 @@ class MetricsProvider(ABC):
         """
 
     @abstractmethod
-    def gauge(
-        self, metric_name: str, metric_value: float, tags: Optional[Dict[str, str]]
-    ) -> None:
+    def gauge(self, metric_name: str, metric_value: float, tags: Optional[Dict[str, str]]) -> None:
         """
 
         :param metric_name:
@@ -68,9 +64,7 @@ class MetricsProvider(ABC):
         """
 
     @abstractmethod
-    def set(
-        self, metric_name: str, metric_value: float, tags: Optional[Dict[str, str]]
-    ) -> None:
+    def set(self, metric_name: str, metric_value: float, tags: Optional[Dict[str, str]]) -> None:
         """
 
         :param metric_name:
@@ -80,9 +74,7 @@ class MetricsProvider(ABC):
         """
 
     @abstractmethod
-    def histogram(
-        self, metric_name: str, metric_value: float, tags: Optional[Dict[str, str]]
-    ) -> None:
+    def histogram(self, metric_name: str, metric_value: float, tags: Optional[Dict[str, str]]) -> None:
         """
 
         :param metric_name:

@@ -110,7 +110,4 @@ def chunk_list(value: List[Any], num_chunks: int) -> List[List[Any]]:
     :return: A list that has num_chunks lists in it. Total length equals length of the original list.
     """
     chunk_size = math.ceil(len(value) / num_chunks)
-    return [
-        value[el_pos : el_pos + chunk_size]
-        for el_pos in range(0, len(value), chunk_size)
-    ]
+    return [value[el_pos : el_pos + chunk_size] for el_pos in range(0, len(value), chunk_size)]

@@ -86,9 +86,7 @@ class OdbcClient(ABC):
             driver=self._dialect.driver,
         )
         try:
-            self._engine: sqlalchemy.engine.Engine = sqlalchemy.create_engine(
-                connection_url, pool_pre_ping=True
-            )
+            self._engine: sqlalchemy.engine.Engine = sqlalchemy.create_engine(connection_url, pool_pre_ping=True)
             self._connection: sqlalchemy.engine.Connection = self._engine.connect()
             return self
         except SQLAlchemyError as ex:
@@ -122,9 +120,7 @@ class OdbcClient(ABC):
 
     def _get_connection(self) -> Optional[sqlalchemy.engine.Connection]:
         if self._connection is None:
-            self._logger.info(
-                "No connection is active. Please create one using with OdbcClient(..) as client: ..."
-            )
+            self._logger.info("No connection is active. Please create one using with OdbcClient(..) as client: ...")
             return None
 
         return self._connection
@@ -141,15 +137,11 @@ class OdbcClient(ABC):
         """
         try:
             if chunksize:
-                return pandas.read_sql(
-                    query, con=self._get_connection(), chunksize=chunksize
-                )
+                return pandas.read_sql(query, con=self._get_connection(), chunksize=chunksize)
 
             return pandas.read_sql(query, con=self._get_connection())
         except SQLAlchemyError as ex:
-            self._logger.error(
-                "Engine error while executing query {query}", query=query, exception=ex
-            )
+            self._logger.error("Engine error while executing query {query}", query=query, exception=ex)
             return None
         except BaseException as other:  # pylint: disable=W0703
             self._logger.error(
@@ -183,9 +175,7 @@ class OdbcClient(ABC):
                     if self._dialect.dialect == DatabaseType.SQLITE_ODBC.value.dialect:
                         self._get_connection().execute(f"DELETE FROM {schema}.{name}")
                     else:
-                        self._get_connection().execute(
-                            f"TRUNCATE TABLE {schema}.{name}"
-                        )
+                        self._get_connection().execute(f"TRUNCATE TABLE {schema}.{name}")
                 except OperationalError as ex:
                     # The table does not exist. Do nothing and let the Pandas API handle the creation of the table.
                     self._logger.warning(
@@ -212,9 +202,7 @@ class OdbcClient(ABC):
             )
             return None
         finally:
-            active_tran: sqlalchemy.engine.RootTransaction = (
-                self._get_connection().get_transaction()
-            )
+            active_tran: sqlalchemy.engine.RootTransaction = self._get_connection().get_transaction()
             if active_tran and active_tran.is_active:
                 self._logger.debug(
                     "Found an active transaction for {schema}.{table}. Committing it.",

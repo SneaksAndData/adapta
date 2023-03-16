@@ -37,9 +37,7 @@ def test_oidc_credentials():
 
 @pytest.mark.skip("Uses desktop browser to login, should be only run locally")
 def test_oidc_auth():
-    client = HashicorpSecretStorageClient(
-        base_client=HashicorpVaultClient(TEST_VAULT_ADDRESS)
-    )
+    client = HashicorpSecretStorageClient(base_client=HashicorpVaultClient(TEST_VAULT_ADDRESS))
     secret = client.read_secret("secret", "test/secret/with/path")
     assert secret["key"] == "value"
 
@@ -60,14 +58,10 @@ def test_list_secrets_with_kubernetes():
 
 
 def test_read_secret_with_mock():
-    with patch(
-        "hvac.Client", MagicMock(return_value=generate_hashicorp_vault_mock())
-    ), patch("webbrowser.open"), patch(
+    with patch("hvac.Client", MagicMock(return_value=generate_hashicorp_vault_mock())), patch("webbrowser.open"), patch(
         "adapta.security.clients.hashicorp_vault.oidc_client._get_vault_credentials"
     ):
-        client = HashicorpSecretStorageClient(
-            base_client=HashicorpVaultOidcClient(TEST_VAULT_ADDRESS)
-        )
+        client = HashicorpSecretStorageClient(base_client=HashicorpVaultOidcClient(TEST_VAULT_ADDRESS))
         secret = client.read_secret("secret", "test/secret/with/path")
     assert secret["key"] == "value"
 
@@ -75,14 +69,10 @@ def test_read_secret_with_mock():
 def test_create_secret_with_mock():
     client_mock = generate_hashicorp_vault_mock()
 
-    with patch("hvac.Client", MagicMock(return_value=client_mock)), patch(
-        "webbrowser.open"
-    ), patch(
+    with patch("hvac.Client", MagicMock(return_value=client_mock)), patch("webbrowser.open"), patch(
         "adapta.security.clients.hashicorp_vault.oidc_client._get_vault_credentials"
     ):
-        client = HashicorpSecretStorageClient(
-            base_client=HashicorpVaultOidcClient(TEST_VAULT_ADDRESS)
-        )
+        client = HashicorpSecretStorageClient(base_client=HashicorpVaultOidcClient(TEST_VAULT_ADDRESS))
         client.create_secret("secret", "path/to/secret", {"key": "value"})
 
     client_mock.secrets.kv.v2.create_or_update_secret.assert_called_once_with(
@@ -93,22 +83,15 @@ def test_create_secret_with_mock():
 def test_string_secret():
     client_mock = generate_hashicorp_vault_mock()
 
-    with patch("hvac.Client", MagicMock(return_value=client_mock)), patch(
-        "webbrowser.open"
-    ), patch(
+    with patch("hvac.Client", MagicMock(return_value=client_mock)), patch("webbrowser.open"), patch(
         "adapta.security.clients.hashicorp_vault.oidc_client._get_vault_credentials"
     ):
-        client = HashicorpSecretStorageClient(
-            base_client=HashicorpVaultOidcClient(TEST_VAULT_ADDRESS)
-        )
+        client = HashicorpSecretStorageClient(base_client=HashicorpVaultOidcClient(TEST_VAULT_ADDRESS))
 
         with pytest.raises(ValueError) as e:
             client.create_secret("secret", "path/to/secret", '{"key": "value"}')
 
-    assert (
-        "Only Dict secret type supported in HashicorpSecretStorageClient but was: <class 'str'>"
-        in str(e.value)
-    )
+    assert "Only Dict secret type supported in HashicorpSecretStorageClient but was: <class 'str'>" in str(e.value)
     client_mock.secrets.kv.v2.create_or_update_secret.assert_not_called()
     client_mock.secrets.kv.v2.configure.asssert_not_called()
 
@@ -120,9 +103,7 @@ def test_list_secrets():
         "builtins.open", mock_open(read_data="data")
     ), patch("hvac.api.auth_methods.kubernetes", Mock()):
         client = HashicorpSecretStorageClient(
-            base_client=HashicorpVaultKubernetesClient(
-                TEST_VAULT_ADDRESS, "kubernetes-cluster"
-            )
+            base_client=HashicorpVaultKubernetesClient(TEST_VAULT_ADDRESS, "kubernetes-cluster")
         )
     secrets = client.list_secrets("storage_name", "/")
     assert list(secrets) == [
@@ -156,9 +137,7 @@ def generate_hashicorp_vault_mock():
     client_mock.auth.oidc.oidc_authorization_url_request.return_value = {
         "data": {"auth_url": "https://example.com?nonce=1&state=2"}
     }
-    client_mock.secrets.kv.v2.read_secret_version.return_value = {
-        "data": {"data": {"key": "value"}}
-    }
+    client_mock.secrets.kv.v2.read_secret_version.return_value = {"data": {"data": {"key": "value"}}}
     client_mock.secrets.kv.v2.list_secrets.side_effect = [
         {"data": {"keys": ["key1/", "key2"]}},
         {"data": {"keys": ["subkey1", "subkey2/"]}},

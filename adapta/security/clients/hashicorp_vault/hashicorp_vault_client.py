@@ -71,9 +71,7 @@ class HashicorpVaultClient(AuthenticationClient):
         """
         raise ValueError("Not supported  in HashicorpVaultClient")
 
-    def get_pyarrow_filesystem(
-        self, path: DataPath, connection_options: Optional[Dict[str, str]] = None
-    ) -> FileSystem:
+    def get_pyarrow_filesystem(self, path: DataPath, connection_options: Optional[Dict[str, str]] = None) -> FileSystem:
         """
          Not supported  in HashicorpVaultClient
         :return:

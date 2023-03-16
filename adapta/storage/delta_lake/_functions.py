@@ -73,9 +73,7 @@ def load(  # pylint: disable=R0913
     ).to_pyarrow_dataset(
         partitions=partition_filter_expressions,
         parquet_read_options=ParquetReadOptions(coerce_int96_timestamp_unit="ms"),
-        filesystem=auth_client.get_pyarrow_filesystem(
-            path, connection_options=connection_options
-        ),
+        filesystem=auth_client.get_pyarrow_filesystem(path, connection_options=connection_options),
     )
 
     if batch_size:
@@ -90,9 +88,7 @@ def load(  # pylint: disable=R0913
     return pyarrow_table.to_pandas(timestamp_as_object=True)
 
 
-def history(
-    auth_client: AuthenticationClient, path: DataPath, limit: Optional[int] = 1
-) -> Iterable[DeltaTransaction]:
+def history(auth_client: AuthenticationClient, path: DataPath, limit: Optional[int] = 1) -> Iterable[DeltaTransaction]:
     """
       Returns transaction history for the table under path.
 
@@ -101,13 +97,9 @@ def history(
     :param limit: Limit number of history records retrieved.
     :return: An iterable of Delta transactions for this table.
     """
-    delta_table = DeltaTable(
-        path.to_delta_rs_path(), storage_options=auth_client.connect_storage(path)
-    )
+    delta_table = DeltaTable(path.to_delta_rs_path(), storage_options=auth_client.connect_storage(path))
 
-    return [
-        DeltaTransaction.from_dict(tran) for tran in delta_table.history(limit=limit)
-    ]
+    return [DeltaTransaction.from_dict(tran) for tran in delta_table.history(limit=limit)]
 
 
 def get_cache_key(
@@ -155,9 +147,7 @@ def get_cache_key(
 
     base_attributes.append(str(batch_size))
 
-    return hashlib.md5(
-        "#".join([path.to_delta_rs_path(), "_".join(base_attributes)]).encode("utf-8")
-    ).hexdigest()
+    return hashlib.md5("#".join([path.to_delta_rs_path(), "_".join(base_attributes)]).encode("utf-8")).hexdigest()
 
 
 def load_cached(  # pylint: disable=R0913
@@ -225,12 +215,8 @@ def load_cached(  # pylint: disable=R0913
         try:
             return pandas.concat(
                 [
-                    DataFrameParquetSerializationFormat().deserialize(
-                        zlib.decompress(cached_batch)
-                    )
-                    for batch_key, cached_batch in cache.get(
-                        cache_key, is_map=True
-                    ).items()
+                    DataFrameParquetSerializationFormat().deserialize(zlib.decompress(cached_batch))
+                    for batch_key, cached_batch in cache.get(cache_key, is_map=True).items()
                     if batch_key != b"completed"
                 ]
             )
@@ -250,9 +236,7 @@ def load_cached(  # pylint: disable=R0913
                 )
 
     if logger:
-        logger.debug(
-            "Cache miss for {cache_key}, populating cache.", cache_key=cache_key
-        )
+        logger.debug("Cache miss for {cache_key}, populating cache.", cache_key=cache_key)
 
     data = load(
         auth_client=auth_client,
@@ -269,9 +253,7 @@ def load_cached(  # pylint: disable=R0913
             cache.include(
                 key=cache_key,
                 attribute=str(batch_index),
-                value=zlib.compress(
-                    DataFrameParquetSerializationFormat().serialize(batch)
-                ),
+                value=zlib.compress(DataFrameParquetSerializationFormat().serialize(batch)),
             )
             for batch_index, batch in enumerate(data)
         ],
