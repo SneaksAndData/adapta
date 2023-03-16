@@ -110,7 +110,7 @@ class DataDogApiHandler(Handler):
                         json.loads(base64.b64decode(issued_jwt.split(".")[1] + "==").decode("utf-8"))["iss"]
                     ).netloc
                 self._fixed_tags["environment"] = token_issuer or self._fixed_tags["environment"]
-            except JSONDecodeError:
+            except (JSONDecodeError, FileNotFoundError):
                 pass
 
         self._max_flush_retry_time = max_flush_retry_time
