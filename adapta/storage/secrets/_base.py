@@ -32,9 +32,7 @@ class SecretStorageClient(ABC):
         self._base_client = base_client
 
     @abstractmethod
-    def read_secret(
-        self, storage_name: str, secret_name: str
-    ) -> Union[bytes, str, Dict[str, str]]:
+    def read_secret(self, storage_name: str, secret_name: str) -> Union[bytes, str, Dict[str, str]]:
         """
           Reads a secret from the specified storage.
 

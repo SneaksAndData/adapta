@@ -41,9 +41,7 @@ def get_client_and_path():
 
 @pytest.fixture
 def get_client_and_path_partitioned():
-    test_data_path = (
-        f"{pathlib.Path(__file__).parent.resolve()}/delta_table_with_partitions"
-    )
+    test_data_path = f"{pathlib.Path(__file__).parent.resolve()}/delta_table_with_partitions"
 
     client = LocalClient()
     data_path = LocalPath.from_hdfs_path(f"file://{test_data_path}")
@@ -96,11 +94,7 @@ def test_delta_load_cached(mock_cache: MagicMock, get_client_and_path):
 
     cache.exists.return_value = True
     cache.get.return_value = {
-        b"0": zlib.compress(
-            DataFrameParquetSerializationFormat().serialize(
-                pandas.DataFrame([{"a": 1, "b": 2}])
-            )
-        ),
+        b"0": zlib.compress(DataFrameParquetSerializationFormat().serialize(pandas.DataFrame([{"a": 1, "b": 2}]))),
         b"completed": 1,
     }
 
@@ -127,10 +121,7 @@ def test_delta_populate_cache(mock_cache: MagicMock, get_client_and_path):
 
     cache.exists.assert_called_once_with(cache_key, "completed")
 
-    set_calls = [
-        call(key=cache_key, attribute=str(batch_number), value=ANY)
-        for batch_number in range(17)
-    ]
+    set_calls = [call(key=cache_key, attribute=str(batch_number), value=ANY) for batch_number in range(17)]
     set_calls.append(call(key=cache_key, attribute="completed", value=ANY))
 
     cache.include.assert_has_calls(set_calls)

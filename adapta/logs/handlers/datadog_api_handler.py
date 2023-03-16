@@ -15,7 +15,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
-
+import base64
 import json
 import logging
 import os
@@ -23,11 +23,12 @@ import signal
 import socket
 import platform
 import traceback
+from json import JSONDecodeError
 from logging import LogRecord, Handler
 from typing import List, Optional, Dict, Any
+from urllib.parse import urlparse
 
 import backoff
-import kubernetes.config.kube_config
 from datadog_api_client import Configuration, ApiClient
 from datadog_api_client.exceptions import ServiceException
 from datadog_api_client.v2.api.logs_api import LogsApi
@@ -35,9 +36,6 @@ from datadog_api_client.v2.model.http_log import HTTPLog
 from datadog_api_client.v2.model.http_log_item import HTTPLogItem
 
 from urllib3.exceptions import HTTPError
-
-from kubernetes import config
-from kubernetes.config import ConfigException
 
 from adapta.logs.models import CompositeLogMetadata
 from adapta.utils import convert_datadog_tags
@@ -106,13 +104,13 @@ class DataDogApiHandler(Handler):
         if "environment" not in self._fixed_tags:
             self._fixed_tags.setdefault("environment", "local")
             try:
-                config.load_incluster_config()
-                _, current_context = config.list_kube_config_contexts()
-                assert isinstance(
-                    current_context, kubernetes.config.kube_config.ConfigNode
-                )
-                self._fixed_tags["environment"] = current_context.name
-            except ConfigException:
+                with open("/var/run/secrets/kubernetes.io/serviceaccount/token", "r", encoding="utf-8") as token_file:
+                    issued_jwt = token_file.readline()
+                    token_issuer = urlparse(
+                        json.loads(base64.b64decode(issued_jwt.split(".")[1] + "==").decode("utf-8"))["iss"]
+                    ).netloc
+                self._fixed_tags["environment"] = token_issuer or self._fixed_tags["environment"]
+            except (JSONDecodeError, FileNotFoundError):
                 pass
 
         self._max_flush_retry_time = max_flush_retry_time
@@ -200,9 +198,7 @@ class DataDogApiHandler(Handler):
     def emit(self, record: LogRecord) -> None:
         def convert_record(rec: LogRecord) -> HTTPLogItem:
 
-            metadata: Optional[CompositeLogMetadata] = rec.__dict__.get(
-                CompositeLogMetadata.__name__
-            )
+            metadata: Optional[CompositeLogMetadata] = rec.__dict__.get(CompositeLogMetadata.__name__)
             tags = {}
             formatted_message: Dict[str, Any] = {"text": rec.getMessage()}
             if metadata:
@@ -219,9 +215,7 @@ class DataDogApiHandler(Handler):
                 formatted_message.setdefault(
                     "error",
                     {
-                        "stack": "".join(
-                            traceback.format_exception(*rec.exc_info, chain=True)
-                        ).strip("\n"),
+                        "stack": "".join(traceback.format_exception(*rec.exc_info, chain=True)).strip("\n"),
                         "message": str(ex_value),
                         "kind": ex_type.__name__,
                     },

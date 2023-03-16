@@ -47,9 +47,7 @@ class AzureStorageClient(StorageClient):
     Azure Storage (Blob and ADLS) Client.
     """
 
-    def __init__(
-        self, *, base_client: AzureClient, path: Union[AdlsGen2Path, WasbPath]
-    ):
+    def __init__(self, *, base_client: AzureClient, path: Union[AdlsGen2Path, WasbPath]):
         super().__init__(base_client=base_client)
         self._storage_options = self._base_client.connect_storage(path)
         connection_string = (
@@ -61,13 +59,9 @@ class AzureStorageClient(StorageClient):
 
         # overrides default ExponentialRetry
         # config.retry_policy = kwargs.get("retry_policy") or ExponentialRetry(**kwargs)
-        self._blob_service_client: BlobServiceClient = (
-            BlobServiceClient.from_connection_string(
-                connection_string,
-                retry_policy=ExponentialRetry(
-                    initial_backoff=5, increment_base=3, retry_total=15
-                ),
-            )
+        self._blob_service_client: BlobServiceClient = BlobServiceClient.from_connection_string(
+            connection_string,
+            retry_policy=ExponentialRetry(initial_backoff=5, increment_base=3, retry_total=15),
         )
 
     def _get_blob_client(self, blob_path: DataPath) -> BlobClient:
@@ -89,9 +83,7 @@ class AzureStorageClient(StorageClient):
             azure_path.account == self._blob_service_client.account_name
         ), "Path provided is in another storage account and cannot be used."
 
-        return self._blob_service_client.get_container_client(
-            container=azure_path.container
-        )
+        return self._blob_service_client.get_container_client(container=azure_path.container)
 
     def save_data_as_blob(  # pylint: disable=R0913,R0801
         self,
@@ -102,9 +94,7 @@ class AzureStorageClient(StorageClient):
         overwrite: bool = False,
     ) -> None:
         bytes_ = serialization_format().serialize(data)
-        self._get_blob_client(blob_path).upload_blob(
-            bytes_, metadata=metadata, overwrite=overwrite
-        )
+        self._get_blob_client(blob_path).upload_blob(bytes_, metadata=metadata, overwrite=overwrite)
 
     def get_blob_uri(self, blob_path: DataPath, **kwargs) -> str:
         blob_client = self._get_blob_client(blob_path)
@@ -125,15 +115,11 @@ class AzureStorageClient(StorageClient):
     def blob_exists(self, blob_path: DataPath) -> bool:
         return self._get_blob_client(blob_path).exists()
 
-    def _list_blobs(
-        self, blob_path: DataPath
-    ) -> (ItemPaged[BlobProperties], Union[AdlsGen2Path, WasbPath]):
+    def _list_blobs(self, blob_path: DataPath) -> (ItemPaged[BlobProperties], Union[AdlsGen2Path, WasbPath]):
         azure_path = cast_path(blob_path)
 
         return (
-            self._get_container_client(azure_path).list_blobs(
-                name_starts_with=blob_path.path
-            ),
+            self._get_container_client(azure_path).list_blobs(name_starts_with=blob_path.path),
             azure_path,
         )
 
@@ -193,11 +179,7 @@ class AzureStorageClient(StorageClient):
                 if (filter_predicate or (lambda _: True))(blob_on_path):
                     download_blob(blob_on_path, azure_path.container)
         else:
-            blobs = [
-                blob
-                for blob in list(blobs_on_path)
-                if (filter_predicate or (lambda _: True))(blob)
-            ]
+            blobs = [blob for blob in list(blobs_on_path) if (filter_predicate or (lambda _: True))(blob)]
             blob_dirs = [blob_dir for blob_dir in blobs if blob_dir.size == 0]
             blob_files = [blob_dir for blob_dir in blobs if blob_dir.size > 0]
 
@@ -208,10 +190,7 @@ class AzureStorageClient(StorageClient):
 
             blob_lists: List[List[BlobProperties]] = chunk_list(blob_files, threads)
             thread_list = [
-                Thread(
-                    target=download_blob_list, args=(blob_list, azure_path.container)
-                )
-                for blob_list in blob_lists
+                Thread(target=download_blob_list, args=(blob_list, azure_path.container)) for blob_list in blob_lists
             ]
             for download_thread in thread_list:
                 download_thread.start()
@@ -221,10 +200,7 @@ class AzureStorageClient(StorageClient):
     def list_blobs(
         self,
         blob_path: DataPath,
-        filter_predicate: Optional[
-            Callable[[BlobProperties], bool]
-        ] = lambda blob: blob.size
-        != 0,  # Skip folders
+        filter_predicate: Optional[Callable[[BlobProperties], bool]] = lambda blob: blob.size != 0,  # Skip folders
     ) -> Iterator[DataPath]:
         blobs_on_path, azure_path = self._list_blobs(blob_path)
 

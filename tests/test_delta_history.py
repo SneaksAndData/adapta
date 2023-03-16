@@ -24,9 +24,7 @@ from adapta.storage.delta_lake import history, DeltaOperation
 
 @pytest.fixture
 def get_client_and_path():
-    test_data_path = (
-        f"{pathlib.Path(__file__).parent.resolve()}/delta_table_with_history"
-    )
+    test_data_path = f"{pathlib.Path(__file__).parent.resolve()}/delta_table_with_history"
 
     client = LocalClient()
     data_path = LocalPath.from_hdfs_path(f"file:///{test_data_path}")

@@ -25,9 +25,7 @@ from adapta.storage.database.models import DatabaseType
 
 @pytest.fixture
 def sqlite():
-    c_logger = SemanticLogger().add_log_source(
-        log_source_name="sqlite", min_log_level=LogLevel.INFO, is_default=True
-    )
+    c_logger = SemanticLogger().add_log_source(log_source_name="sqlite", min_log_level=LogLevel.INFO, is_default=True)
     return OdbcClient(
         logger=c_logger,
         database_type=DatabaseType.SQLITE_ODBC,

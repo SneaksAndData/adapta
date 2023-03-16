@@ -45,9 +45,7 @@ class DatadogMetricsProvider(MetricsProvider):
     DogStatsD projection of MetricsProvider.
     """
 
-    def __init__(
-        self, metric_namespace: str, fixed_tags: Dict[str, str] = None, debug=False
-    ):
+    def __init__(self, metric_namespace: str, fixed_tags: Dict[str, str] = None, debug=False):
         self._options = {
             "statsd_host": os.getenv("PROTEUS__DD_STATSD_HOST"),
             "statsd_port": os.getenv("PROTEUS__DD_STATSD_PORT"),
@@ -55,9 +53,7 @@ class DatadogMetricsProvider(MetricsProvider):
             "app_key": os.getenv("PROTEUS__DD_APP_KEY"),
             "api_host": os.getenv("PROTEUS__DD_API_HOST"),
             "statsd_namespace": metric_namespace,
-            "statsd_constant_tags": convert_datadog_tags(fixed_tags)
-            if fixed_tags
-            else None,
+            "statsd_constant_tags": convert_datadog_tags(fixed_tags) if fixed_tags else None,
         }
 
         initialize(**self._options)
@@ -65,13 +61,9 @@ class DatadogMetricsProvider(MetricsProvider):
         self._api = api
 
         if debug:
-            logging.getLogger("datadog.dogstatsd").addHandler(
-                logging.StreamHandler(sys.stdout)
-            )
+            logging.getLogger("datadog.dogstatsd").addHandler(logging.StreamHandler(sys.stdout))
 
-    def update_metric_metadata(
-        self, metric_name: str, metric_metadata: MetricMetadata
-    ) -> None:
+    def update_metric_metadata(self, metric_name: str, metric_metadata: MetricMetadata) -> None:
         """
           Updates metadata of a published metric in DD.
 
@@ -80,23 +72,15 @@ class DatadogMetricsProvider(MetricsProvider):
         :return:
         """
 
-        self._api.metadata.Metadata.update(
-            metric_name=metric_name, **metric_metadata.to_dict()
-        )
+        self._api.metadata.Metadata.update(metric_name=metric_name, **metric_metadata.to_dict())
 
-    def increment(
-        self, metric_name: str, tags: Optional[Dict[str, str]] = None
-    ) -> None:
+    def increment(self, metric_name: str, tags: Optional[Dict[str, str]] = None) -> None:
         statsd.increment(metric=metric_name, tags=convert_datadog_tags(tags))
 
-    def decrement(
-        self, metric_name: str, tags: Optional[Dict[str, str]] = None
-    ) -> None:
+    def decrement(self, metric_name: str, tags: Optional[Dict[str, str]] = None) -> None:
         statsd.decrement(metric=metric_name, tags=convert_datadog_tags(tags))
 
-    def count(
-        self, metric_name: str, metric_value: int, tags: Optional[Dict[str, str]] = None
-    ) -> None:
+    def count(self, metric_name: str, metric_value: int, tags: Optional[Dict[str, str]] = None) -> None:
         raise NotImplementedError
 
     def gauge(
@@ -105,9 +89,7 @@ class DatadogMetricsProvider(MetricsProvider):
         metric_value: Union[int, float],
         tags: Optional[Dict[str, str]] = None,
     ) -> None:
-        statsd.gauge(
-            metric=metric_name, value=metric_value, tags=convert_datadog_tags(tags)
-        )
+        statsd.gauge(metric=metric_name, value=metric_value, tags=convert_datadog_tags(tags))
 
     def set(
         self,
@@ -115,9 +97,7 @@ class DatadogMetricsProvider(MetricsProvider):
         metric_value: Union[str, int, float],
         tags: Optional[Dict[str, str]] = None,
     ) -> None:
-        statsd.set(
-            metric=metric_name, value=metric_value, tags=convert_datadog_tags(tags)
-        )
+        statsd.set(metric=metric_name, value=metric_value, tags=convert_datadog_tags(tags))
 
     def histogram(
         self,
@@ -125,9 +105,7 @@ class DatadogMetricsProvider(MetricsProvider):
         metric_value: Union[int, float],
         tags: Optional[Dict[str, str]] = None,
     ) -> None:
-        statsd.histogram(
-            metric=metric_name, value=metric_value, tags=convert_datadog_tags(tags)
-        )
+        statsd.histogram(metric=metric_name, value=metric_value, tags=convert_datadog_tags(tags))
 
     def event(
         self,

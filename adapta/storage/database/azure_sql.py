@@ -69,9 +69,7 @@ class AzureSqlClient(OdbcClient):
         """
         return get_current_objective(self)
 
-    def scale_instance(
-        self, target_objective="HS_Gen4_8", max_wait_time: Optional[int] = 180
-    ) -> bool:
+    def scale_instance(self, target_objective="HS_Gen4_8", max_wait_time: Optional[int] = 180) -> bool:
         """
           Scales up/down the connected database.
 
@@ -83,9 +81,7 @@ class AzureSqlClient(OdbcClient):
           thus a user should perform a self-check if a downstream operation requires a scaled database.
         """
 
-        assert (
-            self._database
-        ), "Database name must be provided when constructing a client for this method to execute."
+        assert self._database, "Database name must be provided when constructing a client for this method to execute."
 
         current_objective = get_current_objective(self)
 
@@ -93,9 +89,7 @@ class AzureSqlClient(OdbcClient):
             return True
 
         _ = self._get_connection().execute(
-            text(
-                f"ALTER DATABASE [{self._database}] MODIFY (service_objective = '{target_objective}');"
-            )
+            text(f"ALTER DATABASE [{self._database}] MODIFY (service_objective = '{target_objective}');")
         )
 
         self._logger.info(
@@ -117,17 +111,13 @@ class AzureSqlClient(OdbcClient):
 
             self._logger.info(
                 "Scale-up {result} after {elapsed}s",
-                result="completed"
-                if current_objective == target_objective
-                else "failed",
+                result="completed" if current_objective == target_objective else "failed",
                 elapsed=elapsed,
             )
 
             return current_objective == target_objective
 
-        self._logger.info(
-            "Timeout not specified - exiting without awaiting the operation result"
-        )
+        self._logger.info("Timeout not specified - exiting without awaiting the operation result")
 
         return True
 

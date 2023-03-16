@@ -48,18 +48,14 @@ class MlflowBasicClient:
         """Returns tracking server URI"""
         return self._tracking_server_uri
 
-    def _get_latest_model_versions(
-        self, model_name: str
-    ) -> List[mlflow.entities.model_registry.ModelVersion]:
+    def _get_latest_model_versions(self, model_name: str) -> List[mlflow.entities.model_registry.ModelVersion]:
         """Gets latest model versions, one for each stage
 
         :param model_name: Model name
         """
         return self._client.get_registered_model(model_name).latest_versions
 
-    def get_latest_model_version(
-        self, model_name: str, model_stage: Optional[str] = None
-    ) -> ModelVersion:
+    def get_latest_model_version(self, model_name: str, model_stage: Optional[str] = None) -> ModelVersion:
         """
           Get model version using mlflow client
 
@@ -67,11 +63,7 @@ class MlflowBasicClient:
         :param model_stage: Stage of a model.
         """
         if model_stage:
-            return [
-                m
-                for m in self._get_latest_model_versions(model_name)
-                if m.current_stage == model_stage
-            ][0]
+            return [m for m in self._get_latest_model_versions(model_name) if m.current_stage == model_stage][0]
 
         return sorted(
             self._get_latest_model_versions(model_name),
@@ -79,9 +71,7 @@ class MlflowBasicClient:
             reverse=True,
         )[0]
 
-    def _get_artifact_repo_backported(
-        self, run_id
-    ) -> mlflow.store.artifact_repo.ArtifactRepository:
+    def _get_artifact_repo_backported(self, run_id) -> mlflow.store.artifact_repo.ArtifactRepository:
         run = self._client.get_run(run_id)
 
         artifact_uri = (
@@ -92,9 +82,7 @@ class MlflowBasicClient:
 
         return get_artifact_repository(artifact_uri)
 
-    def download_artifact(
-        self, model_name: str, model_version: str, artifact_path: str
-    ):
+    def download_artifact(self, model_name: str, model_version: str, artifact_path: str):
         """
           Download an artifact from mlflow model registry for the latest version of this model
 
@@ -114,9 +102,7 @@ class MlflowBasicClient:
         """
         return self._client.search_model_versions(f"name='{model_name}'")
 
-    def set_model_stage(
-        self, model_name: str, model_version: str, stage: str
-    ) -> ModelVersion:
+    def set_model_stage(self, model_name: str, model_version: str, stage: str) -> ModelVersion:
         """
         inherited the transitioning model version stage in Mlflow
         :param model_name: model name

@@ -37,9 +37,7 @@ class _MlflowMachineLearningModel(PythonModel):
         config.read(context.artifacts["config"])
         module = importlib.import_module(config["model"]["module_name"])
         class_ = getattr(module, config["model"]["class_name"])
-        self.model = class_.load_model(  # pylint: disable=W0201
-            context.artifacts["model"]
-        )
+        self.model = class_.load_model(context.artifacts["model"])  # pylint: disable=W0201
 
     def predict(self, context, model_input):
         return self.model.predict(**model_input)
@@ -90,9 +88,7 @@ def register_mlflow_model(
 
     if artifacts_to_log is not None:
         if not any(list(artifacts_to_log.keys())) not in ["model", "config"]:
-            raise ValueError(
-                'Artifact names "model" and "config" are reserved for internal usage'
-            )
+            raise ValueError('Artifact names "model" and "config" are reserved for internal usage')
         artifacts.update(artifacts_to_log)
 
     with mlflow.start_run(nested=True, run_name=run_name):
@@ -109,8 +105,6 @@ def register_mlflow_model(
         if transition_to_stage is not None:
             mlflow_client.set_model_stage(
                 model_name=model_name,
-                model_version=mlflow_client.get_latest_model_version(
-                    model_name
-                ).version,
+                model_version=mlflow_client.get_latest_model_version(model_name).version,
                 stage=transition_to_stage,
             )

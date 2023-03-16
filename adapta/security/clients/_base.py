@@ -63,9 +63,7 @@ class AuthenticationClient(ABC):
         """
 
     @abstractmethod
-    def get_pyarrow_filesystem(
-        self, path: DataPath, connection_options: Optional[Dict[str, str]] = None
-    ) -> FileSystem:
+    def get_pyarrow_filesystem(self, path: DataPath, connection_options: Optional[Dict[str, str]] = None) -> FileSystem:
         """
         Returns a `PyFileSystem` object that's authenticated for the provided path
 

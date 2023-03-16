@@ -49,11 +49,7 @@ def _get_vault_credentials():
             self.server.token = params["code"][0]
             self.send_response(200)
             self.end_headers()
-            self.wfile.write(
-                str.encode(
-                    "<div>Authentication successful, you can close the browser now.</div>"
-                )
-            )
+            self.wfile.write(str.encode("<div>Authentication successful, you can close the browser now.</div>"))
 
     server_address = ("127.0.0.1", 8250)
     httpd = HttpServ(server_address, AuthHandler)

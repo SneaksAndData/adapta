@@ -125,9 +125,7 @@ class SemanticLogger:
 
     def _get_template(self, template) -> str:
         return (
-            self._fixed_template_delimiter.join(
-                [template, ", ".join(self._fixed_template.keys())]
-            )
+            self._fixed_template_delimiter.join([template, ", ".join(self._fixed_template.keys())])
             if self._fixed_template
             else template
         )
@@ -316,9 +314,7 @@ class SemanticLogger:
 
         if sys.platform == "win32":
             self.info(
-                self._get_template(
-                    ">> Output redirection not supported on this platform: {platform} <<"
-                ),
+                self._get_template(">> Output redirection not supported on this platform: {platform} <<"),
                 platform=sys.platform,
                 tags=tags,
                 log_source_name=log_source_name,
@@ -331,9 +327,7 @@ class SemanticLogger:
 
         libc = ctypes.CDLL(None)
         saved_stdout = libc.dup(1)
-        tmp_file = os.path.join(tempfile.gettempdir(), tempfile.mktemp()).encode(
-            "utf-8"
-        )
+        tmp_file = os.path.join(tempfile.gettempdir(), tempfile.mktemp()).encode("utf-8")
         try:
             redirected_fd = libc.creat(tmp_file)
             libc.dup2(redirected_fd, 1)

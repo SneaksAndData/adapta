@@ -77,9 +77,7 @@ class TrinoClient:
                 },
             )
         elif credentials_provider:
-            credentials_secret = credentials_provider[1].read_secret(
-                "", credentials_provider[0]
-            )
+            credentials_secret = credentials_provider[1].read_secret("", credentials_provider[0])
             self._engine = create_engine(
                 f"trino://{credentials_secret['username']}:{credentials_secret['password']}@{self._host}:{self._port}/{self._catalog}"
             )
@@ -118,6 +116,4 @@ class TrinoClient:
         :param batch_size: Optional batch size to return rows iteratively.
         """
 
-        return pandas.read_sql_query(
-            sql=query, con=self._connection, chunksize=batch_size
-        )
+        return pandas.read_sql_query(sql=query, con=self._connection, chunksize=batch_size)
