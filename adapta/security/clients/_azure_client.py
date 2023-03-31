@@ -76,8 +76,13 @@ class AzureClient(AuthenticationClient):
 
         return None
 
+    def _get_default_token(self):
+        return _get_azure_credentials().get_token("https://management.core.windows.net/.default").token
+
     def get_access_token(self, scope: Optional[str] = None) -> str:
-        return _get_azure_credentials().get_token(scope or "https://management.core.windows.net/.default").token
+        if scope:
+            return _get_azure_credentials().get_token(scope).token
+        return self._get_default_token()
 
     def connect_account(self):
         """
@@ -101,6 +106,16 @@ class AzureClient(AuthenticationClient):
                     f"PROTEUS__{adls_path.account.upper()}_AZURE_STORAGE_ACCOUNT_KEY"
                 ),
             }
+
+        if "AZURE_CLIENT_SECRET" in os.environ or "PROTEUS__AZURE_CLIENT_SECRET" in os.environ:
+            return {
+                "AZURE_CLIENT_ID": os.getenv("AZURE_CLIENT_ID") or os.getenv("PROTEUS__AZURE_CLIENT_ID"),
+                "AZURE_CLIENT_SECRET": os.getenv("AZURE_CLIENT_SECRET") or os.getenv("PROTEUS__AZURE_CLIENT_SECRET"),
+                "AZURE_TENANT_ID": os.getenv("AZURE_TENANT_ID") or os.getenv("PROTEUS__AZURE_TENANT_ID"),
+            }
+
+        if "PROTEUS__USE_AZURE_CREDENTIAL" in os.environ:
+            return {"TOKEN": self._get_default_token()}
 
         # Auto discover through ARM if env vars are not present for the target account
         storage_client = StorageManagementClient(_get_azure_credentials(), self.subscription_id)
@@ -133,13 +148,25 @@ class AzureClient(AuthenticationClient):
         return _get_azure_credentials()
 
     def get_pyarrow_filesystem(self, path: DataPath, connection_options: Optional[Dict[str, str]] = None) -> FileSystem:
+        def select_file_system(options: Optional[Dict[str, str]]) -> AzureBlobFileSystem:
+            if options.get("AZURE_STORAGE_ACCOUNT_KEY"):
+                return AzureBlobFileSystem(
+                    account_name=options["AZURE_STORAGE_ACCOUNT_NAME"],
+                    account_key=options["AZURE_STORAGE_ACCOUNT_KEY"],
+                )
 
-        if not connection_options:
-            connection_options = self.connect_storage(path=path)
+            if options.get("AZURE_CLIENT_SECRET"):
+                return AzureBlobFileSystem(
+                    client_id=options["AZURE_CLIENT_ID"],
+                    client_secret=options["AZURE_CLIENT_SECRET"],
+                    tenant_id=options["AZURE_TENANT_ID"],
+                )
 
-        file_system = AzureBlobFileSystem(
-            account_name=connection_options["AZURE_STORAGE_ACCOUNT_NAME"],
-            account_key=connection_options["AZURE_STORAGE_ACCOUNT_KEY"],
+            if not options:
+                return AzureBlobFileSystem(credential=_get_azure_credentials())
+
+            raise ValueError(f"Unsupported connection options have been provided: {connection_options}")
+
+        return SubTreeFileSystem(
+            path.to_hdfs_path(), PyFileSystem(FSSpecHandler(select_file_system(connection_options)))
         )
-
-        return SubTreeFileSystem(path.to_hdfs_path(), PyFileSystem(FSSpecHandler(file_system)))

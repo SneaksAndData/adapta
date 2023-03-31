@@ -47,22 +47,30 @@ class AzureStorageClient(StorageClient):
     Azure Storage (Blob and ADLS) Client.
     """
 
-    def __init__(self, *, base_client: AzureClient, path: Union[AdlsGen2Path, WasbPath]):
+    def __init__(self, *, base_client: AzureClient, path: Union[AdlsGen2Path, WasbPath], implicit_login=True):
         super().__init__(base_client=base_client)
-        self._storage_options = self._base_client.connect_storage(path)
-        connection_string = (
-            f"DefaultEndpointsProtocol=https;"
-            f"AccountName={self._storage_options['AZURE_STORAGE_ACCOUNT_NAME']};"
-            f"AccountKey={self._storage_options['AZURE_STORAGE_ACCOUNT_KEY']};"
-            f"BlobEndpoint=https://{self._storage_options['AZURE_STORAGE_ACCOUNT_NAME']}.blob.core.windows.net/;"
-        )
 
         # overrides default ExponentialRetry
         # config.retry_policy = kwargs.get("retry_policy") or ExponentialRetry(**kwargs)
-        self._blob_service_client: BlobServiceClient = BlobServiceClient.from_connection_string(
-            connection_string,
-            retry_policy=ExponentialRetry(initial_backoff=5, increment_base=3, retry_total=15),
-        )
+        retry_policy = ExponentialRetry(initial_backoff=5, increment_base=3, retry_total=15)
+
+        if implicit_login:
+            self._blob_service_client: BlobServiceClient = BlobServiceClient(
+                account_url=path.to_uri(),
+                credential=self._base_client.get_credentials(),
+                retry_policy=retry_policy,
+            )
+        else:
+            self._storage_options = self._base_client.connect_storage(path)
+            connection_string = (
+                f"DefaultEndpointsProtocol=https;"
+                f"AccountName={self._storage_options['AZURE_STORAGE_ACCOUNT_NAME']};"
+                f"AccountKey={self._storage_options['AZURE_STORAGE_ACCOUNT_KEY']};"
+                f"BlobEndpoint=https://{self._storage_options['AZURE_STORAGE_ACCOUNT_NAME']}.blob.core.windows.net/;"
+            )
+            self._blob_service_client: BlobServiceClient = BlobServiceClient.from_connection_string(
+                connection_string, retry_policy=retry_policy
+            )
 
     def _get_blob_client(self, blob_path: DataPath) -> BlobClient:
         azure_path = cast_path(blob_path)

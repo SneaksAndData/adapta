@@ -66,14 +66,10 @@ def load(  # pylint: disable=R0913
 
     :return: A DeltaTable wrapped Rust class, pandas Dataframe or an iterator of pandas Dataframes, for batched reads.
     """
-    connection_options = auth_client.connect_storage(path)
-
-    pyarrow_ds = DeltaTable(
-        path.to_delta_rs_path(), version=version, storage_options=connection_options
-    ).to_pyarrow_dataset(
+    pyarrow_ds = DeltaTable(path.to_delta_rs_path(), version=version).to_pyarrow_dataset(
         partitions=partition_filter_expressions,
         parquet_read_options=ParquetReadOptions(coerce_int96_timestamp_unit="ms"),
-        filesystem=auth_client.get_pyarrow_filesystem(path, connection_options=connection_options),
+        filesystem=auth_client.get_pyarrow_filesystem(path),
     )
 
     if batch_size:

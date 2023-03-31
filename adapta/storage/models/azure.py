@@ -28,6 +28,21 @@ class AdlsGen2Path(DataPath):
     Path wrapper for ADLS Gen2.
     """
 
+    @classmethod
+    def from_uri(cls, url: str) -> "DataPath":
+        assert url.startswith("https://") and (
+            "dfs.core.windows.net" in url or "blob.core.windows.net" in url
+        ), "Invalid URL supplied. Please use the following format: https://<accountname>.dfs.core.windows.net or https://<accountname>.blob.core.windows.net"
+
+        return cls(
+            account=url.split("://")[1].split(".")[0],
+            container=url.split(".windows.net/")[1].split("/")[0],
+            path="/".join(url.split(".windows.net/")[1].split("/")[1:]),
+        )
+
+    def to_uri(self):
+        return f"https://{self.account}.dfs.core.windows.net/{self.container}/{self.path}"
+
     account: str
     container: str
     path: str
@@ -62,6 +77,21 @@ class WasbPath(DataPath):
     """
     Path wrapper for ADLS Gen2.
     """
+
+    @classmethod
+    def from_uri(cls, url: str) -> "DataPath":
+        assert url.startswith("https://") and (
+            "blob.core.windows.net" in url
+        ), "Invalid URL supplied. Please use the following format: https://<accountname>.blob.core.windows.net"
+
+        return cls(
+            account=url.split("://")[1].split(".")[0],
+            container=url.split(".windows.net/")[1].split("/")[0],
+            path="/".join(url.split(".windows.net/")[1].split("/")[1:]),
+        )
+
+    def to_uri(self):
+        return f"https://{self.account}.blob.core.windows.net/{self.container}/{self.path}"
 
     account: str
     container: str
