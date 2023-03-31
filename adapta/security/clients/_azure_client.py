@@ -94,8 +94,8 @@ class AzureClient(AuthenticationClient):
         def get_resource_group(account: StorageAccount) -> str:
             return account.id.split("/")[account.id.split("/").index("resourceGroups") + 1]
 
-        assert isinstance(path, AdlsGen2Path) or isinstance(
-            path, WasbPath
+        isinstance(
+            path, (AdlsGen2Path, WasbPath)
         ), "Only adapta.storage.models.azure.AdlsGen2Path or with adapta.storage.models.azure.WasbPath are supported"
 
         adls_path: Union[AdlsGen2Path, WasbPath] = path
@@ -149,7 +149,7 @@ class AzureClient(AuthenticationClient):
                         "AZURE_STORAGE_ACCOUNT_KEY": keys[0].value,
                     }
 
-        raise ValueError(f"Can't find credentials for an account {path.account}")
+        raise ValueError(f"Can't find credentials for an account {adls_path.account}")
 
     def get_credentials(self) -> DefaultAzureCredential:
         return _get_azure_credentials()
@@ -174,8 +174,8 @@ class AzureClient(AuthenticationClient):
 
             raise ValueError(f"Unsupported connection options have been provided: {connection_options}")
 
-        assert isinstance(path, AdlsGen2Path) or isinstance(
-            path, WasbPath
+        assert isinstance(
+            path, (AdlsGen2Path, WasbPath)
         ), "Only adapta.storage.models.azure.AdlsGen2Path or with adapta.storage.models.azure.WasbPath are supported"
 
         return SubTreeFileSystem(
