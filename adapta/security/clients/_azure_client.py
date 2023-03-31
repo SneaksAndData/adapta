@@ -51,7 +51,7 @@ class AzureClient(AuthenticationClient):
     Azure Credentials provider for various Azure resources.
     """
 
-    def __init__(self, *, subscription_id: str, default_log_level=logging.ERROR):
+    def __init__(self, *, subscription_id: Optional[str] = None, default_log_level=logging.ERROR):
         self.subscription_id = subscription_id
 
         # disable Azure CLI telemetry collection as it is not thread-safe
@@ -96,7 +96,7 @@ class AzureClient(AuthenticationClient):
 
         assert isinstance(path, AdlsGen2Path) or isinstance(
             path, WasbPath
-        ), "Azure Client only works with adapta.storage.models.azure.AdlsGen2Path or with adapta.storage.models.azure.WasbPath"
+        ), "Only adapta.storage.models.azure.AdlsGen2Path or with adapta.storage.models.azure.WasbPath are supported"
 
         adls_path: Union[AdlsGen2Path, WasbPath] = path
 
@@ -114,61 +114,70 @@ class AzureClient(AuthenticationClient):
                 "AZURE_CLIENT_ID": os.getenv("AZURE_CLIENT_ID") or os.getenv("PROTEUS__AZURE_CLIENT_ID"),
                 "AZURE_CLIENT_SECRET": os.getenv("AZURE_CLIENT_SECRET") or os.getenv("PROTEUS__AZURE_CLIENT_SECRET"),
                 "AZURE_TENANT_ID": os.getenv("AZURE_TENANT_ID") or os.getenv("PROTEUS__AZURE_TENANT_ID"),
+                "ACCOUNT_NAME": adls_path.account,
             }
 
         if "PROTEUS__USE_AZURE_CREDENTIAL" in os.environ:
-            return {"TOKEN": self._get_default_token()}
+            return {
+                "TOKEN": _get_azure_credentials().get_token("https://storage.azure.com/.default").token,
+                "ACCOUNT_NAME": adls_path.account,
+            }
 
-        # Auto discover through ARM if env vars are not present for the target account
-        storage_client = StorageManagementClient(_get_azure_credentials(), self.subscription_id)
+        if self.subscription_id:
+            # Auto discover through ARM if env vars are not present for the target account
+            storage_client = StorageManagementClient(_get_azure_credentials(), self.subscription_id)
 
-        accounts: List[Tuple[str, str]] = list(
-            map(
-                lambda result: (get_resource_group(result), result.name),
-                storage_client.storage_accounts.list(),
+            accounts: List[Tuple[str, str]] = list(
+                map(
+                    lambda result: (get_resource_group(result), result.name),
+                    storage_client.storage_accounts.list(),
+                )
             )
-        )
 
-        for rg, account in accounts:  # pylint: disable=C0103
-            if adls_path.account == account:
-                keys: List[StorageAccountKey] = storage_client.storage_accounts.list_keys(
-                    resource_group_name=rg, account_name=account
-                ).keys
+            for rg, account in accounts:  # pylint: disable=C0103
+                if adls_path.account == account:
+                    keys: List[StorageAccountKey] = storage_client.storage_accounts.list_keys(
+                        resource_group_name=rg, account_name=account
+                    ).keys
 
-                if set_env:
-                    os.environ.update({"AZURE_STORAGE_ACCOUNT_NAME": account})
-                    os.environ.update({"AZURE_STORAGE_ACCOUNT_KEY": keys[0].value})
+                    if set_env:
+                        os.environ.update({"AZURE_STORAGE_ACCOUNT_NAME": account})
+                        os.environ.update({"AZURE_STORAGE_ACCOUNT_KEY": keys[0].value})
 
-                return {
-                    "AZURE_STORAGE_ACCOUNT_NAME": account,
-                    "AZURE_STORAGE_ACCOUNT_KEY": keys[0].value,
-                }
+                    return {
+                        "AZURE_STORAGE_ACCOUNT_NAME": account,
+                        "AZURE_STORAGE_ACCOUNT_KEY": keys[0].value,
+                    }
 
-        raise ValueError(f"Can't locate an account {path.account}")
+        raise ValueError(f"Can't find credentials for an account {path.account}")
 
     def get_credentials(self) -> DefaultAzureCredential:
         return _get_azure_credentials()
 
     def get_pyarrow_filesystem(self, path: DataPath, connection_options: Optional[Dict[str, str]] = None) -> FileSystem:
-        def select_file_system(options: Optional[Dict[str, str]]) -> AzureBlobFileSystem:
-            if options.get("AZURE_STORAGE_ACCOUNT_KEY"):
+        def select_file_system(options: Optional[Dict[str, str]], account_name: str) -> AzureBlobFileSystem:
+            if not options:
+                return AzureBlobFileSystem(account_name=account_name, anon=False)
+
+            if options.get("AZURE_STORAGE_ACCOUNT_KEY", None):
                 return AzureBlobFileSystem(
-                    account_name=options["AZURE_STORAGE_ACCOUNT_NAME"],
+                    account_name=account_name,
                     account_key=options["AZURE_STORAGE_ACCOUNT_KEY"],
                 )
 
-            if options.get("AZURE_CLIENT_SECRET"):
+            if options.get("AZURE_CLIENT_SECRET", None):
                 return AzureBlobFileSystem(
                     client_id=options["AZURE_CLIENT_ID"],
                     client_secret=options["AZURE_CLIENT_SECRET"],
                     tenant_id=options["AZURE_TENANT_ID"],
                 )
 
-            if not options:
-                return AzureBlobFileSystem(credential=_get_azure_credentials())
-
             raise ValueError(f"Unsupported connection options have been provided: {connection_options}")
 
+        assert isinstance(path, AdlsGen2Path) or isinstance(
+            path, WasbPath
+        ), "Only adapta.storage.models.azure.AdlsGen2Path or with adapta.storage.models.azure.WasbPath are supported"
+
         return SubTreeFileSystem(
-            path.to_hdfs_path(), PyFileSystem(FSSpecHandler(select_file_system(connection_options)))
+            path.to_hdfs_path(), PyFileSystem(FSSpecHandler(select_file_system(connection_options, path.account)))
         )
