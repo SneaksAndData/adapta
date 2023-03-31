@@ -18,6 +18,7 @@
 
 import os.path
 from datetime import datetime, timedelta
+from functools import partial
 from threading import Thread
 from typing import Union, Optional, Dict, Type, TypeVar, Iterator, List, Callable
 
@@ -62,6 +63,7 @@ class AzureStorageClient(StorageClient):
                 credential=self._base_client.get_credentials(),
                 retry_policy=retry_policy,
             )
+            self._storage_options = None
         else:
             self._storage_options = self._base_client.connect_storage(path)
             connection_string = (
@@ -110,13 +112,26 @@ class AzureStorageClient(StorageClient):
         blob_client = self._get_blob_client(blob_path)
         azure_path = cast_path(blob_path)
 
-        sas_token = generate_blob_sas(
+        base_call = partial(
+            generate_blob_sas,
             blob_name=azure_path.path,
             container_name=azure_path.container,
             account_name=azure_path.account,
             permission=kwargs.get("permission", BlobSasPermissions(read=True)),
             expiry=kwargs.get("expiry", datetime.utcnow() + timedelta(hours=1)),
-            account_key=self._storage_options["AZURE_STORAGE_ACCOUNT_KEY"],
+        )
+
+        sas_token = (
+            base_call(
+                account_key=self._storage_options["AZURE_STORAGE_ACCOUNT_KEY"],
+            )
+            if self._storage_options
+            else base_call(
+                user_delegation_key=self._blob_service_client.get_user_delegation_key(
+                    key_start_time=datetime.utcnow() - timedelta(minutes=1),
+                    key_expiry_time=kwargs.get("expiry", datetime.utcnow() + timedelta(hours=1)),
+                ),
+            )
         )
 
         sas_uri = f"{blob_client.url}?{sas_token}"
