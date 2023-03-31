@@ -94,7 +94,7 @@ class AzureClient(AuthenticationClient):
         def get_resource_group(account: StorageAccount) -> str:
             return account.id.split("/")[account.id.split("/").index("resourceGroups") + 1]
 
-        isinstance(
+        assert isinstance(
             path, (AdlsGen2Path, WasbPath)
         ), "Only adapta.storage.models.azure.AdlsGen2Path or with adapta.storage.models.azure.WasbPath are supported"
 
