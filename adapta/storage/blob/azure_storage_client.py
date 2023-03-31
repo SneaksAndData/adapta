@@ -56,7 +56,9 @@ class AzureStorageClient(StorageClient):
 
         if implicit_login:
             self._blob_service_client: BlobServiceClient = BlobServiceClient(
-                account_url=path.to_uri(),
+                account_url=WasbPath.from_adls2_path(path).base_uri()
+                if isinstance(path, AdlsGen2Path)
+                else path.base_uri(),
                 credential=self._base_client.get_credentials(),
                 retry_policy=retry_policy,
             )

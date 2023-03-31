@@ -28,10 +28,13 @@ class AdlsGen2Path(DataPath):
     Path wrapper for ADLS Gen2.
     """
 
+    def base_uri(self) -> str:
+        return f"https://{self.account}.dfs.core.windows.net"
+
     @classmethod
     def from_uri(cls, url: str) -> "DataPath":
         assert url.startswith("https://") and (
-            "dfs.core.windows.net" in url or "blob.core.windows.net" in url
+            "dfs.core.windows.net" in url
         ), "Invalid URL supplied. Please use the following format: https://<accountname>.dfs.core.windows.net or https://<accountname>.blob.core.windows.net"
 
         return cls(
@@ -40,7 +43,7 @@ class AdlsGen2Path(DataPath):
             path="/".join(url.split(".windows.net/")[1].split("/")[1:]),
         )
 
-    def to_uri(self):
+    def to_uri(self) -> str:
         return f"https://{self.account}.dfs.core.windows.net/{self.container}/{self.path}"
 
     account: str
@@ -78,6 +81,9 @@ class WasbPath(DataPath):
     Path wrapper for ADLS Gen2.
     """
 
+    def base_uri(self) -> str:
+        return f"https://{self.account}.blob.core.windows.net"
+
     @classmethod
     def from_uri(cls, url: str) -> "DataPath":
         assert url.startswith("https://") and (
@@ -107,7 +113,7 @@ class WasbPath(DataPath):
         return WasbPath(
             account=hdfs_path.split("@")[1].split(".")[0],
             container=hdfs_path.split("@")[0].split("//")[1],
-            path=hdfs_path.split(".dfs.core.windows.net")[1][1:],
+            path=hdfs_path.split(".blob.core.windows.net")[1][1:],
         )
 
     def _check_path(self):
@@ -119,6 +125,15 @@ class WasbPath(DataPath):
 
     def to_delta_rs_path(self) -> str:
         raise NotImplementedError("WASB not supported by delta-rs yet")
+
+    @classmethod
+    def from_adls2_path(cls, adls_path: AdlsGen2Path) -> "WasbPath":
+        """
+        Convenience method for converting abfss path to wasbs path. This has some use cases when you need to generate account url, which is different from DFS endpoint,
+        and most client use Blob endpoint for ADLS2 accounts.
+        """
+
+        return cls(account=adls_path.account, container=adls_path.container, path=adls_path.path)
 
 
 def cast_path(blob_path: DataPath) -> Union[AdlsGen2Path, WasbPath]:

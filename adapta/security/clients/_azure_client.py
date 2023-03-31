@@ -20,7 +20,7 @@ import os
 
 import logging
 
-from typing import Optional, List, Dict, Tuple
+from typing import Optional, List, Dict, Tuple, Union
 
 from adlfs import AzureBlobFileSystem
 from azure.mgmt.storage.v2021_08_01.models import StorageAccountKey, StorageAccount
@@ -29,7 +29,7 @@ from azure.identity import DefaultAzureCredential
 from pyarrow.fs import PyFileSystem, FSSpecHandler, SubTreeFileSystem, FileSystem
 
 from adapta.security.clients._base import AuthenticationClient
-from adapta.storage.models.azure import AdlsGen2Path
+from adapta.storage.models.azure import AdlsGen2Path, WasbPath
 from adapta.storage.models.base import DataPath
 
 
@@ -94,9 +94,11 @@ class AzureClient(AuthenticationClient):
         def get_resource_group(account: StorageAccount) -> str:
             return account.id.split("/")[account.id.split("/").index("resourceGroups") + 1]
 
-        assert isinstance(path, AdlsGen2Path), "Azure Client only works with adapta.storage.models.azure.AdlsGen2Path"
+        assert isinstance(path, AdlsGen2Path) or isinstance(
+            path, WasbPath
+        ), "Azure Client only works with adapta.storage.models.azure.AdlsGen2Path or with adapta.storage.models.azure.WasbPath"
 
-        adls_path: AdlsGen2Path = path
+        adls_path: Union[AdlsGen2Path, WasbPath] = path
 
         # rely on mapped env vars, if they exist
         if f"PROTEUS__{adls_path.account.upper()}_AZURE_STORAGE_ACCOUNT_KEY" in os.environ:

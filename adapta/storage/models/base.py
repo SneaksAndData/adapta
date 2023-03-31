@@ -65,6 +65,13 @@ class DataPath(ABC):
         """
 
     @abstractmethod
+    def base_uri(self) -> str:
+        """
+          Returns valid base service URL from this class.
+        :return:
+        """
+
+    @abstractmethod
     def to_hdfs_path(self) -> str:
         """
          Returns valid HDFS path from this class.

@@ -27,6 +27,9 @@ class LocalPath(DataPath):
     Local file system path.
     """
 
+    def base_uri(self) -> str:
+        raise NotImplementedError
+
     @classmethod
     def from_uri(cls, url: str) -> "DataPath":
         raise NotImplementedError
