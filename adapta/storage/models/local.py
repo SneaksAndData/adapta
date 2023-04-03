@@ -32,10 +32,10 @@ class LocalPath(DataPath):
 
     @classmethod
     def from_uri(cls, url: str) -> "DataPath":
-        raise NotImplementedError
+        return LocalPath.from_hdfs_path(url)
 
-    def to_uri(self) -> "DataPath":
-        raise NotImplementedError
+    def to_uri(self) -> str:
+        return self.to_hdfs_path()
 
     path: str
     protocol: str = DataProtocols.FILE.value

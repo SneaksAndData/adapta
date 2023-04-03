@@ -96,7 +96,7 @@ class WasbPath(DataPath):
             path="/".join(url.split(".windows.net/")[1].split("/")[1:]),
         )
 
-    def to_uri(self):
+    def to_uri(self) -> str:
         return f"https://{self.account}.blob.core.windows.net/{self.container}/{self.path}"
 
     account: str
