@@ -32,6 +32,16 @@ class HivePath(DataPath):
     Virtual representation of a Hive entity path.
     """
 
+    def base_uri(self) -> str:
+        raise NotImplementedError
+
+    @classmethod
+    def from_uri(cls, url: str) -> "DataPath":
+        raise NotImplementedError
+
+    def to_uri(self) -> str:
+        raise NotImplementedError
+
     hive_server: str
     hive_server_port: str
     hive_database: str

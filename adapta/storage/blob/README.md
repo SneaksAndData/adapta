@@ -13,7 +13,7 @@ from adapta.storage.models.azure import AdlsGen2Path
 from adapta.storage.blob.azure_storage_client import AzureStorageClient
 from adapta.storage.models.format import DataFrameParquetSerializationFormat
 
-azure_client = AzureClient(subscription_id='6c5538ce-b24a-4e2a-877f-979ad71287ff')
+azure_client = AzureClient()
 adls_path = AdlsGen2Path.from_hdfs_path('abfss://container@account.dfs.core.windows.net/path/to/my/table')
 
 # init storage client
