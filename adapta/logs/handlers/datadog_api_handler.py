@@ -49,7 +49,7 @@ class DataDogApiHandler(Handler):
     def __init__(
         self,
         *,
-        buffer_size=10,
+        buffer_size=0,
         async_handler=False,
         debug=False,
         max_flush_retry_time=30,
