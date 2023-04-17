@@ -2,7 +2,9 @@
 A set of utility functions that can be used in any python project.
 
 ## doze
-The doze function is used to sleep for a given amount of time (in seconds).
+The doze function is used to sleep for a given amount of time  (in seconds), in short intervals.
+
+This is useful in environments when your process needs to sleep, but respond to SIGTERM/SIGINT as soon as they are received.
 
 Example usage:
 ```python
