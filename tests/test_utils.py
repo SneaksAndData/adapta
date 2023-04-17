@@ -12,12 +12,17 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+import os
+import sys
+from contextlib import nullcontext as does_not_raise, AbstractContextManager
 
 import time
-from typing import List, Any, Dict
+from typing import List, Any, Dict, Optional
 
 import pytest
-from adapta.utils import doze, operation_time, chunk_list
+from _pytest.python_api import RaisesContext
+
+from adapta.utils import doze, operation_time, chunk_list, memory_limit
 from adapta.utils.concurrent_task_runner import Executable, ConcurrentTaskRunner
 
 
@@ -130,3 +135,74 @@ def test_concurrent_task_runner(
     total_wait = (time.monotonic_ns() - start) / 1e9
 
     assert results == expectations and total_wait < expected_wait
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="Functionality not supported on Windows")
+@pytest.mark.parametrize(
+    "limit_bytes,limit_percentage,num_iterations,expected_limit",
+    [
+        (512, None, 1024, 512),
+        (None, 0.8, 1024 * 1024, int(0.8 * os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES")))
+        if sys.platform != "win32"
+        else None,
+    ],
+)
+def test_memory_limit_enough_memory(
+    limit_bytes: Optional[int], limit_percentage: Optional[float], num_iterations: int, expected_limit: int
+):
+    """
+    This unit test method verifies that the function `memory_limit` correctly enforces the given memory limit.
+    The test is skipped if the platform is Windows since the functionality is not supported there.
+
+    Test 1:
+    - limit_bytes: 512
+    - limit_percentage: None
+    - num_iterations: 1024
+    - expected_limit: 512
+
+    This test checks that the function correctly enforces a memory limit of 512 bytes when given a byte limit.
+
+    Test 2:
+    - limit_bytes: None
+    - limit_percentage: 0.8
+    - num_iterations: 1024*1024
+    - expected_limit: int(0.8 * os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES"))
+
+    This test checks that the function correctly enforces a memory limit of 80% of the total memory when given a percentage limit.
+    """
+    test_str = "a"
+    with memory_limit(memory_limit_bytes=limit_bytes, memory_limit_percentage=limit_percentage) as enforced_limit:
+        test_str *= num_iterations
+    assert enforced_limit == expected_limit
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="Functionality not supported on Windows")
+@pytest.mark.parametrize(
+    "limit_bytes,limit_percentage,num_iterations",
+    [
+        (512, None, 1024 * 1024),
+        (None, 1e-9, 1024 * 1024),
+    ],
+)
+def test_memory_limit_error(limit_bytes: Optional[int], limit_percentage: Optional[float], num_iterations: int):
+    """
+     This unit test method is testing the `memory_limit` function for correct handling of MemoryError exceptions. The test is skipped on Windows as the functionality is not supported on this platform.
+
+     Test case 1:
+
+    - `limit_bytes` is set to 512 bytes
+    - `limit_percentage` is set to None
+    - `num_iterations` is set to 1024 * 1024
+
+    Test case 2:
+
+    - `limit_bytes` is set to None
+    - `limit_percentage` is set to 1e-9
+    - `num_iterations` is set to 1024 * 1024
+
+    In both test cases, the test expects a MemoryError exception to be raised when `test_str` is multiplied by `num_iterations`.
+    """
+    test_str = "a"
+    with pytest.raises(MemoryError):
+        with memory_limit(memory_limit_bytes=limit_bytes, memory_limit_percentage=limit_percentage):
+            test_str *= num_iterations
