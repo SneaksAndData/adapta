@@ -178,8 +178,8 @@ def test_memory_limit_enough_memory(
 @pytest.mark.parametrize(
     "limit_bytes,limit_percentage,num_iterations",
     [
-        (512, None, 1024 * 1024),
-        (None, 1e-9, 1024 * 1024),
+        (512, None, 1024 * 1024 * 1024),
+        (None, 1e-9, 1024 * 1024 * 1024),
     ],
 )
 def test_memory_limit_error(limit_bytes: Optional[int], limit_percentage: Optional[float], num_iterations: int):
