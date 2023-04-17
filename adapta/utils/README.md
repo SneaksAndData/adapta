@@ -76,7 +76,7 @@ Example usage:
 ```python
 from adapta.utils import chunk_list
 
-# Split a list of numbers into 4 chunks
+# Split a list of numbers into up to 4 chunks
 numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 chunks = chunk_list(numbers, 4)
 print(chunks)
@@ -84,7 +84,7 @@ print(chunks)
 
 Output:
 ```
-[[1, 2, 3], [4, 5, 6], [7, 8], [9]]
+[[1, 2, 3], [4, 5, 6], [7, 8, 9]]
 ```
 
 ### memory_limit:

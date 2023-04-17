@@ -109,7 +109,7 @@ def operation_time():
 
 def chunk_list(value: List[Any], num_chunks: int) -> List[List[Any]]:
     """
-     Chunks the provided list into a specified number of chunks. This method is thread-safe.
+     Chunks the provided list into at most the specified number of chunks. This method is thread-safe.
 
     :param value: A list to chunk.
     :param num_chunks: Number of chunks to generate.
