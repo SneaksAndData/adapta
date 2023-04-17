@@ -19,16 +19,17 @@ import math
 import os
 import sys
 
-if sys.platform != "win32":
-    import resource
 import time
 from collections import namedtuple
 from functools import partial
-from typing import List, Optional, Dict, Any, Tuple, Union
+from typing import List, Optional, Dict, Any, Tuple
 
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3 import Retry
+
+if sys.platform != "win32":
+    import resource
 
 
 def doze(seconds: int, doze_period_ms: int = 100) -> int:

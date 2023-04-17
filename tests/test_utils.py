@@ -14,13 +14,11 @@
 #
 import os
 import sys
-from contextlib import nullcontext as does_not_raise, AbstractContextManager
 
 import time
 from typing import List, Any, Dict, Optional
 
 import pytest
-from _pytest.python_api import RaisesContext
 
 from adapta.utils import doze, operation_time, chunk_list, memory_limit
 from adapta.utils.concurrent_task_runner import Executable, ConcurrentTaskRunner
