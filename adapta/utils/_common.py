@@ -16,6 +16,9 @@
 
 import contextlib
 import math
+import os
+import sys
+
 import time
 from collections import namedtuple
 from functools import partial
@@ -24,6 +27,9 @@ from typing import List, Optional, Dict, Any, Tuple
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3 import Retry
+
+if sys.platform != "win32":
+    import resource
 
 
 def doze(seconds: int, doze_period_ms: int = 100) -> int:
@@ -103,7 +109,7 @@ def operation_time():
 
 def chunk_list(value: List[Any], num_chunks: int) -> List[List[Any]]:
     """
-     Chunks the provided list into a specified number of chunks. This method is thread-safe.
+     Chunks the provided list into at most the specified number of chunks. This method is thread-safe.
 
     :param value: A list to chunk.
     :param num_chunks: Number of chunks to generate.
@@ -111,3 +117,41 @@ def chunk_list(value: List[Any], num_chunks: int) -> List[List[Any]]:
     """
     chunk_size = math.ceil(len(value) / num_chunks)
     return [value[el_pos : el_pos + chunk_size] for el_pos in range(0, len(value), chunk_size)]
+
+
+@contextlib.contextmanager
+def memory_limit(*, memory_limit_percentage: Optional[float] = None, memory_limit_bytes: Optional[int] = None):
+    """
+    Context manager to limit the amount of memory used by a process.
+    On context exit, the memory limit is reset to the total memory available.
+
+    :param memory_limit_percentage: Percentage of total memory to limit usage to.
+    :param memory_limit_bytes: Number of bytes to limit usage to.
+
+    Raises:
+      ValueError: If neither memory_limit_percentage or memory_limit_bytes is specified.
+    """
+    if sys.platform == "win32":
+        yield None
+    else:
+        total_mem_bytes = os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES")
+        try:
+            if memory_limit_percentage and not memory_limit_bytes:
+                limit = int(total_mem_bytes * memory_limit_percentage)
+                resource.setrlimit(
+                    resource.RLIMIT_AS,
+                    (limit, total_mem_bytes),
+                )
+                yield limit
+
+            elif memory_limit_bytes and not memory_limit_percentage:
+                resource.setrlimit(
+                    resource.RLIMIT_AS,
+                    (memory_limit_bytes, total_mem_bytes),
+                )
+
+                yield memory_limit_bytes
+            else:
+                raise ValueError("Specify either memory_limit_percentage or memory_limit_bytes")
+        finally:
+            resource.setrlimit(resource.RLIMIT_AS, (total_mem_bytes, total_mem_bytes))
