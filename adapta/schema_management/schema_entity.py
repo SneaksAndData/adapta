@@ -13,6 +13,10 @@
 #  limitations under the License.
 #
 
+"""
+ Wrapper for Python-based schema classes.
+"""
+
 from dataclasses import Field
 from typing import Union, Any, List
 
