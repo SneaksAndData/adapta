@@ -20,11 +20,11 @@ dataclasses-json = "~0.5.7"
 deltalake = { version = "~0.8.1", optional = true }
 
 azure-identity = { version = "~1.7", optional = true }
-azure-storage-blob = { version = ">12.7.0,<=12.10.0", optional = true }
+azure-storage-blob = { version = ">12.7.0,<=12.16.0", optional = true }
 azure-mgmt-storage = { version = "~19.1.0", optional = true }
 azure-keyvault-secrets = { version = "^4.3", optional = true }
 azure-servicebus = { version = "~7.6", optional = true }
-adlfs = { version = '~2022', optional = true }
+adlfs = { version = '~2023', optional = true }
 
 datadog = { version = "~0.44.0", optional = true }
 datadog-api-client = { version = "~1.12.0", optional = true }
