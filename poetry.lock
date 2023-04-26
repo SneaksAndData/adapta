@@ -20,22 +20,22 @@ requests = ">=2.0.0,<3"
 
 [[package]]
 name = "adlfs"
-version = "2022.7.0"
+version = "2023.1.0"
 description = "Access Azure Datalake Gen1 with fsspec and dask"
 category = "main"
 optional = true
-python-versions = ">3.8"
+python-versions = ">=3.8"
 files = [
-    {file = "adlfs-2022.7.0-py3-none-any.whl", hash = "sha256:4dda53627b77aeacf555138c7ddfdbc8dbda9111eb0d3d29bdb43ce189062724"},
-    {file = "adlfs-2022.7.0.tar.gz", hash = "sha256:33d2584eb173f7a05f122dac36c00eb1a65efa9b01de4c3ef65b3fa6a81a71df"},
+    {file = "adlfs-2023.1.0-py3-none-any.whl", hash = "sha256:ccbdd6d33d5b7bce99a4a07c884c82fb135745d39b2d9b7b672f8e9d4d04407f"},
+    {file = "adlfs-2023.1.0.tar.gz", hash = "sha256:eca53f53d88fc8e2e7a2f1d8f5a40b8a1c56aa3b541e4aa2e7eaf55a6a789262"},
 ]
 
 [package.dependencies]
-aiohttp = "*"
-azure-core = ">=1.7.0"
+aiohttp = ">=3.7.0"
+azure-core = ">=1.23.1,<2.0.0"
 azure-datalake-store = ">=0.0.46,<0.1"
 azure-identity = "*"
-azure-storage-blob = ">=12.5.0"
+azure-storage-blob = ">=12.12.0"
 fsspec = ">=2021.10.1"
 
 [package.extras]
@@ -357,20 +357,24 @@ uamqp = ">=1.5.1,<2.0.0"
 
 [[package]]
 name = "azure-storage-blob"
-version = "12.10.0"
+version = "12.16.0"
 description = "Microsoft Azure Blob Storage Client Library for Python"
 category = "main"
 optional = true
-python-versions = ">=3.6"
+python-versions = ">=3.7"
 files = [
-    {file = "azure-storage-blob-12.10.0.zip", hash = "sha256:3c7dc2c93e7ff2a731acd66a36a1f0a6266072b4154deba4894dab891285ea3a"},
-    {file = "azure_storage_blob-12.10.0-py3-none-any.whl", hash = "sha256:a70995c4f9310eb704594f30505d1499286b4caac5543a2ebfe84431c4a38b0b"},
+    {file = "azure-storage-blob-12.16.0.zip", hash = "sha256:43b45f19a518a5c6895632f263b3825ebc23574f25cc84b66e1630a6160e466f"},
+    {file = "azure_storage_blob-12.16.0-py3-none-any.whl", hash = "sha256:91bb192b2a97939c4259c72373bac0f41e30810bbc853d5184f0f45904eacafd"},
 ]
 
 [package.dependencies]
-azure-core = ">=1.15.0,<2.0.0"
+azure-core = ">=1.26.0,<2.0.0"
 cryptography = ">=2.1.4"
-msrest = ">=0.6.21"
+isodate = ">=0.6.1"
+typing-extensions = ">=4.0.1"
+
+[package.extras]
+aio = ["azure-core[aio] (>=1.26.0,<2.0.0)"]
 
 [[package]]
 name = "backoff"
@@ -2645,4 +2649,4 @@ trino = ["trino"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9, <3.12"
-content-hash = "2428e1e1d61794512428410ab8d0aa07d220b4db4ec569825b5a231f40e8e61d"
+content-hash = "9ff4eb7ab3f1b6b520a6cfcac4d1648f23a938ce8822343e919550e75b4bf5ef"
