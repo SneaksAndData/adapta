@@ -8,7 +8,7 @@ Currently supported:
 ## Azure Client
 There are few important notes on the usage of this client for retrieving storage account credentials via `connect_storage` method. This method is also used by `delta_lake` loaders, thus it is important to understand how to configure your environment and account. 
 
-1. Environment Variables: The method first checks for mapped environment variables in a format `PROTEUS__STORAGEACCOUNTNAME_AZURE_STORAGE_ACCOUNT_KEY`, and if found, returns the account name and key.
+1. Environment Variables: The method first checks for mapped environment variables in a format `f'PROTEUS__{STORAGEACCOUNTNAME}_AZURE_STORAGE_ACCOUNT_KEY'`, and if found, returns the account name and key.
 
 Note that this gives your client full write access on the account.
 
