@@ -42,6 +42,13 @@ except ImportError:
     pass
 
 try:
+    from adapta.security.clients.hashicorp_vault.hashicorp_vault_client import (
+        HashicorpVaultTokenClient,
+    )
+except ImportError:
+    pass
+
+try:
     from adapta.security.clients._azure_client import AzureClient
 except ImportError:
     pass
