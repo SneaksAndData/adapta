@@ -42,7 +42,7 @@ except ImportError:
     pass
 
 try:
-    from adapta.security.clients.hashicorp_vault.hashicorp_vault_client import (
+    from adapta.security.clients.hashicorp_vault.token_client import (
         HashicorpVaultTokenClient,
     )
 except ImportError:

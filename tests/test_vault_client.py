@@ -17,11 +17,10 @@ from unittest.mock import patch, MagicMock, mock_open, Mock
 
 import pytest
 
-from adapta.security.clients import HashicorpVaultOidcClient
+from adapta.security.clients import HashicorpVaultOidcClient, HashicorpVaultTokenClient
 from adapta.security.clients.hashicorp_vault.kubernetes_client import (
     HashicorpVaultKubernetesClient,
 )
-from adapta.security.clients.hashicorp_vault.token_client import HashicorpVaultTokenClient
 from adapta.storage.secrets.hashicorp_vault_secret_storage_client import (
     HashicorpSecretStorageClient,
 )
