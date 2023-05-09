@@ -19,7 +19,6 @@
 from typing import Optional
 
 import hvac
-from hvac.api.auth_methods import Kubernetes
 
 from adapta.security.clients._base import AuthenticationClient
 from adapta.security.clients.hashicorp_vault.hashicorp_vault_client import (
