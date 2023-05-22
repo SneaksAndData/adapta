@@ -20,7 +20,7 @@ import concurrent
 import os
 import sys
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Callable, Any, List, TypeVar, Generic, Optional, Dict
 
 T = TypeVar("T")
@@ -33,8 +33,9 @@ class Executable(Generic[T]):
     """
 
     func: Callable[[...], T]
-    args: List[Any]
     alias: str
+    args: List[Any] = field(default_factory=list)
+    kwargs: Dict[str, Any] = field(default_factory=dict)
 
 
 class ConcurrentTaskRunner(Generic[T]):
@@ -86,7 +87,7 @@ class ConcurrentTaskRunner(Generic[T]):
         )
         with runner_pool:
             return {
-                executable.alias: runner_pool.submit(executable.func, *executable.args)
+                executable.alias: runner_pool.submit(executable.func, *executable.args, **executable.kwargs)
                 for executable in self._func_list
             }
 
