@@ -68,9 +68,9 @@ def mock_func(a: float, b: str, c: bool) -> Dict:
             # however since time.sleep effectively blocks the main thread if using ThreadPoolExecutor, subsequent submissions will delay each other
             # thus we should expect at most 0.5s + small time to get results of each future.
             [
-                Executable[Dict](mock_func, [0.1, "test", True], "case1"),
-                Executable[Dict](mock_func, [0.3, "test1", True], "case2"),
-                Executable[Dict](mock_func, [0.5, "test2", False], "case3"),
+                Executable[Dict](func=mock_func, args=[0.1, "test", True], alias="case1"),
+                Executable[Dict](func=mock_func, args=[0.3, "test1", True], alias="case2"),
+                Executable[Dict](func=mock_func, args=[0.5, "test2", False], alias="case3"),
             ],
             3,
             False,
@@ -85,9 +85,9 @@ def mock_func(a: float, b: str, c: bool) -> Dict:
         # Expected to see 1s + 2s + 3s + result process time ~ slightly above 6s
         (
             [
-                Executable[Dict](mock_func, [1, "test", True], "case1"),
-                Executable[Dict](mock_func, [2, "test1", True], "case2"),
-                Executable[Dict](mock_func, [3, "test2", False], "case3"),
+                Executable[Dict](func=mock_func, args=[1, "test", True], alias="case1"),
+                Executable[Dict](func=mock_func, args=[2, "test1", True], alias="case2"),
+                Executable[Dict](func=mock_func, args=[3, "test2", False], alias="case3"),
             ],
             1,
             False,
@@ -102,9 +102,26 @@ def mock_func(a: float, b: str, c: bool) -> Dict:
         # Same as the second test case, but now we use ProcessPoolExecutor, so we should expect 3s + process start time overhead
         (
             [
-                Executable[Dict](mock_func, [1, "test", True], "case1"),
-                Executable[Dict](mock_func, [2, "test1", True], "case2"),
-                Executable[Dict](mock_func, [3, "test2", False], "case3"),
+                Executable[Dict](func=mock_func, args=[1, "test", True], alias="case1"),
+                Executable[Dict](func=mock_func, args=[2, "test1", True], alias="case2"),
+                Executable[Dict](func=mock_func, args=[3, "test2", False], alias="case3"),
+            ],
+            3,
+            True,
+            {
+                "case1": {"a": 1, "b": "test", "c": True},
+                "case2": {"a": 2, "b": "test1", "c": True},
+                "case3": {"a": 3, "b": "test2", "c": False},
+            },
+            4,
+        ),
+        # Runs 3 processes for 3 functions
+        # Same as the third test case, but using kwargs instead of args. Exact same result expected
+        (
+            [
+                Executable[Dict](func=mock_func, kwargs={"a": 1, "b": "test", "c": True}, alias="case1"),
+                Executable[Dict](func=mock_func, kwargs={"a": 2, "b": "test1", "c": True}, alias="case2"),
+                Executable[Dict](func=mock_func, kwargs={"a": 3, "b": "test2", "c": False}, alias="case3"),
             ],
             3,
             True,
