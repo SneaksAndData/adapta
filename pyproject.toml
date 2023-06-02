@@ -12,7 +12,7 @@ repository = 'https://github.com/SneaksAndData/adapta'
 python = ">=3.9, <3.12"
 requests = "^2.26"
 backoff = "^2.2"
-cryptography = "~36.0"
+cryptography = ">=36.0,<41.1"
 pandas = { version = ">=1.5,^2.0.0", extras = ["performance"] }
 pyarrow = ">=7.0"
 dataclasses-json = "~0.5.7"
@@ -83,7 +83,7 @@ pytest = "^7.1"
 pytest-mock = "~3.6.1"
 pytest-cov = "~2.12"
 pylint = "^2.12"
-cryptography = "~36.0"
+cryptography = ">=36.0,<41.1"
 black = "^22"
 
 [tool.black]
