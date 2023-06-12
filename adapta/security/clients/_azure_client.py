@@ -162,7 +162,7 @@ class AzureClient(AuthenticationClient):
             if not options and f"PROTEUS__{account_name.upper()}_AZURE_STORAGE_ACCOUNT_KEY" in os.environ:
                 return AzureBlobFileSystem(
                     account_name=account_name,
-                    account_key=options[f"PROTEUS__{account_name.upper()}_AZURE_STORAGE_ACCOUNT_KEY"],
+                    account_key=os.getenv(f"PROTEUS__{account_name.upper()}_AZURE_STORAGE_ACCOUNT_KEY"),
                 )
 
             if not options and ("AZURE_CLIENT_SECRET" in os.environ or "PROTEUS__AZURE_CLIENT_SECRET" in os.environ):
