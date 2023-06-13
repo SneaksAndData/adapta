@@ -159,7 +159,7 @@ def memory_limit(*, memory_limit_percentage: Optional[float] = None, memory_limi
 
 
 def adapt(
-    df: pandas.DataFrame,
+    dataframe: pandas.DataFrame,
     column_map: Dict[str, str],
     default_values: Optional[Dict[str, Union[str, int, float]]] = None,
     drop_missing: bool = True,
@@ -167,7 +167,7 @@ def adapt(
     """
     Adapts a dataframe from one nomenclature to another. Original dataframe is not mutated.
 
-    :param df: Dataframe to be adapted.
+    :param dataframe: Dataframe to be adapted.
     :param column_map: A dictionary mapping old column names to new.
     :param default_values: If a column is not present in the dataframe
     a default value mapping can be given, by mapping a column name it a value.
@@ -176,9 +176,9 @@ def adapt(
     """
     default_values = {} if default_values is None else default_values
     # Only columns in the map is adapted
-    kept_columns = list(set(column_map.keys()) & set(df.columns)) if drop_missing else df.columns
-    df = df[kept_columns].rename(columns=column_map, errors="ignore")
+    kept_columns = list(set(column_map.keys()) & set(dataframe.columns)) if drop_missing else dataframe.columns
+    dataframe = dataframe[kept_columns].rename(columns=column_map, errors="ignore")
     # Only use default values for columns not present in the dataframe
-    default_values = {k: v for (k, v) in default_values.items() if k not in df.columns}
-    df[list(default_values.keys())] = list(default_values.values())
-    return df
+    default_values = {k: v for (k, v) in default_values.items() if k not in dataframe.columns}
+    dataframe[list(default_values.keys())] = list(default_values.values())
+    return dataframe
