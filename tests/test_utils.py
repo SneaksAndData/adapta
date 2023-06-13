@@ -235,13 +235,13 @@ def test_data_adapter(drop_missing: bool):
     :param drop_missing: If columns missing from the mapping
     dictionary should be dropped.
     """
-    df = pandas.DataFrame(data={"A": [1, 2, 3], "B": [4, 5, 6]})
+    data = pandas.DataFrame(data={"A": [1, 2, 3], "B": [4, 5, 6]})
 
     column_map = {"A": "C"}
 
     default_values = {"C": 9, "D": 7}
 
-    result = adapt(df, column_map, default_values, drop_missing=drop_missing)
+    result = adapt(data, column_map, default_values, drop_missing=drop_missing)
 
     assert len(result) == 3
     assert len(result.columns) == 2 if drop_missing else 3
