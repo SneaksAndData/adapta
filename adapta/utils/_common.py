@@ -22,8 +22,9 @@ import sys
 import time
 from collections import namedtuple
 from functools import partial
-from typing import List, Optional, Dict, Any, Tuple
+from typing import List, Optional, Dict, Any, Tuple, Union
 
+import pandas
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3 import Retry
@@ -155,3 +156,29 @@ def memory_limit(*, memory_limit_percentage: Optional[float] = None, memory_limi
                 raise ValueError("Specify either memory_limit_percentage or memory_limit_bytes")
         finally:
             resource.setrlimit(resource.RLIMIT_AS, (total_mem_bytes, total_mem_bytes))
+
+
+def adapt(
+    df: pandas.DataFrame,
+    column_map: Dict[str, str],
+    default_values: Optional[Dict[str, Union[str, int, float]]] = None,
+    drop_missing: bool = True,
+) -> pandas.DataFrame:
+    """
+    Adapts a dataframe from one nomenclature to another. Original dataframe is not mutated.
+
+    :param df: Dataframe to be adapted.
+    :param column_map: A dictionary mapping old column names to new.
+    :param default_values: If a column is not present in the dataframe
+    a default value mapping can be given, by mapping a column name it a value.
+    :param drop_missing: A boolean value to control if columns should be
+    dropped if the columns are present in the dataframe but not the column_map.
+    """
+    default_values = {} if default_values is None else default_values
+    # Only columns in the map is adapted
+    kept_columns = list(set(column_map.keys()) & set(df.columns)) if drop_missing else df.columns
+    df = df[kept_columns].rename(columns=column_map, errors="ignore")
+    # Only use default values for columns not present in the dataframe
+    default_values = {k: v for (k, v) in default_values.items() if k not in df.columns}
+    df[list(default_values.keys())] = list(default_values.values())
+    return df
