@@ -167,6 +167,7 @@ class AzureClient(AuthenticationClient):
 
             if not options and ("AZURE_CLIENT_SECRET" in os.environ or "PROTEUS__AZURE_CLIENT_SECRET" in os.environ):
                 return AzureBlobFileSystem(
+                    account_name=account_name,
                     client_id=os.getenv("AZURE_CLIENT_ID") or os.getenv("PROTEUS__AZURE_CLIENT_ID"),
                     client_secret=os.getenv("AZURE_CLIENT_SECRET") or os.getenv("PROTEUS__AZURE_CLIENT_SECRET"),
                     tenant_id=os.getenv("AZURE_TENANT_ID") or os.getenv("PROTEUS__AZURE_TENANT_ID"),
@@ -180,6 +181,7 @@ class AzureClient(AuthenticationClient):
 
             if options.get("AZURE_CLIENT_SECRET", None):
                 return AzureBlobFileSystem(
+                    account_name=account_name,
                     client_id=options["AZURE_CLIENT_ID"],
                     client_secret=options["AZURE_CLIENT_SECRET"],
                     tenant_id=options["AZURE_TENANT_ID"],
