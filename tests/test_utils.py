@@ -21,7 +21,7 @@ from typing import List, Any, Dict, Optional
 import pandas
 import pytest
 
-from adapta.utils import doze, operation_time, chunk_list, memory_limit, adapt
+from adapta.utils import doze, operation_time, chunk_list, memory_limit, map_column_names
 from adapta.utils.concurrent_task_runner import Executable, ConcurrentTaskRunner
 
 
@@ -227,7 +227,7 @@ def test_memory_limit_error(limit_bytes: Optional[int], limit_percentage: Option
 @pytest.mark.parametrize("drop_missing", [True, False])
 def test_data_adapter(drop_missing: bool):
     """
-    Testing that generic adaption of columns work.
+    Testing that generic mapping of columns work.
     Test checks if column names are mapped, default columns
     don't overwrite existing columns and are added if a
     column is missing.
@@ -241,7 +241,7 @@ def test_data_adapter(drop_missing: bool):
 
     default_values = {"C": 9, "D": 7}
 
-    result = adapt(data, column_map, default_values, drop_missing=drop_missing)
+    result = map_column_names(data, column_map, default_values, drop_missing=drop_missing)
 
     assert len(result) == 3
     assert len(result.columns) == 2 if drop_missing else 3
