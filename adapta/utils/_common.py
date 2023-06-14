@@ -174,7 +174,7 @@ def map_column_names(
     :param drop_missing: A boolean value to control if columns should be
     dropped if the columns are present in the dataframe but not the column_map.
     """
-    default_values = {} if default_values is None else default_values
+    default_values = default_values or {}
     # Only columns in the map are mapped
     kept_columns = list(set(column_map.keys()) & set(dataframe.columns)) if drop_missing else dataframe.columns
     dataframe = dataframe[kept_columns].rename(columns=column_map, errors="ignore")
