@@ -9,11 +9,11 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.event.issue.pull_request && github.event.comment.body == 'create_package' && github.event.issue.state == 'open' }}
     steps:
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v4
         with:
           python-version: '3.9.x'
           architecture: 'x64'
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           ref: refs/pull/${{github.event.issue.number}}/merge
           fetch-depth: 0
