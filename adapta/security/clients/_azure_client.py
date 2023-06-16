@@ -156,8 +156,22 @@ class AzureClient(AuthenticationClient):
 
     def get_pyarrow_filesystem(self, path: DataPath, connection_options: Optional[Dict[str, str]] = None) -> FileSystem:
         def select_file_system(options: Optional[Dict[str, str]], account_name: str) -> AzureBlobFileSystem:
-            if not options:
+            if not options and "PROTEUS__USE_AZURE_CREDENTIAL" in os.environ:
                 return AzureBlobFileSystem(account_name=account_name, anon=False)
+
+            if not options and f"PROTEUS__{account_name.upper()}_AZURE_STORAGE_ACCOUNT_KEY" in os.environ:
+                return AzureBlobFileSystem(
+                    account_name=account_name,
+                    account_key=os.getenv(f"PROTEUS__{account_name.upper()}_AZURE_STORAGE_ACCOUNT_KEY"),
+                )
+
+            if not options and ("AZURE_CLIENT_SECRET" in os.environ or "PROTEUS__AZURE_CLIENT_SECRET" in os.environ):
+                return AzureBlobFileSystem(
+                    account_name=account_name,
+                    client_id=os.getenv("AZURE_CLIENT_ID") or os.getenv("PROTEUS__AZURE_CLIENT_ID"),
+                    client_secret=os.getenv("AZURE_CLIENT_SECRET") or os.getenv("PROTEUS__AZURE_CLIENT_SECRET"),
+                    tenant_id=os.getenv("AZURE_TENANT_ID") or os.getenv("PROTEUS__AZURE_TENANT_ID"),
+                )
 
             if options.get("AZURE_STORAGE_ACCOUNT_KEY", None):
                 return AzureBlobFileSystem(
@@ -167,6 +181,7 @@ class AzureClient(AuthenticationClient):
 
             if options.get("AZURE_CLIENT_SECRET", None):
                 return AzureBlobFileSystem(
+                    account_name=account_name,
                     client_id=options["AZURE_CLIENT_ID"],
                     client_secret=options["AZURE_CLIENT_SECRET"],
                     tenant_id=options["AZURE_TENANT_ID"],

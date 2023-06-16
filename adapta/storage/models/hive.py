@@ -144,11 +144,11 @@ class HivePath(DataPath):
                 assert (
                     len(tbl_info) == 1
                 ), "Hive query for TBLS table returned more than 1 row. Hive Metastore database schema version must be >=2.*,<=3.*"
-                tbl_id, tbl_type = tbl_info[0]["TBL_ID"], tbl_info[0]["TBL_TYPE"]
+                sd_id, tbl_type = tbl_info[0]["SD_ID"], tbl_info[0]["TBL_TYPE"]
 
-                if tbl_type == "EXTERNAL":
+                if tbl_type == "EXTERNAL_TABLE":
                     path = hive_db_client.query(
-                        f"select * from SERDE_PARAMS where SERDE_ID = {tbl_id} and PARAM_KEY = 'path'"
+                        f"select * from SERDE_PARAMS where SERDE_ID = {sd_id} and PARAM_KEY = 'path'"
                     ).to_dict(orient="records")
                     assert (
                         len(path) == 1

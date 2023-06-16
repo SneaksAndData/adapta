@@ -18,9 +18,10 @@ import sys
 import time
 from typing import List, Any, Dict, Optional
 
+import pandas
 import pytest
 
-from adapta.utils import doze, operation_time, chunk_list, memory_limit
+from adapta.utils import doze, operation_time, chunk_list, memory_limit, map_column_names
 from adapta.utils.concurrent_task_runner import Executable, ConcurrentTaskRunner
 
 
@@ -68,9 +69,9 @@ def mock_func(a: float, b: str, c: bool) -> Dict:
             # however since time.sleep effectively blocks the main thread if using ThreadPoolExecutor, subsequent submissions will delay each other
             # thus we should expect at most 0.5s + small time to get results of each future.
             [
-                Executable[Dict](mock_func, [0.1, "test", True], "case1"),
-                Executable[Dict](mock_func, [0.3, "test1", True], "case2"),
-                Executable[Dict](mock_func, [0.5, "test2", False], "case3"),
+                Executable[Dict](func=mock_func, args=[0.1, "test", True], alias="case1"),
+                Executable[Dict](func=mock_func, args=[0.3, "test1", True], alias="case2"),
+                Executable[Dict](func=mock_func, args=[0.5, "test2", False], alias="case3"),
             ],
             3,
             False,
@@ -85,9 +86,9 @@ def mock_func(a: float, b: str, c: bool) -> Dict:
         # Expected to see 1s + 2s + 3s + result process time ~ slightly above 6s
         (
             [
-                Executable[Dict](mock_func, [1, "test", True], "case1"),
-                Executable[Dict](mock_func, [2, "test1", True], "case2"),
-                Executable[Dict](mock_func, [3, "test2", False], "case3"),
+                Executable[Dict](func=mock_func, args=[1, "test", True], alias="case1"),
+                Executable[Dict](func=mock_func, args=[2, "test1", True], alias="case2"),
+                Executable[Dict](func=mock_func, args=[3, "test2", False], alias="case3"),
             ],
             1,
             False,
@@ -102,9 +103,26 @@ def mock_func(a: float, b: str, c: bool) -> Dict:
         # Same as the second test case, but now we use ProcessPoolExecutor, so we should expect 3s + process start time overhead
         (
             [
-                Executable[Dict](mock_func, [1, "test", True], "case1"),
-                Executable[Dict](mock_func, [2, "test1", True], "case2"),
-                Executable[Dict](mock_func, [3, "test2", False], "case3"),
+                Executable[Dict](func=mock_func, args=[1, "test", True], alias="case1"),
+                Executable[Dict](func=mock_func, args=[2, "test1", True], alias="case2"),
+                Executable[Dict](func=mock_func, args=[3, "test2", False], alias="case3"),
+            ],
+            3,
+            True,
+            {
+                "case1": {"a": 1, "b": "test", "c": True},
+                "case2": {"a": 2, "b": "test1", "c": True},
+                "case3": {"a": 3, "b": "test2", "c": False},
+            },
+            4,
+        ),
+        # Runs 3 processes for 3 functions
+        # Same as the third test case, but using kwargs instead of args. Exact same result expected
+        (
+            [
+                Executable[Dict](func=mock_func, kwargs={"a": 1, "b": "test", "c": True}, alias="case1"),
+                Executable[Dict](func=mock_func, kwargs={"a": 2, "b": "test1", "c": True}, alias="case2"),
+                Executable[Dict](func=mock_func, kwargs={"a": 3, "b": "test2", "c": False}, alias="case3"),
             ],
             3,
             True,
@@ -204,3 +222,35 @@ def test_memory_limit_error(limit_bytes: Optional[int], limit_percentage: Option
     with pytest.raises(MemoryError):
         with memory_limit(memory_limit_bytes=limit_bytes, memory_limit_percentage=limit_percentage):
             test_str *= num_iterations
+
+
+@pytest.mark.parametrize("drop_missing", [True, False])
+def test_data_adapter(drop_missing: bool):
+    """
+    Testing that generic mapping of columns work.
+    Test checks if column names are mapped, default columns
+    don't overwrite existing columns and are added if a
+    column is missing.
+
+    :param drop_missing: If columns missing from the mapping
+    dictionary should be dropped.
+    """
+    data = pandas.DataFrame(data={"A": [1, 2, 3], "B": [4, 5, 6]})
+
+    column_map = {"A": "C"}
+
+    default_values = {"C": 9, "D": 7}
+
+    result = map_column_names(data, column_map, default_values, drop_missing=drop_missing)
+
+    assert len(result) == 3
+    assert len(result.columns) == 2 if drop_missing else 3
+
+    assert "A" not in result.columns
+    assert ("B" not in result.columns) if drop_missing else ("B" in result.columns)
+    assert "C" in result.columns
+    assert "D" in result.columns
+
+    assert (result["C"] != 7).all()
+    assert (result["C"] != 9).all()
+    assert (result["D"] == 7).all()
