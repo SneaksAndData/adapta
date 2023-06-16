@@ -115,7 +115,7 @@ def test_write_append(sqlite: OdbcClient):
 
         result = sqlite.query("SELECT * FROM main.sku")
 
-    assert result.equals(sku_data().append(sku_data()).reset_index(drop=True))
+    assert result.equals(pandas.concat([sku_data(), sku_data()]).reset_index(drop=True))
 
 
 def test_write_replace(sqlite: OdbcClient):

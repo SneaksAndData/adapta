@@ -17,7 +17,7 @@ from unittest.mock import patch, MagicMock, mock_open, Mock
 
 import pytest
 
-from adapta.security.clients import HashicorpVaultClient, HashicorpVaultOidcClient
+from adapta.security.clients import HashicorpVaultOidcClient, HashicorpVaultTokenClient
 from adapta.security.clients.hashicorp_vault.kubernetes_client import (
     HashicorpVaultKubernetesClient,
 )
@@ -30,14 +30,23 @@ TEST_VAULT_ADDRESS = "https://localhost:8201"
 
 @pytest.mark.skip("Uses desktop browser to login, should be only run locally")
 def test_oidc_credentials():
-    client = HashicorpVaultClient(TEST_VAULT_ADDRESS)
+    client = HashicorpVaultOidcClient(TEST_VAULT_ADDRESS)
     credentials = client.get_credentials()
     assert credentials is not None
 
 
 @pytest.mark.skip("Uses desktop browser to login, should be only run locally")
 def test_oidc_auth():
-    client = HashicorpSecretStorageClient(base_client=HashicorpVaultClient(TEST_VAULT_ADDRESS))
+    client = HashicorpSecretStorageClient(base_client=HashicorpVaultOidcClient(TEST_VAULT_ADDRESS))
+    secret = client.read_secret("secret", "test/secret/with/path")
+    assert secret["key"] == "value"
+
+
+@pytest.mark.skip("Uses desktop browser to login, should be only run locally")
+def test_token_auth():
+    oidc_client = HashicorpVaultOidcClient(TEST_VAULT_ADDRESS)
+    token_client = HashicorpVaultTokenClient(TEST_VAULT_ADDRESS, oidc_client.get_access_token())
+    client = HashicorpSecretStorageClient(base_client=token_client)
     secret = client.read_secret("secret", "test/secret/with/path")
     assert secret["key"] == "value"
 
