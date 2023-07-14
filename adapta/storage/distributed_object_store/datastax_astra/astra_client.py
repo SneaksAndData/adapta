@@ -23,25 +23,31 @@ import shutil
 import tempfile
 import uuid
 from dataclasses import fields
-from typing import Optional, Dict, TypeVar, Callable, Iterable, Any, Type, List
+from typing import Optional, Dict, TypeVar, Callable, Any, Type, List
 
-from _socket import IPPROTO_TCP, TCP_NODELAY, TIPC_CONN_TIMEOUT, TCP_USER_TIMEOUT
+from _socket import IPPROTO_TCP, TCP_NODELAY, TCP_USER_TIMEOUT
 
 import pandas
 from cassandra import ConsistencyLevel
 from cassandra.auth import PlainTextAuthProvider
-from cassandra.cluster import Cluster, Session, RetryPolicy, ExecutionProfile, EXEC_PROFILE_DEFAULT
+from cassandra.cluster import (  # pylint: disable=E0611
+    Cluster,
+    Session,
+    RetryPolicy,
+    ExecutionProfile,
+    EXEC_PROFILE_DEFAULT,
+)
 from cassandra.cqlengine import columns
 from cassandra.cqlengine.columns import Column
 from cassandra.cqlengine.connection import set_session
 from cassandra.cqlengine.models import Model
 from cassandra.cqlengine.named import NamedTable
 from cassandra.policies import ExponentialReconnectionPolicy
-from cassandra.query import dict_factory
+from cassandra.query import dict_factory  # pylint: disable=E0611
 
 from adapta import __version__
 
-TModel = TypeVar("TModel")
+TModel = TypeVar("TModel")  # pylint: disable=C0103
 
 
 #  Copyright (c) 2023. ECCO Sneaks & Data
@@ -167,6 +173,10 @@ class AstraClient:
 
     @staticmethod
     def model_dataclass(value: Any, primary_keys: List[str]):
+        """
+        Maps a Python dataclass to Cassandra model.
+        """
+
         def map_to_cassandra(python_type: Type, is_primary_key: bool) -> Column:
             if python_type is str:
                 return columns.Text(partition_key=is_primary_key)
@@ -176,6 +186,8 @@ class AstraClient:
                 return columns.Double(partition_key=is_primary_key)
             if python_type is List[str]:
                 return columns.List(partition_key=False, value_type=columns.Text)
+
+            raise TypeError(f"Unsupported type: {python_type}")
 
         models_attributes: Dict[str, Column] = {
             field.name: map_to_cassandra(field.type, field.name in primary_keys) for field in fields(value)
