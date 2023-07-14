@@ -15,3 +15,7 @@ Please refer to the [module](adapta/storage/delta_lake/README.md) documentation 
 ## Secret Storages
 
 Please refer to the [module](adapta/storage/secrets/README.md) documentation for examples.
+
+## NoSql
+
+Please refer to the [module](adapta/storage/distributed_object_store/datastax_astra/README.md) documentation for examples.
