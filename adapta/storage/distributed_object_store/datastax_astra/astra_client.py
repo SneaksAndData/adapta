@@ -22,7 +22,7 @@ import os
 import shutil
 import tempfile
 import uuid
-from dataclasses import fields
+from dataclasses import fields, is_dataclass
 from typing import Optional, Dict, TypeVar, Callable, Any, Type, List
 
 from _socket import IPPROTO_TCP, TCP_NODELAY, TCP_USER_TIMEOUT
@@ -172,24 +172,27 @@ class AstraClient:
         return pandas.DataFrame(self._session.execute(query))
 
     @staticmethod
-    def model_dataclass(value: Any, primary_keys: List[str]):
+    def model_dataclass(table_name: str, value: Type, primary_keys: List[str]):
         """
         Maps a Python dataclass to Cassandra model.
         """
 
-        def map_to_cassandra(python_type: Type, is_primary_key: bool) -> Column:
+        def map_to_cassandra(python_type: Type, db_field: str, is_primary_key: bool) -> Column:
             if python_type is str:
-                return columns.Text(partition_key=is_primary_key)
+                return columns.Text(partition_key=is_primary_key, db_field=db_field)
             if python_type is int:
-                return columns.Integer(partition_key=is_primary_key)
+                return columns.Integer(partition_key=is_primary_key, db_field=db_field)
             if python_type is float:
-                return columns.Double(partition_key=is_primary_key)
+                return columns.Double(partition_key=is_primary_key, db_field=db_field)
             if python_type is List[str]:
-                return columns.List(partition_key=False, value_type=columns.Text)
+                return columns.List(partition_key=False, value_type=columns.Text, db_field=db_field)
 
             raise TypeError(f"Unsupported type: {python_type}")
 
+        assert is_dataclass(value)
+
         models_attributes: Dict[str, Column] = {
-            field.name: map_to_cassandra(field.type, field.name in primary_keys) for field in fields(value)
+            field.name: map_to_cassandra(field.type, field.name, field.name in primary_keys) for field in fields(value)
         }
-        return type(f"{type(value)}Model", (Model,), models_attributes)
+
+        return type(table_name, (Model,), models_attributes)
