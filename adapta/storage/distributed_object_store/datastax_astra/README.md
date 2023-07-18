@@ -31,7 +31,7 @@ class TestEntity:
 
 with AstraClient(
         client_name='test', 
-        keyspace='ks', 
+        keyspace='tmp', 
         secure_connect_bundle_bytes='base64string', 
         client_id = 'Astra Token client_id', 
         client_secret = 'Astra Token client_secret'
@@ -40,7 +40,7 @@ with AstraClient(
   print(single_entity)
   # {'col_a': 'something', 'col_b': 'else'}
 
-  multiple_entities = ac.get_entities_raw("select * from ks.test where col_a = 'something3'")
+  multiple_entities = ac.get_entities_raw("select * from tmp.test where col_a = 'something3'")
   print(multiple_entities)
   #         col_a     col_b
   # 0  something  ordinal
