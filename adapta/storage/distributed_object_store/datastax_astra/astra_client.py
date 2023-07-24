@@ -80,8 +80,8 @@ class AstraClient:
         client_secret: Optional[str] = None,
         reconnect_base_delay_ms=1000,
         reconnect_max_delay_ms=5000,
-        socket_connection_timeout=5000,
-        socket_read_timeout=180000,
+        socket_connection_timeout_ms=5000,
+        socket_read_timeout_ms=180000,
     ):
         self._secure_connect_bundle_bytes = secure_connect_bundle_bytes or os.getenv("PROTEUS__ASTRA_BUNDLE_BYTES")
         self._client_id = client_id or os.getenv("PROTEUS__ASTRA_CLIENT_ID")
@@ -92,9 +92,9 @@ class AstraClient:
         self._session: Optional[Session] = None
         self._reconnect_base_delay_ms = reconnect_base_delay_ms
         self._reconnect_max_delay_ms = reconnect_max_delay_ms
-        self._socket_connection_timeout = socket_connection_timeout
-        self._socket_read_timeout = socket_read_timeout
-        self._query_timeout = socket_read_timeout
+        self._socket_connection_timeout = socket_connection_timeout_ms
+        self._socket_read_timeout = socket_read_timeout_ms
+        self._query_timeout = socket_read_timeout_ms
         self._snake_pattern = re.compile(r"(?<!^)(?=[A-Z])")
 
     def __enter__(self) -> "AstraClient":
