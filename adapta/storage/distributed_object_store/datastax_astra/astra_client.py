@@ -179,7 +179,7 @@ class AstraClient:
 
     def filter_entities(
         self,
-        model_class: TModel,
+        model_class: Type[TModel],
         key_column_filter_values: List[Dict[str, str]],
         table_name: Optional[str] = None,
         primary_keys: Optional[List[str]] = None,
@@ -233,7 +233,7 @@ class AstraClient:
 
     def _model_dataclass(
         self,
-        value: Type,
+        value: Type[TModel],
         table_name: Optional[str] = None,
         primary_keys: Optional[List[str]] = None,
         partition_keys: Optional[List[str]] = None,
