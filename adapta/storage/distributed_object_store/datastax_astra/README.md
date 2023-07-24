@@ -2,14 +2,14 @@
 
 Create a table in Astra and insert some rows:
 ```cassandraql
-create table tmp.test(
+create table tmp.test_entity(
     col_a text PRIMARY KEY,
     col_b text
 );
 
-insert into tmp.test (col_a, col_b) VALUES ('something1', 'else');
-insert into tmp.test (col_a, col_b) VALUES ('something2', 'magic');
-insert into tmp.test (col_a, col_b) VALUES ('something3', 'ordinal');
+insert into tmp.test_entity (col_a, col_b) VALUES ('something1', 'else');
+insert into tmp.test_entity (col_a, col_b) VALUES ('something2', 'magic');
+insert into tmp.test_entity (col_a, col_b) VALUES ('something3', 'ordinal');
 ```
 
 Instantiate a new client, map dataclass (model) to Cassandra model and query it:
@@ -17,16 +17,17 @@ Instantiate a new client, map dataclass (model) to Cassandra model and query it:
 ```python
 from adapta.storage.distributed_object_store.datastax_astra.astra_client import AstraClient
 
-from cassandra.cqlengine.models import Model
-
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import pandas
 
 @dataclass
 class TestEntity:
-    colA: str
-    colB: str
+    col_a: str = field(metadata={
+        "is_primary_key": True,
+        "is_partition_key": True
+    })
+    col_b: str
 
 
 with AstraClient(
@@ -36,17 +37,16 @@ with AstraClient(
         client_id = 'Astra Token client_id', 
         client_secret = 'Astra Token client_secret'
 ) as ac:
-  single_entity = ac.get_entity('test')
+  single_entity = ac.get_entity('test_entity')
   print(single_entity)
   # {'col_a': 'something', 'col_b': 'else'}
 
-  multiple_entities = ac.get_entities_raw("select * from tmp.test where col_a = 'something3'")
+  multiple_entities = ac.get_entities_raw("select * from tmp.test_entity where col_a = 'something3'")
   print(multiple_entities)
   #         col_a     col_b
   # 0  something  ordinal
 
-  model_class: Model = AstraClient.model_dataclass('test', TestEntity, ['col_a'])
-  print(pandas.DataFrame([dict(v.items()) for v in list(model_class.filter(col_a='something1'))]))
+  print(ac.filter_entities(TestEntity, key_column_filter_values=[{"col_a": 'something1'}]))
   #         col_a col_b
   # 0  something1  else
 ```
