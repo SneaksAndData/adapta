@@ -25,7 +25,6 @@ import shutil
 import tempfile
 import uuid
 from dataclasses import fields, is_dataclass
-from types import NoneType
 from typing import Optional, Dict, TypeVar, Callable, Type, List
 
 from _socket import IPPROTO_TCP, TCP_NODELAY, TCP_USER_TIMEOUT
@@ -250,7 +249,7 @@ class AstraClient:
         def map_to_cassandra(  # pylint: disable=R0911
             python_type: Type, db_field: str, is_primary_key: bool, is_partition_key: bool
         ) -> Column:
-            if python_type is NoneType:
+            if python_type is type(None):
                 raise TypeError("NoneType cannot be mapped to any existing table column types")
             if python_type is bool:
                 return columns.Boolean(primary_key=is_primary_key, partition_key=is_partition_key, db_field=db_field)
