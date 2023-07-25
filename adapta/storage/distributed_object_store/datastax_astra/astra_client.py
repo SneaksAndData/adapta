@@ -293,7 +293,7 @@ class AstraClient:
             field.name for field in fields(value) if field.metadata.get("is_partition_key", False)
         ]
 
-        table_name = table_name or self._snake_pattern.sub("_", table_name).lower()
+        table_name = table_name or self._snake_pattern.sub("_", value.__name__).lower()
 
         models_attributes: Dict[str, Column] = {
             field.name: map_to_cassandra(
