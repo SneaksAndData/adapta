@@ -19,13 +19,15 @@
 
 import base64
 import datetime
+import enum
 import os
 import re
 import shutil
 import tempfile
+import typing
 import uuid
 from dataclasses import fields, is_dataclass
-from typing import Optional, Dict, TypeVar, Callable, Type, List, Any
+from typing import Optional, Dict, TypeVar, Callable, Type, List, Any, get_origin
 
 from _socket import IPPROTO_TCP, TCP_NODELAY, TCP_USER_TIMEOUT
 
@@ -268,43 +270,75 @@ class AstraClient:
         :param: select_columns: An optional list of columns to select from the entity. If omitted, all columns will be selected.
         """
 
-        def map_to_cassandra(  # pylint: disable=R0911
-            python_type: Type, db_field: str, is_primary_key: bool, is_partition_key: bool
-        ) -> Column:
+        def map_to_column(  # pylint: disable=R0911
+            python_type: Type,
+        ) -> typing.Union[
+            typing.Tuple[
+                Type[columns.List],
+            ],
+            typing.Tuple[
+                Type[columns.Map],
+            ],
+            typing.Tuple[
+                Type[Column],
+            ],
+            typing.Tuple[Type[Column], Type[Column]],
+            typing.Tuple[Type[Column], Type[Column], Type[Column]],
+        ]:
             if python_type is type(None):
                 raise TypeError("NoneType cannot be mapped to any existing table column types")
             if python_type is bool:
-                return columns.Boolean(primary_key=is_primary_key, partition_key=is_partition_key, db_field=db_field)
+                return (columns.Boolean,)
             if python_type is str:
-                return columns.Text(primary_key=is_primary_key, partition_key=is_partition_key, db_field=db_field)
+                return (columns.Text,)
             if python_type is bytes:
-                return columns.Blob(primary_key=is_primary_key, partition_key=is_partition_key, db_field=db_field)
+                return (columns.Blob,)
             if python_type is datetime.datetime:
-                return columns.DateTime(primary_key=is_primary_key, partition_key=is_partition_key, db_field=db_field)
+                return (columns.DateTime,)
             if python_type is int:
-                return columns.Integer(primary_key=is_primary_key, partition_key=is_partition_key, db_field=db_field)
+                return (columns.Integer,)
             if python_type is float:
-                return columns.Double(primary_key=is_primary_key, partition_key=is_partition_key, db_field=db_field)
-            if python_type is List[str]:
-                return columns.List(primary_key=False, partition_key=False, value_type=columns.Text, db_field=db_field)
-            if python_type is List[int]:
-                return columns.List(
-                    primary_key=False, partition_key=False, value_type=columns.Integer, db_field=db_field
+                return (columns.Double,)
+            if python_type is enum.EnumType:  # assume all enums are strings - for now
+                return (columns.Text,)
+            if get_origin(python_type) == list:
+                return (
+                    columns.List,
+                    map_to_column(typing.get_args(python_type)[0])[0],
                 )
-            if python_type is List[float]:
-                return columns.List(
-                    primary_key=False, partition_key=False, value_type=columns.Double, db_field=db_field
-                )
-            if python_type is Dict[str, str]:
-                return columns.Map(
-                    primary_key=False,
-                    partition_key=False,
-                    key_type=columns.Text,
-                    value_type=columns.Text,
-                    db_field=db_field,
+            if get_origin(python_type) == dict:
+                return (
+                    columns.Map,
+                    map_to_column(typing.get_args(python_type)[0])[0],
+                    map_to_column(typing.get_args(python_type)[1])[0],
                 )
 
+            if get_origin(python_type) == typing.Union:
+                return map_to_column(typing.get_args(python_type)[0])
+
             raise TypeError(f"Unsupported type: {python_type}")
+
+        def map_to_cassandra(python_type: Type, db_field: str, is_primary_key: bool, is_partition_key: bool) -> Column:
+            cassandra_types = map_to_column(python_type)
+            if len(cassandra_types) == 1:  # simple type
+                return cassandra_types[0](primary_key=is_primary_key, partition_key=is_partition_key, db_field=db_field)
+            if len(cassandra_types) == 2:  # list
+                return cassandra_types[0](
+                    primary_key=is_primary_key,
+                    partition_key=is_partition_key,
+                    db_field=db_field,
+                    value_type=cassandra_types[1],
+                )
+            if len(cassandra_types) == 3:  # dict
+                return cassandra_types[0](
+                    primary_key=is_primary_key,
+                    partition_key=is_partition_key,
+                    db_field=db_field,
+                    key_type=cassandra_types[1],
+                    value_type=cassandra_types[2],
+                )
+
+            raise TypeError(f"Unsupported type mapping: {cassandra_types}")
 
         assert is_dataclass(value)
 
