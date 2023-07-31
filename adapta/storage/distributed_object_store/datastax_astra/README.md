@@ -4,12 +4,13 @@ Create a table in Astra and insert some rows:
 ```cassandraql
 create table tmp.test_entity(
     col_a text PRIMARY KEY,
-    col_b text
+    col_b text,
+    col_c text
 );
 
-insert into tmp.test_entity (col_a, col_b) VALUES ('something1', 'else');
-insert into tmp.test_entity (col_a, col_b) VALUES ('something2', 'magic');
-insert into tmp.test_entity (col_a, col_b) VALUES ('something3', 'ordinal');
+insert into tmp.test_entity (col_a, col_b, col_c) VALUES ('something1', 'else', 'entirely');
+insert into tmp.test_entity (col_a, col_b, col_c) VALUES ('something2', 'magic', 'tomorrow');
+insert into tmp.test_entity (col_a, col_b, col_c) VALUES ('something3', 'ordinal', 'today');
 ```
 
 Instantiate a new client, map dataclass (model) to Cassandra model and query it:
@@ -19,8 +20,6 @@ from adapta.storage.distributed_object_store.datastax_astra.astra_client import 
 
 from dataclasses import dataclass, field
 
-import pandas
-
 @dataclass
 class TestEntity:
     col_a: str = field(metadata={
@@ -28,6 +27,7 @@ class TestEntity:
         "is_partition_key": True
     })
     col_b: str
+    col_c: str
 
 
 with AstraClient(
@@ -47,6 +47,10 @@ with AstraClient(
   # 0  something  ordinal
 
   print(ac.filter_entities(TestEntity, key_column_filter_values=[{"col_a": 'something1'}]))
-  #         col_a col_b
-  # 0  something1  else
+  #     col_a col_b     col_c
+  # 0  something1  else  entirely
+
+  print(ac.filter_entities(TestEntity, key_column_filter_values=[{"col_a": 'something1'}], select_columns=['col_c']))
+  #       col_c
+  # 0  entirely
 ```

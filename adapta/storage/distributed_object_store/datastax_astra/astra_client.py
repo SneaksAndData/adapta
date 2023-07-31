@@ -25,7 +25,7 @@ import shutil
 import tempfile
 import uuid
 from dataclasses import fields, is_dataclass
-from typing import Optional, Dict, TypeVar, Callable, Type, List
+from typing import Optional, Dict, TypeVar, Callable, Type, List, Any
 
 from _socket import IPPROTO_TCP, TCP_NODELAY, TCP_USER_TIMEOUT
 
@@ -181,6 +181,7 @@ class AstraClient:
         model_class: Type[TModel],
         key_column_filter_values: List[Dict[str, str]],
         table_name: Optional[str] = None,
+        select_columns: Optional[List[str]] = None,
         primary_keys: Optional[List[str]] = None,
         partition_keys: Optional[List[str]] = None,
         deduplicate=False,
@@ -201,21 +202,40 @@ class AstraClient:
         :param: model_class: A dataclass type that should be mapped to Astra Model.
         :param: key_column_filter_values: Primary key filters in a form of list of dictionaries of my_key: my_value. Multiple entries will result in multiple queries being run and concatenated
         :param: table_name: Optional Astra table name, if it cannot be inferred from class name by converting it to snake_case.
+        :param: select_columns: An optional list of columns to return with the query.
         :param: primary_keys: An optional list of columns that constitute a primary key, if it cannot be inferred from is_primary_key metadata on a dataclass field.
         :param: partition_keys: An optional list of columns that constitute a partition key, if it cannot be inferred from is_partition_key metadata on a dataclass field.
         param: deduplicate: Optionally deduplicate query result, for example when only the partition key part of a primary key is used to fetch results.
         """
+
+        def apply(model: Type[Model], key_column_filter: Dict[str, Any], columns_to_select: Optional[List[str]]):
+            if columns_to_select:
+                return model.filter(**key_column_filter).only(select_columns)
+
+            return model.filter(**key_column_filter)
+
         assert (
             self._session is not None
         ), "Please instantiate an AstraClient using with AstraClient(...) before calling this method"
 
-        model_class: Model = self._model_dataclass(model_class, table_name, primary_keys, partition_keys)
+        model_class: Type[Model] = self._model_dataclass(
+            value=model_class,
+            table_name=table_name,
+            primary_keys=primary_keys,
+            partition_keys=partition_keys,
+            select_columns=select_columns,
+        )
+
         result = pandas.concat(
             [
-                pandas.DataFrame([dict(v.items()) for v in list(model_class.filter(**key_column_filter))])
+                pandas.DataFrame([dict(v.items()) for v in list(apply(model_class, key_column_filter, select_columns))])
                 for key_column_filter in key_column_filter_values
             ]
         )
+
+        if select_columns:
+            filter_columns = {key for key_column_filter in key_column_filter_values for key in key_column_filter.keys()}
+            result = result.drop(columns=list(set(filter_columns) - set(select_columns)))
 
         if deduplicate:
             return result.drop_duplicates()
@@ -236,7 +256,8 @@ class AstraClient:
         table_name: Optional[str] = None,
         primary_keys: Optional[List[str]] = None,
         partition_keys: Optional[List[str]] = None,
-    ) -> Model:
+        select_columns: Optional[List[str]] = None,
+    ) -> Type[Model]:
         """
         Maps a Python dataclass to Cassandra model.
 
@@ -244,6 +265,7 @@ class AstraClient:
         :param: table_name: Astra table name, if it cannot be inferred from class name by converting it to snake_case.
         :param: primary_keys: An optional list of columns that constitute a primary key, if it cannot be inferred from is_primary_key metadata on a dataclass field.
         :param: partition_keys: An optional list of columns that constitute a partition key, if it cannot be inferred from is_partition_key metadata on a dataclass field.
+        :param: select_columns: An optional list of columns to select from the entity. If omitted, all columns will be selected.
         """
 
         def map_to_cassandra(  # pylint: disable=R0911
@@ -292,6 +314,15 @@ class AstraClient:
         partition_keys = partition_keys or [
             field.name for field in fields(value) if field.metadata.get("is_partition_key", False)
         ]
+        selected_fields = (
+            [
+                field
+                for field in fields(value)
+                if field.name in select_columns or field.name in primary_keys or field.name in partition_keys
+            ]
+            if select_columns
+            else fields(value)
+        )
 
         table_name = table_name or self._snake_pattern.sub("_", value.__name__).lower()
 
@@ -299,7 +330,7 @@ class AstraClient:
             field.name: map_to_cassandra(
                 field.type, field.name, field.name in primary_keys, field.name in partition_keys
             )
-            for field in fields(value)
+            for field in selected_fields
         }
 
         return type(table_name, (Model,), models_attributes)
