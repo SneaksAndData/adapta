@@ -378,3 +378,19 @@ class AstraClient:
         :param: option_value: Table option value to set.
         """
         self._session.execute(f"ALTER TABLE {self._keyspace}.{table_name} with {option_name}={option_value};")
+
+    def delete_entity(self, entity: TModel, table_name: Optional[str] = None) -> None:
+        """
+         Delete an entity from Astra table
+
+        :param: entity: entity to delete
+        :param: table_name: Table to delete entity from.
+        """
+        primary_keys = [field.name for field in fields(type(entity)) if field.metadata.get("is_primary_key", False)]
+
+        model_class: Type[Model] = self._model_dataclass(
+            value=type(entity), table_name=table_name, primary_keys=primary_keys
+        )
+
+        key_filter = {key: getattr(entity, key) for key in primary_keys}
+        model_class.filter(**key_filter).delete()
