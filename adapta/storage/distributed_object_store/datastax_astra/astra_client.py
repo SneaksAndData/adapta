@@ -23,6 +23,7 @@ import enum
 import os
 import re
 import shutil
+import sys
 import tempfile
 import typing
 import uuid
@@ -299,7 +300,9 @@ class AstraClient:
                 return (columns.Integer,)
             if python_type is float:
                 return (columns.Double,)
-            if python_type is enum.EnumType:  # assume all enums are strings - for now
+            if (sys.version_info.minor > 9 and python_type is enum.EnumType) or (
+                sys.version_info.minor <= 9 and python_type is enum.EnumMeta
+            ):  # assume all enums are strings - for now
                 return (columns.Text,)
             if get_origin(python_type) == list:
                 return (
