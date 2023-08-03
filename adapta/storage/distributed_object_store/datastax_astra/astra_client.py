@@ -300,8 +300,12 @@ class AstraClient:
                 return (columns.Integer,)
             if python_type is float:
                 return (columns.Double,)
-            if (sys.version_info.minor > 9 and python_type is enum.EnumType) or (
-                sys.version_info.minor <= 9 and python_type is enum.EnumMeta
+            if (
+                sys.version_info.minor > 9
+                and type(python_type) is enum.EnumType  # pylint: disable=unidiomatic-typecheck
+            ) or (
+                sys.version_info.minor <= 9
+                and type(python_type) is enum.EnumMeta  # pylint: disable=unidiomatic-typecheck
             ):  # assume all enums are strings - for now
                 return (columns.Text,)
             if get_origin(python_type) == list:
