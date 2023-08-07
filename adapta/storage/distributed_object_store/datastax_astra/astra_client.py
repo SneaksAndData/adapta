@@ -139,7 +139,7 @@ class AstraClient:
 
         set_session(self._session)
 
-        shutil.rmtree(self._tmp_bundle_path)
+        os.remove(os.path.join(self._tmp_bundle_path, tmp_bundle_file_name))
 
         return self
 
