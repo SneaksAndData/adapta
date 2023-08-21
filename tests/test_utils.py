@@ -255,16 +255,3 @@ def test_data_adapter(drop_missing: bool):
     assert (result["C"] != 9).all()
     assert (result["D"] == 7).all()
 
-
-def test_is_optional():
-    """
-    Test that the is_optional function correctly identifies optional types.
-    """
-    assert is_optional(Optional[Union[str, int]])
-    assert is_optional(Optional[str])
-    assert is_optional(Union[str, None])  # Same as Optional[str]
-    assert is_optional(Union[str, Optional[int]])  # Same as Union[str, int, None], which is an optional type
-    assert not is_optional(str)
-    assert not is_optional(Union[str, int])
-    assert not is_optional(List[str])
-    assert not is_optional(Tuple[int, ...])

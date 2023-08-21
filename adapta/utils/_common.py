@@ -182,13 +182,3 @@ def map_column_names(
     default_values = {k: v for (k, v) in default_values.items() if k not in dataframe.columns}
     dataframe[list(default_values.keys())] = list(default_values.values())
     return dataframe
-
-
-def is_optional(type_: Type) -> bool:
-    """
-    Checks if a type is Optional.
-
-    :param type_: Type to check.
-    :return: True if the type is Optional, False otherwise.
-    """
-    return get_origin(type_) is Union and type(None) in get_args(type_)
