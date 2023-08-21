@@ -16,7 +16,7 @@ import os
 import sys
 
 import time
-from typing import List, Any, Dict, Optional, Union, Tuple
+from typing import List, Any, Dict, Optional
 
 import pandas
 import pytest
