@@ -21,7 +21,7 @@ from typing import List, Any, Dict, Optional, Union, Tuple
 import pandas
 import pytest
 
-from adapta.utils import doze, operation_time, chunk_list, memory_limit, map_column_names, is_optional
+from adapta.utils import doze, operation_time, chunk_list, memory_limit, map_column_names
 from adapta.utils.concurrent_task_runner import Executable, ConcurrentTaskRunner
 
 
