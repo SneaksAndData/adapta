@@ -191,5 +191,4 @@ def is_optional(type_: Type) -> bool:
     :param type_: Type to check.
     :return: True if the type is Optional, False otherwise.
     """
-    return get_origin(type_) is Union and \
-        type(None) in get_args(type_)
+    return get_origin(type_) is Union and type(None) in get_args(type_)

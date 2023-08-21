@@ -16,7 +16,7 @@ import os
 import sys
 
 import time
-from typing import List, Any, Dict, Optional, Union
+from typing import List, Any, Dict, Optional, Union, Tuple
 
 import pandas
 import pytest
@@ -262,7 +262,9 @@ def test_is_optional():
     """
     assert is_optional(Optional[Union[str, int]])
     assert is_optional(Optional[str])
-    assert not is_optional(Union[str, Optional[str]])
+    assert is_optional(Union[str, None])  # Same as Optional[str]
+    assert is_optional(Union[str, Optional[int]])  # Same as Union[str, int, None], which is an optional type
     assert not is_optional(str)
     assert not is_optional(Union[str, int])
-    assert is_optional(Union[str, None])
+    assert not is_optional(List[str])
+    assert not is_optional(Tuple[int, ...])
