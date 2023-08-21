@@ -22,7 +22,7 @@ import sys
 import time
 from collections import namedtuple
 from functools import partial
-from typing import List, Optional, Dict, Any, Tuple, Union, Type, get_origin, get_args
+from typing import List, Optional, Dict, Any, Tuple, Union
 
 import pandas
 import requests
