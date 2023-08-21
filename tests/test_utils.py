@@ -254,4 +254,3 @@ def test_data_adapter(drop_missing: bool):
     assert (result["C"] != 7).all()
     assert (result["C"] != 9).all()
     assert (result["D"] == 7).all()
-
