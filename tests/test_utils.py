@@ -16,12 +16,12 @@ import os
 import sys
 
 import time
-from typing import List, Any, Dict, Optional
+from typing import List, Any, Dict, Optional, Union
 
 import pandas
 import pytest
 
-from adapta.utils import doze, operation_time, chunk_list, memory_limit, map_column_names
+from adapta.utils import doze, operation_time, chunk_list, memory_limit, map_column_names, is_optional
 from adapta.utils.concurrent_task_runner import Executable, ConcurrentTaskRunner
 
 
@@ -254,3 +254,15 @@ def test_data_adapter(drop_missing: bool):
     assert (result["C"] != 7).all()
     assert (result["C"] != 9).all()
     assert (result["D"] == 7).all()
+
+
+def test_is_optional():
+    """
+    Test that the is_optional function correctly identifies optional types.
+    """
+    assert is_optional(Optional[Union[str, int]])
+    assert is_optional(Optional[str])
+    assert not is_optional(Union[str, Optional[str]])
+    assert not is_optional(str)
+    assert not is_optional(Union[str, int])
+    assert is_optional(Union[str, None])
