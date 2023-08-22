@@ -29,6 +29,7 @@ class DataProtocols(Enum):
     ADLS2 = "abfss"
     FILE = "file"
     HIVE = "hive"
+    ASTRA = 'astra'
 
 
 class DataPath(ABC):

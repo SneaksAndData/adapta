@@ -36,6 +36,7 @@ class AstraPath(DataPath):
 
     keyspace: str
     table: str
+    protocol: str = DataProtocols.ASTRA.value
 
     @classmethod
     def from_hdfs_path(cls, hdfs_path: str) -> "AstraPath":
