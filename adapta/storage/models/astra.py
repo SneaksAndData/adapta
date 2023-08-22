@@ -17,6 +17,7 @@
 #
 
 from dataclasses import dataclass
+from urllib.parse import urlparse
 
 from adapta.storage.models.base import DataPath, DataProtocols
 
@@ -26,6 +27,9 @@ class AstraPath(DataPath):
     """
     Path wrapper for Astra DB.
     """
+
+    def to_uri(self) -> str:
+        return self.to_hdfs_path()
 
     def base_uri(self) -> str:
         raise NotImplementedError
@@ -41,10 +45,8 @@ class AstraPath(DataPath):
     @classmethod
     def from_hdfs_path(cls, hdfs_path: str) -> "AstraPath":
         assert hdfs_path.startswith("astra://"), "HDFS astra path should start with astra://"
-        return AstraPath(keyspace=hdfs_path.split("//")[1].split("@")[0], table=hdfs_path.split("@")[1])
-
-    def _check_path(self):
-        assert not self.path.startswith("/"), "Path should not start with /"
+        parsed_path = urlparse(hdfs_path).netloc.split("@")
+        return cls(keyspace=parsed_path[0], table=parsed_path[1])
 
     def to_hdfs_path(self) -> str:
         return f"astra://{self.keyspace}@{self.table}"
