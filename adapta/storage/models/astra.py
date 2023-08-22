@@ -17,7 +17,6 @@
 #
 
 from dataclasses import dataclass
-from typing import Union
 
 from adapta.storage.models.base import DataPath, DataProtocols
 
@@ -28,36 +27,29 @@ class AstraPath(DataPath):
     Path wrapper for Astra DB.
     """
 
-    astra_id: str
-    astra_region: str
-
     def base_uri(self) -> str:
-        return f"https://{self.astra_id}-{self.astra_region}.apps.astra.datastax.com/api/rest/"
+        raise NotImplementedError
 
     @classmethod
     def from_uri(cls, url: str) -> "DataPath":
-        assert url.startswith("https://") and (
-                ".apps.astra.datastax.com/api" in url
-        ), ("Invalid URL supplied. Please use the following format: "
-            "https://<astra-id>-<astra-region>.apps.astra.datastax.com/api/rest/")
+        raise NotImplementedError
 
-        return cls(
-            astra_id=url.split('/')[2].split('-')[0],
-            astra_region=url.split('/')[2].split('-')[1]
+    keyspace: str
+    table: str
+
+    @classmethod
+    def from_hdfs_path(cls, hdfs_path: str) -> "AstraPath":
+        assert hdfs_path.startswith("astra://"), "HDFS astra path should start with astra://"
+        return AstraPath(
+            keyspace=hdfs_path.split("//")[1].split("@")[0],
+            table=hdfs_path.split("@")[1]
         )
-
-    def to_uri(self) -> str:
-        return f"https://{self.astra_id}-{self.astra_region}.apps.astra.datastax.com/api/rest/"
 
     def _check_path(self):
         assert not self.path.startswith("/"), "Path should not start with /"
 
-    @classmethod
-    def from_hdfs_path(cls, hdfs_path: str) -> "DataPath":
-        pass
-
     def to_hdfs_path(self) -> str:
-        pass
+        return f"astra://{self.keyspace}@{self.table}"
 
     def to_delta_rs_path(self) -> str:
-        pass
+        raise NotImplementedError
