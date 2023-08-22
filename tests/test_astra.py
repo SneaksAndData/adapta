@@ -26,8 +26,7 @@ from adapta.storage.models.astra import AstraPath
 )
 def test_from_hdfs_path_valid(path: str, expected_keyspace: str, expected_table: str):
     astra_path = AstraPath.from_hdfs_path(path)
-    assert astra_path.keyspace == expected_keyspace
-    assert astra_path.table == expected_table
+    assert astra_path.keyspace == expected_keyspace and astra_path.table == expected_table
 
 
 @pytest.mark.parametrize(
