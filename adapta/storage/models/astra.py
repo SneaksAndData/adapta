@@ -41,10 +41,7 @@ class AstraPath(DataPath):
     @classmethod
     def from_hdfs_path(cls, hdfs_path: str) -> "AstraPath":
         assert hdfs_path.startswith("astra://"), "HDFS astra path should start with astra://"
-        return AstraPath(
-            keyspace=hdfs_path.split("//")[1].split("@")[0],
-            table=hdfs_path.split("@")[1]
-        )
+        return AstraPath(keyspace=hdfs_path.split("//")[1].split("@")[0], table=hdfs_path.split("@")[1])
 
     def _check_path(self):
         assert not self.path.startswith("/"), "Path should not start with /"
