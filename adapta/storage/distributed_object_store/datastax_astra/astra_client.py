@@ -181,7 +181,7 @@ class AstraClient:
     def filter_entities(
         self,
         model_class: Type[TModel],
-        key_column_filter_values: List[Dict[str, str]],
+        key_column_filter_values: List[Dict[str, Any]],
         table_name: Optional[str] = None,
         select_columns: Optional[List[str]] = None,
         primary_keys: Optional[List[str]] = None,
