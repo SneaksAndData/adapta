@@ -55,7 +55,7 @@ with AstraClient(
   # 0  entirely
 ```
 
-## EXPERIMENTAL - Prototype for generic filtering API.
+## EXPERIMENTAL - Filtering API.
 
 You can also generate filter expressions for Astra using the new filtering API. Note that this API will be abstracted from the engine in future releases and could also be used with PyArrow expressions. 
 Right now only Astra is supported. Example usage:
