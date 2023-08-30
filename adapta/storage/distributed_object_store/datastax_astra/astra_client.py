@@ -228,9 +228,7 @@ class AstraClient:
             self._session is not None
         ), "Please instantiate an AstraClient using with AstraClient(...) before calling this method"
 
-        select_columns = (
-            list(map(lambda col_name: normalize_column_name(col_name), select_columns)) if select_columns else None
-        )
+        select_columns = list(map(normalize_column_name, select_columns)) if select_columns else None
 
         model_class: Type[Model] = self._model_dataclass(
             value=model_class,
