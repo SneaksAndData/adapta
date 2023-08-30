@@ -108,7 +108,7 @@ with AstraClient(
         client_id='client id',
         client_secret='client secret'
 ) as ac:
-    print(ac.filter_entities(TestEntityNew, [simple_filter.expression]))
+    print(ac.filter_entities(TestEntityNew, simple_filter.expression))
     
     # simple filter field == value    
     #         col_a      col_b  col_c      col_d
