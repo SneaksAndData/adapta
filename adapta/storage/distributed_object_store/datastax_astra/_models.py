@@ -1,7 +1,6 @@
 """
  Auxiliary models for Astra client operations.
 """
-from functools import reduce
 from typing import final, List, Dict, Generic, TypeVar, Any
 
 TField = TypeVar("TField")  # pylint: disable=invalid-name
