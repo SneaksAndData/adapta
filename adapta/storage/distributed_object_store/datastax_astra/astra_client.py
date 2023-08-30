@@ -26,6 +26,7 @@ import sys
 import tempfile
 import typing
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import fields, is_dataclass
 from typing import Optional, Dict, TypeVar, Callable, Type, List, Any, get_origin
 
@@ -188,6 +189,7 @@ class AstraClient:
         primary_keys: Optional[List[str]] = None,
         partition_keys: Optional[List[str]] = None,
         deduplicate=False,
+        num_threads: Optional[int] = None,
     ) -> pandas.DataFrame:
         """
         Run a filter query on the entity of type TModel backed by table `table_name`.
@@ -208,7 +210,8 @@ class AstraClient:
         :param: select_columns: An optional list of columns to return with the query.
         :param: primary_keys: An optional list of columns that constitute a primary key, if it cannot be inferred from is_primary_key metadata on a dataclass field.
         :param: partition_keys: An optional list of columns that constitute a partition key, if it cannot be inferred from is_partition_key metadata on a dataclass field.
-        param: deduplicate: Optionally deduplicate query result, for example when only the partition key part of a primary key is used to fetch results.
+        :param: deduplicate: Optionally deduplicate query result, for example when only the partition key part of a primary key is used to fetch results.
+        :param: num_threads: Optionally run filtering using multiple threads.
         """
 
         def apply(model: Type[Model], key_column_filter: Dict[str, Any], columns_to_select: Optional[List[str]]):
@@ -224,6 +227,11 @@ class AstraClient:
 
             return column_name.replace(filter_suffix[0], "")
 
+        def to_pandas(
+            model: Type[Model], key_column_filter: Dict[str, Any], columns_to_select: Optional[List[str]]
+        ) -> pandas.DataFrame:
+            return pandas.DataFrame([dict(v.items()) for v in list(apply(model, key_column_filter, columns_to_select))])
+
         assert (
             self._session is not None
         ), "Please instantiate an AstraClient using with AstraClient(...) before calling this method"
@@ -238,12 +246,27 @@ class AstraClient:
             select_columns=select_columns,
         )
 
-        result = pandas.concat(
-            [
-                pandas.DataFrame([dict(v.items()) for v in list(apply(model_class, key_column_filter, select_columns))])
-                for key_column_filter in key_column_filter_values
-            ]
-        )
+        if num_threads:
+            with ThreadPoolExecutor(max_workers=num_threads) as tpe:
+                result = pandas.concat(
+                    tpe.map(
+                        lambda args: to_pandas(*args),
+                        [
+                            (model_class, key_column_filter, select_columns)
+                            for key_column_filter in key_column_filter_values
+                        ],
+                        chunksize=max(int(len(key_column_filter_values) / num_threads), 1),
+                    )
+                )
+        else:
+            result = pandas.concat(
+                [
+                    pandas.DataFrame(
+                        [dict(v.items()) for v in list(apply(model_class, key_column_filter, select_columns))]
+                    )
+                    for key_column_filter in key_column_filter_values
+                ]
+            )
 
         if select_columns:
             filter_columns = {
