@@ -54,3 +54,74 @@ with AstraClient(
   #       col_c
   # 0  entirely
 ```
+
+## EXPERIMENTAL - Filtering API.
+
+You can also generate filter expressions for Astra using the new filtering API. Note that this API will be abstracted from the engine in future releases and could also be used with PyArrow expressions. 
+Right now only Astra is supported. Example usage:
+
+1. Create a table
+```cassandraql
+create table tmp.test_entity_new(
+    col_a text,
+    col_b text,
+    col_c int,
+    col_d list<int>,
+    PRIMARY KEY ( col_a, col_b )
+);
+
+insert into tmp.test_entity_new (col_a, col_b, col_c, col_d) VALUES ('something1', 'else', 123, [1, 2]);
+insert into tmp.test_entity_new (col_a, col_b, col_c, col_d) VALUES ('something1', 'different', 456, [1, 2, 3]);
+insert into tmp.test_entity_new (col_a, col_b, col_c, col_d) VALUES ('something2', 'special', 0, [0, 32, 333]);
+```
+ 2. Create field expressions and apply them
+```python
+from adapta.storage.distributed_object_store.datastax_astra import AstraField
+from adapta.storage.distributed_object_store.datastax_astra.astra_client import AstraClient
+from adapta.schema_management.schema_entity import PythonSchemaEntity
+
+from dataclasses import dataclass, field
+from typing import List
+
+@dataclass
+class TestEntityNew:
+    col_a: str = field(metadata={
+        "is_primary_key": True,
+        "is_partition_key": True
+    })
+    col_b: str = field(metadata={
+        "is_primary_key": True,
+        "is_partition_key": False
+    })
+    col_c: int
+    col_d: List[int]
+
+SCHEMA: TestEntityNew = PythonSchemaEntity(TestEntityNew)
+simple_filter = (AstraField(SCHEMA.col_a) == "something1")
+combined_filter = (AstraField(SCHEMA.col_a) == "something1") & (AstraField(SCHEMA.col_b) == "else")
+combined_filter_with_collection = (AstraField(SCHEMA.col_a) == "something1") & (AstraField(SCHEMA.col_b).isin(['else', 'nonexistent']))
+
+with AstraClient(
+        client_name='test',
+        keyspace='tmp',
+        secure_connect_bundle_bytes="base64 bundle string",
+        client_id='client id',
+        client_secret='client secret'
+) as ac:
+    print(ac.filter_entities(TestEntityNew, simple_filter.expression))
+    
+    # simple filter field == value    
+    #         col_a      col_b  col_c      col_d
+    # 0  something1  different    456  [1, 2, 3]
+    # 1  something1       else    123     [1, 2]    
+    
+    print(ac.filter_entities(TestEntityNew, combined_filter.expression))
+
+    #         col_a col_b  col_c   col_d
+    # 0  something1  else    123  [1, 2]
+
+    print(ac.filter_entities(TestEntityNew, combined_filter_with_collection.expression))
+
+    #         col_a col_b  col_c   col_d
+    # 0  something1  else    123  [1, 2]
+```
