@@ -97,6 +97,7 @@ class AstraClient:
         self._socket_read_timeout = socket_read_timeout_ms
         self._query_timeout = socket_read_timeout_ms
         self._snake_pattern = re.compile(r"(?<!^)(?=[A-Z])")
+        self._filter_pattern = re.compile(r"(__\w+)")
 
     def __enter__(self) -> "AstraClient":
         """
@@ -216,9 +217,18 @@ class AstraClient:
 
             return model.filter(**key_column_filter)
 
+        def normalize_column_name(column_name: str) -> str:
+            filter_suffix = re.findall(self._filter_pattern, column_name)
+            if len(filter_suffix) == 0:
+                return column_name
+
+            return column_name.replace(filter_suffix[0], "")
+
         assert (
             self._session is not None
         ), "Please instantiate an AstraClient using with AstraClient(...) before calling this method"
+
+        select_columns = list(map(normalize_column_name, select_columns)) if select_columns else None
 
         model_class: Type[Model] = self._model_dataclass(
             value=model_class,
@@ -236,7 +246,11 @@ class AstraClient:
         )
 
         if select_columns:
-            filter_columns = {key for key_column_filter in key_column_filter_values for key in key_column_filter.keys()}
+            filter_columns = {
+                normalize_column_name(key)
+                for key_column_filter in key_column_filter_values
+                for key in key_column_filter.keys()
+            }
             result = result.drop(columns=list(set(filter_columns) - set(select_columns)))
 
         if deduplicate:
