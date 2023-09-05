@@ -9,6 +9,7 @@ from pyarrow.dataset import field as pyarrow_field
 TField = TypeVar("TField")  # pylint: disable=invalid-name
 TCompileTarget = TypeVar("TCompileTarget")
 
+
 class FilterExpressionOperation(Enum):
     AND = "&"
     OR = "|"
@@ -84,6 +85,7 @@ class FilterExpression:
     :param op: The operation to apply to the left and right operands.
     :type op: FilterExpressionOperation
     """
+
     def __init__(self, left: Union['FilterExpression', FilterField],
                  right: Union['FilterExpression', TField, List[TField]],
                  op: FilterExpressionOperation):
@@ -99,6 +101,12 @@ class FilterExpression:
 
 
 class FilterExpressionCompiler(Generic[TCompileTarget], ABC):
+    """
+     A base class for translating FilterExpressions into a specific target language or library.
+
+     :param TCompileTarget: The type of the compiled expression.
+     :type TCompileTarget: Generic
+     """
     @abstractmethod
     def compile(self, expr: FilterExpression) -> TCompileTarget:
         pass
@@ -106,6 +114,11 @@ class FilterExpressionCompiler(Generic[TCompileTarget], ABC):
 
 @final
 class AstraFilterExpressionCompiler(FilterExpressionCompiler[List[Dict[str, Any]]]):
+    """
+        Translates a FilterExpression into Astra expression.
+        :param FilterExpressionCompiler: The base class for the compiler.
+        :type FilterExpressionCompiler: TypeVar
+    """
     def compile(self, expression: FilterExpression) -> List[Dict[str, Any]]:
         left = expression.left
         right = expression.right
@@ -152,6 +165,12 @@ class AstraFilterExpressionCompiler(FilterExpressionCompiler[List[Dict[str, Any]
 
 @final
 class ArrowExpressionCompiler(FilterExpressionCompiler[pc.Expression]):
+    """
+        Translates a FilterExpression into a PyArrow expression.
+        :param FilterExpressionCompiler: The base class for the compiler.
+        :type FilterExpressionCompiler: TypeVar
+    """
+
     def compile(self, expression: FilterExpression) -> pc.Expression:
         match expression.op:
             case FilterExpressionOperation.IN:
@@ -169,4 +188,3 @@ class ArrowExpressionCompiler(FilterExpressionCompiler[pc.Expression]):
                     return op_func(pyarrow_field(expression.left.field_name), expression.right[0])
                 # This is needed for compiling combined expressions
                 return op_func(pyarrow_field(expression.left.field_name), expression.right)
-
