@@ -21,87 +21,33 @@ class TestEntity:
 
 TEST_ENTITY_SCHEMA: TestEntity = PythonSchemaEntity(TestEntity)
 
-
-# @pytest.mark.parametrize(
-#     "filter_expression,expected_expression",
-#     [
-#         (AstraField(TEST_ENTITY_SCHEMA.col_a) == "test", [{"col_a": "test"}]),
-#         (AstraField(TEST_ENTITY_SCHEMA.col_a) >= "test", [{"col_a__gte": "test"}]),
-#         (AstraField(TEST_ENTITY_SCHEMA.col_a) > "test", [{"col_a__gt": "test"}]),
-#         (AstraField(TEST_ENTITY_SCHEMA.col_a) < "test", [{"col_a__lt": "test"}]),
-#         (AstraField(TEST_ENTITY_SCHEMA.col_a) <= "test", [{"col_a__lte": "test"}]),
-#         (AstraField(TEST_ENTITY_SCHEMA.col_a).isin(["val1", "val2"]), [{"col_a__in": ["val1", "val2"]}]),
-#         (
-#                 (AstraField(TEST_ENTITY_SCHEMA.col_a) == "test") & (AstraField(TEST_ENTITY_SCHEMA.col_b) == "other"),
-#                 [{"col_a": "test", "col_b": "other"}],
-#         ),
-#         (
-#                 (AstraField(TEST_ENTITY_SCHEMA.col_a) == "test") & (
-#                 AstraField(TEST_ENTITY_SCHEMA.col_c).isin([1, 2, 3])),
-#                 [{"col_a": "test", "col_c__in": [1, 2, 3]}],
-#         ),
-#         (
-#                 (AstraField(TEST_ENTITY_SCHEMA.col_a) == "test") | (AstraField(TEST_ENTITY_SCHEMA.col_b) == "other"),
-#                 [{"col_a": "test"}, {"col_b": "other"}],
-#         ),
-#         (
-#                 (AstraField(TEST_ENTITY_SCHEMA.col_a) == "test")
-#                 | (AstraField(TEST_ENTITY_SCHEMA.col_b) == "other")
-#                 | (AstraField(TEST_ENTITY_SCHEMA.col_c) == 1),
-#                 [{"col_a": "test"}, {"col_b": "other"}, {"col_c": 1}],
-#         ),
-#         (
-#                 ((AstraField(TEST_ENTITY_SCHEMA.col_a) == "test") | (AstraField(TEST_ENTITY_SCHEMA.col_b) == "other"))
-#                 & (AstraField(TEST_ENTITY_SCHEMA.col_c) == 1),
-#                 [{"col_a": "test", "col_c": 1}, {"col_b": "other", "col_c": 1}],
-#         ),
-#     ],
-# )
-# def test_astra_filters(
-#         filter_expression: Union[AstraField, AstraFilterExpression], expected_expression: Dict[str, Any]
-# ):
-#     assert filter_expression.expression == expected_expression
-
-
 @pytest.mark.parametrize(
-    # TODO: add tests for compound expressions
-    "filter_expr, astra_expected_expr",
+    "filter_expr, pyarrow_expected_expr, astra_expected_expr",
     [
-        (FilterField(TEST_ENTITY_SCHEMA.col_a) == ["test"], [{"col_a": "test"}]),
-        (FilterField(TEST_ENTITY_SCHEMA.col_a) >= ["test"], [{"col_a__gte": "test"}]),
-        (FilterField(TEST_ENTITY_SCHEMA.col_a) > ["test"], [{"col_a__gt": "test"}]),
-        (FilterField(TEST_ENTITY_SCHEMA.col_a) < ["test"], [{"col_a__lt": "test"}]),
-        (FilterField(TEST_ENTITY_SCHEMA.col_a) <= ["test"], [{"col_a__lte": "test"}]),
-        (FilterField(TEST_ENTITY_SCHEMA.col_a).isin(["val1", "val2"]), [{"col_a__in": ["val1", "val2"]}]),
-    ]
-)
-def test_generic_filtering_for_astra(
-        filter_expr: Union[FilterField, FilterExpression], astra_expected_expr: Dict[str, Any]):
-    assert AstraFilterExpressionCompiler().compile(filter_expr) == astra_expected_expr
-
-
-@pytest.mark.parametrize(
-    # TODO: add tests for compound expressions
-    "filter_expr, pyarrow_expected_expr",
-    [
-        (FilterField(TEST_ENTITY_SCHEMA.col_a) == ["test"], (pyarrow_field("col_a") == "test")),
-        (FilterField(TEST_ENTITY_SCHEMA.col_a) >= ["test"], (pyarrow_field("col_a") >= "test")),
-        (FilterField(TEST_ENTITY_SCHEMA.col_a) > ["test"], (pyarrow_field("col_a") > "test")),
-        (FilterField(TEST_ENTITY_SCHEMA.col_a) < ["test"], (pyarrow_field("col_a") < "test")),
-        (FilterField(TEST_ENTITY_SCHEMA.col_a) <= ["test"], (pyarrow_field("col_a") <= "test")),
-        (FilterField(TEST_ENTITY_SCHEMA.col_a).isin(["val1", "val2"]), (pyarrow_field("col_a").isin(["val1", "val2"]))),
+        (FilterField(TEST_ENTITY_SCHEMA.col_a) == ["test"], (pyarrow_field("col_a") == "test"), [{"col_a": "test"}]),
+        (FilterField(TEST_ENTITY_SCHEMA.col_a) >= ["test"], (pyarrow_field("col_a") >= "test"),
+         [{"col_a__gte": "test"}]),
+        (FilterField(TEST_ENTITY_SCHEMA.col_a) > ["test"], (pyarrow_field("col_a") > "test"), [{"col_a__gt": "test"}]),
+        (FilterField(TEST_ENTITY_SCHEMA.col_a) < ["test"], (pyarrow_field("col_a") < "test"), [{"col_a__lt": "test"}]),
+        (FilterField(TEST_ENTITY_SCHEMA.col_a) <= ["test"], (pyarrow_field("col_a") <= "test"),
+         [{"col_a__lte": "test"}]),
+        (FilterField(TEST_ENTITY_SCHEMA.col_a).isin(["val1", "val2"]), (pyarrow_field("col_a").isin(["val1", "val2"])),
+        [{"col_a__in": ["val1", "val2"]}]),
         (
                 (FilterField(TEST_ENTITY_SCHEMA.col_a) == "test") & (FilterField(TEST_ENTITY_SCHEMA.col_b) == "other"),
                 (pyarrow_field("col_a") == "test") & (pyarrow_field("col_b") == "other"),
+                [{"col_a": "test", "col_b": "other"}],
         ),
         (
                 (FilterField(TEST_ENTITY_SCHEMA.col_a) == ["test"]) &
-                (FilterField(TEST_ENTITY_SCHEMA.col_a).isin([1,2, 3])),
-                ((pyarrow_field("col_a") == "test") & (pyarrow_field("col_a").isin([1,2,3]))),
+                (FilterField(TEST_ENTITY_SCHEMA.col_c).isin([1, 2, 3])),
+                ((pyarrow_field("col_a") == "test") & (pyarrow_field("col_c").isin([1, 2, 3]))),
+                [{"col_a": "test", "col_c__in": [1, 2, 3]}],
         ),
         (
                 (FilterField(TEST_ENTITY_SCHEMA.col_a) == "test") | (FilterField(TEST_ENTITY_SCHEMA.col_b) == "other"),
                 (pyarrow_field("col_a") == "test") | (pyarrow_field("col_b") == "other"),
+                [{"col_a": "test"}, {"col_b": "other"}],
         ),
         (
                 (FilterField(TEST_ENTITY_SCHEMA.col_a) == ["test"])
@@ -109,6 +55,7 @@ def test_generic_filtering_for_astra(
                 | (FilterField(TEST_ENTITY_SCHEMA.col_c) == [1]),
                 ((pyarrow_field("col_a") == "test") | (pyarrow_field("col_b") == "other") | (
                         pyarrow_field("col_c") == 1)),
+                [{"col_a": "test"}, {"col_b": "other"}, {"col_c": 1}],
         ),
         (
                 (FilterField(TEST_ENTITY_SCHEMA.col_a) == ["test"])
@@ -116,9 +63,12 @@ def test_generic_filtering_for_astra(
                 & (FilterField(TEST_ENTITY_SCHEMA.col_c) == [1]),
                 ((pyarrow_field("col_a") == "test") | (pyarrow_field("col_b") == "other") & (
                         pyarrow_field("col_c") == 1)),
+                [{"col_a": "test", "col_c": 1}, {"col_b": "other", "col_c": 1}],
         ),
     ]
 )
-def test_generic_filtering_for_pyarrow(
-        filter_expr: Union[FilterField, FilterExpression], pyarrow_expected_expr: pc.Expression):
+def test_generic_filtering(
+        filter_expr: Union[FilterField, FilterExpression], pyarrow_expected_expr: pc.Expression,
+        astra_expected_expr: Dict[str, Any]):
     assert ArrowExpressionCompiler().compile(filter_expr).equals(pyarrow_expected_expr)
+    assert AstraFilterExpressionCompiler().compile(filter_expr) == astra_expected_expr

@@ -9,23 +9,15 @@ from pyarrow.dataset import field as pyarrow_field
 TField = TypeVar("TField")  # pylint: disable=invalid-name
 TCompileTarget = TypeVar("TCompileTarget")
 
-
-# TODO: USAGE
-# f1 = FilterField[str]("col_a")
-# f2 = FilterField[int]("col_b")
-# expr = (f1 == "abc") & (f2 == 123)
-# astra_expr = AstraFilterExpressionCompiler().compile(expr)
-# pyarrow_expr = ArrowExpressionCompiler().compile(expr)
-
 class FilterExpressionOperation(Enum):
     AND = "&"
     OR = "|"
-    GT = ">"  # __gt (astra)
-    GE = ">="  # __gte (astra)
-    LT = "<"  # __lt (astra)
-    LE = "<="  # __lte (astra)
+    GT = ">"
+    GE = ">="
+    LT = "<"
+    LE = "<="
     EQ = "=="
-    IN = "isin"  # __in (ASTRA) # TODO: not sure about this --> is_in is only for pyarrow and for Astra is __in
+    IN = "isin"
 
 
 @final
@@ -110,37 +102,73 @@ class FilterExpressionCompiler(Generic[TCompileTarget], ABC):
 @final
 class AstraFilterExpressionCompiler(FilterExpressionCompiler[List[Dict[str, Any]]]):
     def compile(self, expression: FilterExpression) -> List[Dict[str, Any]]:
-        # TODO: Add support for compound expressions
         left = expression.left
         right = expression.right
         op = expression.op
         match op:
             case FilterExpressionOperation.EQ:
-                return [{f"{left.field_name}": right[0]}]
+                if type(right) == list:
+                    return [{f"{left.field_name}": right[0]}]
+                return [{f"{left.field_name}": right}]
             case FilterExpressionOperation.IN:
-                return [{f"{left.field_name}__in": right}]
-            case FilterExpressionOperation.LE:
-                return [{f"{left.field_name}__lte": right[0]}]
-            case FilterExpressionOperation.GE:
-                return [{f"{left.field_name}__gte": right[0]}]
+                if type(right) == list:
+                    return [{f"{left.field_name}__in": right}]
+                return [{f"{left.field_name}": right}]
+            case FilterExpressionOperation.AND:
+                left_result = AstraFilterExpressionCompiler().compile(left)
+                right_result = AstraFilterExpressionCompiler().compile(right)
+                return [{**d1, **d2} for d1, d2 in zip(left_result, right_result)]
+            case FilterExpressionOperation.OR:
+                if right.op == FilterExpressionOperation.AND:
+                    right_side = AstraFilterExpressionCompiler().compile(right)
+                    left_side = AstraFilterExpressionCompiler().compile(left)
+
+                    # Extract the last item from the right_side dictionary
+                    key = list(right_side[0])[-1]
+                    value = right_side[0][key]
+
+                    # Add the key-value pair to the left_side dictionary
+                    left_side[0].update({key: value})
+
+                    # Concatenate the left_side and right_side lists
+                    return left_side + right_side
+                else:
+                    # Compile both sides separately and concatenate the results
+                    return AstraFilterExpressionCompiler().compile(left) + AstraFilterExpressionCompiler().compile(
+                        right)
+
             case _:
-                return [{f"{left.field_name}__{op.name.lower()}": right[0]}]
+                func = f"{op.name.lower()[0]}" + "t" + f"{op.name.lower()[1]}" if op in (
+                    FilterExpressionOperation.LE, FilterExpressionOperation.GE) else op.name.lower()
+                if isinstance(right, list):
+                    return [{f"{left.field_name}__{func}": right[0]}]
+                return [{f"{left.field_name}__{func}": right}]
 
 
 @final
 class ArrowExpressionCompiler(FilterExpressionCompiler[pc.Expression]):
-
     def compile(self, expression: FilterExpression) -> pc.Expression:
         match expression.op:
             case FilterExpressionOperation.IN:
+                # Compile an "isin" expression for the IN operator
                 return pyarrow_field(expression.left.field_name).isin(expression.right)
             case FilterExpressionOperation.AND | FilterExpressionOperation.OR:
+                # Compile a logical operator expression for 'AND' or 'OR'
                 op_func = getattr(operator, expression.op.name.lower() + "_")
                 return op_func(ArrowExpressionCompiler().compile(expression.left),
                                ArrowExpressionCompiler().compile(expression.right))
             case _:
+                # For other operators, compile a binary operator expression
                 op_func = getattr(operator, expression.op.name.lower())
                 if type(expression.right) == list:
                     return op_func(pyarrow_field(expression.left.field_name), expression.right[0])
-                # This is needed for compiling compound expressions
+                # This is needed for compiling combined expressions
                 return op_func(pyarrow_field(expression.left.field_name), expression.right)
+
+
+# TODO: USAGE
+# f1 = FilterField[str]("col_a")
+# f2 = FilterField[int]("col_b")
+# expr = (f1 == "abc") & (f2 == 123)
+# astra_expr = AstraFilterExpressionCompiler().compile(expr)
+# pyarrow_expr = ArrowExpressionCompiler().compile(expr)
