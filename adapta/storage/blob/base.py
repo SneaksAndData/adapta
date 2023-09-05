@@ -140,3 +140,16 @@ class StorageClient(ABC):
                  Client implementations will define the exact parameter type to use.
         :return:
         """
+
+    @abstractmethod
+    def copy_blob(
+        self,
+        blob_path: DataPath,
+        target_blob_path: DataPath,
+    ) -> None:
+        """
+        Copy blob at `blob_path` to `target_blob_path`
+
+        :param blob_path: Path to source blob.
+        :param target_blob_path: Path to target blob.
+        """
