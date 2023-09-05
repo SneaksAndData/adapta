@@ -1,6 +1,5 @@
 from abc import abstractmethod, ABC
 from enum import Enum
-from logging import debug
 from typing import final, List, Dict, Generic, TypeVar, Any, Union, Type
 
 import operator
@@ -26,12 +25,12 @@ class FilterExpressionOperation(Enum):
     LT = "<"  # __lt (astra)
     LE = "<="  # __lte (astra)
     EQ = "=="
-    IN = "is_in"  # __in (ASTRA) # TODO: not sure about this --> is_in is only for pyarrow and for Astra is __in
+    IN = "isin"  # __in (ASTRA) # TODO: not sure about this --> is_in is only for pyarrow and for Astra is __in
 
 
 @final
 class FilterField(Generic[TField]):
-    def __init__(self, field_name: str):
+    def __init__(self, field_name):
         """
         Creates an instance of FilterField
         """
@@ -132,29 +131,16 @@ class AstraFilterExpressionCompiler(FilterExpressionCompiler[List[Dict[str, Any]
 class ArrowExpressionCompiler(FilterExpressionCompiler[pc.Expression]):
 
     def compile(self, expression: FilterExpression) -> pc.Expression:
-        # TODO: need to add support for compound expressions
         match expression.op:
             case FilterExpressionOperation.IN:
                 return pyarrow_field(expression.left.field_name).isin(expression.right)
-            # case FilterExpressionOperation.AND | FilterExpressionOperation.OR:
-            #     return f"({expression.left}{expression.op.value}{expression.right})"
+            case FilterExpressionOperation.AND | FilterExpressionOperation.OR:
+                op_func = getattr(operator, expression.op.name.lower() + "_")
+                return op_func(ArrowExpressionCompiler().compile(expression.left),
+                               ArrowExpressionCompiler().compile(expression.right))
             case _:
                 op_func = getattr(operator, expression.op.name.lower())
-                return op_func(pyarrow_field(expression.left.field_name), expression.right[0])
-
-        # import pyarrow.compute as pc
-        #
-        # def compile(self, expression: FilterExpression) -> pc.Expression:
-        #     # TODO: need to add support for compound expressions
-        #     match expression.op:
-        #         case FilterExpressionOperation.IN:
-        #             return pyarrow_field(expression.left.field_name).isin(expression.right)
-        #         case FilterExpressionOperation.AND:
-        #             left_expr = self.compile(expression.left)
-        #             right_expr = self.compile(expression.right)
-        #             return pc.and_(left_expr, right_expr)
-        #         case _:
-        #             op_func = getattr(pc, expression.op.name.lower())
-        #             field_expr = pyarrow_field(expression.left.field_name)
-        #             value_expr = pc.scalar(expression.right[0])
-        #             return op_func(field_expr, value_expr)
+                if type(expression.right) == list:
+                    return op_func(pyarrow_field(expression.left.field_name), expression.right[0])
+                # This is needed for compiling compound expressions
+                return op_func(pyarrow_field(expression.left.field_name), expression.right)

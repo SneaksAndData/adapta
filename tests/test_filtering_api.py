@@ -94,6 +94,29 @@ def test_generic_filtering_for_astra(
                 (FilterField(TEST_ENTITY_SCHEMA.col_a) == "test") & (FilterField(TEST_ENTITY_SCHEMA.col_b) == "other"),
                 (pyarrow_field("col_a") == "test") & (pyarrow_field("col_b") == "other"),
         ),
+        (
+                (FilterField(TEST_ENTITY_SCHEMA.col_a) == ["test"]) &
+                (FilterField(TEST_ENTITY_SCHEMA.col_a).isin([1,2, 3])),
+                ((pyarrow_field("col_a") == "test") & (pyarrow_field("col_a").isin([1,2,3]))),
+        ),
+        (
+                (FilterField(TEST_ENTITY_SCHEMA.col_a) == "test") | (FilterField(TEST_ENTITY_SCHEMA.col_b) == "other"),
+                (pyarrow_field("col_a") == "test") | (pyarrow_field("col_b") == "other"),
+        ),
+        (
+                (FilterField(TEST_ENTITY_SCHEMA.col_a) == ["test"])
+                | (FilterField(TEST_ENTITY_SCHEMA.col_b) == ["other"])
+                | (FilterField(TEST_ENTITY_SCHEMA.col_c) == [1]),
+                ((pyarrow_field("col_a") == "test") | (pyarrow_field("col_b") == "other") | (
+                        pyarrow_field("col_c") == 1)),
+        ),
+        (
+                (FilterField(TEST_ENTITY_SCHEMA.col_a) == ["test"])
+                | (FilterField(TEST_ENTITY_SCHEMA.col_b) == ["other"])
+                & (FilterField(TEST_ENTITY_SCHEMA.col_c) == [1]),
+                ((pyarrow_field("col_a") == "test") | (pyarrow_field("col_b") == "other") & (
+                        pyarrow_field("col_c") == 1)),
+        ),
     ]
 )
 def test_generic_filtering_for_pyarrow(
