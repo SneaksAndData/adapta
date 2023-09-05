@@ -1,8 +1,8 @@
-from abc import abstractmethod, ABC
+import operator
 from enum import Enum
+from abc import abstractmethod, ABC
 from typing import final, List, Dict, Generic, TypeVar, Any, Union, Type
 
-import operator
 import pyarrow.compute as pc
 from pyarrow.dataset import field as pyarrow_field
 
@@ -75,10 +75,15 @@ class FilterField(Generic[TField]):
 @final
 class FilterExpression:
     """
-    Filter expression
-    """
+    A filter expression that represents a comparison or combination of field values.
 
-    # TODO: Add docstring
+    :param left: The left operand of the expression, either another FilterExpression or a FilterField.
+    :type left: Union['FilterExpression', FilterField]
+    :param right: The right operand of the expression, either another FilterExpression, a TField, or a list of TFields.
+    :type right: Union['FilterExpression', TField, List[TField]]
+    :param op: The operation to apply to the left and right operands.
+    :type op: FilterExpressionOperation
+    """
     def __init__(self, left: Union['FilterExpression', FilterField],
                  right: Union['FilterExpression', TField, List[TField]],
                  op: FilterExpressionOperation):
@@ -165,10 +170,3 @@ class ArrowExpressionCompiler(FilterExpressionCompiler[pc.Expression]):
                 # This is needed for compiling combined expressions
                 return op_func(pyarrow_field(expression.left.field_name), expression.right)
 
-
-# TODO: USAGE
-# f1 = FilterField[str]("col_a")
-# f2 = FilterField[int]("col_b")
-# expr = (f1 == "abc") & (f2 == 123)
-# astra_expr = AstraFilterExpressionCompiler().compile(expr)
-# pyarrow_expr = ArrowExpressionCompiler().compile(expr)

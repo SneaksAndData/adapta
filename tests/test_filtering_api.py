@@ -32,7 +32,7 @@ TEST_ENTITY_SCHEMA: TestEntity = PythonSchemaEntity(TestEntity)
         (FilterField(TEST_ENTITY_SCHEMA.col_a) <= ["test"], (pyarrow_field("col_a") <= "test"),
          [{"col_a__lte": "test"}]),
         (FilterField(TEST_ENTITY_SCHEMA.col_a).isin(["val1", "val2"]), (pyarrow_field("col_a").isin(["val1", "val2"])),
-        [{"col_a__in": ["val1", "val2"]}]),
+         [{"col_a__in": ["val1", "val2"]}]),
         (
                 (FilterField(TEST_ENTITY_SCHEMA.col_a) == "test") & (FilterField(TEST_ENTITY_SCHEMA.col_b) == "other"),
                 (pyarrow_field("col_a") == "test") & (pyarrow_field("col_b") == "other"),
@@ -64,6 +64,14 @@ TEST_ENTITY_SCHEMA: TestEntity = PythonSchemaEntity(TestEntity)
                 ((pyarrow_field("col_a") == "test") | (pyarrow_field("col_b") == "other") & (
                         pyarrow_field("col_c") == 1)),
                 [{"col_a": "test", "col_c": 1}, {"col_b": "other", "col_c": 1}],
+        ),
+        (
+                ((FilterField(TEST_ENTITY_SCHEMA.col_a) == ["test"])
+                 & (FilterField(TEST_ENTITY_SCHEMA.col_c) == [1]))
+                | (FilterField(TEST_ENTITY_SCHEMA.col_b) == ["other"]),
+                ((pyarrow_field("col_a") == "test") & (pyarrow_field("col_c") == 1) | (
+                        pyarrow_field("col_b") == "other")),
+                [{"col_a": "test", "col_c": 1}, {"col_b": "other"}],
         ),
     ]
 )

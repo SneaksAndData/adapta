@@ -55,11 +55,8 @@ with AstraClient(
   # 0  entirely
 ```
 
-## EXPERIMENTAL - Filtering API.
-
-You can also generate filter expressions for Astra using the new filtering API. Note that this API will be abstracted from the engine in future releases and could also be used with PyArrow expressions. 
-Right now only Astra is supported. Example usage:
-
+## Filtering API
+Generate filter expressions and compile them for Astra or for PyArrow expressions. Example usage:
 1. Create a table
 ```cassandraql
 create table tmp.test_entity_new(
@@ -74,9 +71,10 @@ insert into tmp.test_entity_new (col_a, col_b, col_c, col_d) VALUES ('something1
 insert into tmp.test_entity_new (col_a, col_b, col_c, col_d) VALUES ('something1', 'different', 456, [1, 2, 3]);
 insert into tmp.test_entity_new (col_a, col_b, col_c, col_d) VALUES ('something2', 'special', 0, [0, 32, 333]);
 ```
- 2. Create field expressions and apply them
+
+2. Create field expressions and apply them
 ```python
-from adapta.storage.distributed_object_store.datastax_astra import AstraField
+from adapta.storage.models.filter_expression import FilterField, AstraFilterExpressionCompiler
 from adapta.storage.distributed_object_store.datastax_astra.astra_client import AstraClient
 from adapta.schema_management.schema_entity import PythonSchemaEntity
 
@@ -97,9 +95,17 @@ class TestEntityNew:
     col_d: List[int]
 
 SCHEMA: TestEntityNew = PythonSchemaEntity(TestEntityNew)
-simple_filter = (AstraField(SCHEMA.col_a) == "something1")
-combined_filter = (AstraField(SCHEMA.col_a) == "something1") & (AstraField(SCHEMA.col_b) == "else")
-combined_filter_with_collection = (AstraField(SCHEMA.col_a) == "something1") & (AstraField(SCHEMA.col_b).isin(['else', 'nonexistent']))
+simple_filter = FilterField[str](SCHEMA.col_a) == "something1"
+combined_filter = (FilterField[str](SCHEMA.col_a) == "something1") & (FilterField[str](SCHEMA.col_b) == "else")
+combined_filter_with_collection = (FilterField[str](SCHEMA.col_a) == "something1") & (FilterField[str](SCHEMA.col_b).isin(['else', 'nonexistent']))
+complex_filter = (FilterField[str](SCHEMA.col_a) == "something1") | (FilterField[str](SCHEMA.col_b) == "else") & (FilterField[int](SCHEMA.col_c) == 123)
+```
+3. Compile and apply filters for Astra
+```python
+simple_expression_astra = AstraFilterExpressionCompiler().compile(simple_filter)
+combined_expression_astra = AstraFilterExpressionCompiler().compile(complex_filter)
+combined_expression_with_collection_astra = AstraFilterExpressionCompiler().compile(combined_filter_with_collection)
+complex_expression_astra = AstraFilterExpressionCompiler().compile(complex_filter)
 
 with AstraClient(
         client_name='test',
@@ -108,20 +114,25 @@ with AstraClient(
         client_id='client id',
         client_secret='client secret'
 ) as ac:
-    print(ac.filter_entities(TestEntityNew, simple_filter.expression))
+    print(ac.filter_entities(TestEntityNew, simple_expression_astra))
     
     # simple filter field == value    
     #         col_a      col_b  col_c      col_d
     # 0  something1  different    456  [1, 2, 3]
     # 1  something1       else    123     [1, 2]    
     
-    print(ac.filter_entities(TestEntityNew, combined_filter.expression))
+    print(ac.filter_entities(TestEntityNew, combined_expression_astra))
 
     #         col_a col_b  col_c   col_d
     # 0  something1  else    123  [1, 2]
 
-    print(ac.filter_entities(TestEntityNew, combined_filter_with_collection.expression))
+    print(ac.filter_entities(TestEntityNew, combined_expression_with_collection_astra))
 
     #         col_a col_b  col_c   col_d
     # 0  something1  else    123  [1, 2]
+
+   print(ac.filter_entities(TestEntityNew, complex_expression_astra))
+    #         col_a col_b  col_c   col_d
+    # 0  something1  else    123  [1, 2]
+
 ```
