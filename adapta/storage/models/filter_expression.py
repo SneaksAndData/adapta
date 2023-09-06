@@ -7,7 +7,7 @@ import pyarrow.compute as pc
 from pyarrow.dataset import field as pyarrow_field
 
 TField = TypeVar("TField")  # pylint: disable=invalid-name
-TCompileTarget = TypeVar("TCompileTarget")
+TCompileTarget = TypeVar("TCompileTarget")  # pylint: disable=invalid-name
 
 
 class FilterExpressionOperation(Enum):
@@ -107,6 +107,7 @@ class FilterExpressionCompiler(Generic[TCompileTarget], ABC):
      :param TCompileTarget: The type of the compiled expression.
      :type TCompileTarget: Generic
      """
+
     @abstractmethod
     def compile(self, expr: FilterExpression) -> TCompileTarget:
         pass
@@ -119,48 +120,64 @@ class AstraFilterExpressionCompiler(FilterExpressionCompiler[List[Dict[str, Any]
         :param FilterExpressionCompiler: The base class for the compiler.
         :type FilterExpressionCompiler: TypeVar
     """
+
     def compile(self, expression: FilterExpression) -> List[Dict[str, Any]]:
         left = expression.left
         right = expression.right
         op = expression.op
         match op:
             case FilterExpressionOperation.EQ:
-                if type(right) == list:
-                    return [{f"{left.field_name}": right[0]}]
-                return [{f"{left.field_name}": right}]
+                self.compile_equality_expression(right, left)
             case FilterExpressionOperation.IN:
-                if type(right) == list:
-                    return [{f"{left.field_name}__in": right}]
-                return [{f"{left.field_name}": right}]
+                self.compile_isin_expression(right, left)
             case FilterExpressionOperation.AND:
-                left_result = AstraFilterExpressionCompiler().compile(left)
-                right_result = AstraFilterExpressionCompiler().compile(right)
-                return [{**d1, **d2} for d1, d2 in zip(left_result, right_result)]
+                self.compile_and_expression(right, left)
             case FilterExpressionOperation.OR:
-                if right.op == FilterExpressionOperation.AND:
-                    right_side = AstraFilterExpressionCompiler().compile(right)
-                    left_side = AstraFilterExpressionCompiler().compile(left)
-
-                    # Extract the last item from the right_side dictionary
-                    key = list(right_side[0])[-1]
-                    value = right_side[0][key]
-
-                    # Add the key-value pair to the left_side dictionary
-                    left_side[0].update({key: value})
-
-                    # Concatenate the left_side and right_side lists
-                    return left_side + right_side
-                else:
-                    # Compile both sides separately and concatenate the results
-                    return AstraFilterExpressionCompiler().compile(left) + AstraFilterExpressionCompiler().compile(
-                        right)
-
+                self.compile_or_expression(right,left)
             case _:
                 func = f"{op.name.lower()[0]}" + "t" + f"{op.name.lower()[1]}" if op in (
                     FilterExpressionOperation.LE, FilterExpressionOperation.GE) else op.name.lower()
                 if isinstance(right, list):
                     return [{f"{left.field_name}__{func}": right[0]}]
                 return [{f"{left.field_name}__{func}": right}]
+
+    @staticmethod
+    def compile_equality_expression(right, left):
+        if isinstance(right, list):
+            return [{f"{left.field_name}": right[0]}]
+        return [{f"{left.field_name}": right}]
+
+    @staticmethod
+    def compile_isin_expression(right, left):
+        if isinstance(right, list):
+            return [{f"{left.field_name}__in": right}]
+        return [{f"{left.field_name}": right}]
+
+    @staticmethod
+    def compile_and_expression(right, left):
+        left_result = AstraFilterExpressionCompiler().compile(left)
+        right_result = AstraFilterExpressionCompiler().compile(right)
+        return [{**d1, **d2} for d1, d2 in zip(left_result, right_result)]
+
+    @staticmethod
+    def compile_or_expression(right, left):
+        if right.op == FilterExpressionOperation.AND:
+            right_side = AstraFilterExpressionCompiler().compile(right)
+            left_side = AstraFilterExpressionCompiler().compile(left)
+
+            # Extract the last item from the right_side dictionary
+            key = list(right_side[0])[-1]
+            value = right_side[0][key]
+
+            # Add the key-value pair to the left_side dictionary
+            left_side[0].update({key: value})
+
+            # Concatenate the left_side and right_side lists
+            return left_side + right_side
+
+        # Compile both sides separately and concatenate the results
+        return AstraFilterExpressionCompiler().compile(left) + AstraFilterExpressionCompiler().compile(
+            right)
 
 
 @final
