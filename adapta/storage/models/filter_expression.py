@@ -84,13 +84,6 @@ class FilterField(Generic[TField]):
 class FilterExpression:
     """
     A filter expression that represents a comparison or combination of field values.
-
-    :param left: The left operand of the expression, either another FilterExpression or a FilterField.
-    :type left: Union['FilterExpression', FilterField]
-    :param right: The right operand of the expression, either another FilterExpression, a TField, or a list of TFields.
-    :type right: Union['FilterExpression', TField, List[TField]]
-    :param operation: The operation to apply to the left and right operands.
-    :type operation: FilterExpressionOperation
     """
 
     def __init__(self, left: Union['FilterExpression', FilterField],
@@ -110,25 +103,19 @@ class FilterExpression:
 class FilterExpressionCompiler(Generic[TCompileTarget], ABC):
     """
      A base class for translating FilterExpressions into a specific target language or library.
-
-     :param TCompileTarget: The type of the compiled expression.
-     :type TCompileTarget: Generic
-     """
+    """
 
     @abstractmethod
     def compile(self, expression: FilterExpression) -> TCompileTarget:
         """
         Compiles a FilterExpression into a target-specific expression that can be used to filter data.
         """
-        pass
 
 
 @final
 class AstraFilterExpressionCompiler(FilterExpressionCompiler[List[Dict[str, Any]]]):
     """
-        Translates a FilterExpression into Astra expression.
-        :param FilterExpressionCompiler: The base class for the compiler.
-        :type FilterExpressionCompiler: TypeVar
+    Translates a FilterExpression into Astra expression.
     """
 
     def compile(self, expression: FilterExpression) -> List[Dict[str, Any]]:
@@ -205,8 +192,6 @@ class AstraFilterExpressionCompiler(FilterExpressionCompiler[List[Dict[str, Any]
 class ArrowExpressionCompiler(FilterExpressionCompiler[pc.Expression]):
     """
         Translates a FilterExpression into a PyArrow expression.
-        :param FilterExpressionCompiler: The base class for the compiler.
-        :type FilterExpressionCompiler: TypeVar
     """
 
     def compile(self, expression: FilterExpression) -> pc.Expression:
