@@ -142,14 +142,11 @@ class StorageClient(ABC):
         """
 
     @abstractmethod
-    def copy_blob(
-        self,
-        blob_path: DataPath,
-        target_blob_path: DataPath,
-    ) -> None:
+    def copy_blob(self, blob_path: DataPath, target_blob_path: DataPath, doze_period_ms: int) -> None:
         """
         Copy blob at `blob_path` to `target_blob_path`
 
         :param blob_path: Path to source blob.
         :param target_blob_path: Path to target blob.
+        :param doze_period_ms: number of ms to doze between polling the status of the copy.
         """
