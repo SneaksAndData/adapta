@@ -205,7 +205,7 @@ class ArrowExpressionCompiler(FilterExpressionCompiler[pc.Expression]):
         if operation == FilterExpressionOperation.IN:
             # Compile an "isin" expression for the IN operator
             return pyarrow_field(expression.left.field_name).isin(expression.right)
-        elif operation == FilterExpressionOperation.AND | FilterExpressionOperation.OR:
+        elif operation == FilterExpressionOperation.AND or operation == FilterExpressionOperation.OR:
             # Compile a logical operator expression for 'AND' or 'OR'
             op_func = getattr(operator, expression.operation.name.lower() + "_")
             return op_func(ArrowExpressionCompiler().compile(expression.left),
