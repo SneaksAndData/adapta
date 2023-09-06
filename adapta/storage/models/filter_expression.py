@@ -11,6 +11,9 @@ TCompileTarget = TypeVar("TCompileTarget")  # pylint: disable=invalid-name
 
 
 class FilterExpressionOperation(Enum):
+    """
+    An enumeration of filter expression operations.
+    """
     AND = "&"
     OR = "|"
     GT = ">"
@@ -23,6 +26,10 @@ class FilterExpressionOperation(Enum):
 
 @final
 class FilterField(Generic[TField]):
+    """
+    A generic class that represents a field in a filter expression.
+    """
+
     def __init__(self, field_name):
         """
         Creates an instance of FilterField
@@ -110,6 +117,9 @@ class FilterExpressionCompiler(Generic[TCompileTarget], ABC):
 
     @abstractmethod
     def compile(self, expression: FilterExpression) -> TCompileTarget:
+        """
+        Compiles a FilterExpression into a target-specific expression that can be used to filter data.
+        """
         pass
 
 
@@ -127,11 +137,11 @@ class AstraFilterExpressionCompiler(FilterExpressionCompiler[List[Dict[str, Any]
         operation = expression.operation
         if operation == FilterExpressionOperation.EQ:
             return self.compile_equality_expression(right, left)
-        elif operation == FilterExpressionOperation.IN:
+        if operation == FilterExpressionOperation.IN:
             return self.compile_isin_expression(right, left)
-        elif operation == FilterExpressionOperation.AND:
+        if operation == FilterExpressionOperation.AND:
             return self.compile_and_expression(right, left)
-        elif operation == FilterExpressionOperation.OR:
+        if operation == FilterExpressionOperation.OR:
             return self.compile_or_expression(right, left)
 
         func = f"{operation.name.lower()[0]}" + "t" + f"{operation.name.lower()[1]}" if operation in (
@@ -200,12 +210,15 @@ class ArrowExpressionCompiler(FilterExpressionCompiler[pc.Expression]):
     """
 
     def compile(self, expression: FilterExpression) -> pc.Expression:
+        """
+            Compiles a FilterExpression into a PyArrow expression that can be used to filter data.
+        """
         operation = expression.operation
 
         if operation == FilterExpressionOperation.IN:
             # Compile an "isin" expression for the IN operator
             return pyarrow_field(expression.left.field_name).isin(expression.right)
-        elif operation == FilterExpressionOperation.AND or operation == FilterExpressionOperation.OR:
+        if operation in (FilterExpressionOperation.AND, FilterExpressionOperation.OR):
             # Compile a logical operator expression for 'AND' or 'OR'
             op_func = getattr(operator, expression.operation.name.lower() + "_")
             return op_func(ArrowExpressionCompiler().compile(expression.left),
