@@ -247,4 +247,4 @@ class AzureStorageClient(StorageClient):
 
     def copy_blob(self, blob_path: DataPath, target_blob_path: DataPath) -> None:
         source_url = self.get_blob_uri(blob_path)
-        self._get_blob_client(target_blob_path).start_copy_from_url(source_url, require_sync=True)
+        self._get_blob_client(target_blob_path).start_copy_from_url(source_url, requires_sync=True)
