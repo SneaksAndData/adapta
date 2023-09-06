@@ -19,6 +19,7 @@
 import os.path
 from datetime import datetime, timedelta
 from functools import partial
+import signal
 from threading import Thread
 from typing import Union, Optional, Dict, Type, TypeVar, Iterator, List, Callable
 
@@ -248,6 +249,12 @@ class AzureStorageClient(StorageClient):
     def copy_blob(self, blob_path: DataPath, target_blob_path: DataPath, doze_period_ms=1000) -> None:
         source_url = self.get_blob_uri(blob_path)
         self._get_blob_client(target_blob_path).start_copy_from_url(source_url)
+
+        def abort_query(_signal, _handler):
+            target_blob = self._get_blob_client(target_blob_path).get_blob_properties()
+            self._get_blob_client(target_blob_path).abort_copy(target_blob)
+
+        signal.signal(signal.SIGINT, abort_query)
 
         while True:
             copy_status = self._get_blob_client(target_blob_path).get_blob_properties().copy
