@@ -1,13 +1,16 @@
 """The operator module defines functions that implement the basic Python operators"""
+import abc
 import operator
 from enum import Enum
 from abc import abstractmethod, ABC
-from typing import final, List, Dict, Generic, TypeVar, Any, Union
+from typing import final, List, Dict, Generic, TypeVar, Any, Union, Type
 
+import pyarrow.compute
 import pyarrow.compute as pc
 from pyarrow.dataset import field as pyarrow_field
 
 TField = TypeVar("TField")  # pylint: disable=invalid-name
+TCompileResult = TypeVar("TCompileResult")
 TCompileTarget = TypeVar("TCompileTarget")  # pylint: disable=invalid-name
 
 
@@ -21,8 +24,14 @@ class FilterExpressionOperation(Enum):
     GT = ">"
     GE = ">="
     LT = "<"
-    LE = "<="
-    EQ = "=="
+    LE = {
+        "arrow": pyarrow.compute.Expression.__le__,
+        "astra": "__lte"
+    }
+    EQ = {
+        "arrow": pyarrow.compute.Expression.__eq__,
+        "astra": ""
+    }
     IN = "isin"
 
 
@@ -49,72 +58,114 @@ class FilterField(Generic[TField]):
         """
         Generates a filter condition checking that field value is one of the values provided.
         """
-        return FilterExpression(left=self, right=values, operation=FilterExpressionOperation.IN)
+        return FilterExpression(left_operand=self, right_operand=values, operation=FilterExpressionOperation.IN)
 
     def __gt__(self, values: List[TField]) -> "FilterExpression":
         """
         Generates a filter condition checking that field is greater than value.
         """
-        return FilterExpression(left=self, right=values, operation=FilterExpressionOperation.GT)
+        return FilterExpression(left_operand=self, right_operand=values, operation=FilterExpressionOperation.GT)
 
     def __ge__(self, values: List[TField]) -> "FilterExpression":
         """
         Generates a filter condition checking that field is greater or equal to value.
         """
-        return FilterExpression(left=self, right=values, operation=FilterExpressionOperation.GE)
+        return FilterExpression(left_operand=self, right_operand=values, operation=FilterExpressionOperation.GE)
 
     def __lt__(self, values: List[TField]) -> "FilterExpression":
         """
         Generates a filter condition checking that field is less than a value.
         """
-        return FilterExpression(left=self, right=values, operation=FilterExpressionOperation.LT)
+        return FilterExpression(left_operand=self, right_operand=values, operation=FilterExpressionOperation.LT)
 
     def __le__(self, values: List[TField]) -> "FilterExpression":
         """
         Generates a filter condition checking that field is less than or equal to a value.
         """
-        return FilterExpression(left=self, right=values, operation=FilterExpressionOperation.LE)
+        return FilterExpression(left_operand=self, right_operand=values, operation=FilterExpressionOperation.LE)
 
     def __eq__(self, values: List[TField]) -> "FilterExpression":
         """
         Generates a filter condition checking that field is equal to a value.
         """
-        return FilterExpression(left=self, right=values, operation=FilterExpressionOperation.EQ)
+        return FilterExpression(left_operand=self, right_operand=values, operation=FilterExpressionOperation.EQ)
 
 
-@final
-class FilterExpression:
+class FilterExpression(Generic[TCompileResult], abc.ABC):
     """
     A filter expression that represents a comparison or combination of field values.
     """
 
     def __init__(
         self,
-        left: Union["FilterExpression", FilterField],
-        right: Union["FilterExpression", TField, List[TField]],
+        left_operand: Union["FilterExpression", FilterField],
+        right_operand: Union["FilterExpression", TField, List[TField]],
         operation: FilterExpressionOperation,
     ):
-        self.left = left
-        self.right = right
+        assert (type(left_operand) is FilterExpression and type(right_operand) is FilterExpression) or (type(left_operand) is FilterField and type(right_operand) is not FilterExpression), "Both left and right operands must either be of type 'FilterExpression' or the left operand should be of type 'FilterField' and right operand should not be of type 'FilterExpression'"
+
+        self.left_operand = left_operand
+        self.right_operand = right_operand
         self.operation = operation
 
-    def __and__(self, other: "FilterExpression") -> "FilterExpression":
-        return FilterExpression(left=self, right=other, operation=FilterExpressionOperation.AND)
-
-    def __or__(self, other: "FilterExpression") -> "FilterExpression":
-        return FilterExpression(left=self, right=other, operation=FilterExpressionOperation.OR)
-
-
-class FilterExpressionCompiler(Generic[TCompileTarget], ABC):
-    """
-    A base class for translating FilterExpressions into a specific target language or library.
-    """
+    @abstractmethod
+    def _compile_base_case(self, field_name: str, field_values: Union[TField, List[TField]]) -> TCompileResult:
+        """
+         stuff
+        """
 
     @abstractmethod
-    def compile(self, expression: FilterExpression) -> TCompileTarget:
+    def _combine_results(self, compiled_result_a: TCompileResult, compiled_result_b: TCompileResult, op: FilterExpressionOperation) -> TCompileResult:
         """
-        Compiles a FilterExpression into a target-specific expression that can be used to filter data.
+         stuff
         """
+
+    def compile(self):
+
+        if type(self.left_operand) is FilterField:
+            return self._compile_base_case(self.left_operand.field_name, self.right_operand)
+
+        left_compiled = self.left_operand.compile()
+        right_compiled = self.right_operand.compile()
+
+        return self._combine_results(left_compiled, right_compiled, self.operation)
+
+
+    def __and__(self, other: "FilterExpression") -> "FilterExpression":
+        return FilterExpression(left_operand=self, right_operand=other, operation=FilterExpressionOperation.AND)
+
+    def __or__(self, other: "FilterExpression") -> "FilterExpression":
+        return FilterExpression(left_operand=self, right_operand=other, operation=FilterExpressionOperation.OR)
+
+
+@final
+class AstraFilterExpression(FilterExpression[List[Dict[str, Any]]]):
+    def _compile_base_case(self, field_name: str, field_values: Union[TField, List[TField]]) -> TCompileResult:
+        pass
+
+    def _combine_results(self, compiled_result_a: TCompileResult, compiled_result_b: TCompileResult,
+                         op: FilterExpressionOperation) -> TCompileResult:
+        pass
+
+
+@final
+class ArrowFilterExpression(FilterExpression[pyarrow.compute.Expression]):
+
+    def _compile_base_case(self, field_name: str, field_values: Union[TField, List[TField]]) -> TCompileResult:
+        pass
+
+    def _combine_results(self, compiled_result_a: TCompileResult, compiled_result_b: TCompileResult,
+                         op: FilterExpressionOperation) -> TCompileResult:
+        pass
+
+def compile_expression(expr: FilterExpression, target: Type[FilterExpression[TCompileResult]]) -> TCompileResult:
+    pass
+
+
+e = (FilterField("test") == FilterField("test2"))
+astra_result = compile_expression(e, AstraFilterExpression)
+arrow_result = compile_expression(e, ArrowFilterExpression)
+
 
 
 @final
@@ -124,8 +175,12 @@ class AstraFilterExpressionCompiler(FilterExpressionCompiler[List[Dict[str, Any]
     """
 
     def compile(self, expression: FilterExpression) -> List[Dict[str, Any]]:
-        left = expression.left
-        right = expression.right
+        def compile_expression(right_op: FilterExpression, left_op: FilterExpression, op: FilterExpressionOperation) -> List[Dict[str, Any]]:
+            return [{f"{left_op.field_name}__{op.name}": right_op.}]
+
+
+        left = expression.left_operand
+        right = expression.right_operand
         operation = expression.operation
         if operation == FilterExpressionOperation.EQ:
             return self.compile_equality_expression(right, left)
@@ -152,7 +207,7 @@ class AstraFilterExpressionCompiler(FilterExpressionCompiler[List[Dict[str, Any]
         """
         if isinstance(right, list):
             return [{f"{left.field_name}": right[0]}]
-        return [{f"{left.field_name}": right}]
+        return [{left.field_name: right}]
 
     @staticmethod
     def compile_isin_expression(right, left):
@@ -207,17 +262,17 @@ class ArrowExpressionCompiler(FilterExpressionCompiler[pc.Expression]):
 
         if operation == FilterExpressionOperation.IN:
             # Compile an "isin" expression for the IN operator
-            return pyarrow_field(expression.left.field_name).isin(expression.right)
+            return pyarrow_field(expression.left_operand.field_name).isin(expression.right_operand)
         if operation in (FilterExpressionOperation.AND, FilterExpressionOperation.OR):
             # Compile a logical operator expression for 'AND' or 'OR'
             op_func = getattr(operator, expression.operation.name.lower() + "_")
             return op_func(
-                ArrowExpressionCompiler().compile(expression.left), ArrowExpressionCompiler().compile(expression.right)
+                ArrowExpressionCompiler().compile(expression.left_operand), ArrowExpressionCompiler().compile(expression.right_operand)
             )
 
         # For other operators, compile a binary operator expression
         op_func = getattr(operator, expression.operation.name.lower())
-        if isinstance(expression.right, list):
-            return op_func(pyarrow_field(expression.left.field_name), expression.right[0])
+        if isinstance(expression.right_operand, list):
+            return op_func(pyarrow_field(expression.left_operand.field_name), expression.right_operand[0])
         # This is needed for compiling combined expressions
-        return op_func(pyarrow_field(expression.left.field_name), expression.right)
+        return op_func(pyarrow_field(expression.left_operand.field_name), expression.right_operand)
