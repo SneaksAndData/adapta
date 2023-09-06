@@ -1,3 +1,4 @@
+"""The operator module defines functions that implement the basic Python operators"""
 import operator
 from enum import Enum
 from abc import abstractmethod, ABC
@@ -151,9 +152,7 @@ class AstraFilterExpressionCompiler(FilterExpressionCompiler[List[Dict[str, Any]
         """
             Compiles an 'isin' expression into a dictionary that can be used to filter astra data.
         """
-        if isinstance(right, list):
-            return [{f"{left.field_name}__in": right}]
-        return [{f"{left.field_name}": right}]
+        return [{f"{left.field_name}__in": right}]
 
     @staticmethod
     def compile_and_expression(right, left):
