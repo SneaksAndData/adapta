@@ -15,6 +15,7 @@ class FilterExpressionOperation(Enum):
     """
     An enumeration of filter expression operations.
     """
+
     AND = "&"
     OR = "|"
     GT = ">"
@@ -87,9 +88,12 @@ class FilterExpression:
     A filter expression that represents a comparison or combination of field values.
     """
 
-    def __init__(self, left: Union['FilterExpression', FilterField],
-                 right: Union['FilterExpression', TField, List[TField]],
-                 operation: FilterExpressionOperation):
+    def __init__(
+        self,
+        left: Union["FilterExpression", FilterField],
+        right: Union["FilterExpression", TField, List[TField]],
+        operation: FilterExpressionOperation,
+    ):
         self.left = left
         self.right = right
         self.operation = operation
@@ -103,7 +107,7 @@ class FilterExpression:
 
 class FilterExpressionCompiler(Generic[TCompileTarget], ABC):
     """
-     A base class for translating FilterExpressions into a specific target language or library.
+    A base class for translating FilterExpressions into a specific target language or library.
     """
 
     @abstractmethod
@@ -132,8 +136,11 @@ class AstraFilterExpressionCompiler(FilterExpressionCompiler[List[Dict[str, Any]
         if operation == FilterExpressionOperation.OR:
             return self.compile_or_expression(right, left)
 
-        func = f"{operation.name.lower()[0]}" + "t" + f"{operation.name.lower()[1]}" if operation in (
-            FilterExpressionOperation.LE, FilterExpressionOperation.GE) else operation.name.lower()
+        func = (
+            f"{operation.name.lower()[0]}" + "t" + f"{operation.name.lower()[1]}"
+            if operation in (FilterExpressionOperation.LE, FilterExpressionOperation.GE)
+            else operation.name.lower()
+        )
         if isinstance(right, list):
             return [{f"{left.field_name}__{func}": right[0]}]
         return [{f"{left.field_name}__{func}": right}]
@@ -141,7 +148,7 @@ class AstraFilterExpressionCompiler(FilterExpressionCompiler[List[Dict[str, Any]
     @staticmethod
     def compile_equality_expression(right, left):
         """
-         Compiles an equality expression into a dictionary that can be used to filter astra data.
+        Compiles an equality expression into a dictionary that can be used to filter astra data.
         """
         if isinstance(right, list):
             return [{f"{left.field_name}": right[0]}]
@@ -150,14 +157,14 @@ class AstraFilterExpressionCompiler(FilterExpressionCompiler[List[Dict[str, Any]
     @staticmethod
     def compile_isin_expression(right, left):
         """
-            Compiles an 'isin' expression into a dictionary that can be used to filter astra data.
+        Compiles an 'isin' expression into a dictionary that can be used to filter astra data.
         """
         return [{f"{left.field_name}__in": right}]
 
     @staticmethod
     def compile_and_expression(right, left):
         """
-            Compiles an AND expression into a dictionary that can be used to filter astra data.
+        Compiles an AND expression into a dictionary that can be used to filter astra data.
         """
         left_result = AstraFilterExpressionCompiler().compile(left)
         right_result = AstraFilterExpressionCompiler().compile(right)
@@ -166,7 +173,7 @@ class AstraFilterExpressionCompiler(FilterExpressionCompiler[List[Dict[str, Any]
     @staticmethod
     def compile_or_expression(right, left):
         """
-            Compiles an OR expression into a dictionary that can be used to filter astra data.
+        Compiles an OR expression into a dictionary that can be used to filter astra data.
         """
         if right.operation == FilterExpressionOperation.AND:
             right_side = AstraFilterExpressionCompiler().compile(right)
@@ -183,19 +190,18 @@ class AstraFilterExpressionCompiler(FilterExpressionCompiler[List[Dict[str, Any]
             return left_side + right_side
 
         # Compile both sides separately and concatenate the results
-        return AstraFilterExpressionCompiler().compile(left) + AstraFilterExpressionCompiler().compile(
-            right)
+        return AstraFilterExpressionCompiler().compile(left) + AstraFilterExpressionCompiler().compile(right)
 
 
 @final
 class ArrowExpressionCompiler(FilterExpressionCompiler[pc.Expression]):
     """
-        Translates a FilterExpression into a PyArrow expression.
+    Translates a FilterExpression into a PyArrow expression.
     """
 
     def compile(self, expression: FilterExpression) -> pc.Expression:
         """
-            Compiles a FilterExpression into a PyArrow expression that can be used to filter data.
+        Compiles a FilterExpression into a PyArrow expression that can be used to filter data.
         """
         operation = expression.operation
 
@@ -205,8 +211,9 @@ class ArrowExpressionCompiler(FilterExpressionCompiler[pc.Expression]):
         if operation in (FilterExpressionOperation.AND, FilterExpressionOperation.OR):
             # Compile a logical operator expression for 'AND' or 'OR'
             op_func = getattr(operator, expression.operation.name.lower() + "_")
-            return op_func(ArrowExpressionCompiler().compile(expression.left),
-                           ArrowExpressionCompiler().compile(expression.right))
+            return op_func(
+                ArrowExpressionCompiler().compile(expression.left), ArrowExpressionCompiler().compile(expression.right)
+            )
 
         # For other operators, compile a binary operator expression
         op_func = getattr(operator, expression.operation.name.lower())
