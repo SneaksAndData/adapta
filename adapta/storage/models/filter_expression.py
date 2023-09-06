@@ -125,21 +125,20 @@ class AstraFilterExpressionCompiler(FilterExpressionCompiler[List[Dict[str, Any]
         left = expression.left
         right = expression.right
         operation = expression.operation
-        match operation:
-            case FilterExpressionOperation.EQ:
-                return self.compile_equality_expression(right, left)
-            case FilterExpressionOperation.IN:
-                return self.compile_isin_expression(right, left)
-            case FilterExpressionOperation.AND:
-                return self.compile_and_expression(right, left)
-            case FilterExpressionOperation.OR:
-                return self.compile_or_expression(right, left)
-            case _:
-                func = f"{operation.name.lower()[0]}" + "t" + f"{operation.name.lower()[1]}" if operation in (
-                    FilterExpressionOperation.LE, FilterExpressionOperation.GE) else operation.name.lower()
-                if isinstance(right, list):
-                    return [{f"{left.field_name}__{func}": right[0]}]
-                return [{f"{left.field_name}__{func}": right}]
+        if operation == FilterExpressionOperation.EQ:
+            return self.compile_equality_expression(right, left)
+        elif operation == FilterExpressionOperation.IN:
+            return self.compile_isin_expression(right, left)
+        elif operation == FilterExpressionOperation.AND:
+            return self.compile_and_expression(right, left)
+        elif operation == FilterExpressionOperation.OR:
+            return self.compile_or_expression(right, left)
+
+        func = f"{operation.name.lower()[0]}" + "t" + f"{operation.name.lower()[1]}" if operation in (
+            FilterExpressionOperation.LE, FilterExpressionOperation.GE) else operation.name.lower()
+        if isinstance(right, list):
+            return [{f"{left.field_name}__{func}": right[0]}]
+        return [{f"{left.field_name}__{func}": right}]
 
     @staticmethod
     def compile_equality_expression(right, left):
@@ -201,19 +200,20 @@ class ArrowExpressionCompiler(FilterExpressionCompiler[pc.Expression]):
     """
 
     def compile(self, expression: FilterExpression) -> pc.Expression:
-        match expression.operation:
-            case FilterExpressionOperation.IN:
-                # Compile an "isin" expression for the IN operator
-                return pyarrow_field(expression.left.field_name).isin(expression.right)
-            case FilterExpressionOperation.AND | FilterExpressionOperation.OR:
-                # Compile a logical operator expression for 'AND' or 'OR'
-                op_func = getattr(operator, expression.operation.name.lower() + "_")
-                return op_func(ArrowExpressionCompiler().compile(expression.left),
-                               ArrowExpressionCompiler().compile(expression.right))
-            case _:
-                # For other operators, compile a binary operator expression
-                op_func = getattr(operator, expression.operation.name.lower())
-                if isinstance(expression.right, list):
-                    return op_func(pyarrow_field(expression.left.field_name), expression.right[0])
-                # This is needed for compiling combined expressions
-                return op_func(pyarrow_field(expression.left.field_name), expression.right)
+        operation = expression.operation
+
+        if operation == FilterExpressionOperation.IN:
+            # Compile an "isin" expression for the IN operator
+            return pyarrow_field(expression.left.field_name).isin(expression.right)
+        elif operation == FilterExpressionOperation.AND | FilterExpressionOperation.OR:
+            # Compile a logical operator expression for 'AND' or 'OR'
+            op_func = getattr(operator, expression.operation.name.lower() + "_")
+            return op_func(ArrowExpressionCompiler().compile(expression.left),
+                           ArrowExpressionCompiler().compile(expression.right))
+
+        # For other operators, compile a binary operator expression
+        op_func = getattr(operator, expression.operation.name.lower())
+        if isinstance(expression.right, list):
+            return op_func(pyarrow_field(expression.left.field_name), expression.right[0])
+        # This is needed for compiling combined expressions
+        return op_func(pyarrow_field(expression.left.field_name), expression.right)
