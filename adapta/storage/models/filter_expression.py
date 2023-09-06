@@ -127,13 +127,13 @@ class AstraFilterExpressionCompiler(FilterExpressionCompiler[List[Dict[str, Any]
         operation = expression.operation
         match operation:
             case FilterExpressionOperation.EQ:
-                self.compile_equality_expression(right, left)
+                return self.compile_equality_expression(right, left)
             case FilterExpressionOperation.IN:
-                self.compile_isin_expression(right, left)
+                return self.compile_isin_expression(right, left)
             case FilterExpressionOperation.AND:
-                self.compile_and_expression(right, left)
+                return self.compile_and_expression(right, left)
             case FilterExpressionOperation.OR:
-                self.compile_or_expression(right, left)
+                return self.compile_or_expression(right, left)
             case _:
                 func = f"{operation.name.lower()[0]}" + "t" + f"{operation.name.lower()[1]}" if operation in (
                     FilterExpressionOperation.LE, FilterExpressionOperation.GE) else operation.name.lower()
