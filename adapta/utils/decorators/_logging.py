@@ -3,7 +3,7 @@ from functools import wraps
 
 from adapta.logs import SemanticLogger
 from adapta.metrics import MetricsProvider
-from adapta.utils import operation_time
+from adapta.utils._common import operation_time
 
 
 def run_time_metrics(method_type: str, pass_logger: bool = False, pass_metrics_provider: bool = False):
