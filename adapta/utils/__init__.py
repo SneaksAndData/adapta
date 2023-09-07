@@ -18,3 +18,4 @@
 #
 
 from adapta.utils._common import *
+from adapta.utils.decorators import run_time_metrics
