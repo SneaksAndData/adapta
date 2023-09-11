@@ -116,6 +116,5 @@ def test_generic_filtering(
         pyarrow_expected_expr: pc.Expression,
         astra_expected_expr: Dict[str, Any],
 ):
-    print(filter_expr)
     assert compile_expression(filter_expr, ArrowFilterExpression).equals(pyarrow_expected_expr)
     assert compile_expression(filter_expr, AstraFilterExpression) == astra_expected_expr

@@ -18,7 +18,7 @@ from adapta.storage.delta_lake import load, load_cached
 from adapta.logs import SemanticLogger
 from pyarrow.dataset import field as pyarrow_field
 from adapta.storage.cache.redis_cache import RedisCache
-from adapta.storage.models.filter_expression import FilterField, ArrowExpressionCompiler
+from adapta.storage.models.filter_expression import FilterField, ArrowFilterExpression, compile_expression
 
 # prepare connection
 azure_client = AzureClient(subscription_id='6c5538ce-b24a-4e2a-877f-979ad71287ff')
@@ -27,18 +27,19 @@ adls_path = AdlsGen2Path.from_hdfs_path('abfss://container@account.dfs.core.wind
 # get Iterable[pandas.DataFrame]
 batches = load(azure_client, adls_path, batch_size=1000)
 
-# create a filter and apply it
+# create generic filter expressions
 simple_filter = FilterField[str]("my_column") == "some-value"
 combined_filter = (FilterField[str]("my_column") == "some-value") & (FilterField[str]("other_column") == "another-value")
 combined_filter_with_collection = (FilterField[str]("my_column") == "something1") & (FilterField[str]("other_column").isin(['else', 'nonexistent']))
 complex_filter = (FilterField[str]("my_column") == "something1") | (FilterField[str]("other_column") == "else") & (FilterField[int]("another_column") == 123)
 
-simple_expression_pyarrow = ArrowExpressionCompiler().compile(simple_filter)
-combined_expression_pyarrow = ArrowExpressionCompiler().compile(combined_filter)
-combined_expression_with_collection_pyarrow = ArrowExpressionCompiler().compile(combined_filter_with_collection)
-complex_expression_pyarrow = ArrowExpressionCompiler().compile(complex_filter)
+# compile filters for PyArrow
+simple_expression_pyarrow = compile_expression(simple_filter, ArrowFilterExpression)
+combined_expression_pyarrow = compile_expression(combined_filter, ArrowFilterExpression)
+combined_expression_with_collection_pyarrow = compile_expression(combined_filter_with_collection, ArrowFilterExpression)
+complex_expression_pyarrow = compile_expression(complex_filter, ArrowFilterExpression)
 
-
+# apply filter 
 simple_filtered = load(azure_client, adls_path, row_filter=simple_expression_pyarrow, columns=["my_column", "my_other_column"])
 
 # simple_filtered is of type pandas.DataFrame

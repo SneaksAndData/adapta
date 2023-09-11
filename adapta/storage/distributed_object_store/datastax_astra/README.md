@@ -55,7 +55,7 @@ with AstraClient(
   # 0  entirely
 ```
 
-## Filtering API
+## EXPERIMENTAL - Generic Filtering API.
 Generate filter expressions and compile them for Astra or for PyArrow expressions. Example usage:
 1. Create a table
 ```cassandraql
@@ -74,7 +74,12 @@ insert into tmp.test_entity_new (col_a, col_b, col_c, col_d) VALUES ('something2
 
 2. Create field expressions and apply them
 ```python
-from adapta.storage.models.filter_expression import FilterField, AstraFilterExpressionCompiler
+from adapta.storage.models.filter_expression import (
+    FilterField,
+    ArrowFilterExpression,
+    AstraFilterExpression,
+    compile_expression
+)
 from adapta.storage.distributed_object_store.datastax_astra.astra_client import AstraClient
 from adapta.schema_management.schema_entity import PythonSchemaEntity
 
@@ -95,18 +100,25 @@ class TestEntityNew:
     col_d: List[int]
 
 SCHEMA: TestEntityNew = PythonSchemaEntity(TestEntityNew)
+# Create generic filters
 simple_filter = FilterField[str](SCHEMA.col_a) == "something1"
 combined_filter = (FilterField[str](SCHEMA.col_a) == "something1") & (FilterField[str](SCHEMA.col_b) == "else")
 combined_filter_with_collection = (FilterField[str](SCHEMA.col_a) == "something1") & (FilterField[str](SCHEMA.col_b).isin(['else', 'nonexistent']))
 complex_filter = (FilterField[str](SCHEMA.col_a) == "something1") | (FilterField[str](SCHEMA.col_b) == "else") & (FilterField[int](SCHEMA.col_c) == 123)
-```
-3. Compile and apply filters for Astra
-```python
-simple_expression_astra = AstraFilterExpressionCompiler().compile(simple_filter)
-combined_expression_astra = AstraFilterExpressionCompiler().compile(complex_filter)
-combined_expression_with_collection_astra = AstraFilterExpressionCompiler().compile(combined_filter_with_collection)
-complex_expression_astra = AstraFilterExpressionCompiler().compile(complex_filter)
 
+# Compile the filters for Astra
+simple_expression_astra = compile_expression(simple_filter, AstraFilterExpression)
+combined_expression_astra = compile_expression(combined_filter, AstraFilterExpression)
+combined_expression_with_collection_astra = compile_expression(combined_filter_with_collection, AstraFilterExpression)
+complex_expression_astra = compile_expression(complex_filter, AstraFilterExpression)
+
+# Compile filters for PyArrow
+simple_expression_astra = compile_expression(simple_filter, ArrowFilterExpression)
+combined_expression_astra = compile_expression(combined_filter, ArrowFilterExpression)
+combined_expression_with_collection_astra = compile_expression(combined_filter_with_collection, ArrowFilterExpression)
+complex_expression_astra = compile_expression(complex_filter, ArrowFilterExpression)
+
+# Apply the filters for Astra
 with AstraClient(
         client_name='test',
         keyspace='tmp',

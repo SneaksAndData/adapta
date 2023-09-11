@@ -1,6 +1,9 @@
-import abc
+"""
+    Models for generating filter expressions for PyArrow and Astra.
+"""
+
 from enum import Enum
-from abc import abstractmethod
+from abc import abstractmethod, ABC
 from typing import final, List, Dict, Generic, TypeVar, Any, Union, Type
 
 import pyarrow.compute
@@ -11,14 +14,14 @@ TCompileResult = TypeVar("TCompileResult")  # pylint: disable=invalid-name
 
 
 class FilterExpressionOperation(Enum):
+    """
+    An enumeration of filter expression operations.
+    """
 
     @staticmethod
     def _combine_astra_expressions(left_exprs: List[Dict[str, Any]], right_exprs: List[Dict[str, Any]]):
         return [left_expr | right_expr for left_expr in left_exprs for right_expr in right_exprs]
 
-    """
-    An enumeration of filter expression operations.
-    """
     AND = {
         "arrow": pyarrow.compute.Expression.__and__,
         "astra": _combine_astra_expressions
@@ -116,6 +119,10 @@ class FilterField(Generic[TField]):
 
 
 class Expression:
+    """
+       Represents an expression used to filter data.
+    """
+
     def __init__(
             self,
             left_operand: Union['Expression', FilterField],
@@ -140,26 +147,29 @@ class Expression:
         return Expression(left_operand=self, right_operand=other, operation=FilterExpressionOperation.OR)
 
 
-class FilterExpression(Generic[TCompileResult], abc.ABC):
+class FilterExpression(Generic[TCompileResult], ABC):
     """
     A filter expression that represents a comparison or combination of field values.
     """
 
     @abstractmethod
     def _compile_base_case(self, field_name: str, field_values: Union[TField, List[TField]],
-                           filter_operation: FilterExpressionOperation) -> TCompileResult:
+                           operation: FilterExpressionOperation) -> TCompileResult:
         """
          Compiles the base case of a filter expression.
         """
 
     @abstractmethod
     def _combine_results(self, compiled_result_a: TCompileResult, compiled_result_b: TCompileResult,
-                         filter_operation: FilterExpressionOperation) -> TCompileResult:
+                         operation: FilterExpressionOperation) -> TCompileResult:
         """
           Combines two compiled results of filter expressions.
         """
 
     def compile(self, expr: Expression):
+        """
+                Compiles a filter expression recursively using the concrete implementation of the 'FilterExpression' class.
+        """
         if isinstance(expr.left_operand, FilterField):
             print(expr.left_operand)
             print(expr.right_operand)
@@ -174,6 +184,10 @@ class FilterExpression(Generic[TCompileResult], abc.ABC):
 
 @final
 class AstraFilterExpression(FilterExpression[List[Dict[str, Any]]]):
+    """
+        A concrete implementation of the 'FilterExpression' abstract class for the Astra database service.
+    """
+
     def _compile_base_case(self, field_name: str, field_values: Union[TField, List[TField]],
                            operation: FilterExpressionOperation) -> TCompileResult:
         return [{f"{field_name}{operation.value['astra']}": field_values}]
@@ -185,6 +199,9 @@ class AstraFilterExpression(FilterExpression[List[Dict[str, Any]]]):
 
 @final
 class ArrowFilterExpression(FilterExpression[pyarrow.compute.Expression]):
+    """
+        A concrete implementation of the 'FilterExpression' abstract class for the PyArrow.
+    """
 
     def _compile_base_case(self, field_name: str, field_values: Union[TField, List[TField]],
                            filter_operation: FilterExpressionOperation) -> TCompileResult:
@@ -196,6 +213,9 @@ class ArrowFilterExpression(FilterExpression[pyarrow.compute.Expression]):
 
 
 def compile_expression(expr: Expression, target: Type[FilterExpression[TCompileResult]]) -> TCompileResult:
+    """
+        Compiles a filter expression using the specified target implementation.
+    """
     if not isinstance(expr, Expression):
         raise ValueError("Invalid expression type")
     return target().compile(expr)
