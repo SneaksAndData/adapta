@@ -25,7 +25,9 @@ adls_path = AdlsGen2Path.from_hdfs_path('abfss://container@account.dfs.core.wind
 
 # get Iterable[pandas.DataFrame]
 batches = load(azure_client, adls_path, batch_size=1000)
-
+```
+## Using the Filtering API.
+```python
 # create generic filter expressions
 simple_filter = FilterField[str]("my_column") == "some-value"
 combined_filter = (FilterField[str]("my_column") == "some-value") & (FilterField[str]("other_column") == "another-value")
