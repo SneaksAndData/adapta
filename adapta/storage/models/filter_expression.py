@@ -9,7 +9,6 @@ from typing import final, List, Dict, Generic, TypeVar, Any, Union, Type
 import pyarrow.compute
 from pyarrow.dataset import field as pyarrow_field
 
-TField = TypeVar("TField")  # pylint: disable=invalid-name
 TCompileResult = TypeVar("TCompileResult")  # pylint: disable=invalid-name
 
 
@@ -34,7 +33,7 @@ class FilterExpressionOperation(Enum):
 
 
 @final
-class FilterField(Generic[TField]):
+class FilterField:
     """
     A generic class that represents a field in a filter expression.
     """
@@ -52,38 +51,38 @@ class FilterField(Generic[TField]):
         """
         return self._field_name
 
-    def isin(self, values: List[TField]) -> "Expression":
+    def isin(self, values: List) -> "Expression":
         """
         Generates a filter condition checking that field value is one of the values provided.
         """
         return Expression(left_operand=self, right_operand=values, operation=FilterExpressionOperation.IN)
 
-    def __gt__(self, values: List[TField]) -> "Expression":
+    def __gt__(self, values: Any) -> "Expression":
         """
         Generates a filter condition checking that field is greater than value.
         """
         return Expression(left_operand=self, right_operand=values, operation=FilterExpressionOperation.GT)
 
-    def __ge__(self, values: List[TField]) -> "Expression":
+    def __ge__(self, values: Any) -> "Expression":
         """
         Generates a filter condition checking that field is greater or equal to value.
         """
         return Expression(left_operand=self, right_operand=values, operation=FilterExpressionOperation.GE)
 
-    def __lt__(self, values: List[TField]) -> "Expression":
+    def __lt__(self, values: Any) -> "Expression":
         """
         Generates a filter condition checking that field is less than a value.
         """
         return Expression(left_operand=self, right_operand=values, operation=FilterExpressionOperation.LT)
 
-    def __le__(self, values: List[TField]) -> "Expression":
+    def __le__(self, values: Any) -> "Expression":
         """
         Generates a filter condition checking that field is less than or equal to a value.
         """
 
         return Expression(left_operand=self, right_operand=values, operation=FilterExpressionOperation.LE)
 
-    def __eq__(self, values: TField) -> "Expression":
+    def __eq__(self, values: Any) -> "Expression":
         """
         Generates a filter condition checking that field is equal to a value.
         """
@@ -98,7 +97,7 @@ class Expression:
     def __init__(
         self,
         left_operand: Union["Expression", FilterField],
-        right_operand: Union["Expression", TField, List[TField]],
+        right_operand: Union["Expression", Any, List],
         operation: FilterExpressionOperation,
     ):
         assert (isinstance(left_operand, Expression) and isinstance(right_operand, Expression)) or (
@@ -128,7 +127,7 @@ class FilterExpression(Generic[TCompileResult], ABC):
 
     @abstractmethod
     def _compile_base_case(
-        self, field_name: str, field_values: Union[TField, List[TField]], operation: FilterExpressionOperation
+        self, field_name: str, field_values: Any, operation: FilterExpressionOperation
     ) -> TCompileResult:
         """
         Compiles the base case of a filter expression.
@@ -147,9 +146,6 @@ class FilterExpression(Generic[TCompileResult], ABC):
         Compiles a filter expression recursively using the concrete implementation of the 'FilterExpression' class.
         """
         if isinstance(expr.left_operand, FilterField):
-            print(expr.left_operand)
-            print(expr.right_operand)
-            print(expr.operation)
             return self._compile_base_case(expr.left_operand.field_name, expr.right_operand, expr.operation)
 
         left_compiled = self.compile(expr.left_operand)
@@ -165,7 +161,7 @@ class AstraFilterExpression(FilterExpression[List[Dict[str, Any]]]):
     """
 
     def _compile_base_case(
-        self, field_name: str, field_values: Union[TField, List[TField]], operation: FilterExpressionOperation
+        self, field_name: str, field_values: Any, operation: FilterExpressionOperation
     ) -> TCompileResult:
         return [{f"{field_name}{operation.value['astra']}": field_values}]
 
@@ -182,7 +178,7 @@ class ArrowFilterExpression(FilterExpression[pyarrow.compute.Expression]):
     """
 
     def _compile_base_case(
-        self, field_name: str, field_values: Union[TField, List[TField]], filter_operation: FilterExpressionOperation
+        self, field_name: str, field_values: Any, filter_operation: FilterExpressionOperation
     ) -> TCompileResult:
         return filter_operation.value["arrow"](pyarrow_field(field_name), field_values)
 
