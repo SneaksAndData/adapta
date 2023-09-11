@@ -55,7 +55,7 @@ with AstraClient(
   # 0  entirely
 ```
 
-## EXPERIMENTAL - Generic Filtering API.
+## Using the Filtering API.
 Generate filter expressions and compile them for Astra or for PyArrow expressions. Example usage:
 1. Create a table
 ```cassandraql
