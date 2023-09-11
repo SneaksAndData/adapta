@@ -111,19 +111,20 @@ with memory_limit(memory_limit_percentage=0.2):
 
 ### runtime_metrics:
 
-Decorator for logging method execution time and reporting function execution time to metric provider (DataDog).  
+Decorator for logging method execution time and reporting function execution time to metric provider (e.g. DataDog).  
 
 Notes:
-* Function call is logged with loglevel.INFO
-* Function runtime is logged with loglevel.DEBUG
+* When using the decorator the wrapped function must take logger and metrics_provider as keyword arguments.
+  * It is recommended to have decorated methods use `**kwargs` if logger and metric providers are not explicitly defined.
+* Logger sends logs with `loglevel.DEBUG`.
 
 Parameters:
-* method_type (optional): Type of method being wrapped. This will be used as a metric_name by the metric provider.
-* pass_logger (optional): If True, the logger will be passed to the wrapped function.
-* pass_metrics_provider (optional): If True, the metrics provider will be passed to the wrapped function.
-* extra_metric_entities (optional): Dictionary containing extra tags used by the metric provider.
+* `metric_name`: Type of method being wrapped. This will be used as a metric_name by the metric provider.
+* `tag_function_name` (optional): If True function name will be added as additional metric_tag. Defaults to False.
+* `metric_tags` (optional): Dictionary containing extra tags used by the metric provider.
 
 Example Usage:
+
 ```python
 import time
 from adapta.metrics.providers.datadog_provider import DatadogMetricsProvider
@@ -132,19 +133,18 @@ from adapta.logs.models import LogLevel
 from adapta.utils import run_time_metrics
 
 
-@run_time_metrics(method_type='example', pass_logger=True, pass_metrics_provider=True)
-def example_function(logger=None, metrics_provider=None):
+@run_time_metrics(metric_name='example')
+def example_function(logger=None, metrics_provider=None, **kwargs):
     time.sleep(1)
-    if logger:
-        logger.info('Logging from the example function')
-    if metrics_provider:
-        metrics_provider.gauge(metric_name="test_gauge", metric_value=1, tags={'env': 'test'})
+    logger.info('Logging from the example function')
+    metrics_provider.gauge(metric_name="test_gauge", metric_value=1, tags={'env': 'test'})
     return True
 
 
 provider = DatadogMetricsProvider(metric_namespace='test')
 datadog_tags = {'source': 'wrapper'}
-semantic_logger = SemanticLogger().add_log_source(log_source_name='test_logger_1', min_log_level=LogLevel.DEBUG, is_default=True)
+semantic_logger = SemanticLogger().add_log_source(log_source_name='test_logger_1', min_log_level=LogLevel.DEBUG,
+                                                  is_default=True)
 
-example_function(logger=semantic_logger, metrics_provider=provider, extra_metric_entities=datadog_tags)
+example_function(logger=semantic_logger, metrics_provider=provider, metric_tags=datadog_tags)
 ```

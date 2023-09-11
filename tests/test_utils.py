@@ -259,9 +259,8 @@ def test_data_adapter(drop_missing: bool):
     assert (result["D"] == 7).all()
 
 
-@pytest.mark.parametrize("pass_logger", [True, False])
 @pytest.mark.parametrize("loglevel", [LogLevel.DEBUG, LogLevel.INFO])
-def test_runtime_decorator(caplog, pass_logger, loglevel):
+def test_runtime_decorator(caplog, loglevel):
     """
     Test that run_time_metrics_decorator reports correct information for every run of the algorithm.
 
@@ -269,7 +268,6 @@ def test_runtime_decorator(caplog, pass_logger, loglevel):
     Secondly tests that wrapped method sends logs when logger is passed.
 
     :param caplog: pytest fixture for testing logging.
-    :param pass_logger: Flag to denote if logger should be passed to wrapped function
     :param loglevel: Loglevel that is tested.
     """
     logger = SemanticLogger().add_log_source(
@@ -278,23 +276,22 @@ def test_runtime_decorator(caplog, pass_logger, loglevel):
         log_handlers=[StreamHandler(sys.stdout)],
         is_default=True,
     )
+
+    class DummyMetricProvider:
+        def gauge(self, **kwargs):
+            return True
+
+    metrics_provider = DummyMetricProvider()
     run_type = "test_execution"
     print_from_func = "from_function_call"
 
-    @run_time_metrics(method_type=run_type, pass_logger=pass_logger)
-    def test_function(logger=None):
-        if logger:
-            logger.info(print_from_func)
+    @run_time_metrics(metric_name=run_type, tag_function_name=True)
+    def test_function(logger=None, **_kwargs):
+        logger.info(print_from_func)
         return True
 
-    test_function()
-    assert caplog.text == str()
-
-    caplog.clear()
-    test_function(logger=logger)
-    assert "DEBUG" not in caplog.text if loglevel == LogLevel.INFO else "DEBUG" in caplog.text
-    assert "test_function" in caplog.text and run_type in caplog.text
-
+    test_function(logger=logger, metrics_provider=metrics_provider)
     if loglevel == LogLevel.DEBUG:
+        assert "test_function" in caplog.text and run_type in caplog.text
         assert "finished in" in caplog.text and "s seconds" in caplog.text
-    assert print_from_func in caplog.text if pass_logger else True
+    assert print_from_func in caplog.text
