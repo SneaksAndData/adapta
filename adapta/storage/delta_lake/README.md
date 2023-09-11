@@ -16,7 +16,6 @@ from adapta.storage.models.azure import AdlsGen2Path
 from adapta.storage.models.hive import HivePath
 from adapta.storage.delta_lake import load, load_cached
 from adapta.logs import SemanticLogger
-from pyarrow.dataset import field as pyarrow_field
 from adapta.storage.cache.redis_cache import RedisCache
 from adapta.storage.models.filter_expression import FilterField, ArrowFilterExpression, compile_expression
 
