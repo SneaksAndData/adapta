@@ -19,6 +19,7 @@
 import os.path
 from datetime import datetime, timedelta
 from functools import partial
+import signal
 from threading import Thread
 from typing import Union, Optional, Dict, Type, TypeVar, Iterator, List, Callable
 
@@ -38,7 +39,7 @@ from adapta.security.clients import AzureClient
 from adapta.storage.models.azure import AdlsGen2Path, WasbPath, cast_path
 from adapta.storage.models.base import DataPath
 from adapta.storage.models.format import SerializationFormat
-from adapta.utils import chunk_list
+from adapta.utils import chunk_list, doze
 
 T = TypeVar("T")  # pylint: disable=C0103
 
@@ -244,3 +245,25 @@ class AzureStorageClient(StorageClient):
         azure_path = cast_path(blob_path)
 
         self._get_container_client(azure_path).delete_blob(blob_path.path)
+
+    def copy_blob(self, blob_path: DataPath, target_blob_path: DataPath, doze_period_ms=1000) -> None:
+        source_url = self.get_blob_uri(blob_path)
+        self._get_blob_client(target_blob_path).start_copy_from_url(source_url)
+
+        def abort_query(_signal, _handler):
+            target_blob = self._get_blob_client(target_blob_path).get_blob_properties()
+            self._get_blob_client(target_blob_path).abort_copy(target_blob)
+
+        signal.signal(signal.SIGINT, abort_query)
+
+        while True:
+            copy_status = self._get_blob_client(target_blob_path).get_blob_properties().copy
+            if copy_status.status == "success":
+                break
+
+            if copy_status.status != "pending":
+                raise RuntimeError(
+                    f"Copy of file {blob_path.to_hdfs_path()} to {target_blob_path.to_hdfs_path()} failed with error:\n{copy_status.status}, {copy_status.status_description}"
+                )
+
+            doze(doze_period_ms)
