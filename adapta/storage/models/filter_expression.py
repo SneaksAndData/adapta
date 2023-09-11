@@ -18,17 +18,13 @@ class FilterExpressionOperation(Enum):
     An enumeration of filter expression operations.
     """
 
-    @staticmethod
-    def _combine_astra_expressions(left_exprs: List[Dict[str, Any]], right_exprs: List[Dict[str, Any]]):
-        return [left_expr | right_expr for left_expr in left_exprs for right_expr in right_exprs]
-
     AND = {
         "arrow": pyarrow.compute.Expression.__and__,
-        "astra": _combine_astra_expressions
+        "astra": lambda left_exprs, right_exprs: [left_expr | right_expr for left_expr in left_exprs for right_expr in right_exprs]
     }
     OR = {
         "arrow": pyarrow.compute.Expression.__or__,
-        "astra": lambda a, b: a + b
+        "astra": lambda left_exprs, right_exprs: left_exprs + right_exprs
     }
     GT = {
         "arrow": pyarrow.compute.Expression.__gt__,
@@ -185,7 +181,7 @@ class FilterExpression(Generic[TCompileResult], ABC):
 @final
 class AstraFilterExpression(FilterExpression[List[Dict[str, Any]]]):
     """
-        A concrete implementation of the 'FilterExpression' abstract class for the Astra database service.
+        A concrete implementation of the 'FilterExpression' abstract class for Astra.
     """
 
     def _compile_base_case(self, field_name: str, field_values: Union[TField, List[TField]],
@@ -200,7 +196,7 @@ class AstraFilterExpression(FilterExpression[List[Dict[str, Any]]]):
 @final
 class ArrowFilterExpression(FilterExpression[pyarrow.compute.Expression]):
     """
-        A concrete implementation of the 'FilterExpression' abstract class for the PyArrow.
+        A concrete implementation of the 'FilterExpression' abstract class for PyArrow.
     """
 
     def _compile_base_case(self, field_name: str, field_values: Union[TField, List[TField]],
