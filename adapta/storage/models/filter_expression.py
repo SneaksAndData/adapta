@@ -86,7 +86,7 @@ class FilterField:
         """
         Generates a filter condition checking that field is equal to a value.
         """
-        return Expression(self, values, FilterExpressionOperation.EQ)
+        return Expression(left_operand=self, right_operand=values, operation=FilterExpressionOperation.EQ)
 
 
 class Expression:

@@ -24,8 +24,8 @@ from typing import Optional, Union, Iterator, List, Iterable, Tuple
 import pandas
 import pyarrow
 from deltalake import DeltaTable
+from adapta.storage.models.filter_expression import Expression, ArrowFilterExpression, compile_expression
 from pyarrow import RecordBatch, Table
-from pyarrow._compute import Expression  # pylint: disable=E0611
 from pyarrow._dataset_parquet import ParquetReadOptions  # pylint: disable=E0611
 
 from adapta.logs import SemanticLogger
@@ -40,7 +40,7 @@ def load(  # pylint: disable=R0913
     auth_client: AuthenticationClient,
     path: DataPath,
     version: Optional[int] = None,
-    row_filter: Optional[Expression] = None,
+    row_filter: Optional[Union[Expression, pyarrow.compute.Expression]] = None,
     columns: Optional[List[str]] = None,
     batch_size: Optional[int] = None,
     partition_filter_expressions: Optional[List[Tuple]] = None,
@@ -73,6 +73,8 @@ def load(  # pylint: disable=R0913
         parquet_read_options=ParquetReadOptions(coerce_int96_timestamp_unit="ms"),
         filesystem=auth_client.get_pyarrow_filesystem(path),
     )
+
+    row_filter = compile_expression(row_filter, ArrowFilterExpression) if isinstance(row_filter, Expression) else row_filter
 
     if batch_size:
         batches: Iterator[RecordBatch] = pyarrow_ds.to_batches(
