@@ -24,7 +24,6 @@ from typing import Optional, Union, Iterator, List, Iterable, Tuple
 import pandas
 import pyarrow
 from deltalake import DeltaTable
-from adapta.storage.models.filter_expression import Expression, ArrowFilterExpression, compile_expression
 from pyarrow import RecordBatch, Table
 from pyarrow._dataset_parquet import ParquetReadOptions  # pylint: disable=E0611
 
@@ -34,6 +33,7 @@ from adapta.storage.models.base import DataPath
 from adapta.storage.delta_lake._models import DeltaTransaction
 from adapta.storage.cache import KeyValueCache
 from adapta.storage.models.format import DataFrameParquetSerializationFormat
+from adapta.storage.models.filter_expression import Expression, ArrowFilterExpression, compile_expression
 
 
 def load(  # pylint: disable=R0913
@@ -74,7 +74,9 @@ def load(  # pylint: disable=R0913
         filesystem=auth_client.get_pyarrow_filesystem(path),
     )
 
-    row_filter = compile_expression(row_filter, ArrowFilterExpression) if isinstance(row_filter, Expression) else row_filter
+    row_filter = (
+        compile_expression(row_filter, ArrowFilterExpression) if isinstance(row_filter, Expression) else row_filter
+    )
 
     if batch_size:
         batches: Iterator[RecordBatch] = pyarrow_ds.to_batches(
