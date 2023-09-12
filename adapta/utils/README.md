@@ -117,6 +117,7 @@ Notes:
 * When using the decorator the wrapped function must take logger and metrics_provider as keyword arguments.
   * It is recommended to have decorated methods use `**kwargs` if logger and metric providers are not explicitly defined.
 * Logger sends logs with `loglevel.DEBUG`.
+* Run-time metrics are send in seconds. 
 
 Parameters:
 * `metric_name`: Type of method being wrapped. This will be used as a metric_name by the metric provider.
@@ -126,25 +127,29 @@ Parameters:
 Example Usage:
 
 ```python
-import time
 from adapta.metrics.providers.datadog_provider import DatadogMetricsProvider
 from adapta.logs import SemanticLogger
 from adapta.logs.models import LogLevel
 from adapta.utils import run_time_metrics
 
-
 @run_time_metrics(metric_name='example')
-def example_function(logger=None, metrics_provider=None, **kwargs):
-    time.sleep(1)
-    logger.info('Logging from the example function')
-    metrics_provider.gauge(metric_name="test_gauge", metric_value=1, tags={'env': 'test'})
-    return True
+def adder(number1, number2, logger=None, **_kwargs):
+    result = number1 + number2
+    logger.info(f'Sum of the numbers {result}')
+    return result
 
+@run_time_metrics(metric_name='update_message')
+def upgrade_message(message, logger=None, metrics_provider=None, **_kwargs):
+    message += ' : - )'
+    logger.info(message)
+    metrics_provider.gauge(metric_name="test_gauge", metric_value=1, tags={'env': 'test'})
+    return message
 
 provider = DatadogMetricsProvider(metric_namespace='test')
 datadog_tags = {'source': 'wrapper'}
 semantic_logger = SemanticLogger().add_log_source(log_source_name='test_logger_1', min_log_level=LogLevel.DEBUG,
                                                   is_default=True)
 
-example_function(logger=semantic_logger, metrics_provider=provider, metric_tags=datadog_tags)
+adder(5, 4, logger=semantic_logger, metrics_provider=provider, metric_tags=datadog_tags)
+upgrade_message('Lorum Ipsum', logger=semantic_logger, metrics_provider=provider, metric_tags=datadog_tags)
 ```

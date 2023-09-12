@@ -259,8 +259,9 @@ def test_data_adapter(drop_missing: bool):
     assert (result["D"] == 7).all()
 
 
+@pytest.mark.parametrize("reporting_level", [LogLevel.DEBUG, LogLevel.INFO])
 @pytest.mark.parametrize("loglevel", [LogLevel.DEBUG, LogLevel.INFO])
-def test_runtime_decorator(caplog, loglevel):
+def test_runtime_decorator(caplog, reporting_level, loglevel):
     """
     Test that run_time_metrics_decorator reports correct information for every run of the algorithm.
 
@@ -268,6 +269,7 @@ def test_runtime_decorator(caplog, loglevel):
     Secondly tests that wrapped method sends logs when logger is passed.
 
     :param caplog: pytest fixture for testing logging.
+    :param reporting_level: Reporting level defining at what level decorator sends logs.
     :param loglevel: Loglevel that is tested.
     """
     logger = SemanticLogger().add_log_source(
@@ -278,15 +280,15 @@ def test_runtime_decorator(caplog, loglevel):
     )
 
     class DummyMetricProvider:
-        def gauge(self, **kwargs):
+        def gauge(self, **_kwargs):
             return True
 
     metrics_provider = DummyMetricProvider()
     run_type = "test_execution"
     print_from_func = "from_function_call"
 
-    @run_time_metrics(metric_name=run_type, tag_function_name=True)
-    def test_function(logger=None, **_kwargs):
+    @run_time_metrics(metric_name=run_type, tag_function_name=True, reporting_level=reporting_level)
+    def test_function(logger, **_kwargs):
         logger.info(print_from_func)
         return True
 
@@ -294,4 +296,16 @@ def test_runtime_decorator(caplog, loglevel):
     if loglevel == LogLevel.DEBUG:
         assert "test_function" in caplog.text and run_type in caplog.text
         assert "finished in" in caplog.text and "s seconds" in caplog.text
+    elif loglevel == LogLevel.INFO:
+        assert "DEBUG" not in caplog.text
     assert print_from_func in caplog.text
+
+
+def test_missing_decorator_error():
+    """ Assert that readable error is raised when decorator (logger, metric provider) attributes are missing """
+    @run_time_metrics(metric_name='test_execution')
+    def test_function(logger, **_kwargs):
+        return
+
+    with pytest.raises(AttributeError):
+        test_function()
