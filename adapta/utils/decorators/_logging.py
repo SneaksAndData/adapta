@@ -29,8 +29,9 @@ def run_time_metrics(metric_name: str, tag_function_name: bool = False, reportin
             if log_method is None:
                 raise AttributeError(f"Logger {logger.__class__} does not send logs on level: {reporting_level}")
 
-            metric_tags = kwargs.pop("metric_tags", {})
-            metric_tags |= {"function_name": str(func.__name__)} if tag_function_name else {}
+            metric_tags = kwargs.pop("metric_tags", {}) | (
+                {"function_name": str(func.__name__)} if tag_function_name else {}
+            )
 
             log_method("running {run_type} on method {method_name}", run_type=metric_name, method_name=func.__name__)
             with operation_time() as ot:

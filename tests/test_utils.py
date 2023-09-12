@@ -261,7 +261,8 @@ def test_data_adapter(drop_missing: bool):
 
 @pytest.mark.parametrize("reporting_level", [LogLevel.DEBUG, LogLevel.INFO])
 @pytest.mark.parametrize("loglevel", [LogLevel.DEBUG, LogLevel.INFO])
-def test_runtime_decorator(caplog, reporting_level, loglevel):
+@pytest.mark.parametrize("tag_func_name", [True, False])
+def test_runtime_decorator(caplog, reporting_level, loglevel, tag_func_name):
     """
     Test that run_time_metrics_decorator reports correct information for every run of the algorithm.
 
@@ -280,8 +281,11 @@ def test_runtime_decorator(caplog, reporting_level, loglevel):
     )
 
     class DummyMetricProvider:
-        def gauge(self, **_kwargs):
-            return True
+        def gauge(self, metric_name, metric_value, tags):
+            """Dummy provider to assert passed values"""
+            assert metric_name == run_type
+            assert type(metric_value) == float
+            assert ~tag_func_name or tags["function_name"] == "test_function"
 
     metrics_provider = DummyMetricProvider()
     run_type = "test_execution"
