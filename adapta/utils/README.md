@@ -132,18 +132,21 @@ from adapta.logs import SemanticLogger
 from adapta.logs.models import LogLevel
 from adapta.utils import run_time_metrics
 
+
 @run_time_metrics(metric_name='example')
 def adder(number1, number2, logger=None, **_kwargs):
-    result = number1 + number2
-    logger.info(f'Sum of the numbers {result}')
-    return result
+  result = number1 + number2
+  logger.info('Sum of the numbers {result}', result=result)
+  return result
 
-@run_time_metrics(metric_name='update_message')
+
+@run_time_metrics(metric_name='update_message', log_level=LogLevel.INFO)
 def upgrade_message(message, logger=None, metrics_provider=None, **_kwargs):
-    message += ' : - )'
-    logger.info(message)
-    metrics_provider.gauge(metric_name="test_gauge", metric_value=1, tags={'env': 'test'})
-    return message
+  message += ' : - )'
+  logger.info(message)
+  metrics_provider.gauge(metric_name="test_gauge", metric_value=1, tags={'env': 'test'})
+  return message
+
 
 provider = DatadogMetricsProvider(metric_namespace='test')
 datadog_tags = {'source': 'wrapper'}

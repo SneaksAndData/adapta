@@ -7,13 +7,13 @@ from adapta.metrics import MetricsProvider
 from adapta.utils._common import operation_time
 
 
-def run_time_metrics(metric_name: str, tag_function_name: bool = False, reporting_level: LogLevel = LogLevel.DEBUG):
+def run_time_metrics(metric_name: str, tag_function_name: bool = False, log_level: LogLevel = LogLevel.DEBUG):
     """
     Decorator that records runtime of decorated method to logging source and metrics_provider.
 
     :param metric_name: Description of method type that can be used to capture logging in metric sink.
     :param tag_function_name: Boolean flag to indicate if function name should be added as tag to metric. Default False.
-    :param reporting_level: Defines on which level the logger should send reports. Default debug.
+    :param log_level: Defines on which level the logger should send reports. Default debug.
     """
 
     def outer_runtime_decorator(func):
@@ -25,9 +25,9 @@ def run_time_metrics(metric_name: str, tag_function_name: bool = False, reportin
                 raise AttributeError(
                     f"Decorated wrapped function: {func.__name__} missing required objects logger, metrics_provider"
                 )
-            log_method = getattr(logger, reporting_level.value.lower())
+            log_method = getattr(logger, log_level.value.lower())
             if log_method is None:
-                raise AttributeError(f"Logger {logger.__class__} does not send logs on level: {reporting_level}")
+                raise AttributeError(f"Logger {logger.__class__} does not send logs on level: {log_level}")
 
             metric_tags = kwargs.pop("metric_tags", {}) | (
                 {"function_name": str(func.__name__)} if tag_function_name else {}

@@ -285,13 +285,13 @@ def test_runtime_decorator(caplog, reporting_level, loglevel, tag_func_name):
             """Dummy provider to assert passed values"""
             assert metric_name == run_type
             assert type(metric_value) == float
-            assert ~tag_func_name or tags["function_name"] == "test_function"
+            assert not tag_func_name or tags["function_name"] == "test_function"
 
     metrics_provider = DummyMetricProvider()
     run_type = "test_execution"
     print_from_func = "from_function_call"
 
-    @run_time_metrics(metric_name=run_type, tag_function_name=True, reporting_level=reporting_level)
+    @run_time_metrics(metric_name=run_type, tag_function_name=True, log_level=reporting_level)
     def test_function(logger, **_kwargs):
         logger.info(print_from_func)
         return True
@@ -309,7 +309,7 @@ def test_missing_decorator_error():
     """Assert that readable error is raised when decorator (logger, metric provider) attributes are missing"""
 
     @run_time_metrics(metric_name="test_execution")
-    def test_function(logger, **_kwargs):
+    def test_function(**_kwargs):
         return
 
     with pytest.raises(AttributeError):
