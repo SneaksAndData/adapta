@@ -108,3 +108,51 @@ with memory_limit(memory_limit_percentage=0.2):
     # if the provided limit is exceeded, MemoryError will be raised and can be caught by client code
     pass
 ```
+
+### runtime_metrics:
+
+Decorator for logging method execution time and reporting function execution time to metric provider (e.g. DataDog).  
+
+Notes:
+* When using the decorator the wrapped function must take logger and metrics_provider as keyword arguments.
+  * It is recommended to have decorated methods use `**kwargs` if logger and metric providers are not explicitly defined.
+* Logger sends logs with `loglevel.DEBUG`.
+* Run-time metrics are send in seconds. 
+
+Parameters:
+* `metric_name`: Type of method being wrapped. This will be used as a metric_name by the metric provider.
+* `tag_function_name` (optional): If True function name will be added as additional metric_tag. Defaults to False.
+* `metric_tags` (optional): Dictionary containing extra tags used by the metric provider.
+
+Example Usage:
+
+```python
+from adapta.metrics.providers.datadog_provider import DatadogMetricsProvider
+from adapta.logs import SemanticLogger
+from adapta.logs.models import LogLevel
+from adapta.utils import run_time_metrics
+
+
+@run_time_metrics(metric_name='example')
+def adder(number1, number2, logger=None, **_kwargs):
+  result = number1 + number2
+  logger.info('Sum of the numbers {result}', result=result)
+  return result
+
+
+@run_time_metrics(metric_name='update_message', log_level=LogLevel.INFO)
+def upgrade_message(message, logger=None, metrics_provider=None, **_kwargs):
+  message += ' : - )'
+  logger.info(message)
+  metrics_provider.gauge(metric_name="test_gauge", metric_value=1, tags={'env': 'test'})
+  return message
+
+
+provider = DatadogMetricsProvider(metric_namespace='test')
+datadog_tags = {'source': 'wrapper'}
+semantic_logger = SemanticLogger().add_log_source(log_source_name='test_logger_1', min_log_level=LogLevel.DEBUG,
+                                                  is_default=True)
+
+adder(5, 4, logger=semantic_logger, metrics_provider=provider, metric_tags=datadog_tags)
+upgrade_message('Lorum Ipsum', logger=semantic_logger, metrics_provider=provider, metric_tags=datadog_tags)
+```

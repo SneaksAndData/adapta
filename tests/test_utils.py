@@ -16,12 +16,15 @@ import os
 import sys
 
 import time
+from logging import StreamHandler
 from typing import List, Any, Dict, Optional
 
 import pandas
 import pytest
 
-from adapta.utils import doze, operation_time, chunk_list, memory_limit, map_column_names
+from adapta.logs import SemanticLogger
+from adapta.logs.models import LogLevel
+from adapta.utils import doze, operation_time, chunk_list, memory_limit, map_column_names, run_time_metrics
 from adapta.utils.concurrent_task_runner import Executable, ConcurrentTaskRunner
 
 
@@ -254,3 +257,60 @@ def test_data_adapter(drop_missing: bool):
     assert (result["C"] != 7).all()
     assert (result["C"] != 9).all()
     assert (result["D"] == 7).all()
+
+
+@pytest.mark.parametrize("reporting_level", [LogLevel.DEBUG, LogLevel.INFO])
+@pytest.mark.parametrize("loglevel", [LogLevel.DEBUG, LogLevel.INFO])
+@pytest.mark.parametrize("tag_func_name", [True, False])
+def test_runtime_decorator(caplog, reporting_level, loglevel, tag_func_name):
+    """
+    Test that run_time_metrics_decorator reports correct information for every run of the algorithm.
+
+    Firstly tests that wrapped method executes even when no logger is passed
+    Secondly tests that wrapped method sends logs when logger is passed.
+
+    :param caplog: pytest fixture for testing logging.
+    :param reporting_level: Reporting level defining at what level decorator sends logs.
+    :param loglevel: Loglevel that is tested.
+    """
+    logger = SemanticLogger().add_log_source(
+        log_source_name="decorator_test",
+        min_log_level=loglevel,
+        log_handlers=[StreamHandler(sys.stdout)],
+        is_default=True,
+    )
+
+    class DummyMetricProvider:
+        def gauge(self, metric_name, metric_value, tags):
+            """Dummy provider to assert passed values"""
+            assert metric_name == run_type
+            assert type(metric_value) == float
+            assert not tag_func_name or tags["function_name"] == "test_function"
+
+    metrics_provider = DummyMetricProvider()
+    run_type = "test_execution"
+    print_from_func = "from_function_call"
+
+    @run_time_metrics(metric_name=run_type, tag_function_name=True, log_level=reporting_level)
+    def test_function(logger, **_kwargs):
+        logger.info(print_from_func)
+        return True
+
+    test_function(logger=logger, metrics_provider=metrics_provider)
+    if loglevel == LogLevel.DEBUG:
+        assert "test_function" in caplog.text and run_type in caplog.text
+        assert "finished in" in caplog.text and "s seconds" in caplog.text
+    elif loglevel == LogLevel.INFO:
+        assert "DEBUG" not in caplog.text
+    assert print_from_func in caplog.text
+
+
+def test_missing_decorator_error():
+    """Assert that readable error is raised when decorator (logger, metric provider) attributes are missing"""
+
+    @run_time_metrics(metric_name="test_execution")
+    def test_function(**_kwargs):
+        return
+
+    with pytest.raises(AttributeError):
+        test_function()
