@@ -302,8 +302,9 @@ def test_runtime_decorator(caplog, reporting_level, loglevel):
 
 
 def test_missing_decorator_error():
-    """ Assert that readable error is raised when decorator (logger, metric provider) attributes are missing """
-    @run_time_metrics(metric_name='test_execution')
+    """Assert that readable error is raised when decorator (logger, metric provider) attributes are missing"""
+
+    @run_time_metrics(metric_name="test_execution")
     def test_function(logger, **_kwargs):
         return
 
