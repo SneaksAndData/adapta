@@ -55,33 +55,29 @@ with AstraClient(
   # 0  entirely
 ```
 
-## EXPERIMENTAL - Filtering API.
-
-You can also generate filter expressions for Astra using the new filtering API. Note that this API will be abstracted from the engine in future releases and could also be used with PyArrow expressions. 
-Right now only Astra is supported. Example usage:
-
+## Using the Filtering API.
+Generate filter expressions and compile them for Astra or for PyArrow expressions. Example usage:
 1. Create a table
 ```cassandraql
 create table tmp.test_entity_new(
     col_a text,
     col_b text,
     col_c int,
-    col_d list<int>,
     PRIMARY KEY ( col_a, col_b )
 );
 
-insert into tmp.test_entity_new (col_a, col_b, col_c, col_d) VALUES ('something1', 'else', 123, [1, 2]);
-insert into tmp.test_entity_new (col_a, col_b, col_c, col_d) VALUES ('something1', 'different', 456, [1, 2, 3]);
-insert into tmp.test_entity_new (col_a, col_b, col_c, col_d) VALUES ('something2', 'special', 0, [0, 32, 333]);
+insert into tmp.test_entity_new (col_a, col_b, col_c) VALUES ('something1', 'else', 123);
+insert into tmp.test_entity_new (col_a, col_b, col_c) VALUES ('something1', 'different', 456);
+insert into tmp.test_entity_new (col_a, col_b, col_c) VALUES ('something2', 'special', 0);
 ```
- 2. Create field expressions and apply them
+
+2. Create field expressions and apply them
 ```python
-from adapta.storage.distributed_object_store.datastax_astra import AstraField
+from adapta.storage.models.filter_expression import FilterField
 from adapta.storage.distributed_object_store.datastax_astra.astra_client import AstraClient
 from adapta.schema_management.schema_entity import PythonSchemaEntity
 
 from dataclasses import dataclass, field
-from typing import List
 
 @dataclass
 class TestEntityNew:
@@ -94,13 +90,16 @@ class TestEntityNew:
         "is_partition_key": False
     })
     col_c: int
-    col_d: List[int]
+
 
 SCHEMA: TestEntityNew = PythonSchemaEntity(TestEntityNew)
-simple_filter = (AstraField(SCHEMA.col_a) == "something1")
-combined_filter = (AstraField(SCHEMA.col_a) == "something1") & (AstraField(SCHEMA.col_b) == "else")
-combined_filter_with_collection = (AstraField(SCHEMA.col_a) == "something1") & (AstraField(SCHEMA.col_b).isin(['else', 'nonexistent']))
+# Create generic filters
+simple_filter = FilterField(SCHEMA.col_a) == "something1"
+combined_filter = (FilterField(SCHEMA.col_a) == "something1") & (FilterField(SCHEMA.col_b) == "else")
+combined_filter_with_collection = (FilterField(SCHEMA.col_a) == "something1") & (FilterField(SCHEMA.col_b).isin(['else', 'nonexistent']))
+complex_filter_with_collection = ((FilterField(SCHEMA.col_a) == "something1") & (FilterField(SCHEMA.col_b).isin(["else", "special"])) & (FilterField(SCHEMA.col_c) == 123))
 
+# Apply the filters for Astra
 with AstraClient(
         client_name='test',
         keyspace='tmp',
@@ -108,20 +107,25 @@ with AstraClient(
         client_id='client id',
         client_secret='client secret'
 ) as ac:
-    print(ac.filter_entities(TestEntityNew, simple_filter.expression))
+    # Filter expressions are compiled into specific target, in this case Astra filters, in filter_entities method
+    print(ac.filter_entities(TestEntityNew, simple_filter))
     
     # simple filter field == value    
     #         col_a      col_b  col_c      col_d
     # 0  something1  different    456  [1, 2, 3]
     # 1  something1       else    123     [1, 2]    
     
-    print(ac.filter_entities(TestEntityNew, combined_filter.expression))
+    print(ac.filter_entities(TestEntityNew, combined_filter))
 
     #         col_a col_b  col_c   col_d
     # 0  something1  else    123  [1, 2]
 
-    print(ac.filter_entities(TestEntityNew, combined_filter_with_collection.expression))
+    print(ac.filter_entities(TestEntityNew, combined_filter_with_collection))
 
-    #         col_a col_b  col_c   col_d
-    # 0  something1  else    123  [1, 2]
-```
+    #         col_a col_b  col_c
+    # 0  something1  else    123
+
+   print(ac.filter_entities(TestEntityNew, complex_filter_with_collection))
+    #         col_a col_b  col_c
+    # 0  something1  else    123
+  ```

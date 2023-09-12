@@ -7,7 +7,35 @@ Supported API:
 - read and filter a delta table without loading all rows in memory
 
 ## Example usage for Azure Datalake Gen2
-
+1. Create table
+```cassandraql
+create table delta_lake_test_filtering using delta as
+select
+    "some-value" as my_column,
+     "123" as my_other_column,
+      456L as another_column
+union all
+select
+    "some-value" as my_column,
+     "another-value" as my_other_column,
+     0L as another_column
+union all
+select
+    "something1" as my_column,
+     "else" as my_other_column,
+     1L as another_column
+union all
+select
+    "something1" as my_column,
+     "nonexistent" as my_other_column,
+     2L as another_column
+union all
+select
+    "something1" as my_column,
+     "nonexistent1" as my_other_column,
+     123L as another_column
+```
+2. Prepare connection and load
 ```python
 import os
 import datetime
@@ -16,23 +44,49 @@ from adapta.storage.models.azure import AdlsGen2Path
 from adapta.storage.models.hive import HivePath
 from adapta.storage.delta_lake import load, load_cached
 from adapta.logs import SemanticLogger
-from pyarrow.dataset import field as pyarrow_field
 from adapta.storage.cache.redis_cache import RedisCache
+from adapta.storage.models.filter_expression import FilterField
 
-# prepare connection
 azure_client = AzureClient(subscription_id='6c5538ce-b24a-4e2a-877f-979ad71287ff')
 adls_path = AdlsGen2Path.from_hdfs_path('abfss://container@account.dfs.core.windows.net/path/to/my/table')
 
 # get Iterable[pandas.DataFrame]
 batches = load(azure_client, adls_path, batch_size=1000)
+```
+## Using the Filtering API.
+1. Create generic filter expressions
+```python
+simple_filter = FilterField("my_column") == "some-value"
+combined_filter = (FilterField("my_column") == "some-value") & (FilterField("other_column") == "another-value")
+combined_filter_with_collection = (FilterField("my_column") == "something1") & (FilterField("other_column").isin(['else', 'nonexistent']))
+complex_filter = (FilterField("my_column") == "something1") | (FilterField("my_other_column") == "else") & (FilterField("another_column") == 123)
+```
+2. Load and apply the expression
+```python
+# simple_filtered is of type pandas.DataFrame
+simple_filtered = load(azure_client, adls_path, row_filter=simple_expression_pyarrow, columns=["my_column", "my_other_column"])
+#     my_column my_other_column
+# 0  some-value             123
+# 1  some-value   another-value
 
-# create a filter and apply it
-filter = (pyarrow_field("my_column") == "some-value")  # case sensitive!
-filtered = load(azure_client, adls_path, row_filter=filter, columns=["my_column", "my_other_column"])
+print(load(azure_client, adls_path, row_filter=combined_filter, columns=["my_column", "my_other_column"]))
+#     my_column my_other_column
+# 0  some-value   another-value
 
-# filtered is of type pandas.DataFrame
+print(load(azure_client, adls_path, row_filter=combined_filter_with_collection, columns=["my_column", "my_other_column"]))
+#     my_column my_other_column
+# 0  something1            else
+# 1  something1     nonexistent
 
-# using with Hive paths
+print(load(azure_client, adls_path, row_filter=complex_filter, columns=["my_column", "my_other_column", "another_column"]))
+#     my_column my_other_column  another_column
+# 0  something1            else               1
+# 1  something1     nonexistent               2
+# 2  something1    nonexistent1             123
+
+```
+# Using with Hive paths
+```python
 logger: SemanticLogger  # review proteus.logs readme to learn how to construct a logger instance
 os.environ['PROTEUS__HIVE_USER'] = 'delamain'
 os.environ['PROTEUS__HIVE_PASSWORD'] = 'secret'
@@ -53,3 +107,5 @@ os.environ['PROTEUS__CACHE_REDIS_PASSWORD'] = '...'
 read_raw = load_cached(azure_client, adls_path, r_cache, row_filter=filter,
                        cache_expires_after=datetime.timedelta(minutes=15), batch_size=int(1e6))
 ```
+
+
