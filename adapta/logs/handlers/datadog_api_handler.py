@@ -197,7 +197,6 @@ class DataDogApiHandler(Handler):
 
     def emit(self, record: LogRecord) -> None:
         def convert_record(rec: LogRecord) -> HTTPLogItem:
-
             metadata: Optional[CompositeLogMetadata] = rec.__dict__.get(CompositeLogMetadata.__name__)
             tags = {}
             formatted_message: Dict[str, Any] = {"text": rec.getMessage()}
