@@ -28,7 +28,7 @@ import typing
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import fields, is_dataclass
-from typing import Optional, Dict, TypeVar, Callable, Type, List, Any, get_origin
+from typing import Optional, Dict, TypeVar, Callable, Type, List, Any, get_origin, Union
 
 from _socket import IPPROTO_TCP, TCP_NODELAY, TCP_USER_TIMEOUT
 
@@ -52,6 +52,7 @@ from cassandra.policies import ExponentialReconnectionPolicy
 from cassandra.query import dict_factory  # pylint: disable=E0611
 
 from adapta import __version__
+from adapta.storage.models.filter_expression import Expression
 
 TModel = TypeVar("TModel")  # pylint: disable=C0103
 
@@ -183,7 +184,7 @@ class AstraClient:
     def filter_entities(
         self,
         model_class: Type[TModel],
-        key_column_filter_values: List[Dict[str, Any]],
+        key_column_filter_values: Union[Expression, List[Dict[str, Any]]],
         table_name: Optional[str] = None,
         select_columns: Optional[List[str]] = None,
         primary_keys: Optional[List[str]] = None,
