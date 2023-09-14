@@ -247,7 +247,11 @@ class AstraClient:
             select_columns=select_columns,
         )
 
-        compiled_filter_values = compile_expression(key_column_filter_values, AstraFilterExpression)
+        compiled_filter_values = (
+            compile_expression(key_column_filter_values, AstraFilterExpression)
+            if isinstance(key_column_filter_values, Expression)
+            else key_column_filter_values
+        )
 
         if num_threads:
             with ThreadPoolExecutor(max_workers=num_threads) as tpe:
