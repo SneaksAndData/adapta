@@ -29,7 +29,7 @@ import typing
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import fields, is_dataclass
-from typing import Optional, Dict, TypeVar, Callable, Type, List, Any, get_origin
+from typing import Optional, Dict, TypeVar, Callable, Type, List, Any, get_origin, Union
 
 from _socket import IPPROTO_TCP, TCP_NODELAY, TCP_USER_TIMEOUT
 
@@ -55,6 +55,7 @@ from cassandra.protocol import OverloadedErrorMessage, IsBootstrappingErrorMessa
 from cassandra.query import dict_factory  # pylint: disable=E0611
 
 from adapta import __version__
+from adapta.storage.models.filter_expression import Expression, AstraFilterExpression, compile_expression
 
 TModel = TypeVar("TModel")  # pylint: disable=C0103
 
@@ -196,7 +197,7 @@ class AstraClient:
     def filter_entities(
         self,
         model_class: Type[TModel],
-        key_column_filter_values: List[Dict[str, Any]],
+        key_column_filter_values: Union[Expression, List[Dict[str, Any]]],
         table_name: Optional[str] = None,
         select_columns: Optional[List[str]] = None,
         primary_keys: Optional[List[str]] = None,
@@ -269,6 +270,12 @@ class AstraClient:
             select_columns=select_columns,
         )
 
+        compiled_filter_values = (
+            compile_expression(key_column_filter_values, AstraFilterExpression)
+            if isinstance(key_column_filter_values, Expression)
+            else key_column_filter_values
+        )
+
         if num_threads:
             with ThreadPoolExecutor(max_workers=num_threads) as tpe:
                 result = pandas.concat(
@@ -276,9 +283,9 @@ class AstraClient:
                         lambda args: to_pandas(*args),
                         [
                             (model_class, key_column_filter, select_columns)
-                            for key_column_filter in key_column_filter_values
+                            for key_column_filter in compiled_filter_values
                         ],
-                        chunksize=max(int(len(key_column_filter_values) / num_threads), 1),
+                        chunksize=max(int(len(compiled_filter_values) / num_threads), 1),
                     )
                 )
         else:
@@ -287,15 +294,13 @@ class AstraClient:
                     pandas.DataFrame(
                         [dict(v.items()) for v in list(apply(model_class, key_column_filter, select_columns))]
                     )
-                    for key_column_filter in key_column_filter_values
+                    for key_column_filter in compiled_filter_values
                 ]
             )
 
         if select_columns:
             filter_columns = {
-                normalize_column_name(key)
-                for key_column_filter in key_column_filter_values
-                for key in key_column_filter.keys()
+                normalize_column_name(key) for key_column_filter in compiled_filter_values for key in key_column_filter
             }
             result = result.drop(columns=list(set(filter_columns) - set(select_columns)))
 
