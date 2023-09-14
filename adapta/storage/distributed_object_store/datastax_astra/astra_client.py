@@ -51,7 +51,7 @@ from cassandra.cqlengine.models import Model
 from cassandra.cqlengine.named import NamedTable
 from cassandra.metadata import TableMetadata, get_schema_parser  # pylint: disable=E0611
 from cassandra.policies import ExponentialReconnectionPolicy
-from cassandra.protocol import OverloadedErrorMessage, IsBootstrappingErrorMessage
+from cassandra.protocol import OverloadedErrorMessage, IsBootstrappingErrorMessage  # pylint: disable=E0611
 from cassandra.query import dict_factory  # pylint: disable=E0611
 
 from adapta import __version__
