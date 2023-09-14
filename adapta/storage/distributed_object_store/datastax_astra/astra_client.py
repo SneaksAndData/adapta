@@ -273,9 +273,7 @@ class AstraClient:
 
         if select_columns:
             filter_columns = {
-                normalize_column_name(key)
-                for key_column_filter in compiled_filter_values
-                for key in key_column_filter
+                normalize_column_name(key) for key_column_filter in compiled_filter_values for key in key_column_filter
             }
             result = result.drop(columns=list(set(filter_columns) - set(select_columns)))
 
@@ -313,9 +311,15 @@ class AstraClient:
         def map_to_column(  # pylint: disable=R0911
             python_type: Type,
         ) -> typing.Union[
-            typing.Tuple[Type[columns.List],],
-            typing.Tuple[Type[columns.Map],],
-            typing.Tuple[Type[Column],],
+            typing.Tuple[
+                Type[columns.List],
+            ],
+            typing.Tuple[
+                Type[columns.Map],
+            ],
+            typing.Tuple[
+                Type[Column],
+            ],
             typing.Tuple[Type[Column], Type[Column]],
             typing.Tuple[Type[Column], Type[Column], Type[Column]],
         ]:
