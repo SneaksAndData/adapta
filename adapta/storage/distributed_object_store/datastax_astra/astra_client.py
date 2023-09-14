@@ -20,6 +20,7 @@
 import base64
 import datetime
 import enum
+import logging
 import os
 import re
 import sys
@@ -32,6 +33,7 @@ from typing import Optional, Dict, TypeVar, Callable, Type, List, Any, get_origi
 
 from _socket import IPPROTO_TCP, TCP_NODELAY, TCP_USER_TIMEOUT
 
+import backoff
 import pandas
 from cassandra import ConsistencyLevel
 from cassandra.auth import PlainTextAuthProvider
@@ -49,6 +51,7 @@ from cassandra.cqlengine.models import Model
 from cassandra.cqlengine.named import NamedTable
 from cassandra.metadata import TableMetadata, get_schema_parser  # pylint: disable=E0611
 from cassandra.policies import ExponentialReconnectionPolicy
+from cassandra.protocol import OverloadedErrorMessage, IsBootstrappingErrorMessage  # pylint: disable=E0611
 from cassandra.query import dict_factory  # pylint: disable=E0611
 
 from adapta import __version__
@@ -71,6 +74,9 @@ class AstraClient:
      :param: reconnect_max_delay_ms: Reconnect delay in ms, in case of a connection or node failure (max value for exp backoff).
      :param: socket_connection_timeout: Connect timeout for the TCP connection.
      :param: socket_read_timeout: Read timeout for TCP operations (query timeout).
+     :param: transient_error_max_retries: Maximum number of exp backoff retries for transient errors like rate limit.
+     :param: transient_error_max_wait_s: Maximum cumulative wait time for exp backoff attempts for transient errors.
+     :param: log_transient_errors: Whether to log errors that can be resolved via exp backoff retries.
     """
 
     def __init__(
@@ -84,6 +90,9 @@ class AstraClient:
         reconnect_max_delay_ms=5000,
         socket_connection_timeout_ms=5000,
         socket_read_timeout_ms=180000,
+        transient_error_max_retries=10,
+        transient_error_max_wait_s=300,
+        log_transient_errors=True,
     ):
         self._secure_connect_bundle_bytes = secure_connect_bundle_bytes or os.getenv("PROTEUS__ASTRA_BUNDLE_BYTES")
         self._client_id = client_id or os.getenv("PROTEUS__ASTRA_CLIENT_ID")
@@ -99,6 +108,10 @@ class AstraClient:
         self._query_timeout = socket_read_timeout_ms
         self._snake_pattern = re.compile(r"(?<!^)(?=[A-Z])")
         self._filter_pattern = re.compile(r"(__\w+)")
+        self._transient_error_max_retries = transient_error_max_retries
+        self._transient_error_max_wait_s = transient_error_max_wait_s
+        if log_transient_errors:
+            logging.getLogger("backoff").addHandler(logging.StreamHandler())
 
     def __enter__(self) -> "AstraClient":
         """
@@ -214,6 +227,16 @@ class AstraClient:
         :param: num_threads: Optionally run filtering using multiple threads.
         """
 
+        @backoff.on_exception(
+            wait_gen=backoff.expo,
+            exception=(
+                OverloadedErrorMessage,
+                IsBootstrappingErrorMessage,
+            ),
+            max_tries=self._transient_error_max_retries,
+            max_time=self._transient_error_max_wait_s,
+            raise_on_giveup=True,
+        )
         def apply(model: Type[Model], key_column_filter: Dict[str, Any], columns_to_select: Optional[List[str]]):
             if columns_to_select:
                 return model.filter(**key_column_filter).only(select_columns)
@@ -423,11 +446,23 @@ class AstraClient:
         :param: entity: entity to delete
         :param: table_name: Table to delete entity from.
         """
+
+        @backoff.on_exception(
+            wait_gen=backoff.expo,
+            exception=(
+                OverloadedErrorMessage,
+                IsBootstrappingErrorMessage,
+            ),
+            max_tries=self._transient_error_max_retries,
+            max_time=self._transient_error_max_wait_s,
+            raise_on_giveup=True,
+        )
+        def _delete_entity(model_class: Type[Model], key_filter: Dict):
+            model_class.filter(**key_filter).delete()
+
         primary_keys = [field.name for field in fields(type(entity)) if field.metadata.get("is_primary_key", False)]
 
-        model_class: Type[Model] = self._model_dataclass(
-            value=type(entity), table_name=table_name, primary_keys=primary_keys
+        _delete_entity(
+            model_class=self._model_dataclass(value=type(entity), table_name=table_name, primary_keys=primary_keys),
+            key_filter={key: getattr(entity, key) for key in primary_keys},
         )
-
-        key_filter = {key: getattr(entity, key) for key in primary_keys}
-        model_class.filter(**key_filter).delete()

@@ -6,5 +6,5 @@
 # it should appear only once).
 disable=W0212,R0903,C0301,R0902
 
-max-args = 10
+max-args = 15
 max-locals = 20
