@@ -342,15 +342,9 @@ class AstraClient:
         def map_to_column(  # pylint: disable=R0911
             python_type: Type,
         ) -> typing.Union[
-            typing.Tuple[
-                Type[columns.List],
-            ],
-            typing.Tuple[
-                Type[columns.Map],
-            ],
-            typing.Tuple[
-                Type[Column],
-            ],
+            typing.Tuple[Type[columns.List],],
+            typing.Tuple[Type[columns.Map],],
+            typing.Tuple[Type[Column],],
             typing.Tuple[Type[Column], Type[Column]],
             typing.Tuple[Type[Column], Type[Column], Type[Column]],
         ]:
