@@ -254,7 +254,10 @@ class AstraClient:
         def to_pandas(
             model: Type[Model], key_column_filter: Dict[str, Any], columns_to_select: Optional[List[str]]
         ) -> pandas.DataFrame:
-            return pandas.DataFrame([dict(v.items()) for v in list(apply(model, key_column_filter, columns_to_select))])
+            return pandas.DataFrame(
+                data=[dict(v.items()) for v in list(apply(model, key_column_filter, columns_to_select))],
+                columns=select_columns,
+            )
 
         assert (
             self._session is not None
@@ -292,7 +295,8 @@ class AstraClient:
             result = pandas.concat(
                 [
                     pandas.DataFrame(
-                        [dict(v.items()) for v in list(apply(model_class, key_column_filter, select_columns))]
+                        data=[dict(v.items()) for v in list(apply(model_class, key_column_filter, select_columns))],
+                        columns=select_columns,
                     )
                     for key_column_filter in compiled_filter_values
                 ]
