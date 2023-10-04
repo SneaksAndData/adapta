@@ -202,6 +202,7 @@ class AstraClient:
         select_columns: Optional[List[str]] = None,
         primary_keys: Optional[List[str]] = None,
         partition_keys: Optional[List[str]] = None,
+        custom_indexes: Optional[List[str]] = None,
         deduplicate=False,
         num_threads: Optional[int] = None,
     ) -> pandas.DataFrame:
@@ -224,6 +225,7 @@ class AstraClient:
         :param: select_columns: An optional list of columns to return with the query.
         :param: primary_keys: An optional list of columns that constitute a primary key, if it cannot be inferred from is_primary_key metadata on a dataclass field.
         :param: partition_keys: An optional list of columns that constitute a partition key, if it cannot be inferred from is_partition_key metadata on a dataclass field.
+        :param: custom_indexes: An optional list of custom indexes, if it cannot be inferred from is_custom_index on a dataclass field.
         :param: deduplicate: Optionally deduplicate query result, for example when only the partition key part of a primary key is used to fetch results.
         :param: num_threads: Optionally run filtering using multiple threads.
         """
@@ -270,6 +272,7 @@ class AstraClient:
             table_name=table_name,
             primary_keys=primary_keys,
             partition_keys=partition_keys,
+            custom_indexes=custom_indexes,
             select_columns=select_columns,
         )
 
@@ -327,6 +330,7 @@ class AstraClient:
         table_name: Optional[str] = None,
         primary_keys: Optional[List[str]] = None,
         partition_keys: Optional[List[str]] = None,
+        custom_indexes: Optional[List[str]] = None,
         select_columns: Optional[List[str]] = None,
     ) -> Type[Model]:
         """
@@ -336,6 +340,7 @@ class AstraClient:
         :param: table_name: Astra table name, if it cannot be inferred from class name by converting it to snake_case.
         :param: primary_keys: An optional list of columns that constitute a primary key, if it cannot be inferred from is_primary_key metadata on a dataclass field.
         :param: partition_keys: An optional list of columns that constitute a partition key, if it cannot be inferred from is_partition_key metadata on a dataclass field.
+        :param: custom_indexes: An optional list of columns that have a custom index on them, if it cannot be inferred from is_custom_index metadata on a dataclass field.
         :param: select_columns: An optional list of columns to select from the entity. If omitted, all columns will be selected.
         """
 
@@ -387,16 +392,24 @@ class AstraClient:
 
             raise TypeError(f"Unsupported type: {python_type}")
 
-        def map_to_cassandra(python_type: Type, db_field: str, is_primary_key: bool, is_partition_key: bool) -> Column:
+        def map_to_cassandra(
+            python_type: Type, db_field: str, is_primary_key: bool, is_partition_key: bool, is_custom_index: bool
+        ) -> Column:
             cassandra_types = map_to_column(python_type)
             if len(cassandra_types) == 1:  # simple type
-                return cassandra_types[0](primary_key=is_primary_key, partition_key=is_partition_key, db_field=db_field)
+                return cassandra_types[0](
+                    primary_key=is_primary_key,
+                    partition_key=is_partition_key,
+                    db_field=db_field,
+                    custom_index=is_custom_index,
+                )
             if len(cassandra_types) == 2:  # list
                 return cassandra_types[0](
                     primary_key=is_primary_key,
                     partition_key=is_partition_key,
                     db_field=db_field,
                     value_type=cassandra_types[1],
+                    custom_index=is_custom_index,
                 )
             if len(cassandra_types) == 3:  # dict
                 return cassandra_types[0](
@@ -405,6 +418,7 @@ class AstraClient:
                     db_field=db_field,
                     key_type=cassandra_types[1],
                     value_type=cassandra_types[2],
+                    custom_index=is_custom_index,
                 )
 
             raise TypeError(f"Unsupported type mapping: {cassandra_types}")
@@ -416,6 +430,9 @@ class AstraClient:
         ]
         partition_keys = partition_keys or [
             field.name for field in fields(value) if field.metadata.get("is_partition_key", False)
+        ]
+        custom_indexes = custom_indexes or [
+            field.name for field in fields(value) if field.metadata.get("is_custom_index", False)
         ]
         selected_fields = (
             [
@@ -431,7 +448,11 @@ class AstraClient:
 
         models_attributes: Dict[str, Column] = {
             field.name: map_to_cassandra(
-                field.type, field.name, field.name in primary_keys, field.name in partition_keys
+                field.type,
+                field.name,
+                field.name in primary_keys,
+                field.name in partition_keys,
+                field.name in custom_indexes,
             )
             for field in selected_fields
         }
