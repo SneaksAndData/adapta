@@ -272,6 +272,7 @@ class AstraClient:
             table_name=table_name,
             primary_keys=primary_keys,
             partition_keys=partition_keys,
+            custom_indexes=custom_indexes,
             select_columns=select_columns,
         )
 
