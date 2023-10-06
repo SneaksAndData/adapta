@@ -309,12 +309,6 @@ class AstraClient:
                 ]
             )
 
-        if select_columns:
-            filter_columns = {
-                normalize_column_name(key) for key_column_filter in compiled_filter_values for key in key_column_filter
-            }
-            result = result.drop(columns=list(set(filter_columns) - set(select_columns)))
-
         if deduplicate:
             return result.drop_duplicates()
 
