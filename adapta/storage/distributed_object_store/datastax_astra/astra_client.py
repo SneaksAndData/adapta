@@ -18,6 +18,7 @@
 #
 
 import base64
+import dataclasses
 import datetime
 import enum
 import logging
@@ -49,13 +50,16 @@ from cassandra.cqlengine.columns import Column
 from cassandra.cqlengine.connection import set_session
 from cassandra.cqlengine.models import Model
 from cassandra.cqlengine.named import NamedTable
+from cassandra.cqlengine.query import BatchQuery
 from cassandra.metadata import TableMetadata, get_schema_parser  # pylint: disable=E0611
 from cassandra.policies import ExponentialReconnectionPolicy
 from cassandra.protocol import OverloadedErrorMessage, IsBootstrappingErrorMessage  # pylint: disable=E0611
-from cassandra.query import dict_factory  # pylint: disable=E0611
+from cassandra.query import dict_factory, BatchType  # pylint: disable=E0611
+from ratelimit import limits, RateLimitException
 
 from adapta import __version__
 from adapta.storage.models.filter_expression import Expression, AstraFilterExpression, compile_expression
+from adapta.utils import chunk_list
 
 TModel = TypeVar("TModel")  # pylint: disable=C0103
 
@@ -494,3 +498,78 @@ class AstraClient:
             model_class=self._model_dataclass(value=type(entity), table_name=table_name, primary_keys=primary_keys),
             key_filter={key: getattr(entity, key) for key in primary_keys},
         )
+
+    def upsert_entity(
+        self,
+        entity: TModel,
+        table_name: Optional[str] = None,
+        rate_limit_calls: int = 1000,
+        rate_limit_period_seconds: int = 1,
+    ) -> None:
+        """
+         Inserts a record into existing table.
+
+        :param: entity: an object to insert
+        :param: table_name: Table to insert entity into.
+        :param: rate_limit_calls: Number of saves per rate_limit_period_seconds that can be performed safely
+        :param: rate_limit_period_seconds: Rate limit evaluation period
+        """
+
+        @backoff.on_exception(
+            wait_gen=backoff.expo,
+            exception=(
+                OverloadedErrorMessage,
+                IsBootstrappingErrorMessage,
+            ),
+            max_tries=self._transient_error_max_retries,
+            max_time=self._transient_error_max_wait_s,
+            raise_on_giveup=True,
+        )
+        @limits(calls=rate_limit_calls, period=rate_limit_period_seconds)
+        def _save_entity(model_object: Model):
+            model_object.save()
+
+        primary_keys = [field.name for field in fields(type(entity)) if field.metadata.get("is_primary_key", False)]
+        model_class = self._model_dataclass(value=type(entity), table_name=table_name, primary_keys=primary_keys)
+        _save_entity(model_class(**dataclasses.asdict(entity)))
+
+    def upsert_batch(
+        self,
+        entities: List[dict],
+        entity_type: Type[TModel],
+        table_name: Optional[str] = None,
+        batch_size=1000,
+        rate_limit_calls: int = 1000,
+        rate_limit_period_seconds: int = 1,
+    ) -> None:
+        """
+         Inserts a batch into existing table.
+
+        :param: entities: entity batch to insert.
+        :param: entity_type: type of entity in a batch .
+        :param: table_name: Table to insert entity into.
+        :param: batch_size: elements per batch to upsert.
+        :param: rate_limit_calls: Number of saves per rate_limit_period_seconds that can be performed safely.
+        :param: rate_limit_period_seconds: Rate limit evaluation period.
+        """
+
+        @backoff.on_exception(
+            wait_gen=backoff.expo,
+            exception=(OverloadedErrorMessage, IsBootstrappingErrorMessage, RateLimitException),
+            max_tries=self._transient_error_max_retries,
+            max_time=self._transient_error_max_wait_s,
+            raise_on_giveup=True,
+        )
+        @limits(calls=rate_limit_calls, period=rate_limit_period_seconds)
+        def _save_entities(model_class: Type[Model], values: List[dict]):
+            with BatchQuery(batch_type=BatchType.UNLOGGED) as upsert_batch:
+                for value in values:
+                    model_class.batch(upsert_batch).create(**value)
+
+        primary_keys = [field.name for field in fields(entity_type) if field.metadata.get("is_primary_key", False)]
+
+        for chunk in chunk_list(entities, batch_size):
+            _save_entities(
+                model_class=self._model_dataclass(value=entity_type, table_name=table_name, primary_keys=primary_keys),
+                values=chunk,
+            )
