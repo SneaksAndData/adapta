@@ -36,7 +36,7 @@ from _socket import IPPROTO_TCP, TCP_NODELAY, TCP_USER_TIMEOUT
 
 import backoff
 import pandas
-from cassandra import ConsistencyLevel
+from cassandra import ConsistencyLevel, WriteTimeout
 from cassandra.auth import PlainTextAuthProvider
 from cassandra.cluster import (  # pylint: disable=E0611
     Cluster,
@@ -517,10 +517,7 @@ class AstraClient:
 
         @backoff.on_exception(
             wait_gen=backoff.expo,
-            exception=(
-                OverloadedErrorMessage,
-                IsBootstrappingErrorMessage,
-            ),
+            exception=(OverloadedErrorMessage, IsBootstrappingErrorMessage, RateLimitException, WriteTimeout),
             max_tries=self._transient_error_max_retries,
             max_time=self._transient_error_max_wait_s,
             raise_on_giveup=True,
@@ -555,7 +552,7 @@ class AstraClient:
 
         @backoff.on_exception(
             wait_gen=backoff.expo,
-            exception=(OverloadedErrorMessage, IsBootstrappingErrorMessage, RateLimitException),
+            exception=(OverloadedErrorMessage, IsBootstrappingErrorMessage, RateLimitException, WriteTimeout),
             max_tries=self._transient_error_max_retries,
             max_time=self._transient_error_max_wait_s,
             raise_on_giveup=True,
