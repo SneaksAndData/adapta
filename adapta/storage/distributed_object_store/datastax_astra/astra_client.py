@@ -82,6 +82,7 @@ class AstraClient:
      :param: transient_error_max_retries: Maximum number of exp backoff retries for transient errors like rate limit.
      :param: transient_error_max_wait_s: Maximum cumulative wait time for exp backoff attempts for transient errors.
      :param: log_transient_errors: Whether to log errors that can be resolved via exp backoff retries.
+     :param: metadata_fetch_timeout_s: Timeout in seconds for the driver’s HTTP call to get cluster metadata from Astra DB. Defaults to 30s up fromf factory default of 5 seconds.
     """
 
     def __init__(
@@ -98,6 +99,7 @@ class AstraClient:
         transient_error_max_retries=10,
         transient_error_max_wait_s=300,
         log_transient_errors=True,
+        metadata_fetch_timeout_s=30,
     ):
         self._secure_connect_bundle_bytes = secure_connect_bundle_bytes or os.getenv("PROTEUS__ASTRA_BUNDLE_BYTES")
         self._client_id = client_id or os.getenv("PROTEUS__ASTRA_CLIENT_ID")
@@ -115,6 +117,7 @@ class AstraClient:
         self._filter_pattern = re.compile(r"(__\w+)")
         self._transient_error_max_retries = transient_error_max_retries
         self._transient_error_max_wait_s = transient_error_max_wait_s
+        self._metadata_fetch_timeout_s = metadata_fetch_timeout_s
         if log_transient_errors:
             logging.getLogger("backoff").addHandler(logging.StreamHandler())
 
@@ -128,7 +131,10 @@ class AstraClient:
         with open(os.path.join(self._tmp_bundle_path, tmp_bundle_file_name), "wb") as bundle_file:
             bundle_file.write(base64.b64decode(self._secure_connect_bundle_bytes))
 
-        cloud_config = {"secure_connect_bundle": os.path.join(self._tmp_bundle_path, tmp_bundle_file_name)}
+        cloud_config = {
+            "secure_connect_bundle": os.path.join(self._tmp_bundle_path, tmp_bundle_file_name),
+            "connect_timeout": self._metadata_fetch_timeout_s,
+        }
         auth_provider = PlainTextAuthProvider(self._client_id, self._client_secret)
 
         profile = ExecutionProfile(
