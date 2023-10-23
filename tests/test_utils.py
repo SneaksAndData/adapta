@@ -335,6 +335,7 @@ def test_missing_decorator_error():
             None,
         ),
         (pandas.DataFrame(data={"A": [1, 2, 3], "B": [4, 5, 6]}), {"A": "int8", "B": "int64"}, ["A"]),
+        (pandas.DataFrame(data={"A": [1, 2, 3], "B": [4, 5, 6]}), {"A": "int64", "B": "int64"}, []),
         (pandas.DataFrame(data={"A": [1000, 2, 3], "B": [4, 5, 6]}), {"A": "int16", "B": "int8"}, None),
         (pandas.DataFrame(data={"A": [10000000, 2, 3], "B": [4, 5, 6]}), {"A": "int32", "B": "int8"}, None),
         (pandas.DataFrame(data={"A": [100000000000, 2, 3], "B": [4, 5, 6]}), {"A": "int64", "B": "int8"}, None),

@@ -195,7 +195,7 @@ def downcast_dataframe(dataframe: pandas.DataFrame, columns: Optional[List[str]]
     :return: The downcasted Pandas dataframe.
     """
 
-    columns = columns or list(dataframe.columns)
+    columns = list(dataframe.columns) if columns is None else columns
 
     def get_downcast_type(column: pandas.Series) -> Optional[str]:
         """
