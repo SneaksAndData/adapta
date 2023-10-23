@@ -206,9 +206,9 @@ def downcast_dataframe(dataframe: pandas.DataFrame, columns: Optional[List[str]]
         """
         if column.dtype.kind == "f":
             return "float"
-        elif column.dtype.kind == "i":
+        if column.dtype.kind == "i":
             return "integer"
-        elif column.dtype.kind == "u":
+        if column.dtype.kind == "u":
             return "unsigned"
         raise ValueError(f"Unsupported dtype: {column.dtype}")
 
