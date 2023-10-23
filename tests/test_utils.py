@@ -19,12 +19,22 @@ import time
 from logging import StreamHandler
 from typing import List, Any, Dict, Optional
 
+import numpy as np
 import pandas
+import pandas as pd
 import pytest
 
 from adapta.logs import SemanticLogger
 from adapta.logs.models import LogLevel
-from adapta.utils import doze, operation_time, chunk_list, memory_limit, map_column_names, run_time_metrics
+from adapta.utils import (
+    doze,
+    operation_time,
+    chunk_list,
+    memory_limit,
+    map_column_names,
+    run_time_metrics,
+    downcast_dataframe,
+)
 from adapta.utils.concurrent_task_runner import Executable, ConcurrentTaskRunner
 
 
@@ -314,3 +324,38 @@ def test_missing_decorator_error():
 
     with pytest.raises(AttributeError):
         test_function()
+
+
+@pytest.mark.parametrize(
+    "dataframe, expected_types, column_filter",
+    [
+        (
+            pandas.DataFrame(data={"A": [1, 2, 3], "B": pandas.Series([4, None, 6], dtype=pd.Int64Dtype())}),
+            {"A": "int8", "B": "Int8"},
+            None,
+        ),
+        (pandas.DataFrame(data={"A": [1, 2, 3], "B": [4, 5, 6]}), {"A": "int8", "B": "int64"}, ["A"]),
+        (pandas.DataFrame(data={"A": [1000, 2, 3], "B": [4, 5, 6]}), {"A": "int16", "B": "int8"}, None),
+        (pandas.DataFrame(data={"A": [10000000, 2, 3], "B": [4, 5, 6]}), {"A": "int32", "B": "int8"}, None),
+        (pandas.DataFrame(data={"A": [100000000000, 2, 3], "B": [4, 5, 6]}), {"A": "int64", "B": "int8"}, None),
+        (
+            pandas.DataFrame(data={"A": [1.0, 2.0, 3.0], "B": [4.0, np.nan, 6.0]}),
+            {"A": "float32", "B": "float32"},
+            None,
+        ),
+        (pandas.DataFrame(data={"A": [1.0, 2.0, 3.0], "B": ["a", "b", "c"]}), {"A": "float32", "B": "object"}, None),
+        (pandas.DataFrame(data={"A": [1, 0, 1]}), {"A": "int8"}, None),
+        (pandas.DataFrame(data={"A": pandas.Series([4, 2, 6], dtype="uint32")}), {"A": "uint8"}, None),
+    ],
+)
+def test_downcast_dataframe(dataframe, expected_types, column_filter):
+    """
+    Test that downcast_dataframe works as expected.
+
+    :param dataframe: Dataframe to downcast.
+    :param expected_types: Expected types of columns after downcast.
+    :param column_filter: Columns to downcast.
+    """
+    result = downcast_dataframe(dataframe, columns=column_filter)
+    for column in expected_types:
+        assert result[column].dtype == expected_types[column]

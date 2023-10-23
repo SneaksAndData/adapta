@@ -182,3 +182,51 @@ def map_column_names(
     default_values = {k: v for (k, v) in default_values.items() if k not in dataframe.columns}
     dataframe[list(default_values.keys())] = list(default_values.values())
     return dataframe
+
+
+def downcast_dataframe(dataframe: pandas.DataFrame, columns: Optional[List[str]] = None) -> pandas.DataFrame:
+    """
+    Downcasts a Pandas dataframe to the smallest possible data type for each column. Only interger and float
+    columns are downcasted. Other columns are left as is.
+
+    :param dataframe: A Pandas dataframe.
+    :param columns: A list of columns to downcast. If None, all columns are downcasted.
+
+    :return: The downcasted Pandas dataframe.
+    """
+
+    columns = columns or list(dataframe.columns)
+
+    def get_downcast_type(column: pandas.Series) -> Optional[str]:
+        """
+        Returns the downcast type for a Pandas column.
+
+        :param column: A Pandas series.
+        :return: The downcast type for the column.
+        """
+        if column.dtype.kind == "f":
+            return "float"
+        elif column.dtype.kind == "i":
+            return "integer"
+        elif column.dtype.kind == "u":
+            return "unsigned"
+        raise ValueError(f"Unsupported dtype: {column.dtype}")
+
+    def downcast_supported(column: pandas.Series) -> bool:
+        """
+        Checks if a Pandas column can be downcasted.
+
+        :param column: A Pandas series.
+        :return: True if the column can be downcasted, False otherwise.
+        """
+        return column.dtype.kind in ["f", "i", "u"]
+
+    return dataframe.assign(
+        **{
+            column: lambda x, c=column: pandas.to_numeric(x[c], downcast=get_downcast_type(x[c]))
+            if downcast_supported(x[c])
+            else x[c]
+            for column in dataframe.columns
+            if column in columns
+        }
+    )
