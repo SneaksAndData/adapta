@@ -19,9 +19,8 @@ import time
 from logging import StreamHandler
 from typing import List, Any, Dict, Optional
 
-import numpy as np
+import numpy
 import pandas
-import pandas as pd
 import pytest
 
 from adapta.logs import SemanticLogger
@@ -330,7 +329,7 @@ def test_missing_decorator_error():
     "dataframe, expected_types, column_filter",
     [
         (
-            pandas.DataFrame(data={"A": [1, 2, 3], "B": pandas.Series([4, None, 6], dtype=pd.Int64Dtype())}),
+            pandas.DataFrame(data={"A": [1, 2, 3], "B": pandas.Series([4, None, 6], dtype=pandas.Int64Dtype())}),
             {"A": "int8", "B": "Int8"},
             None,
         ),
@@ -340,7 +339,7 @@ def test_missing_decorator_error():
         (pandas.DataFrame(data={"A": [10000000, 2, 3], "B": [4, 5, 6]}), {"A": "int32", "B": "int8"}, None),
         (pandas.DataFrame(data={"A": [100000000000, 2, 3], "B": [4, 5, 6]}), {"A": "int64", "B": "int8"}, None),
         (
-            pandas.DataFrame(data={"A": [1.0, 2.0, 3.0], "B": [4.0, np.nan, 6.0]}),
+            pandas.DataFrame(data={"A": [1.0, 2.0, 3.0], "B": [4.0, numpy.nan, 6.0]}),
             {"A": "float32", "B": "float32"},
             None,
         ),
