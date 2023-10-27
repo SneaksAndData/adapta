@@ -31,6 +31,49 @@ class FilterExpressionOperation(Enum):
     EQ = {"arrow": pyarrow.compute.Expression.__eq__, "astra": ""}
     IN = {"arrow": pyarrow.compute.Expression.isin, "astra": "__in"}
 
+    class FilterExpressionOperation(Enum):
+        """
+        An enumeration of filter expression operations.
+        """
+
+        AND = {
+            "arrow": pyarrow.compute.Expression.__and__,
+            "astra": lambda left_exprs, right_exprs: [
+                left_expr | right_expr for left_expr in left_exprs for right_expr in right_exprs
+            ],
+        }
+        OR = {
+            "arrow": pyarrow.compute.Expression.__or__,
+            "astra": lambda left_exprs, right_exprs: left_exprs + right_exprs,
+        }
+        GT = {"arrow": pyarrow.compute.Expression.__gt__, "astra": "__gt"}
+        GE = {"arrow": pyarrow.compute.Expression.__ge__, "astra": "__gte"}
+        LT = {"arrow": pyarrow.compute.Expression.__lt__, "astra": "__lt"}
+        LE = {"arrow": pyarrow.compute.Expression.__le__, "astra": "__lte"}
+        EQ = {"arrow": pyarrow.compute.Expression.__eq__, "astra": ""}
+        IN = {"arrow": pyarrow.compute.Expression.isin, "astra": "__in"}
+
+    def to_string(self):
+        """
+        Returns a string representation of the FilterExpressionOperation.
+
+        This method maps each FilterExpressionOperation to its corresponding string representation using a dictionary.
+
+        Returns:
+            A string representation of the FilterExpressionOperation, or an empty string if the operation is not recognized.
+        """
+        operation_strings = {
+            FilterExpressionOperation.AND: "AND",
+            FilterExpressionOperation.OR: "OR",
+            FilterExpressionOperation.GT: ">",
+            FilterExpressionOperation.GE: ">=",
+            FilterExpressionOperation.LT: "<",
+            FilterExpressionOperation.LE: "<=",
+            FilterExpressionOperation.EQ: "==",
+            FilterExpressionOperation.IN: "IN",
+        }
+        return operation_strings.get(self, "")
+
 
 @final
 class FilterField:
@@ -88,6 +131,12 @@ class FilterField:
         """
         return Expression(left_operand=self, right_operand=values, operation=FilterExpressionOperation.EQ)
 
+    def __str__(self):
+        """
+        Returns the string representation of the field name.
+        """
+        return self._field_name
+
 
 class Expression:
     """
@@ -118,6 +167,18 @@ class Expression:
 
     def __or__(self, other: "Expression") -> "Expression":
         return Expression(left_operand=self, right_operand=other, operation=FilterExpressionOperation.OR)
+
+    def __str__(self):
+        if isinstance(self.left_operand, Expression):
+            left_str = f"({str(self.left_operand)})"
+        else:
+            left_str = str(self.left_operand)
+
+        if isinstance(self.right_operand, Expression):
+            right_str = f"({str(self.right_operand)})"
+        else:
+            right_str = str(self.right_operand)
+        return f"{left_str} {FilterExpressionOperation.to_string(self.operation)} {right_str}"
 
 
 class FilterExpression(Generic[TCompileResult], ABC):
