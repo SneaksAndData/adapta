@@ -111,6 +111,9 @@ def test_generic_filtering(
     [
         (FilterField(TEST_ENTITY_SCHEMA.col_a) == "test", "col_a == test"),
         (FilterField(TEST_ENTITY_SCHEMA.col_a) > "test", "col_a > test"),
+        (FilterField(TEST_ENTITY_SCHEMA.col_a) >= "test", "col_a >= test"),
+        (FilterField(TEST_ENTITY_SCHEMA.col_a) < "test", "col_a < test"),
+        (FilterField(TEST_ENTITY_SCHEMA.col_a) <= "test", "col_a <= test"),
         (
             (
                 (FilterField(TEST_ENTITY_SCHEMA.col_a) == "test") & (FilterField(TEST_ENTITY_SCHEMA.col_c) == 1)
