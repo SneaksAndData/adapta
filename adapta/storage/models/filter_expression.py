@@ -50,7 +50,9 @@ class FilterExpressionOperation(Enum):
             FilterExpressionOperation.EQ: "==",
             FilterExpressionOperation.IN: "IN",
         }
-        return operation_strings.get(self, "")
+        if self not in operation_strings:
+            raise ValueError(f"Operation {self} not recognized")
+        return operation_strings[self]
 
 
 @final
