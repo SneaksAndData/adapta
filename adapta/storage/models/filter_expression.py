@@ -31,28 +31,6 @@ class FilterExpressionOperation(Enum):
     EQ = {"arrow": pyarrow.compute.Expression.__eq__, "astra": ""}
     IN = {"arrow": pyarrow.compute.Expression.isin, "astra": "__in"}
 
-    class FilterExpressionOperation(Enum):
-        """
-        An enumeration of filter expression operations.
-        """
-
-        AND = {
-            "arrow": pyarrow.compute.Expression.__and__,
-            "astra": lambda left_exprs, right_exprs: [
-                left_expr | right_expr for left_expr in left_exprs for right_expr in right_exprs
-            ],
-        }
-        OR = {
-            "arrow": pyarrow.compute.Expression.__or__,
-            "astra": lambda left_exprs, right_exprs: left_exprs + right_exprs,
-        }
-        GT = {"arrow": pyarrow.compute.Expression.__gt__, "astra": "__gt"}
-        GE = {"arrow": pyarrow.compute.Expression.__ge__, "astra": "__gte"}
-        LT = {"arrow": pyarrow.compute.Expression.__lt__, "astra": "__lt"}
-        LE = {"arrow": pyarrow.compute.Expression.__le__, "astra": "__lte"}
-        EQ = {"arrow": pyarrow.compute.Expression.__eq__, "astra": ""}
-        IN = {"arrow": pyarrow.compute.Expression.isin, "astra": "__in"}
-
     def to_string(self):
         """
         Returns a string representation of the FilterExpressionOperation.
@@ -144,13 +122,13 @@ class Expression:
     """
 
     def __init__(
-        self,
-        left_operand: Union["Expression", FilterField],
-        right_operand: Union["Expression", Any, List],
-        operation: FilterExpressionOperation,
+            self,
+            left_operand: Union["Expression", FilterField],
+            right_operand: Union["Expression", Any, List],
+            operation: FilterExpressionOperation,
     ):
         assert (isinstance(left_operand, Expression) and isinstance(right_operand, Expression)) or (
-            isinstance(left_operand, FilterField) and not isinstance(right_operand, FilterExpression)
+                isinstance(left_operand, FilterField) and not isinstance(right_operand, FilterExpression)
         ), (
             "Both left and right operands must either be of type "
             "'Expression' or the left operand should be of type "
@@ -188,7 +166,7 @@ class FilterExpression(Generic[TCompileResult], ABC):
 
     @abstractmethod
     def _compile_base_case(
-        self, field_name: str, field_values: Any, operation: FilterExpressionOperation
+            self, field_name: str, field_values: Any, operation: FilterExpressionOperation
     ) -> TCompileResult:
         """
         Compiles the base case of a filter expression.
@@ -196,7 +174,8 @@ class FilterExpression(Generic[TCompileResult], ABC):
 
     @abstractmethod
     def _combine_results(
-        self, compiled_result_a: TCompileResult, compiled_result_b: TCompileResult, operation: FilterExpressionOperation
+            self, compiled_result_a: TCompileResult, compiled_result_b: TCompileResult,
+            operation: FilterExpressionOperation
     ) -> TCompileResult:
         """
         Combines two compiled results of filter expressions.
@@ -222,12 +201,13 @@ class AstraFilterExpression(FilterExpression[List[Dict[str, Any]]]):
     """
 
     def _compile_base_case(
-        self, field_name: str, field_values: Any, operation: FilterExpressionOperation
+            self, field_name: str, field_values: Any, operation: FilterExpressionOperation
     ) -> TCompileResult:
         return [{f"{field_name}{operation.value['astra']}": field_values}]
 
     def _combine_results(
-        self, compiled_result_a: TCompileResult, compiled_result_b: TCompileResult, operation: FilterExpressionOperation
+            self, compiled_result_a: TCompileResult, compiled_result_b: TCompileResult,
+            operation: FilterExpressionOperation
     ) -> TCompileResult:
         return operation.value["astra"](compiled_result_a, compiled_result_b)
 
@@ -239,15 +219,15 @@ class ArrowFilterExpression(FilterExpression[pyarrow.compute.Expression]):
     """
 
     def _compile_base_case(
-        self, field_name: str, field_values: Any, filter_operation: FilterExpressionOperation
+            self, field_name: str, field_values: Any, filter_operation: FilterExpressionOperation
     ) -> TCompileResult:
         return filter_operation.value["arrow"](pyarrow_field(field_name), field_values)
 
     def _combine_results(
-        self,
-        compiled_result_a: TCompileResult,
-        compiled_result_b: TCompileResult,
-        filter_operation: FilterExpressionOperation,
+            self,
+            compiled_result_a: TCompileResult,
+            compiled_result_b: TCompileResult,
+            filter_operation: FilterExpressionOperation,
     ) -> TCompileResult:
         return filter_operation.value["arrow"](compiled_result_a, compiled_result_b)
 
