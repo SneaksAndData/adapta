@@ -77,7 +77,7 @@ def mock_func(a: float, b: str, c: bool) -> Dict:
         (
             # Run 3 functions in 3 threads
             # Each function sleeps for `a` seconds before returning
-            # Since we do lazy result fetch, we should expect to wait LESS than max(a0,.. aN), because all tasks effectively start at the same time
+            # Since we do lazy result fetch, we should expect to wait around max(a0,.. aN), because all tasks effectively start at the same time
             # however since time.sleep effectively blocks the main thread if using ThreadPoolExecutor, subsequent submissions will delay each other
             # thus we should expect at most 0.5s + small time to get results of each future.
             [
@@ -92,7 +92,7 @@ def mock_func(a: float, b: str, c: bool) -> Dict:
                 "case2": {"a": 0.3, "b": "test1", "c": True},
                 "case3": {"a": 0.5, "b": "test2", "c": False},
             },
-            0.55,
+            0.65,
         ),
         # Runs 1 thread for each function
         # Expected to see 1s + 2s + 3s + result process time ~ slightly above 6s

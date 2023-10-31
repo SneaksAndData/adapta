@@ -104,3 +104,25 @@ def test_generic_filtering(
 ):
     assert compile_expression(filter_expr, ArrowFilterExpression).equals(pyarrow_expected_expr)
     assert compile_expression(filter_expr, AstraFilterExpression) == astra_expected_expr
+
+
+@pytest.mark.parametrize(
+    "filter_expr, expected_output",
+    [
+        (FilterField(TEST_ENTITY_SCHEMA.col_a) == "test", "col_a == test"),
+        (FilterField(TEST_ENTITY_SCHEMA.col_a) > "test", "col_a > test"),
+        (FilterField(TEST_ENTITY_SCHEMA.col_a) >= "test", "col_a >= test"),
+        (FilterField(TEST_ENTITY_SCHEMA.col_a) < "test", "col_a < test"),
+        (FilterField(TEST_ENTITY_SCHEMA.col_a) <= "test", "col_a <= test"),
+        (
+            (
+                (FilterField(TEST_ENTITY_SCHEMA.col_a) == "test") & (FilterField(TEST_ENTITY_SCHEMA.col_c) == 1)
+                | (FilterField(TEST_ENTITY_SCHEMA.col_b) == "other")
+                & ((FilterField(TEST_ENTITY_SCHEMA.col_c) == 2) | (FilterField(TEST_ENTITY_SCHEMA.col_d).isin([1, 2])))
+            ),
+            "((col_a == test) AND (col_c == 1)) OR ((col_b == other) AND ((col_c == 2) OR (col_d IN [1, 2])))",
+        ),
+    ],
+)
+def test_print_filter_expression(filter_expr: FilterExpression, expected_output: str):
+    assert str(filter_expr) == expected_output
