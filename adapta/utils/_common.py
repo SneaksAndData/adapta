@@ -116,6 +116,10 @@ def chunk_list(value: List[Any], num_chunks: int) -> List[List[Any]]:
     :param num_chunks: Number of chunks to generate.
     :return: A list that has num_chunks lists in it. Total length equals length of the original list.
     """
+    if num_chunks == 0:
+        raise ValueError("Number of chunks must be greater than zero")
+    if len(value) == 0:
+        return []
     chunk_size = math.ceil(len(value) / num_chunks)
     return [value[el_pos : el_pos + chunk_size] for el_pos in range(0, len(value), chunk_size)]
 
