@@ -111,7 +111,7 @@ class DataDogApiHandler(Handler):
                     )
                     env = issuer_url.netloc
                     if issuer_url.path:
-                        env = env + "/" + issuer_url.path
+                        env = env + issuer_url.path
                 self._fixed_tags["environment"] = env or self._fixed_tags["environment"]
             except (JSONDecodeError, FileNotFoundError):
                 pass
