@@ -106,10 +106,13 @@ class DataDogApiHandler(Handler):
             try:
                 with open("/var/run/secrets/kubernetes.io/serviceaccount/token", "r", encoding="utf-8") as token_file:
                     issued_jwt = token_file.readline()
-                    token_issuer = urlparse(
+                    issuer_url = urlparse(
                         json.loads(base64.b64decode(issued_jwt.split(".")[1] + "==").decode("utf-8"))["iss"]
-                    ).netloc
-                self._fixed_tags["environment"] = token_issuer or self._fixed_tags["environment"]
+                    )
+                    env = issuer_url.netloc
+                    if issuer_url.path:
+                        env = env + issuer_url.path
+                self._fixed_tags["environment"] = env or self._fixed_tags["environment"]
             except (JSONDecodeError, FileNotFoundError):
                 pass
 
