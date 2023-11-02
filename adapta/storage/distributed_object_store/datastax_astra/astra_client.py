@@ -166,7 +166,7 @@ class AstraClient:
                 (IPPROTO_TCP, TCP_NODELAY, 1),
                 (IPPROTO_TCP, TCP_USER_TIMEOUT, self._socket_read_timeout),
             ]
-            if platform.system() != "darwin"
+            if platform.system().lower() != "darwin"
             else [(IPPROTO_TCP, TCP_NODELAY, 1)],
         ).connect(self._keyspace)
 
