@@ -37,7 +37,7 @@ try:
     from _socket import IPPROTO_TCP, TCP_NODELAY, TCP_USER_TIMEOUT
 except ImportError:
     # Fix for MacOS - MacOS does not have TCP_USER_TIMEOUT as in linux _socket module - https://man7.org/linux/man-pages/man7/tcp.7.html
-    # So we use remove TCP_USER_TIMEOUT from _socket import
+    # So we removed TCP_USER_TIMEOUT from _socket import
     from socket import IPPROTO_TCP, TCP_NODELAY
 
 import backoff
