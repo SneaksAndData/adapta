@@ -23,6 +23,7 @@ import datetime
 import enum
 import logging
 import os
+import platform
 import re
 import sys
 import tempfile
@@ -36,8 +37,8 @@ try:
     from _socket import IPPROTO_TCP, TCP_NODELAY, TCP_USER_TIMEOUT
 except ImportError:
     # Fix for MacOS - MacOS does not have TCP_USER_TIMEOUT as in linux _socket module - https://man7.org/linux/man-pages/man7/tcp.7.html
-    # So we use SO_RCVTIMEO instead - https://opensource.apple.com/source/xnu/xnu-201/bsd/sys/socket.h.auto.html
-    from socket import IPPROTO_TCP, TCP_NODELAY, SO_RCVTIMEO as TCP_USER_TIMEOUT
+    # So we removed TCP_USER_TIMEOUT from _socket import
+    from socket import IPPROTO_TCP, TCP_NODELAY
 
 import backoff
 import pandas
@@ -164,7 +165,9 @@ class AstraClient:
             sockopts=[
                 (IPPROTO_TCP, TCP_NODELAY, 1),
                 (IPPROTO_TCP, TCP_USER_TIMEOUT, self._socket_read_timeout),
-            ],
+            ]
+            if platform.system().lower() != "darwin"
+            else [(IPPROTO_TCP, TCP_NODELAY, 1)],
         ).connect(self._keyspace)
 
         set_session(self._session)
