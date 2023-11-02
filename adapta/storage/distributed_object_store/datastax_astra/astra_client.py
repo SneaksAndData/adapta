@@ -32,7 +32,12 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import fields, is_dataclass
 from typing import Optional, Dict, TypeVar, Callable, Type, List, Any, get_origin, Union
 
-from _socket import IPPROTO_TCP, TCP_NODELAY, TCP_USER_TIMEOUT
+try:
+    from _socket import IPPROTO_TCP, TCP_NODELAY, TCP_USER_TIMEOUT
+except ImportError:
+    # Fix for MacOS - MacOS does not have TCP_USER_TIMEOUT as in linux _socket module - https://man7.org/linux/man-pages/man7/tcp.7.html
+    # So we use SO_RCVTIMEO instead - https://opensource.apple.com/source/xnu/xnu-201/bsd/sys/socket.h.auto.html
+    from socket import IPPROTO_TCP, TCP_NODELAY, SO_RCVTIMEO as TCP_USER_TIMEOUT
 
 import backoff
 import pandas
