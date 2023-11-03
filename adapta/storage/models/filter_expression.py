@@ -78,7 +78,23 @@ class FilterField:
         """
         Generates a filter condition checking that field value is one of the values provided.
         """
-        return Expression(left_operand=self, right_operand=values, operation=FilterExpressionOperation.IN)
+        if len(values) <= 25:
+            # If 25 or fewer values, create a single IN filter.
+            return Expression(left_operand=self, right_operand=values, operation=FilterExpressionOperation.IN)
+
+        # If more than 25, chunk the list and create IN filters for each chunk.
+        chunked = chunk_list(values, math.ceil(len(values) / 25))
+        sub_filters = [
+            Expression(left_operand=self, right_operand=chunk, operation=FilterExpressionOperation.IN)
+            for chunk in chunk_list(values, math.ceil(len(values) / 25))
+        ]
+        # Combine the sub-filters using OR operation.
+        if sub_filters:
+            combined_filter = reduce(
+                lambda a, b: Expression(left_operand=a, right_operand=b, operation=FilterExpressionOperation.OR),
+                sub_filters,
+            )
+            return combined_filter
 
     def __gt__(self, values: Any) -> "Expression":
         """
@@ -102,7 +118,6 @@ class FilterField:
         """
         Generates a filter condition checking that field is less than or equal to a value.
         """
-
         return Expression(left_operand=self, right_operand=values, operation=FilterExpressionOperation.LE)
 
     def __eq__(self, values: Any) -> "Expression":

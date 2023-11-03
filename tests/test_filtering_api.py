@@ -126,3 +126,181 @@ def test_generic_filtering(
 )
 def test_print_filter_expression(filter_expr: FilterExpression, expected_output: str):
     assert str(filter_expr) == expected_output
+
+
+@pytest.mark.parametrize(
+    "filter_expr, pyarrow_expected_expr, astra_expected_expr",
+    [
+        (
+            (
+                FilterField(TEST_ENTITY_SCHEMA.col_d).isin(
+                    [
+                        "1",
+                        "2",
+                        "3",
+                        "4",
+                        "5",
+                        "6",
+                        "7",
+                        "8",
+                        "9",
+                        "10",
+                        "11",
+                        "12",
+                        "13",
+                        "14",
+                        "15",
+                        "16",
+                        "17",
+                        "18",
+                        "19",
+                        "20",
+                        "21",
+                        "22",
+                        "23",
+                        "24",
+                        "25",
+                        "26",
+                        "27",
+                    ]
+                )
+            ),
+            (
+                (
+                    pyarrow_field("col_d").isin(
+                        ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14"]
+                    )
+                    | pyarrow_field("col_d").isin(
+                        [
+                            "15",
+                            "16",
+                            "17",
+                            "18",
+                            "19",
+                            "20",
+                            "21",
+                            "22",
+                            "23",
+                            "24",
+                            "25",
+                            "26",
+                            "27",
+                        ]
+                    )
+                )
+            ),
+            (
+                [
+                    {"col_d__in": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14"]},
+                    {"col_d__in": ["15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27"]},
+                ]
+            ),
+        ),
+        (
+            (
+                FilterField(TEST_ENTITY_SCHEMA.col_d).isin(
+                    [
+                        "1",
+                        "2",
+                        "3",
+                        "4",
+                        "5",
+                        "6",
+                        "7",
+                        "8",
+                        "9",
+                        "10",
+                        "11",
+                        "12",
+                        "13",
+                        "14",
+                        "15",
+                        "16",
+                        "17",
+                        "18",
+                        "19",
+                        "20",
+                        "21",
+                        "22",
+                        "23",
+                        "24",
+                        "25",
+                    ]
+                )
+            ),
+            (
+                (
+                    pyarrow_field("col_d").isin(
+                        [
+                            "1",
+                            "2",
+                            "3",
+                            "4",
+                            "5",
+                            "6",
+                            "7",
+                            "8",
+                            "9",
+                            "10",
+                            "11",
+                            "12",
+                            "13",
+                            "14",
+                            "15",
+                            "16",
+                            "17",
+                            "18",
+                            "19",
+                            "20",
+                            "21",
+                            "22",
+                            "23",
+                            "24",
+                            "25",
+                        ]
+                    )
+                )
+            ),
+            (
+                [
+                    {
+                        "col_d__in": [
+                            "1",
+                            "2",
+                            "3",
+                            "4",
+                            "5",
+                            "6",
+                            "7",
+                            "8",
+                            "9",
+                            "10",
+                            "11",
+                            "12",
+                            "13",
+                            "14",
+                            "15",
+                            "16",
+                            "17",
+                            "18",
+                            "19",
+                            "20",
+                            "21",
+                            "22",
+                            "23",
+                            "24",
+                            "25",
+                        ]
+                    },
+                ]
+            ),
+        ),
+    ],
+)
+def test_long_is_in_list(
+    filter_expr: Union[FilterField, FilterExpression],
+    pyarrow_expected_expr: pc.Expression,
+    astra_expected_expr: Dict[str, Any],
+):
+    assert compile_expression(filter_expr, ArrowFilterExpression).equals(pyarrow_expected_expr)
+    assert compile_expression(filter_expr, AstraFilterExpression) == astra_expected_expr
