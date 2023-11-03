@@ -132,166 +132,45 @@ def test_print_filter_expression(filter_expr: FilterExpression, expected_output:
     "filter_expr, pyarrow_expected_expr, astra_expected_expr",
     [
         (
-            (
-                FilterField(TEST_ENTITY_SCHEMA.col_d).isin(
-                    [
-                        "1",
-                        "2",
-                        "3",
-                        "4",
-                        "5",
-                        "6",
-                        "7",
-                        "8",
-                        "9",
-                        "10",
-                        "11",
-                        "12",
-                        "13",
-                        "14",
-                        "15",
-                        "16",
-                        "17",
-                        "18",
-                        "19",
-                        "20",
-                        "21",
-                        "22",
-                        "23",
-                        "24",
-                        "25",
-                        "26",
-                        "27",
-                    ]
-                )
-            ),
+            (FilterField(TEST_ENTITY_SCHEMA.col_d).isin([str(i) for i in range(1, 28)])),
             (
                 (
-                    pyarrow_field("col_d").isin(
-                        ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14"]
-                    )
-                    | pyarrow_field("col_d").isin(
-                        [
-                            "15",
-                            "16",
-                            "17",
-                            "18",
-                            "19",
-                            "20",
-                            "21",
-                            "22",
-                            "23",
-                            "24",
-                            "25",
-                            "26",
-                            "27",
-                        ]
-                    )
+                    pyarrow_field("col_d").isin([str(i) for i in range(1, 15)])
+                    | pyarrow_field("col_d").isin([str(i) for i in range(15, 28)])
                 )
             ),
             (
                 [
-                    {"col_d__in": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14"]},
-                    {"col_d__in": ["15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27"]},
+                    {"col_d__in": [str(i) for i in range(1, 15)]},
+                    {"col_d__in": [str(i) for i in range(15, 28)]},
                 ]
             ),
         ),
         (
+            (FilterField(TEST_ENTITY_SCHEMA.col_d).isin([str(i) for i in range(1, 26)])),
+            ((pyarrow_field("col_d").isin([str(i) for i in range(1, 26)]))),
             (
-                FilterField(TEST_ENTITY_SCHEMA.col_d).isin(
-                    [
-                        "1",
-                        "2",
-                        "3",
-                        "4",
-                        "5",
-                        "6",
-                        "7",
-                        "8",
-                        "9",
-                        "10",
-                        "11",
-                        "12",
-                        "13",
-                        "14",
-                        "15",
-                        "16",
-                        "17",
-                        "18",
-                        "19",
-                        "20",
-                        "21",
-                        "22",
-                        "23",
-                        "24",
-                        "25",
-                    ]
-                )
+                [
+                    {"col_d__in": [str(i) for i in range(1, 26)]},
+                ]
             ),
+        ),
+        (
+            (FilterField(TEST_ENTITY_SCHEMA.col_d).isin([str(i) for i in range(1, 101)])),
             (
                 (
-                    pyarrow_field("col_d").isin(
-                        [
-                            "1",
-                            "2",
-                            "3",
-                            "4",
-                            "5",
-                            "6",
-                            "7",
-                            "8",
-                            "9",
-                            "10",
-                            "11",
-                            "12",
-                            "13",
-                            "14",
-                            "15",
-                            "16",
-                            "17",
-                            "18",
-                            "19",
-                            "20",
-                            "21",
-                            "22",
-                            "23",
-                            "24",
-                            "25",
-                        ]
-                    )
+                    pyarrow_field("col_d").isin([str(i) for i in range(1, 26)])
+                    | pyarrow_field("col_d").isin([str(i) for i in range(26, 51)])
+                    | pyarrow_field("col_d").isin([str(i) for i in range(51, 76)])
+                    | pyarrow_field("col_d").isin([str(i) for i in range(76, 101)])
                 )
             ),
             (
                 [
-                    {
-                        "col_d__in": [
-                            "1",
-                            "2",
-                            "3",
-                            "4",
-                            "5",
-                            "6",
-                            "7",
-                            "8",
-                            "9",
-                            "10",
-                            "11",
-                            "12",
-                            "13",
-                            "14",
-                            "15",
-                            "16",
-                            "17",
-                            "18",
-                            "19",
-                            "20",
-                            "21",
-                            "22",
-                            "23",
-                            "24",
-                            "25",
-                        ]
-                    },
+                    {"col_d__in": [str(i) for i in range(1, 26)]},
+                    {"col_d__in": [str(i) for i in range(26, 51)]},
+                    {"col_d__in": [str(i) for i in range(51, 76)]},
+                    {"col_d__in": [str(i) for i in range(76, 101)]},
                 ]
             ),
         ),
