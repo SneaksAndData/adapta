@@ -1,13 +1,16 @@
 """
     Models for generating filter expressions for PyArrow and Astra.
 """
-
+import math
 from enum import Enum
 from abc import abstractmethod, ABC
+from functools import reduce
 from typing import final, List, Dict, Generic, TypeVar, Any, Union, Type
 
 import pyarrow.compute
 from pyarrow.dataset import field as pyarrow_field
+
+from adapta.utils import chunk_list
 
 TCompileResult = TypeVar("TCompileResult")  # pylint: disable=invalid-name
 
@@ -78,23 +81,28 @@ class FilterField:
         """
         Generates a filter condition checking that field value is one of the values provided.
         """
+        if not values:  # Check for an empty list
+            raise ValueError("The 'values' list must not be empty.")
+
         if len(values) <= 25:
             # If 25 or fewer values, create a single IN filter.
             return Expression(left_operand=self, right_operand=values, operation=FilterExpressionOperation.IN)
 
         # If more than 25, chunk the list and create IN filters for each chunk.
-        chunked = chunk_list(values, math.ceil(len(values) / 25))
         sub_filters = [
             Expression(left_operand=self, right_operand=chunk, operation=FilterExpressionOperation.IN)
             for chunk in chunk_list(values, math.ceil(len(values) / 25))
         ]
+        # Ensure that sub_filters is not empty
+        if not sub_filters:
+            raise ValueError("Sub-filters could not be generated from the values provided.")
+
         # Combine the sub-filters using OR operation.
-        if sub_filters:
-            combined_filter = reduce(
-                lambda a, b: Expression(left_operand=a, right_operand=b, operation=FilterExpressionOperation.OR),
-                sub_filters,
-            )
-            return combined_filter
+        combined_filter = reduce(
+            lambda a, b: Expression(left_operand=a, right_operand=b, operation=FilterExpressionOperation.OR),
+            sub_filters,
+        )
+        return combined_filter
 
     def __gt__(self, values: Any) -> "Expression":
         """
