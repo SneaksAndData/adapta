@@ -133,12 +133,7 @@ def test_print_filter_expression(filter_expr: FilterExpression, expected_output:
     [
         (
             (FilterField(TEST_ENTITY_SCHEMA.col_d).isin([str(i) for i in range(1, 28)])),
-            (
-                (
-                    pyarrow_field("col_d").isin([str(i) for i in range(1, 15)])
-                    | pyarrow_field("col_d").isin([str(i) for i in range(15, 28)])
-                )
-            ),
+            ((pyarrow_field("col_d").isin([str(i) for i in range(1, 28)]))),
             (
                 [
                     {"col_d__in": [str(i) for i in range(1, 15)]},
@@ -148,7 +143,7 @@ def test_print_filter_expression(filter_expr: FilterExpression, expected_output:
         ),
         (
             (FilterField(TEST_ENTITY_SCHEMA.col_d).isin([str(i) for i in range(1, 26)])),
-            ((pyarrow_field("col_d").isin([str(i) for i in range(1, 26)]))),
+            (pyarrow_field("col_d").isin([str(i) for i in range(1, 26)])),
             (
                 [
                     {"col_d__in": [str(i) for i in range(1, 26)]},
@@ -157,14 +152,7 @@ def test_print_filter_expression(filter_expr: FilterExpression, expected_output:
         ),
         (
             (FilterField(TEST_ENTITY_SCHEMA.col_d).isin([str(i) for i in range(1, 101)])),
-            (
-                (
-                    pyarrow_field("col_d").isin([str(i) for i in range(1, 26)])
-                    | pyarrow_field("col_d").isin([str(i) for i in range(26, 51)])
-                    | pyarrow_field("col_d").isin([str(i) for i in range(51, 76)])
-                    | pyarrow_field("col_d").isin([str(i) for i in range(76, 101)])
-                )
-            ),
+            ((pyarrow_field("col_d").isin([str(i) for i in range(1, 101)]))),
             (
                 [
                     {"col_d__in": [str(i) for i in range(1, 26)]},

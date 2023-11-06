@@ -4,7 +4,6 @@
 import math
 from enum import Enum
 from abc import abstractmethod, ABC
-from functools import reduce
 from typing import final, List, Dict, Generic, TypeVar, Any, Union, Type
 
 import pyarrow.compute
@@ -81,28 +80,7 @@ class FilterField:
         """
         Generates a filter condition checking that field value is one of the values provided.
         """
-        if not values:  # Check for an empty list
-            raise ValueError("The 'values' list must not be empty.")
-
-        if len(values) <= 25:
-            # If 25 or fewer values, create a single IN filter.
-            return Expression(left_operand=self, right_operand=values, operation=FilterExpressionOperation.IN)
-
-        # If more than 25, chunk the list and create IN filters for each chunk.
-        sub_filters = [
-            Expression(left_operand=self, right_operand=chunk, operation=FilterExpressionOperation.IN)
-            for chunk in chunk_list(values, math.ceil(len(values) / 25))
-        ]
-        # Ensure that sub_filters is not empty
-        if not sub_filters:
-            raise ValueError("Sub-filters could not be generated from the values provided.")
-
-        # Combine the sub-filters using OR operation.
-        combined_filter = reduce(
-            lambda a, b: Expression(left_operand=a, right_operand=b, operation=FilterExpressionOperation.OR),
-            sub_filters,
-        )
-        return combined_filter
+        return Expression(left_operand=self, right_operand=values, operation=FilterExpressionOperation.IN)
 
     def __gt__(self, values: Any) -> "Expression":
         """
@@ -227,12 +205,24 @@ class AstraFilterExpression(FilterExpression[List[Dict[str, Any]]]):
     def _compile_base_case(
         self, field_name: str, field_values: Any, operation: FilterExpressionOperation
     ) -> TCompileResult:
+        if operation == FilterExpressionOperation.IN and isinstance(field_values, list) and len(field_values) > 25:
+            return self._isin_large_list_result(field_name, field_values, operation)
         return [{f"{field_name}{operation.value['astra']}": field_values}]
 
     def _combine_results(
         self, compiled_result_a: TCompileResult, compiled_result_b: TCompileResult, operation: FilterExpressionOperation
     ) -> TCompileResult:
         return operation.value["astra"](compiled_result_a, compiled_result_b)
+
+    def _isin_large_list_result(
+        self, field_name: str, field_values: List[Any], operation: FilterExpressionOperation
+    ) -> TCompileResult:
+        # Compile each chunk into an IN operation expression
+        compiled_chunks = [
+            {f"{field_name}{operation.value['astra']}": chunk}
+            for chunk in chunk_list(field_values, math.ceil(len(field_values) / 25))
+        ]
+        return compiled_chunks
 
 
 @final
