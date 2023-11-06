@@ -218,11 +218,10 @@ class AstraFilterExpression(FilterExpression[List[Dict[str, Any]]]):
         self, field_name: str, field_values: List[Any], operation: FilterExpressionOperation
     ) -> TCompileResult:
         # Compile each chunk into an IN operation expression
-        compiled_chunks = [
+        return [
             {f"{field_name}{operation.value['astra']}": chunk}
             for chunk in chunk_list(field_values, math.ceil(len(field_values) / 25))
         ]
-        return compiled_chunks
 
 
 @final
