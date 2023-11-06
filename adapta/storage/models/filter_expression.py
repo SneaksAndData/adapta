@@ -202,10 +202,17 @@ class AstraFilterExpression(FilterExpression[List[Dict[str, Any]]]):
     A concrete implementation of the 'FilterExpression' abstract class for Astra.
     """
 
+    # This value represents the threshold for the maximum length of a list in an IN filter in Astra
+    in_select_cartesian_product_failure_threshold = 25
+
     def _compile_base_case(
         self, field_name: str, field_values: Any, operation: FilterExpressionOperation
     ) -> TCompileResult:
-        if operation == FilterExpressionOperation.IN and isinstance(field_values, list) and len(field_values) > 25:
+        if (
+            operation == FilterExpressionOperation.IN
+            and isinstance(field_values, list)
+            and len(field_values) > self.in_select_cartesian_product_failure_threshold
+        ):
             return self._isin_large_list_result(field_name, field_values, operation)
         return [{f"{field_name}{operation.value['astra']}": field_values}]
 
@@ -220,7 +227,9 @@ class AstraFilterExpression(FilterExpression[List[Dict[str, Any]]]):
         # Compile each chunk into an IN operation expression
         return [
             {f"{field_name}{operation.value['astra']}": chunk}
-            for chunk in chunk_list(field_values, math.ceil(len(field_values) / 25))
+            for chunk in chunk_list(
+                field_values, math.ceil(len(field_values) / self.in_select_cartesian_product_failure_threshold)
+            )
         ]
 
 
