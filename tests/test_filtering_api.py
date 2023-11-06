@@ -126,3 +126,48 @@ def test_generic_filtering(
 )
 def test_print_filter_expression(filter_expr: FilterExpression, expected_output: str):
     assert str(filter_expr) == expected_output
+
+
+@pytest.mark.parametrize(
+    "filter_expr, pyarrow_expected_expr, astra_expected_expr",
+    [
+        (
+            (FilterField(TEST_ENTITY_SCHEMA.col_d).isin([str(i) for i in range(1, 28)])),
+            ((pyarrow_field("col_d").isin([str(i) for i in range(1, 28)]))),
+            (
+                [
+                    {"col_d__in": [str(i) for i in range(1, 15)]},
+                    {"col_d__in": [str(i) for i in range(15, 28)]},
+                ]
+            ),
+        ),
+        (
+            (FilterField(TEST_ENTITY_SCHEMA.col_d).isin([str(i) for i in range(1, 26)])),
+            (pyarrow_field("col_d").isin([str(i) for i in range(1, 26)])),
+            (
+                [
+                    {"col_d__in": [str(i) for i in range(1, 26)]},
+                ]
+            ),
+        ),
+        (
+            (FilterField(TEST_ENTITY_SCHEMA.col_d).isin([str(i) for i in range(1, 101)])),
+            ((pyarrow_field("col_d").isin([str(i) for i in range(1, 101)]))),
+            (
+                [
+                    {"col_d__in": [str(i) for i in range(1, 26)]},
+                    {"col_d__in": [str(i) for i in range(26, 51)]},
+                    {"col_d__in": [str(i) for i in range(51, 76)]},
+                    {"col_d__in": [str(i) for i in range(76, 101)]},
+                ]
+            ),
+        ),
+    ],
+)
+def test_long_is_in_list(
+    filter_expr: Union[FilterField, FilterExpression],
+    pyarrow_expected_expr: pc.Expression,
+    astra_expected_expr: Dict[str, Any],
+):
+    assert compile_expression(filter_expr, ArrowFilterExpression).equals(pyarrow_expected_expr)
+    assert compile_expression(filter_expr, AstraFilterExpression) == astra_expected_expr
