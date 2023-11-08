@@ -32,6 +32,7 @@ import backoff
 from datadog_api_client import Configuration, ApiClient
 from datadog_api_client.exceptions import ServiceException
 from datadog_api_client.v2.api.logs_api import LogsApi
+from datadog_api_client.v2.model.content_encoding import ContentEncoding
 from datadog_api_client.v2.model.http_log import HTTPLog
 from datadog_api_client.v2.model.http_log_item import HTTPLogItem
 
@@ -50,7 +51,6 @@ class DataDogApiHandler(Handler):
         self,
         *,
         buffer_size=0,
-        async_handler=False,
         debug=False,
         max_flush_retry_time=30,
         ignore_flush_failure=True,
@@ -62,7 +62,6 @@ class DataDogApiHandler(Handler):
           Additional docs: https://docs.datadoghq.com/logs/log_collection/?tab=host#attributes-and-tags
 
         :param buffer_size: Optional number of records to buffer up in memory before sending to DataDog.
-        :param async_handler: Whether to send requests in an async manner. Only use this for production.
         :param debug: Whether to print messages from this handler to the console. Use this to debug handler behaviour.
         :param max_flush_retry_time: Maximum time to spend retrying message flushes in case of connection failures.
         :param ignore_flush_failure: Whether to ignore log flush failure or raise an exception.
@@ -92,7 +91,6 @@ class DataDogApiHandler(Handler):
         self._logs_api = LogsApi(api_client=ApiClient(configuration))
         self._buffer: List[HTTPLogItem] = []
         self._buffer_size = buffer_size
-        self._async_handler = async_handler
         self._debug = debug
         self._configuration = configuration
 
@@ -176,11 +174,8 @@ class DataDogApiHandler(Handler):
         def _try_flush():
             result = self._logs_api.submit_log(
                 body=HTTPLog(value=self._buffer),
-                content_encoding="gzip",
-                async_req=self._async_handler,
+                content_encoding=ContentEncoding.GZIP,
             )
-            if self._async_handler:
-                result.get()
 
             if self._debug:
                 print(f"DataDog response: {result}")
