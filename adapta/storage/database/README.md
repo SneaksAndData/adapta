@@ -78,3 +78,17 @@ with tc_oauth2 as tc:
     result = pandas.concat(tc.query('select * from bronze.tcurr limit 1'))
     print(result)
 ```
+
+## Snowflake
+Initialize a Snowflake client and run queries. Each context invocation will open a browser tab, but all queries performed inside the `with` block will reuse the fetched token.
+```python
+from adapta.storage.database.snowflake_sql import SnowflakeClient
+
+snowflake_client = SnowflakeClient(user="email@ecco.com", account="ok51763.west-europe.azure", warehouse="DATA_ENGINEER")
+
+query = "SELECT SKU_KEY, LOCATION_KEY FROM datalake_production.performance_product.sell_in_buy_in limit 10"
+
+with snowflake_client as sc:
+    result = sc.query(query)
+    print(result)
+```
