@@ -13,7 +13,6 @@ from adapta.logs.models import LogLevel
 from adapta.logs import SemanticLogger
 
 
-
 class SnowflakeClient:
     """
     A wrapper around the Snowflake Python connector that provides a context manager for handling connections
