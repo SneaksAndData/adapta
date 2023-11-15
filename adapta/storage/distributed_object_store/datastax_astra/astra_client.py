@@ -33,6 +33,8 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import fields, is_dataclass
 from typing import Optional, Dict, TypeVar, Callable, Type, List, Any, get_origin, Union
 
+from adapta.storage.distributed_object_store.datastax_astra._models import SimilarityFunction, VectorSearchQuery
+
 try:
     from _socket import IPPROTO_TCP, TCP_NODELAY, TCP_USER_TIMEOUT
 except ImportError:
@@ -584,3 +586,39 @@ class AstraClient:
                 model_class=self._model_dataclass(value=entity_type, table_name=table_name, primary_keys=primary_keys),
                 values=chunk,
             )
+
+    def ann_search(
+        self,
+        entity_type: Type[TModel],
+        vector_to_match: list[float],
+        similarity_function: SimilarityFunction = SimilarityFunction.COSINE,
+        table_name: Optional[str] = None,
+        num_results=1,
+    ) -> pandas.DataFrame:
+        """
+        Performs a simple ANN-based search for vectors most similar to the provided one in the specified entity.
+
+        Reference CQL code: https://docs.datastax.com/en/astra-serverless/docs/vector-search/cql.html
+
+        References for potential future changes:
+           https://github.com/CassioML/cassio/blob/main/src/cassio/utils/vector/distance_metrics.py#L76-L99
+           https://github.com/langchain-ai/langchain/blob/93ae589f1bd11f992eff5018660b667b2e15e585/libs/langchain/langchain/vectorstores/cassandra.py
+        """
+        vector_columns = [field.name for field in fields(entity_type) if field.metadata.get("is_vector_enabled", False)]
+
+        assert len(vector_columns) == 1, "Only a single column in a model is allowed to store AI embeddings"
+
+        table_name = table_name or self._snake_pattern.sub("_", entity_type.__name__).lower()
+
+        query = VectorSearchQuery(
+            table_fqn=f"{self._keyspace}.{table_name}",
+            data_fields=[
+                field.name for field in fields(entity_type) if not field.metadata.get("is_vector_enabled", False)
+            ][:1],
+            sim_func=similarity_function,
+            vector=vector_to_match,
+            field_name=vector_columns[0],
+            num_results=num_results,
+        )
+
+        return pandas.DataFrame(self._session.execute(str(query)))
