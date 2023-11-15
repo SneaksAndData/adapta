@@ -1,3 +1,7 @@
+"""
+ Module for data structures methods.
+"""
+
 from typing import List, Dict
 import xml.etree.ElementTree as ET
 
@@ -57,7 +61,20 @@ def xmltree_to_dict(xml_source: str, is_path: bool = True) -> List[Dict]:
          Generate all the combinations from root to the node closest to leaves based on the backtracking algorithm
 
         If the node's children are leaves:
-            Current recursion ends, merge combination with current node's attributes, children's attributes and text
+            Current recursion ends, there are two situations:
+               1. all the leaves have the same tag name like "book" leaves in the following example
+                   <catalog>
+                      <book>book_name1</book>
+                      <book>book_name2</book>
+                   </catalog>
+                Then directly append to combinations
+
+               2. each leaf has different tag name
+                   <catalog>
+                      <book>book_name1</book>
+                      <price>10</price>
+                   </catalog>
+                Then merge all the leaves and append to combinations
         else:
             Get the attributes of the current node,
             traverse each child and start a new recursion to generate all the combinations
@@ -69,20 +86,7 @@ def xmltree_to_dict(xml_source: str, is_path: bool = True) -> List[Dict]:
 
         # when the node's children are leaves
         if len(node) > 0 and len(node[0]) == 0:
-            """
-            there are two situations:
-               1. all the leaves have the same tag name like "book" leaves in the following example
-                   <catalog>
-                      <book>book_name1</book>
-                      <book>book_name2</book>
-                   </catalog>
-               2. each leaf has different tag name
-                   <catalog>
-                      <book>book_name1</book>
-                      <price>10</price>
-                   </catalog>
-            """
-            is_append = True if len(node.findall(node[0].tag)) > 1 else False
+            is_append = len(node.findall(node[0].tag)) > 1
             # all the leaves have the same tag, directly append to combinations
             if is_append:
                 for leaf in node:
