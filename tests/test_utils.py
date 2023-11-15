@@ -13,6 +13,7 @@
 #  limitations under the License.
 #
 import os
+import pathlib
 import sys
 
 import time
@@ -33,6 +34,7 @@ from adapta.utils import (
     map_column_names,
     run_time_metrics,
     downcast_dataframe,
+    xmltree_to_dict,
 )
 from adapta.utils.concurrent_task_runner import Executable, ConcurrentTaskRunner
 
@@ -360,3 +362,34 @@ def test_downcast_dataframe(dataframe, expected_types, column_filter):
     result = downcast_dataframe(dataframe, columns=column_filter)
     for column in expected_types:
         assert result[column].dtype == expected_types[column]
+
+
+@pytest.mark.parametrize(
+    "xml_source, expected_result",
+    [
+        ("<?xml version='1.0'?><catalog><book>book_name1</book><book>book_name2</book></catalog>", [{"book": "book_name1"}, {"book": "book_name2"}]),
+        ("empty.xml", []),
+        ("root_with_attributes.xml", [{"root_id": "eqweqwre", "child": "data"}]),
+        ("basic.xml", [{"child": "data"}]),
+        ("basic_with_attributes.xml", [{"book_id": "1", "book_location": "北京", "book": "book_name1"}, {"book_id": "2", "book_location": "Copenhagen", "book": None}]),
+        ("basic_multiple_rows.xml", [{"book": "book_name1"}, {"book": "book_name2"}]),
+        ("nested_easy.xml", [{"author": "author_name1", "price": "10"}, {"author": "author_name2", "price": "20"}]),
+        ("nested_single.xml", [{'book_id': 'book_121232', 'book_parentid': 'book_1212', 'book_city': 'Copenhagen', 'price': '2', 'first_store': None}]),
+        ("nested.xml", [
+            {'books_year': '2022', 'book_id': 'bk101', 'book_name': 'bookname1', 'author': 'author1', 'price_currency': 'USD', 'price': '10'},
+            {'books_year': '2023', 'book_id': 'bk201', 'book_name': 'bookname11', 'author': 'author11', 'price_currency': 'USD', 'price': '20'},
+            {'books_year': '2023', 'book_id': 'bk202', 'book_name': 'bookname22', 'author': 'author22', 'price': '30'}
+        ]),
+        ("complicated.xml", [
+            {'date_id': '15.11.2023', 'time_id': '123123', 'books_id': '12345', 'books_listname': 'List of book', 'books_database': 'database1', 'book_color': '123/234', 'book_size': '10', 'discription': 'After an inadvertant trip through a Heisenberg, Uncertainty Device, James Salway discovers the problems,of being quantum. The Microsoft MSXML3 parser is covered in\n                      detail, with attention to XML DOM interfaces, XSLT processing, SAX and more.', 'price_currency': 'CNY', 'price': '10'},
+            {'date_id': '15.11.2023', 'time_id': '123123', 'books_id': '56789', 'books_listname': 'List of book', 'books_database': 'database2', 'book_color': '789/101', 'book_size': '100', 'discription': 'haha', 'price': '80'},
+            {'date_id': '15.11.2023', 'time_id': '123123', 'books_id': '56789', 'books_listname': 'List of book', 'books_database': 'database2', 'book_color': '121/314', 'book_size': '58', 'discription': 'enen', 'price': '29'},
+            {'date_id': '15.11.2023', 'time_id': '456456', 'books_id': '101112', 'books_listname': 'List of book', 'books_database': 'database3', 'book_color': 'abc/def', 'book_size': '101', 'discription': 'hehehe', 'price': '789'},
+            {'date_id': '14.11.2023', 'time_id': '789789', 'books_id': '131415', 'books_listname': 'List of book', 'books_database': 'database4', 'book_color': 'ghi/jkl', 'book_size': '102', 'discription': 'discriptiondiscription', 'price': '300'}
+        ])
+    ]
+)
+def test_xmltree_to_dict(xml_source, expected_result):
+    is_path = xml_source.endswith(".xml")
+    xml_source = f"{pathlib.Path(__file__).parent.resolve()}/xml_files/{xml_source}" if is_path else xml_source
+    assert expected_result == xmltree_to_dict(xml_source, is_path)

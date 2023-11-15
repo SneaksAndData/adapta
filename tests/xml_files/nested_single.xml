@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<catalog>
+	<book id="book_121232" ParentId="book_1212">
+		<book_city>Copenhagen</book_city>
+		<price>2</price>
+		<first_store/>
+	</book>
+</catalog>
