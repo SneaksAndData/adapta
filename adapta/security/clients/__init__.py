@@ -52,3 +52,8 @@ try:
     from adapta.security.clients._azure_client import AzureClient
 except ImportError:
     pass
+
+try:
+    from adapta.security.clients._aws_client import AwsClient
+except ImportError:
+    pass
