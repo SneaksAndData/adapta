@@ -21,7 +21,7 @@ from typing import Optional, Callable, Type, Iterator, Dict, TypeVar
 
 from adapta.security.clients import AwsClient
 from adapta.storage.blob.base import StorageClient
-from adapta.storage.exceptions.storage_client_error import StorageClientError
+from adapta.storage.exceptions import StorageClientError
 from adapta.storage.models.aws import cast_path
 from adapta.storage.models.base import DataPath
 from adapta.storage.models.format import SerializationFormat
@@ -38,17 +38,13 @@ class S3StorageClient(StorageClient, ABC):
         super().__init__(base_client=base_client)
         if base_client.session is None:
             raise ValueError("AwsClient.initialize_session should be called before accessing S3StorageClient")
-        self.s3_resource = base_client.session.resource("s3")
+        self._s3_resource = base_client.session.resource("s3")
 
     def get_blob_uri(self, blob_path: DataPath, **kwargs) -> str:
         """
-         Generates a URL which can be used to download this blob.
-
-        :param blob_path:
-        :param kwargs:
-        :return:
+        Not implemented in S3 Client
         """
-        return cast_path(blob_path).to_uri()
+        raise NotImplementedError("Not implemented in S3StorageClient")
 
     def blob_exists(self, blob_path: DataPath) -> bool:
         """Checks if blob located at blob_path exists
@@ -58,7 +54,7 @@ class S3StorageClient(StorageClient, ABC):
         :return: Boolean indicator of blob existence
         """
         s3_path = cast_path(blob_path)
-        return any(self.s3_resource.Bucket(s3_path.bucket).objects.filter(Prefix=s3_path.path))
+        return any(self._s3_resource.Bucket(s3_path.bucket).objects.filter(Prefix=s3_path.path))
 
     def save_data_as_blob(
         self,
@@ -85,7 +81,7 @@ class S3StorageClient(StorageClient, ABC):
 
         s3_path = cast_path(blob_path)
         bytes_ = serialization_format().serialize(data)
-        self.s3_resource.Bucket(s3_path.bucket).put_object(Key=s3_path.path, Body=bytes_)
+        self._s3_resource.Bucket(s3_path.bucket).put_object(Key=s3_path.path, Body=bytes_)
 
     def delete_blob(self, blob_path: DataPath) -> None:
         """
@@ -94,7 +90,7 @@ class S3StorageClient(StorageClient, ABC):
         :param blob_path: Blob path as DataPath object
         """
         s3_path = cast_path(blob_path)
-        self.s3_resource.Bucket(s3_path.bucket).Object(blob_path.path).delete()
+        self._s3_resource.Bucket(s3_path.bucket).Object(blob_path.path).delete()
 
     def list_blobs(
         self, blob_path: DataPath, filter_predicate: Optional[Callable[[...], bool]] = None
@@ -119,7 +115,7 @@ class S3StorageClient(StorageClient, ABC):
         :return: An iterator over deserialized blobs
         """
         s3_path = cast_path(blob_path)
-        for blob in self.s3_resource.Bucket(s3_path.bucket).objects.filter(Prefix=s3_path.path):
+        for blob in self._s3_resource.Bucket(s3_path.bucket).objects.filter(Prefix=s3_path.path):
             print(blob)
             if filter_predicate is not None and not filter_predicate(blob):
                 continue
