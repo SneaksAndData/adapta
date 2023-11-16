@@ -74,6 +74,8 @@ class SnowflakeClient:
         :param exc_tb: The traceback of the exception that was raised, if any.
         """
         self._conn.close()
+        if exc_val is not None:
+            self._logger.error(f"An error occurred: {exc_val}")
 
     def query(self, query: str) -> pandas.DataFrame | None:
         """
