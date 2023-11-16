@@ -38,20 +38,27 @@ class S3Path(DataPath):
     def from_uri(cls, url: str) -> "DataPath":
         raise NotImplementedError
 
-    path: str
     bucket: str
+    path: str
     protocol: str = DataProtocols.S3.value
 
     @classmethod
     def from_hdfs_path(cls, hdfs_path: str) -> "S3Path":
-        assert hdfs_path.startswith("s3://"), "HDFS astra path should start with s3://"
-        parsed_path = urlparse(hdfs_path).path.split("/")
-        return cls(bucket=parsed_path[0], path="/".join(parsed_path[1]))
+        """
+        Not yet implemented in S3Path
+        """
+        raise NotImplementedError
 
     def to_hdfs_path(self) -> str:
+        """
+        Not yet implemented in S3Path
+        """
         raise NotImplementedError
 
     def to_delta_rs_path(self) -> str:
+        """
+        Not yet implemented in S3Path
+        """
         raise NotImplementedError
 
 
@@ -62,6 +69,6 @@ def cast_path(blob_path: DataPath) -> S3Path:
     :param blob_path: DataPath
     :return: S3Path
     """
-    assert isinstance(blob_path, S3Path), "Only Azure Data paths are supported by this client."
+    assert isinstance(blob_path, S3Path), "Only S3 paths are supported by this client."
 
     return blob_path

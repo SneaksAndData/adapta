@@ -54,6 +54,6 @@ except ImportError:
     pass
 
 try:
-    from adapta.security.clients._aws_client import AwsClient
+    from adapta.security.clients.aws import AwsClient
 except ImportError:
     pass

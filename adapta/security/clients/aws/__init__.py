@@ -1,3 +1,6 @@
+"""
+Import index
+"""
 #  Copyright (c) 2023. ECCO Sneaks & Data
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,3 +16,5 @@
 #  limitations under the License.
 #
 
+from adapta.security.clients.aws._aws_client import *
+from adapta.security.clients.aws._aws_credentials import *

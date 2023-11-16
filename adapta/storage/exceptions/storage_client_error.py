@@ -13,3 +13,6 @@
 #  limitations under the License.
 #
 
+class StorageClientError(Exception):
+    """Base exception for StorageClient implementations"""
+    pass

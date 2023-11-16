@@ -23,6 +23,7 @@ import boto3
 from pyarrow.filesystem import FileSystem
 
 from adapta.security.clients._base import AuthenticationClient
+from adapta.security.clients.aws._aws_credentials import AccessKeyCredentials, EnvironmentAwsCredentials
 from adapta.storage.models.base import DataPath
 
 
@@ -31,8 +32,9 @@ class AwsClient(AuthenticationClient):
     AWS Credentials provider for various AWS resources.
     """
 
-    def __init__(self):
+    def __init__(self, aws_credentials: Optional[AccessKeyCredentials] = None):
         self._session = None
+        self._credentials = aws_credentials or EnvironmentAwsCredentials()
 
     @property
     def session(self):
@@ -67,18 +69,9 @@ class AwsClient(AuthenticationClient):
 
     def connect_storage(self, path: DataPath, set_env: bool = False) -> Optional[Dict]:
         """
-         Optional method to create authenticated session for the provided path.
-
-        :param path: Data path to authenticate.
-        :param set_env: Not used in AWS client since only environment credentials are supported
-        :return: Environment variables with credentials, if any.
+         Not used in AWS.
+        :return:
         """
-        self._session = self._initialize_from_environment()
-        return {
-            "AWS_ACCESS_KEY_ID": os.environ["AWS_ACCESS_KEY_ID"],
-            "AWS_SECRET_ACCESS_KEY": os.environ["AWS_SECRET_ACCESS_KEY"],
-            "AWS_REGION": os.environ["AWS_REGION"],
-        }
 
     def connect_account(self):
         """
@@ -89,16 +82,12 @@ class AwsClient(AuthenticationClient):
     def get_pyarrow_filesystem(self, path: DataPath, connection_options: Optional[Dict[str, str]] = None) -> FileSystem:
         raise ValueError("Not supported  in AwsClient")
 
-    @staticmethod
-    def _initialize_from_environment():
-        if "AWS_SECRET_ACCESS_KEY" not in os.environ:
-            raise ValueError("AWS_SECRET_ACCESS_KEY must be set")
-        if "AWS_ACCESS_KEY_ID" not in os.environ:
-            raise ValueError("AWS_ACCESS_ID must be set")
-        if "AWS_REGION" not in os.environ:
-            raise ValueError("AWS_REGION must be set")
-        return boto3.Session(
-            aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
-            aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
-            region_name=os.environ["AWS_REGION"],
+    def initialize_session(self):
+        """
+        Initializes session. Should be called before any operations with client
+        """
+        self._session = boto3.Session(
+            aws_access_key_id=self._credentials.access_key_id,
+            aws_secret_access_key=self._credentials.access_key,
+            region_name=self._credentials.region
         )
