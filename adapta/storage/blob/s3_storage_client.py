@@ -1,5 +1,5 @@
 """
- Storage Client implementation for AWS S3 Cloud.
+ Storage Client implementation for AWS S3.
 """
 #  Copyright (c) 2023. ECCO Sneaks & Data
 #
@@ -77,7 +77,7 @@ class S3StorageClient(StorageClient, ABC):
         """
         if not overwrite:
             if self.blob_exists(blob_path=blob_path):
-                raise StorageClientError(f"Blob already exists at path: {blob_path.path}")
+                raise StorageClientError(f"Blob already exists at path: {blob_path.path}. Please specify overwrite=True if you want to overwrite it.")
 
         s3_path = cast_path(blob_path)
         bytes_ = serialization_format().serialize(data)

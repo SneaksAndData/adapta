@@ -82,7 +82,7 @@ class AwsClient(AuthenticationClient):
     def get_pyarrow_filesystem(self, path: DataPath, connection_options: Optional[Dict[str, str]] = None) -> FileSystem:
         raise ValueError("Not supported  in AwsClient")
 
-    def initialize_session(self):
+    def initialize_session(self) -> "AwsClient":
         """
         Initializes session. Should be called before any operations with client
         """
@@ -91,3 +91,4 @@ class AwsClient(AuthenticationClient):
             aws_secret_access_key=self._credentials.access_key,
             region_name=self._credentials.region,
         )
+   return self

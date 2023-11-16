@@ -46,17 +46,17 @@ class EnvironmentAwsCredentials(AccessKeyCredentials):
     """
 
     def __init__(self):
-        if "PROTEUS_AWS_SECRET_ACCESS_KEY" not in os.environ:
-            raise ValueError("AWS_SECRET_ACCESS_KEY must be set")
-        self._access_key = os.environ["PROTEUS_AWS_SECRET_ACCESS_KEY"]
+        if "PROTEUS__AWS_SECRET_ACCESS_KEY" not in os.environ:
+            raise ValueError("PROTEUS__AWS_SECRET_ACCESS_KEY must be set")
+        self._access_key = os.environ["PROTEUS__AWS_SECRET_ACCESS_KEY"]
 
-        if "PROTEUS_AWS_ACCESS_KEY_ID" not in os.environ:
-            raise ValueError("AWS_ACCESS_ID must be set")
-        self._access_key_id = os.environ["PROTEUS_AWS_ACCESS_KEY_ID"]
+        if "PROTEUS__AWS_ACCESS_KEY_ID" not in os.environ:
+            raise ValueError("PROTEUS__AWS_ACCESS_KEY_ID must be set")
+        self._access_key_id = os.environ["PROTEUS__AWS_ACCESS_KEY_ID"]
 
-        if "PROTEUS_AWS_REGION" not in os.environ:
-            raise ValueError("AWS_REGION must be set")
-        self._region = os.environ["PROTEUS_AWS_REGION"]
+        if "PROTEUS__AWS_REGION" not in os.environ:
+            raise ValueError("PROTEUS__AWS_REGION must be set")
+        self._region = os.environ["PROTEUS__AWS_REGION"]
 
     @property
     def access_key(self) -> str:
