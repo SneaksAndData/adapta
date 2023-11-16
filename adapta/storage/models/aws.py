@@ -43,9 +43,9 @@ class S3Path(DataPath):
     protocol: str = DataProtocols.S3.value
 
     @classmethod
-    def from_hdfs_path(cls, path: str) -> "S3Path":
-        assert path.startswith("s3://"), "HDFS astra path should start with s3://"
-        parsed_path = urlparse(path).path.split("/")
+    def from_hdfs_path(cls, hdfs_path: str) -> "S3Path":
+        assert hdfs_path.startswith("s3://"), "HDFS astra path should start with s3://"
+        parsed_path = urlparse(hdfs_path).path.split("/")
         return cls(bucket=parsed_path[0], path="/".join(parsed_path[1]))
 
     def to_hdfs_path(self) -> str:

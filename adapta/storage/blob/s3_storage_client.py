@@ -37,8 +37,8 @@ class S3StorageClient(StorageClient, ABC):
         super().__init__(base_client=base_client)
         if base_client.session is None:
             raise ValueError("AwsClient.connect_storage should be called before accessing S3StorageClient")
-        self.s3 = base_client.session.resource("s3")
-        self.bucket = self.s3.Bucket(bucket_name)
+        self.s3_resource = base_client.session.resource("s3")
+        self.bucket = self.s3_resource.Bucket(bucket_name)
         self.bucket_name = bucket_name
 
     def get_blob_uri(self, blob_path: DataPath, **kwargs) -> str:
@@ -131,7 +131,7 @@ class S3StorageClient(StorageClient, ABC):
         """
         Not implemented in S3 Client
         """
-        raise NotImplemented("Not implemented in S3StorageClient")
+        raise NotImplementedError("Not implemented in S3StorageClient")
 
     def copy_blob(self, blob_path: DataPath, target_blob_path: DataPath, doze_period_ms: int) -> None:
         """

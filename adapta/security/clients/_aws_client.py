@@ -20,8 +20,9 @@ import os
 from typing import Optional, Dict
 
 import boto3
+from pyarrow.filesystem import FileSystem
 
-from adapta.security.clients import AuthenticationClient
+from adapta.security.clients._base import AuthenticationClient
 from adapta.storage.models.base import DataPath
 
 
@@ -55,14 +56,14 @@ class AwsClient(AuthenticationClient):
          Not used in AWS.
         :return:
         """
-        raise NotImplemented("Not implemented in AwsClient")
+        raise NotImplementedError("Not implemented in AwsClient")
 
     def get_access_token(self, scope: Optional[str] = None) -> str:
         """
          Not used in AWS.
         :return:
         """
-        raise NotImplemented("Authentication with temporary credentials is not supported yet in AwsClient")
+        raise NotImplementedError("Authentication with temporary credentials is not supported yet in AwsClient")
 
     def connect_storage(self, path: DataPath, set_env: bool = False) -> Optional[Dict]:
         """
@@ -84,7 +85,6 @@ class AwsClient(AuthenticationClient):
          Not used in AWS.
         :return:
         """
-        pass
 
     def get_pyarrow_filesystem(self, path: DataPath, connection_options: Optional[Dict[str, str]] = None) -> FileSystem:
         raise ValueError("Not supported  in AwsClient")
