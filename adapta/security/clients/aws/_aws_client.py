@@ -26,6 +26,7 @@ from adapta.security.clients.aws._aws_credentials import AccessKeyCredentials, E
 from adapta.storage.models.base import DataPath
 
 
+@final
 class AwsClient(AuthenticationClient):
     """
     AWS Credentials provider for various AWS resources.
