@@ -1,5 +1,5 @@
 """
- Models used by Astra DB when working with storage.
+ Models used by AWS when working with storage.
 """
 #  Copyright (c) 2023. ECCO Sneaks & Data
 #
@@ -28,13 +28,22 @@ class S3Path(DataPath):
     """
 
     def to_uri(self) -> str:
-        return self.to_hdfs_path()
+        """
+        Not yet implemented in S3Path
+        """
+        raise NotImplementedError
 
     def base_uri(self) -> str:
+        """
+        Not yet implemented in S3Path
+        """
         raise NotImplementedError
 
     @classmethod
     def from_uri(cls, url: str) -> "DataPath":
+        """
+        Not yet implemented in S3Path
+        """
         raise NotImplementedError
 
     bucket: str
