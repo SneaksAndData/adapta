@@ -84,9 +84,9 @@ Initialize a Snowflake client and run queries. Each context invocation will open
 ```python
 from adapta.storage.database.snowflake_sql import SnowflakeClient
 
-snowflake_client = SnowflakeClient(user="email@ecco.com", account="ok51763.west-europe.azure", warehouse="DATA_ENGINEER")
+snowflake_client = SnowflakeClient(user="email@email.com", account="ACCOUNT", warehouse="WAREHOUSE")
 
-query = "SELECT SKU_KEY, LOCATION_KEY FROM datalake_production.performance_product.sell_in_buy_in limit 10"
+query = "SELECT * FROM datalake.tt limit 10"
 
 with snowflake_client as sc:
     result = sc.query(query)
