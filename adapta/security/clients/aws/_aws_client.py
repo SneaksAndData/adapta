@@ -16,7 +16,7 @@
 #  limitations under the License.
 #
 
-from typing import Optional, Dict
+from typing import Optional, Dict, final
 
 import boto3
 from pyarrow.filesystem import FileSystem

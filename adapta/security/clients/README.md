@@ -1,6 +1,7 @@
 # Authentication Clients for various platforms
 
 Currently supported:
+- AWS
 - HashiCorp Vault
 - Azure
 - Local (for unit tests)
@@ -25,3 +26,19 @@ Note that this gives your client full write access on the account.
 This method requires user to have `Reader and Data Access` IAM role on the **storage account**.
 
 If none of the above options work, the method raises a ValueError.
+
+
+## AWS Client
+
+The AWS client allows you to authenticate with the Amazon Web Services cloud using the static credentials (access key id, secret access key and region).
+
+Before using this client, the caller code should invoke the `initialize_session` method.
+
+
+Currently, only the two types of credentials are supported now:
+- `EnvironmentAwsCredentials`: This credential provider loads credentials from the following environment variables:
+  - PROTEUS__AWS_SECRET_ACCESS_KEY: Secret access key.
+  - PROTEUS__AWS_ACCESS_KEY_ID: Access key id.
+  - PROTEUS__AWS_REGION: AWS region.
+
+- `ExplicitAwsCredentials`: This credential provider accepts the credentials as a constructor arguments.
