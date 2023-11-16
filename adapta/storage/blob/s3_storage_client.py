@@ -129,9 +129,9 @@ class S3StorageClient(StorageClient, ABC):
         filter_predicate: Optional[Callable[[...], bool]] = None,
     ) -> None:
         """
-        Not implemented in S3 Client
+        Not yet implemented in S3 Client
         """
-        raise NotImplementedError("Not implemented in S3StorageClient")
+        raise NotImplementedError("Not yet implemented in S3StorageClient")
 
     def copy_blob(self, blob_path: DataPath, target_blob_path: DataPath, doze_period_ms: int) -> None:
         """
