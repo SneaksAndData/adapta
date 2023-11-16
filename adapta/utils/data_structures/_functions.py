@@ -1,12 +1,15 @@
 """
  Module for data structures methods.
 """
-
-from typing import List, Dict
+import os.path
+from pathlib import Path
+from typing import List, Union, TypeVar, Dict
 import xml.etree.ElementTree as ET
 
+TXmlNode = TypeVar("TXmlNode")
 
-def xmltree_to_dict(xml_source: str, is_path: bool = True) -> List[Dict]:
+
+def xmltree_to_dict_collection(xml_source: Union[str, Path], node_type: type[TXmlNode]) -> List[TXmlNode]:
     """
      Convert a xml source to a list of dict, which can be a path or a xml string
 
@@ -29,12 +32,11 @@ def xmltree_to_dict(xml_source: str, is_path: bool = True) -> List[Dict]:
          {"book_id": "bk102", "book_name": "bookname2", "author":"author2", "price_currency": "USD", "price": "6"}
         ]
 
-    :param xml_source: Xml source
-    :param is_path: The xml source is path, otherwise is a xml string
+    :param xml_source: Valid XML string or a path to a valid xml file
     :return:
     """
 
-    def get_attributes(node: ET.Element) -> Dict:
+    def node_attributes_to_dict(node: ET.Element) -> Dict:
         """
          Get the node's attributes
 
@@ -46,7 +48,7 @@ def xmltree_to_dict(xml_source: str, is_path: bool = True) -> List[Dict]:
         """
         return {f"{node.tag.lower()}_{key.lower()}": value for key, value in node.attrib.items()}
 
-    def merge_attributes_and_value(node: ET.Element, leaf: ET.Element) -> Dict:
+    def merge(node: ET.Element, leaf: ET.Element) -> Dict:
         """
          Merge current node's attributes, all the leafs' attributes and text
 
@@ -54,14 +56,15 @@ def xmltree_to_dict(xml_source: str, is_path: bool = True) -> List[Dict]:
         :param leaf: Leaf
         :return:
         """
-        return get_attributes(node) | get_attributes(leaf) | {leaf.tag.lower(): leaf.text}
+        assert len(leaf) == 0, "Sub-element detected, the expectation is each leaf node should not have sub-tag."
 
-    def backtracking(node: ET.Element, combination: Dict):
+        return node_attributes_to_dict(node) | node_attributes_to_dict(leaf) | {leaf.tag.lower(): leaf.text}
+
+    def backtrack(node: ET.Element, converted_node: Dict):
         """
          Generate all the combinations from root to the node closest to leaves based on the backtracking algorithm
 
-        If the node's children are leaves:
-            Current recursion ends, there are two situations:
+        Base case (reached leaf nodes), there are two possible outcomes:
                1. all the leaves have the same tag name like "book" leaves in the following example
                    <catalog>
                       <book>book_name1</book>
@@ -75,38 +78,48 @@ def xmltree_to_dict(xml_source: str, is_path: bool = True) -> List[Dict]:
                       <price>10</price>
                    </catalog>
                 Then merge all the leaves and append to combinations
-        else:
+
+        Recursive case:
             Get the attributes of the current node,
             traverse each child and start a new recursion to generate all the combinations
 
         :param node: Current node
-        :param combination: The combination from root to current node
+        :param converted_node: The combination from root to current node
         :return:
         """
 
         # when the node's children are leaves
         if len(node) > 0 and len(node[0]) == 0:
-            is_append = len(node.findall(node[0].tag)) > 1
             # all the leaves have the same tag, directly append to combinations
-            if is_append:
+            if len(node.findall(node[0].tag)) > 1:
                 for leaf in node:
-                    combinations.append(combination | merge_attributes_and_value(node, leaf))
+                    if node_type is dict:
+                        converted_nodes.append(converted_node | merge(node, leaf))
+                    else:
+                        converted_nodes.append(node_type.from_dict(converted_node | merge(node, leaf)))
             # each leaf has different tag name, merge all the leaves and append to combinations
             else:
                 for leaf in node:
-                    combination |= merge_attributes_and_value(node, leaf)
-                combinations.append(combination)
+                    converted_node |= merge(node, leaf)
+
+                if node_type is dict:
+                    converted_nodes.append(converted_node)
+                else:
+                    converted_nodes.append(node_type.from_dict(converted_node))
 
         # when the node is far away from leaves
         else:
             for child in node:
-                backtracking(child, combination | get_attributes(child))
+                backtrack(child, converted_node | node_attributes_to_dict(child))
 
-    combinations = []
+    if isinstance(xml_source, Path) and not os.path.isfile(xml_source):
+        raise RuntimeError("Provided path is not a file or does not exist")
+
+    converted_nodes: list[TXmlNode] = []
     # read xml and get root node
-    root = ET.parse(xml_source).getroot() if is_path else ET.fromstring(xml_source)
+    root = ET.parse(str(xml_source)).getroot() if isinstance(xml_source, Path) else ET.fromstring(xml_source)
 
     if len(root) > 0:
-        backtracking(root, get_attributes(root))
+        backtrack(root, node_attributes_to_dict(root))
 
-    return combinations
+    return converted_nodes

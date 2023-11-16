@@ -34,7 +34,7 @@ from adapta.utils import (
     map_column_names,
     run_time_metrics,
     downcast_dataframe,
-    xmltree_to_dict,
+    xmltree_to_dict_collection,
 )
 from adapta.utils.concurrent_task_runner import Executable, ConcurrentTaskRunner
 
@@ -434,7 +434,7 @@ def test_downcast_dataframe(dataframe, expected_types, column_filter):
                     "books_database": "database1",
                     "book_color": "123/234",
                     "book_size": "10",
-                    "discription": "After an inadvertant trip through a Heisenberg, Uncertainty Device, James Salway discovers the problems,of being quantum. The Microsoft MSXML3 parser is covered in\n                      detail, with attention to XML DOM interfaces, XSLT processing, SAX and more.",
+                    "description": "After an inadvertant trip through a Heisenberg, Uncertainty Device, James Salway discovers the problems,of being quantum. The Microsoft MSXML3 parser is covered in\n                      detail, with attention to XML DOM interfaces, XSLT processing, SAX and more.",
                     "price_currency": "CNY",
                     "price": "10",
                 },
@@ -446,7 +446,7 @@ def test_downcast_dataframe(dataframe, expected_types, column_filter):
                     "books_database": "database2",
                     "book_color": "789/101",
                     "book_size": "100",
-                    "discription": "haha",
+                    "description": "haha",
                     "price": "80",
                 },
                 {
@@ -457,7 +457,7 @@ def test_downcast_dataframe(dataframe, expected_types, column_filter):
                     "books_database": "database2",
                     "book_color": "121/314",
                     "book_size": "58",
-                    "discription": "enen",
+                    "description": "enen",
                     "price": "29",
                 },
                 {
@@ -468,7 +468,7 @@ def test_downcast_dataframe(dataframe, expected_types, column_filter):
                     "books_database": "database3",
                     "book_color": "abc/def",
                     "book_size": "101",
-                    "discription": "hehehe",
+                    "description": "hehehe",
                     "price": "789",
                 },
                 {
@@ -479,14 +479,17 @@ def test_downcast_dataframe(dataframe, expected_types, column_filter):
                     "books_database": "database4",
                     "book_color": "ghi/jkl",
                     "book_size": "102",
-                    "discription": "discriptiondiscription",
+                    "description": "descriptiondescription",
                     "price": "300",
                 },
             ],
         ),
     ],
 )
-def test_xmltree_to_dict(xml_source, expected_result):
-    is_path = xml_source.endswith(".xml")
-    xml_source = f"{pathlib.Path(__file__).parent.resolve()}/xml_files/{xml_source}" if is_path else xml_source
-    assert expected_result == xmltree_to_dict(xml_source, is_path)
+def test_xmltree_to_dict_collection(xml_source, expected_result):
+    xml_source = (
+        pathlib.Path(f"{pathlib.Path(__file__).parent.resolve()}/xml_files/{xml_source}")
+        if xml_source.endswith(".xml")
+        else xml_source
+    )
+    assert expected_result == xmltree_to_dict_collection(xml_source, dict)
