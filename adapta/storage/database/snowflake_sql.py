@@ -75,7 +75,7 @@ class SnowflakeClient:
         """
         self._conn.close()
         if exc_val is not None:
-            self._logger.error(f"An error occurred: {exc_val}")
+            self._logger.error(f"An error occurred while closing the database connection: {exc_val}")
 
     def query(self, query: str) -> pandas.DataFrame | None:
         """
