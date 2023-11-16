@@ -96,13 +96,20 @@ class S3StorageClient(StorageClient, ABC):
         s3_path = cast_path(blob_path)
         self.s3_resource.Bucket(s3_path.bucket).Object(blob_path.path).delete()
 
-    def list_blobs(self, blob_path: DataPath, filter_predicate: Optional[Callable[[...], bool]] = None) -> Iterator[DataPath]:
+    def list_blobs(
+        self, blob_path: DataPath, filter_predicate: Optional[Callable[[...], bool]] = None
+    ) -> Iterator[DataPath]:
         """
         Not implemented in S3 Client
         """
         raise NotImplementedError("Not implemented in S3StorageClient")
 
-    def read_blobs(self, blob_path: DataPath, serialization_format: Type[SerializationFormat[T]], filter_predicate: Optional[Callable[[...], bool]] = None,) -> Iterator[T]:
+    def read_blobs(
+        self,
+        blob_path: DataPath,
+        serialization_format: Type[SerializationFormat[T]],
+        filter_predicate: Optional[Callable[[...], bool]] = None,
+    ) -> Iterator[T]:
         """
          Reads data under provided path into the given format.
 
@@ -118,7 +125,13 @@ class S3StorageClient(StorageClient, ABC):
                 continue
             yield serialization_format().deserialize(blob.get()["Body"].read())
 
-    def download_blobs(self, blob_path: DataPath, local_path: str, threads: Optional[int] = None, filter_predicate: Optional[Callable[[...], bool]] = None,) -> None:
+    def download_blobs(
+        self,
+        blob_path: DataPath,
+        local_path: str,
+        threads: Optional[int] = None,
+        filter_predicate: Optional[Callable[[...], bool]] = None,
+    ) -> None:
         """
         Not implemented in S3 Client
         """

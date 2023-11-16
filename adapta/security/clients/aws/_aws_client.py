@@ -16,7 +16,6 @@
 #  limitations under the License.
 #
 
-import os
 from typing import Optional, Dict
 
 import boto3
@@ -89,5 +88,5 @@ class AwsClient(AuthenticationClient):
         self._session = boto3.Session(
             aws_access_key_id=self._credentials.access_key_id,
             aws_secret_access_key=self._credentials.access_key,
-            region_name=self._credentials.region
+            region_name=self._credentials.region,
         )

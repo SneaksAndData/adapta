@@ -1,3 +1,6 @@
+"""
+Contains credentials provider for AWS clients
+"""
 import os
 from abc import ABC, abstractmethod
 
@@ -10,26 +13,24 @@ class AccessKeyCredentials(ABC):
     @property
     @abstractmethod
     def access_key(self) -> str:
-        """ AWS account access key """
-        pass
+        """AWS account access key"""
 
     @property
     @abstractmethod
     def access_key_id(self) -> str:
-        """ AWS account access key id """
-        pass
+        """AWS account access key id"""
 
     @property
     @abstractmethod
     def region(self) -> str:
-        """ Current AWS region """
-        pass
+        """AWS region"""
 
 
 class EnvironmentAwsCredentials(AccessKeyCredentials):
     """
     Reads credentials from environment variables
     """
+
     def __init__(self):
         if "PROTEUS_AWS_SECRET_ACCESS_KEY" not in os.environ:
             raise ValueError("AWS_SECRET_ACCESS_KEY must be set")
@@ -60,6 +61,7 @@ class ExplicitAwsCredentials(AccessKeyCredentials):
     """
     Explicitly passed AWS credentials
     """
+
     def __init__(self, access_key, access_key_id, region):
         self._access_key = access_key
         self._access_key_id = access_key_id
@@ -76,4 +78,3 @@ class ExplicitAwsCredentials(AccessKeyCredentials):
     @property
     def region(self) -> str:
         return self._region
-

@@ -17,7 +17,6 @@
 #
 
 from dataclasses import dataclass
-from urllib.parse import urlparse
 
 from adapta.storage.models.base import DataPath, DataProtocols
 
