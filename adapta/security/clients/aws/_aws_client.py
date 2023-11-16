@@ -91,4 +91,4 @@ class AwsClient(AuthenticationClient):
             aws_secret_access_key=self._credentials.access_key,
             region_name=self._credentials.region,
         )
-   return self
+        return self

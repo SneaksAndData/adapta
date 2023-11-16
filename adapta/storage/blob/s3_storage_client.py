@@ -116,7 +116,6 @@ class S3StorageClient(StorageClient, ABC):
         """
         s3_path = cast_path(blob_path)
         for blob in self._s3_resource.Bucket(s3_path.bucket).objects.filter(Prefix=s3_path.path):
-            print(blob)
             if filter_predicate is not None and not filter_predicate(blob):
                 continue
             yield serialization_format().deserialize(blob.get()["Body"].read())

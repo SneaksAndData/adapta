@@ -17,6 +17,7 @@
 #
 
 from dataclasses import dataclass
+from urllib.parse import urlparse
 
 from adapta.storage.models.base import DataPath, DataProtocols
 
@@ -55,13 +56,16 @@ class S3Path(DataPath):
         """
         Not yet implemented in S3Path
         """
-        raise NotImplementedError
+        assert hdfs_path.startswith("s3a://"), "HDFS S3 path should start with s3a://"
+        uri = urlparse(hdfs_path)
+        parsed_path = uri.path.split("/")
+        return cls(bucket=uri.netloc, path="/".join(parsed_path[1:]))
 
     def to_hdfs_path(self) -> str:
         """
         Not yet implemented in S3Path
         """
-        raise NotImplementedError
+        return f"s3a://{self.bucket}/{self.path}"
 
     def to_delta_rs_path(self) -> str:
         """
