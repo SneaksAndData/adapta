@@ -31,7 +31,6 @@ non_partitioned_parquet_table: pandas.DataFrame = pandas.concat(azure_storage_cl
 
 ### AWS example
 ```python
-import pandas
 from adapta.security.clients import AwsClient
 from adapta.storage.models.aws import S3Path
 from adapta.storage.blob.s3_storage_client import S3StorageClient
