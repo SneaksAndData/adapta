@@ -56,7 +56,7 @@ class SnowflakeClient:
             return self
         except DatabaseError as ex:
             self._logger.error(
-                "Error connecting to {account} for {user}", host=self._account, user=self._user, exception=ex
+                "Error connecting to {account} for {user}", account=self._account, user=self._user, exception=ex
             )
             return None
 
@@ -85,8 +85,7 @@ class SnowflakeClient:
         """
         try:
             with self._conn.cursor() as cursor:
-                cursor.execute(query)
-                return cursor.fetch_pandas_all()
+                return cursor.execute(query).fetch_pandas_all()
         except ProgrammingError as ex:
             self._logger.error("Error executing query {query}", query=query, exception=ex)
             return None
