@@ -16,3 +16,4 @@
 """
  Import index.
 """
+from adapta.storage.distributed_object_store.datastax_astra._models import *
