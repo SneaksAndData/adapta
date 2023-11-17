@@ -595,7 +595,7 @@ class AstraClient:
         num_results=1,
     ) -> pandas.DataFrame:
         """
-        Performs a simple ANN-based search for vectors most similar to the provided one in the specified entity.
+        Performs a simple ANN-based search for vectors most similar to the provided one in the specified entity. Results are ordered based on similarity metric value.
 
         Reference CQL code: https://docs.datastax.com/en/astra-serverless/docs/vector-search/cql.html
 
@@ -613,7 +613,7 @@ class AstraClient:
             table_fqn=f"{self._keyspace}.{table_name}",
             data_fields=[
                 field.name for field in fields(entity_type) if not field.metadata.get("is_vector_enabled", False)
-            ][:1],
+            ],
             sim_func=similarity_function,
             vector=vector_to_match,
             field_name=vector_columns[0],

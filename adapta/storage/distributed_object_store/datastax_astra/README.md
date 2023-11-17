@@ -129,3 +129,41 @@ with AstraClient(
     #         col_a col_b  col_c
     # 0  something1  else    123
   ```
+
+## Using the Vector Search
+```python
+from adapta.storage.distributed_object_store.datastax_astra.astra_client import AstraClient
+from adapta.storage.distributed_object_store.datastax_astra import SimilarityFunction
+
+from dataclasses import dataclass, field
+
+@dataclass
+class TestEntityWithEmbeddings:
+    col_a: str = field(metadata={
+        "is_primary_key": True,
+        "is_partition_key": True
+    })
+    col_b: str = field(metadata={
+        "is_primary_key": True,
+        "is_partition_key": False
+    })
+    col_c: list[float] = field(metadata={
+        "is_vector_enabled": True
+    })
+
+
+# Apply the filters for Astra
+with AstraClient(
+        client_name='test',
+        keyspace='tmp',
+        secure_connect_bundle_bytes="base64 bundle string",
+        client_id='client id',
+        client_secret='client secret'
+) as ac:
+    # Filter expressions are compiled into specific target, in this case Astra filters, in filter_entities method
+    print(ac.ann_search(entity_type=TestEntityWithEmbeddings, vector_to_match=[0.1, 0.2, 0.3], similarity_function=SimilarityFunction.DOT_PRODUCT, num_results=2))
+       
+    #         col_a      col_b  col_c              sim_value
+    # 0  something1  different    [0.3, 0.4, 0.5]  123.123
+    # 1  something2  different1   [0.1, 0.24, 0.25] 456.789
+  ```
