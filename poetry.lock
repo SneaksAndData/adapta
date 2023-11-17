@@ -409,17 +409,17 @@ uvloop = ["uvloop (>=0.15.2)"]
 
 [[package]]
 name = "boto3"
-version = "1.29.0"
+version = "1.29.2"
 description = "The AWS SDK for Python"
 optional = true
 python-versions = ">= 3.7"
 files = [
-    {file = "boto3-1.29.0-py3-none-any.whl", hash = "sha256:91c72fa4848eda9311c273db667946bd9d953285ae8d54b7bbad541b74adc254"},
-    {file = "boto3-1.29.0.tar.gz", hash = "sha256:3e90ea2faa3e9892b9140f857911f9ef0013192a106f50d0ec7b71e8d1afc90a"},
+    {file = "boto3-1.29.2-py3-none-any.whl", hash = "sha256:6617ac176efb21485ebc3a058a3a97feb1300141421ae3d1809562c4cac1d5f9"},
+    {file = "boto3-1.29.2.tar.gz", hash = "sha256:f3024bba9ac980007ba7b5f28a9734d111fb5466e2426ac76c5edbd6dedd8db2"},
 ]
 
 [package.dependencies]
-botocore = ">=1.32.0,<1.33.0"
+botocore = ">=1.32.2,<1.33.0"
 jmespath = ">=0.7.1,<2.0.0"
 s3transfer = ">=0.7.0,<0.8.0"
 
@@ -2964,4 +2964,4 @@ trino = ["trino"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9, <3.12"
-content-hash = "d258fe6e3fa27501107e3a1e28f51d48e976aec05fe6b3a11372d4657994eca6"
+content-hash = "e3f3d7f8c3537933e2f776d4cd114a389356066f342cb4fb20a42a5ae011cd96"
