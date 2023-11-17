@@ -33,8 +33,6 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import fields, is_dataclass
 from typing import Optional, Dict, TypeVar, Callable, Type, List, Any, get_origin, Union
 
-from adapta.storage.distributed_object_store.datastax_astra._models import SimilarityFunction, VectorSearchQuery
-
 try:
     from _socket import IPPROTO_TCP, TCP_NODELAY, TCP_USER_TIMEOUT
 except ImportError:
@@ -66,6 +64,7 @@ from cassandra.query import dict_factory, BatchType  # pylint: disable=E0611
 from ratelimit import limits, RateLimitException
 
 from adapta import __version__
+from adapta.storage.distributed_object_store.datastax_astra._models import SimilarityFunction, VectorSearchQuery
 from adapta.storage.models.filter_expression import Expression, AstraFilterExpression, compile_expression
 from adapta.utils import chunk_list
 
