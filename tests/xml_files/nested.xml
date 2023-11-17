@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<catalog>
+    <Books Year="2022">
+        <book id="bk101" Name="bookname1">
+          <author>author1</author>
+          <price currency="USD">10</price>
+       </book>
+    </Books>
+    <Books year="2023">
+        <book id="bk201" Name="bookname11">
+          <author>author11</author>
+          <price currency="USD">20</price>
+       </book>
+       <book id="bk202" Name="bookname22">
+          <author>author22</author>
+          <price>30</price>
+       </book>
+    </Books>
+</catalog>
