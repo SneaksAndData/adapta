@@ -6,6 +6,7 @@ This module contains storage clients for various cloud/hybrid platforms. Base cl
 
 In order to init a storage client, you need a respective authentication provider (`SecurityClient`) and a data path:
 
+### Azure example
 ```python
 import pandas
 from adapta.security.clients import AzureClient
@@ -26,4 +27,27 @@ non_partitioned_parquet_table: pandas.DataFrame = pandas.concat(azure_storage_cl
     serialization_format=DataFrameParquetSerializationFormat,
     filter_predicate=lambda b: b.name.endswith('.parquet')  # Ignore non-parquet files that might be present in a folder
 ))
+```
+
+### AWS example
+```python
+from adapta.security.clients import AwsClient
+from adapta.storage.models.aws import S3Path
+from adapta.storage.blob.s3_storage_client import S3StorageClient
+from adapta.storage.models.format import DictJsonSerializationFormat
+
+aws_client = AwsClient()
+s3_path = S3Path.from_hdfs_path('s3a://bucket/path/to/my/table')
+
+# init storage client
+s3_client = S3StorageClient(base_client=aws_client)
+
+# Save data to S3
+
+s3_client.save_data_as_blob(
+    data={"data_value": "2"}, blob_path=s3_path, serialization_format=DictJsonSerializationFormat, overwrite=True
+)
+
+# read files from S3
+blobs = s3_client.read_blobs(s3_path, serialization_format=DictJsonSerializationFormat)
 ```
