@@ -42,7 +42,7 @@ s3_path = S3Path.from_hdfs_path('s3a://bucket/path/to/my/table')
 # init storage client
 s3_client = S3StorageClient(base_client=aws_client)
 
-# read a parquet table from Azure Storage
+# Save data to S3
 
 s3_client.save_data_as_blob(
     data={"data_value": "2"}, blob_path=s3_path, serialization_format=DictJsonSerializationFormat, overwrite=True
