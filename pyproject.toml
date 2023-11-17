@@ -45,6 +45,8 @@ fsspec = { version = "2022.8.2" }
 
 trino = { version = "0.319.0", optional = true, extras = ['sqlalchemy'] }
 
+snowflake-connector-python = { version = "^3.4.0", optional = true }
+
 [tool.poetry.extras]
 azure = [
     'azure-identity',
@@ -75,6 +77,10 @@ hashicorp = [
 
 trino = [
     'trino'
+]
+
+snowflake = [
+    'snowflake-connector-python'
 ]
 
 storage = [
