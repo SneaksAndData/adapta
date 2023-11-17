@@ -26,13 +26,14 @@ def xmltree_to_dict_collection(xml_source: Union[str, Path], node_type: type[TXm
            </book>
         </catalog>
 
-    The return is
+    When node_type is dict, the returned value is
         [
          {"book_id": "bk101", "book_name": "bookname1", "author":"author1", "price_currency": "USD", "price": "10"},
          {"book_id": "bk102", "book_name": "bookname2", "author":"author2", "price_currency": "USD", "price": "6"}
         ]
 
     :param xml_source: Valid XML string or a path to a valid xml file
+    :param node_type: The type of each element in returned List, like dict or a created class inheriting from DataClassJsonMixin
     :return:
     """
 
@@ -59,6 +60,15 @@ def xmltree_to_dict_collection(xml_source: Union[str, Path], node_type: type[TXm
         assert len(leaf) == 0, "Sub-element detected, the expectation is each leaf node should not have sub-tag."
 
         return node_attributes_to_dict(node) | node_attributes_to_dict(leaf) | {leaf.tag.lower(): leaf.text}
+
+    def node_type_convert(base_node: Dict) -> TXmlNode:
+        """
+         Convert type of node to TXmlNode
+
+        :param base_node: Node to be converted to TXmlNode
+        :return:
+        """
+        return base_node if node_type is dict else node_type.from_dict(base_node)
 
     def backtrack(node: ET.Element, converted_node: Dict):
         """
@@ -93,19 +103,13 @@ def xmltree_to_dict_collection(xml_source: Union[str, Path], node_type: type[TXm
             # all the leaves have the same tag, directly append to combinations
             if len(node.findall(node[0].tag)) > 1:
                 for leaf in node:
-                    if node_type is dict:
-                        converted_nodes.append(converted_node | merge(node, leaf))
-                    else:
-                        converted_nodes.append(node_type.from_dict(converted_node | merge(node, leaf)))
+                    converted_nodes.append(node_type_convert(converted_node | merge(node, leaf)))
             # each leaf has different tag name, merge all the leaves and append to combinations
             else:
                 for leaf in node:
                     converted_node |= merge(node, leaf)
 
-                if node_type is dict:
-                    converted_nodes.append(converted_node)
-                else:
-                    converted_nodes.append(node_type.from_dict(converted_node))
+                converted_nodes.append(node_type_convert(converted_node))
 
         # when the node is far away from leaves
         else:
