@@ -6,10 +6,10 @@ from pathlib import Path
 from typing import List, Union, TypeVar, Dict
 import xml.etree.ElementTree as ET
 
-TXmlNode = TypeVar("TXmlNode")
+XmlNodeT = TypeVar("XmlNodeT")
 
 
-def xmltree_to_dict_collection(xml_source: Union[str, Path], node_type: type[TXmlNode]) -> List[TXmlNode]:
+def xmltree_to_dict_collection(xml_source: Union[str, Path], node_type: type[XmlNodeT]) -> List[XmlNodeT]:
     """
      Convert a xml source to a list of dict, which can be a path or a xml string
 
@@ -61,11 +61,11 @@ def xmltree_to_dict_collection(xml_source: Union[str, Path], node_type: type[TXm
 
         return node_attributes_to_dict(node) | node_attributes_to_dict(leaf) | {leaf.tag.lower(): leaf.text}
 
-    def node_type_convert(base_node: Dict) -> TXmlNode:
+    def node_type_convert(base_node: Dict) -> XmlNodeT:
         """
-         Convert type of node to TXmlNode
+         Convert type of node to XmlNodeT
 
-        :param base_node: Node to be converted to TXmlNode
+        :param base_node: Node to be converted to XmlNodeT
         :return:
         """
         return base_node if node_type is dict else node_type.from_dict(base_node)
@@ -119,7 +119,7 @@ def xmltree_to_dict_collection(xml_source: Union[str, Path], node_type: type[TXm
     if isinstance(xml_source, Path) and not os.path.isfile(xml_source):
         raise RuntimeError("Provided path is not a file or does not exist")
 
-    converted_nodes: list[TXmlNode] = []
+    converted_nodes: list[XmlNodeT] = []
     # read xml and get root node
     root = ET.parse(str(xml_source)).getroot() if isinstance(xml_source, Path) else ET.fromstring(xml_source)
 
