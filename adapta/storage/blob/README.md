@@ -47,5 +47,7 @@ s3_client = S3StorageClient(base_client=aws_client)
 s3_client.save_data_as_blob(
     data={"data_value": "2"}, blob_path=s3_path, serialization_format=DictJsonSerializationFormat, overwrite=True
 )
+
+# read files from S3
 blobs = s3_client.read_blobs(s3_path, serialization_format=DictJsonSerializationFormat)
 ```
