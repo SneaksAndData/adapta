@@ -13,15 +13,18 @@
 #  limitations under the License.
 #
 import os
+import pathlib
 import sys
 
 import time
+from dataclasses import dataclass
 from logging import StreamHandler
 from typing import List, Any, Dict, Optional
 
 import numpy
 import pandas
 import pytest
+from dataclasses_json import DataClassJsonMixin
 
 from adapta.logs import SemanticLogger
 from adapta.logs.models import LogLevel
@@ -33,6 +36,7 @@ from adapta.utils import (
     map_column_names,
     run_time_metrics,
     downcast_dataframe,
+    xmltree_to_dict_collection,
 )
 from adapta.utils.concurrent_task_runner import Executable, ConcurrentTaskRunner
 
@@ -360,3 +364,180 @@ def test_downcast_dataframe(dataframe, expected_types, column_filter):
     result = downcast_dataframe(dataframe, columns=column_filter)
     for column in expected_types:
         assert result[column].dtype == expected_types[column]
+
+
+# create classes for node type converting test in xmltree_to_dict_collection
+@dataclass
+class BasicMultipleRows(DataClassJsonMixin):
+    """
+    Class used in basic_multiple_rows.xml test
+    """
+
+    book: str
+
+
+@dataclass
+class Complicated(DataClassJsonMixin):
+    """
+    Class used in complicated.xml test
+    """
+
+    date_id: str
+    time_id: int
+    books_id: int
+    books_listname: str
+    books_database: str
+    book_color: str
+    book_size: float
+    description: str
+    price: float
+    price_currency: Optional[str] = None
+
+
+@pytest.mark.parametrize(
+    "xml_source, expected_result, node_type",
+    [
+        (
+            "<?xml version='1.0'?><catalog><book>book_name1</book><book>book_name2</book></catalog>",
+            [{"book": "book_name1"}, {"book": "book_name2"}],
+            dict,
+        ),
+        ("empty.xml", [], dict),
+        ("root_with_attributes.xml", [{"root_id": "eqweqwre", "child": "data"}], dict),
+        ("basic.xml", [{"child": "data"}], dict),
+        (
+            "basic_with_attributes.xml",
+            [
+                {"book_id": "1", "book_location": "北京", "book": "book_name1"},
+                {"book_id": "2", "book_location": "Copenhagen", "book": None},
+            ],
+            dict,
+        ),
+        (
+            "basic_multiple_rows.xml",
+            [BasicMultipleRows.from_dict(element) for element in [{"book": "book_name1"}, {"book": "book_name2"}]],
+            BasicMultipleRows,
+        ),
+        (
+            "nested_easy.xml",
+            [{"author": "author_name1", "price": "10"}, {"author": "author_name2", "price": "20"}],
+            dict,
+        ),
+        (
+            "nested_single.xml",
+            [
+                {
+                    "book_id": "book_121232",
+                    "book_parentid": "book_1212",
+                    "book_city": "Copenhagen",
+                    "price": "2",
+                    "first_store": None,
+                }
+            ],
+            dict,
+        ),
+        (
+            "nested.xml",
+            [
+                {
+                    "books_year": "2022",
+                    "book_id": "bk101",
+                    "book_name": "bookname1",
+                    "author": "author1",
+                    "price_currency": "USD",
+                    "price": "10",
+                },
+                {
+                    "books_year": "2023",
+                    "book_id": "bk201",
+                    "book_name": "bookname11",
+                    "author": "author11",
+                    "price_currency": "USD",
+                    "price": "20",
+                },
+                {
+                    "books_year": "2023",
+                    "book_id": "bk202",
+                    "book_name": "bookname22",
+                    "author": "author22",
+                    "price": "30",
+                },
+            ],
+            dict,
+        ),
+        (
+            "complicated.xml",
+            (
+                [
+                    Complicated.from_dict(element)
+                    for element in [
+                        {
+                            "date_id": "15.11.2023",
+                            "time_id": "123123",
+                            "books_id": "12345",
+                            "books_listname": "List of book",
+                            "books_database": "database1",
+                            "book_color": "123/234",
+                            "book_size": "10",
+                            "description": "After an inadvertant trip through a Heisenberg, Uncertainty Device, James Salway discovers the problems,of being quantum. The Microsoft MSXML3 parser is covered in\n                      detail, with attention to XML DOM interfaces, XSLT processing, SAX and more.",
+                            "price_currency": "CNY",
+                            "price": "10",
+                        },
+                        {
+                            "date_id": "15.11.2023",
+                            "time_id": "123123",
+                            "books_id": "56789",
+                            "books_listname": "List of book",
+                            "books_database": "database2",
+                            "book_color": "789/101",
+                            "book_size": "100",
+                            "description": "haha",
+                            "price": "80",
+                        },
+                        {
+                            "date_id": "15.11.2023",
+                            "time_id": "123123",
+                            "books_id": "56789",
+                            "books_listname": "List of book",
+                            "books_database": "database2",
+                            "book_color": "121/314",
+                            "book_size": "58",
+                            "description": "enen",
+                            "price": "29",
+                        },
+                        {
+                            "date_id": "15.11.2023",
+                            "time_id": "456456",
+                            "books_id": "101112",
+                            "books_listname": "List of book",
+                            "books_database": "database3",
+                            "book_color": "abc/def",
+                            "book_size": "101",
+                            "description": "hehehe",
+                            "price": "789",
+                        },
+                        {
+                            "date_id": "14.11.2023",
+                            "time_id": "789789",
+                            "books_id": "131415",
+                            "books_listname": "List of book",
+                            "books_database": "database4",
+                            "book_color": "ghi/jkl",
+                            "book_size": "102",
+                            "description": "descriptiondescription",
+                            "price": "300",
+                        },
+                    ]
+                ]
+            ),
+            Complicated,
+        ),
+    ],
+)
+def test_xmltree_to_dict_collection(xml_source, expected_result, node_type):
+    xml_source = (
+        pathlib.Path(f"{pathlib.Path(__file__).parent.resolve()}/xml_files/{xml_source}")
+        if xml_source.endswith(".xml")
+        else xml_source
+    )
+    assert expected_result == xmltree_to_dict_collection(xml_source, node_type)
