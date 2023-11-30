@@ -175,6 +175,7 @@ class AzureStorageClient(StorageClient):
         blob_path: DataPath,
         local_path: str,
     ) -> None:
+        """Download a file from ADLS"""
         azure_path = cast_path(blob_path)
 
         os.makedirs(local_path, exist_ok=True)
