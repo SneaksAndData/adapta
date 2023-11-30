@@ -175,18 +175,14 @@ class AzureStorageClient(StorageClient):
         blob_path: DataPath,
         local_path: str,
     ) -> None:
-        """
-        Download a blob from ADLS
-        """
-        blobs_on_path, azure_path = self._list_blobs(blob_path)
-        blob_on_path = list(blobs_on_path)[0]
+        azure_path = cast_path(blob_path)
 
         os.makedirs(local_path, exist_ok=True)
-        with open(os.path.join(local_path, blob_on_path.name.split("/")[-1]), "wb") as downloaded_blob:
+        with open(os.path.join(local_path, azure_path.path.split("/")[-1]), "wb") as downloaded_blob:
             downloaded_blob.write(
                 self._blob_service_client.get_blob_client(
                     container=azure_path.container,
-                    blob=blob_on_path.name,
+                    blob=azure_path.path,
                 )
                 .download_blob()
                 .readall()

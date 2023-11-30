@@ -6,7 +6,8 @@ This module contains storage clients for various cloud/hybrid platforms. Base cl
 
 In order to init a storage client, you need a respective authentication provider (`SecurityClient`) and a data path:
 
-### Azure example
+### Azure examples
+#### Read multiple blobs into a pandas Dataframe:
 ```python
 import pandas
 from adapta.security.clients import AzureClient
@@ -27,6 +28,27 @@ non_partitioned_parquet_table: pandas.DataFrame = pandas.concat(azure_storage_cl
     serialization_format=DataFrameParquetSerializationFormat,
     filter_predicate=lambda b: b.name.endswith('.parquet')  # Ignore non-parquet files that might be present in a folder
 ))
+```
+
+#### Download a single blob:
+```python
+from adapta.security.clients import AzureClient
+from adapta.storage.models.azure import AdlsGen2Path
+from adapta.storage.blob.azure_storage_client import AzureStorageClient
+
+azure_client = AzureClient()
+adls_path = AdlsGen2Path.from_hdfs_path('abfss://container@account.dfs.core.windows.net/path/to/my/folder/file_name')
+
+# init azure storage client
+azure_storage_client = AzureStorageClient(base_client=azure_client, path=adls_path)
+
+# download a file from Azure Storage to local path
+local_path = "/local/path"
+azure_storage_client.download_blob(adls_path, local_path)
+```
+Showing downloaded file in terminal
+```commandline
+cat /local/path/file_name
 ```
 
 ### AWS example
