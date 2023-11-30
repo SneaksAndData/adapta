@@ -179,7 +179,7 @@ class AzureStorageClient(StorageClient):
         Download a blob from ADLS
         """
         blobs_on_path, azure_path = self._list_blobs(blob_path)
-        blob_on_path = [blob for blob in blobs_on_path][0]
+        blob_on_path = list(blobs_on_path)[0]
 
         os.makedirs(local_path, exist_ok=True)
         with open(os.path.join(local_path, blob_on_path.name.split("/")[-1]), "wb") as downloaded_blob:
