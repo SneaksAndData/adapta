@@ -170,6 +170,25 @@ class AzureStorageClient(StorageClient):
 
                 yield serialization_format().deserialize(blob_data)
 
+    def download_blob(
+        self,
+        blob_path: DataPath,
+        local_path: str,
+    ) -> None:
+        """Download a file from ADLS"""
+        azure_path = cast_path(blob_path)
+
+        os.makedirs(local_path, exist_ok=True)
+        with open(os.path.join(local_path, azure_path.path.split("/")[-1]), "wb") as downloaded_blob:
+            downloaded_blob.write(
+                self._blob_service_client.get_blob_client(
+                    container=azure_path.container,
+                    blob=azure_path.path,
+                )
+                .download_blob()
+                .readall()
+            )
+
     def download_blobs(
         self,
         blob_path: DataPath,
