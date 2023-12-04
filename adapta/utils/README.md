@@ -213,6 +213,7 @@ Output:
 Decorator that allows users to rate limit the execution of a function.
 This is useful if you need to limit calls on a client side.
 
+Currently, this decorator only supports the `memory://` backend.
 
 Parameters:
 * `limit`: A rate limit in [string notation](https://limits.readthedocs.io/en/latest/quickstart.html#rate-limit-string-notation) (e.g. ``1/second`` or ``1 per second``)
