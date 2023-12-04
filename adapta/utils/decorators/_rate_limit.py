@@ -8,7 +8,7 @@ from limits.storage import storage_from_string
 from limits.strategies import STRATEGIES
 from limits.util import parse
 
-from adapta.utils import doze
+from adapta.utils._common import doze
 
 
 def _default_delay_func() -> None:
