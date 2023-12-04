@@ -1,3 +1,6 @@
+"""
+Rate limit decorator.
+"""
 from functools import wraps
 from typing import Callable
 
@@ -41,5 +44,4 @@ def rate_limit(
 
     if _func is None:
         return decorator
-    else:
-        return decorator(_func)
+    return decorator(_func)
