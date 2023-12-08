@@ -20,17 +20,18 @@ class RateLimitStrategy(Enum):
     """
     Rate limit strategies enumeration.
     """
+
     FIXED_WINDOW = "fixed-window"
     FIXED_WINDOW_ELASTIC_EXPIRY = "fixed-window-elastic-expiry"
     MOVING_WINDOW = "moving-window"
 
 
 def rate_limit(
-        _func: Callable = None,
-        *,
-        limit: str,
-        strategy: Optional[RateLimitStrategy] = RateLimitStrategy.MOVING_WINDOW,
-        delay_func: Callable[[], int] = _default_delay_func
+    _func: Callable = None,
+    *,
+    limit: str,
+    strategy: Optional[RateLimitStrategy] = RateLimitStrategy.MOVING_WINDOW,
+    delay_func: Callable[[], int] = _default_delay_func
 ) -> Callable:
     """
     Rate limit decorator.

@@ -61,12 +61,11 @@ from cassandra.metadata import TableMetadata, get_schema_parser  # pylint: disab
 from cassandra.policies import ExponentialReconnectionPolicy
 from cassandra.protocol import OverloadedErrorMessage, IsBootstrappingErrorMessage  # pylint: disable=E0611
 from cassandra.query import dict_factory, BatchType  # pylint: disable=E0611
-from ratelimit import limits, RateLimitException
 
 from adapta import __version__
 from adapta.storage.distributed_object_store.datastax_astra._models import SimilarityFunction, VectorSearchQuery
 from adapta.storage.models.filter_expression import Expression, AstraFilterExpression, compile_expression
-from adapta.utils import chunk_list
+from adapta.utils import chunk_list, rate_limit
 
 TModel = TypeVar("TModel")  # pylint: disable=C0103
 
@@ -518,26 +517,24 @@ class AstraClient:
         self,
         entity: TModel,
         table_name: Optional[str] = None,
-        rate_limit_calls: int = 1000,
-        rate_limit_period_seconds: int = 1,
+        rate_limit: str = "1000 per second",
     ) -> None:
         """
          Inserts a record into existing table.
 
         :param: entity: an object to insert
         :param: table_name: Table to insert entity into.
-        :param: rate_limit_calls: Number of saves per rate_limit_period_seconds that can be performed safely
-        :param: rate_limit_period_seconds: Rate limit evaluation period
+        :param rate_limit: the limit string to parse (eg: "100 per hour", "1/second", ...), default: "1000 per second"
         """
 
         @backoff.on_exception(
             wait_gen=backoff.expo,
-            exception=(OverloadedErrorMessage, IsBootstrappingErrorMessage, RateLimitException, WriteTimeout),
+            exception=(OverloadedErrorMessage, IsBootstrappingErrorMessage, WriteTimeout),
             max_tries=self._transient_error_max_retries,
             max_time=self._transient_error_max_wait_s,
             raise_on_giveup=True,
         )
-        @limits(calls=rate_limit_calls, period=rate_limit_period_seconds)
+        @rate_limit(limit=rate_limit)
         def _save_entity(model_object: Model):
             model_object.save()
 
