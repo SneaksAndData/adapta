@@ -208,3 +208,31 @@ Output:
 ```
 [ExampleNodeType(book='book_name1'), ExampleNodeType(book='book_name2')]
 ```
+### rate_limit:
+
+Decorator that allows users to rate limit the execution of a function.
+This is useful if you need to limit calls on a client side.
+
+Currently, this decorator only supports the `memory://` backend.
+
+Parameters:
+* `limit`: A rate limit in [string notation](https://limits.readthedocs.io/en/latest/quickstart.html#rate-limit-string-notation) (e.g. ``1/second`` or ``1 per second``)
+* `strategy`: A rate limiting algorithm to use. List of the available strategies can be found in the [limits](https://github.com/alisaifee/limits) repository documentation.
+* `delay_func`: Function that called to delay the execution of the function. Defaults to `doze(1)`.
+
+Example Usage:
+
+```python
+from adapta.utils import rate_limit
+from adapta.utils import session_with_retries
+
+
+@rate_limit(limit="2 per second")
+def call_api(url, session):
+    response = session.get(url)
+    return response.json()
+
+http_session = session_with_retries(retry_count=4)
+for _ in range(10):
+    call_api("https://example.com", http_session)
+```
