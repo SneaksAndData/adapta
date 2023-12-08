@@ -1,8 +1,9 @@
 """
 Rate limit decorator.
 """
+from enum import Enum
 from functools import wraps
-from typing import Callable
+from typing import Callable, Optional
 
 from limits.storage import storage_from_string
 from limits.strategies import STRATEGIES
@@ -15,24 +16,33 @@ def _default_delay_func() -> None:
     doze(1)
 
 
+class RateLimitStrategy(Enum):
+    """
+    Rate limit strategies enumeration.
+    """
+    FixedWindow = "fixed-window"
+    FixedWindowElasticExpiry = "fixed-window-elastic-expiry"
+    MovingWindow = "moving-window"
+
+
 def rate_limit(
-    _func: Callable = None,
-    *,
-    limit: str,
-    strategy: str = "moving-window",
-    delay_func: Callable[[], int] = _default_delay_func
+        _func: Callable = None,
+        *,
+        limit: str,
+        strategy: Optional[RateLimitStrategy] = RateLimitStrategy.MovingWindow,
+        delay_func: Callable[[], int] = _default_delay_func
 ) -> Callable:
     """
     Rate limit decorator.
-    :param limit: the limit string to parse
-    :param strategy: the strategy to use
+    :param limit: the limit string to parse (eg: "100 per hour", "1/second", ...)
+    :param strategy: the strategy to use (default: MovingWindow)
     :param delay_func: the delay function to use (default: doze(1))
     :param _func: the function to decorate
     :return: the decorator function
     """
 
     def decorator(func):
-        rate_limiter = STRATEGIES[strategy](storage=storage_from_string("memory://"))
+        rate_limiter = STRATEGIES[strategy.value](storage=storage_from_string("memory://"))
 
         @wraps(func)
         def wrapper(*args, **kwargs):

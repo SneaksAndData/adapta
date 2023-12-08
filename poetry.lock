@@ -2431,16 +2431,6 @@ files = [
 ]
 
 [[package]]
-name = "ratelimit"
-version = "2.2.1"
-description = "API rate limit decorator"
-optional = false
-python-versions = "*"
-files = [
-    {file = "ratelimit-2.2.1.tar.gz", hash = "sha256:af8a9b64b821529aca09ebaf6d8d279100d766f19e90b5059ac6a718ca6dee42"},
-]
-
-[[package]]
 name = "redis"
 version = "4.4.4"
 description = "Python client for Redis database and key-value store"
@@ -3028,4 +3018,4 @@ trino = ["trino"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9, <3.12"
-content-hash = "3121d2c74f6baf05cd0a7204b3ca1f32794ace83e44dc54a8940831543062280"
+content-hash = "37d939d90056de04352c364e09418a6ca210c49ff4d8d18ce8320fdba25995de"
