@@ -517,14 +517,14 @@ class AstraClient:
         self,
         entity: TModel,
         table_name: Optional[str] = None,
-        rate_limit: str = "1000 per second",
+        client_rate_limit: str = "1000 per second",
     ) -> None:
         """
          Inserts a record into existing table.
 
         :param: entity: an object to insert
         :param: table_name: Table to insert entity into.
-        :param rate_limit: the limit string to parse (eg: "100 per hour", "1/second", ...), default: "1000 per second"
+        :param: client_rate_limit: the limit string to parse (eg: "1 per hour"), default: "1000 per second"
         """
 
         @backoff.on_exception(
@@ -534,7 +534,7 @@ class AstraClient:
             max_time=self._transient_error_max_wait_s,
             raise_on_giveup=True,
         )
-        @rate_limit(limit=rate_limit)
+        @rate_limit(limit=client_rate_limit)
         def _save_entity(model_object: Model):
             model_object.save()
 
@@ -548,8 +548,7 @@ class AstraClient:
         entity_type: Type[TModel],
         table_name: Optional[str] = None,
         batch_size=1000,
-        rate_limit_calls: int = 1000,
-        rate_limit_period_seconds: int = 1,
+        client_rate_limit: str = "1000 per second",
     ) -> None:
         """
          Inserts a batch into existing table.
@@ -558,18 +557,17 @@ class AstraClient:
         :param: entity_type: type of entity in a batch .
         :param: table_name: Table to insert entity into.
         :param: batch_size: elements per batch to upsert.
-        :param: rate_limit_calls: Number of saves per rate_limit_period_seconds that can be performed safely.
-        :param: rate_limit_period_seconds: Rate limit evaluation period.
+        :param: client_rate_limit: the limit string to parse (eg: "1 per hour"), default: "1000 per second"
         """
 
         @backoff.on_exception(
             wait_gen=backoff.expo,
-            exception=(OverloadedErrorMessage, IsBootstrappingErrorMessage, RateLimitException, WriteTimeout),
+            exception=(OverloadedErrorMessage, IsBootstrappingErrorMessage, WriteTimeout),
             max_tries=self._transient_error_max_retries,
             max_time=self._transient_error_max_wait_s,
             raise_on_giveup=True,
         )
-        @limits(calls=rate_limit_calls, period=rate_limit_period_seconds)
+        @rate_limit(limit=client_rate_limit)
         def _save_entities(model_class: Type[Model], values: List[dict]):
             with BatchQuery(batch_type=BatchType.UNLOGGED) as upsert_batch:
                 for value in values:

@@ -35,10 +35,10 @@ def rate_limit(
 ) -> Callable:
     """
     Rate limit decorator.
-    :param limit: the limit string to parse (eg: "100 per hour", "1/second", ...)
-    :param strategy: the strategy to use (default: MovingWindow)
-    :param delay_func: the delay function to use (default: doze(1))
-    :param _func: the function to decorate
+    :param: limit: the limit string to parse (eg: "100 per hour", "1/second", ...)
+    :param: strategy: the strategy to use (default: MovingWindow)
+    :param: delay_func: the delay function to use (default: doze(1))
+    :param: _func: the function to decorate
     :return: the decorator function
     """
 
