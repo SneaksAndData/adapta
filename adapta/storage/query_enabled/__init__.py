@@ -1,5 +1,5 @@
 """
- Abstraction for storage operations.
+ Import index.
 """
 #  Copyright (c) 2023. ECCO Sneaks & Data
 #
@@ -15,3 +15,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+
+from adapta.storage.query_enabled._models import *
+from adapta.storage.query_enabled._qes_astra import *
+from adapta.storage.query_enabled._qes_delta import *

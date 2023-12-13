@@ -20,17 +20,22 @@
 import re
 from abc import ABC, abstractmethod
 from pydoc import locate
-from typing import TypeVar, Generic, Type
+from typing import TypeVar, Generic, Type, Iterator, Union, final, Optional
+
+import pandas
+
+from adapta.storage.models.base import DataPath
+from adapta.storage.models.filter_expression import Expression
 
 TCredential = TypeVar("TCredential")
 TSettings = TypeVar("TSettings")
 
-# TODO: hide class name behind enums in sqlalchemy format: qes+<class alias>
+# TODO: allow credential class as string or as a enum
 CONNECTION_STRING_TEMPLATE = "qes://class={credential_class};plaintext_credentials={credentials};settings={settings}"
 CONNECTION_STRING_REGEX = r"^qes:\/\/class=(.*?);plaintext_credentials=(.*?);settings=(.*?)$"
 
 
-class QueryEnabledStoreConnection(Generic[TCredential, TSettings], ABC):
+class QueryEnabledStore(Generic[TCredential, TSettings], ABC):
     def __init__(self, credentials: TCredential, settings: TSettings):
         self._credentials = credentials
         self._settings = settings
@@ -49,15 +54,54 @@ class QueryEnabledStoreConnection(Generic[TCredential, TSettings], ABC):
         """
         return self._settings
 
+    def open(self, path: DataPath) -> "QueryEnabledStoreReader":
+        return QueryEnabledStoreReader(self, path)
+
+    @abstractmethod
+    def _apply_filter(
+        self, path: DataPath, filter_expression: Expression, columns: list[str]
+    ) -> Union[pandas.DataFrame, Iterator[pandas.DataFrame]]:
+        """
+        Applies the provided filter expression to this Store and returns the result in a pandas DataFrame
+        """
+
+    @abstractmethod
+    def _apply_query(self, query: str) -> Union[pandas.DataFrame, Iterator[pandas.DataFrame]]:
+        """
+        Applies a plaintext query to this Store and returns the result in a pandas DataFrame
+        """
+
     @classmethod
     @abstractmethod
-    def _from_connection_string(cls, connection_string: str) -> "QueryEnabledStoreConnection[TCredential, TSettings]":
+    def _from_connection_string(cls, connection_string: str) -> "QueryEnabledStore[TCredential, TSettings]":
         """
         Constructs the connection from a connection string
         """
 
     @staticmethod
-    def from_string(connection_string: str) -> "QueryEnabledStoreConnection[TCredential, TSettings]":
+    def from_string(connection_string: str) -> "QueryEnabledStore[TCredential, TSettings]":
         class_name, _, _ = re.findall(re.compile(CONNECTION_STRING_REGEX), connection_string)[0]
-        class_object: Type[QueryEnabledStoreConnection[TCredential, TSettings]] = locate(class_name)
+        class_object: Type[QueryEnabledStore[TCredential, TSettings]] = locate(class_name)
         return class_object._from_connection_string(connection_string)
+
+
+@final
+class QueryEnabledStoreReader:
+    def __init__(self, store: QueryEnabledStore, path: DataPath):
+        self._store = store
+        self._path = path
+        self._filter_expression: Optional[Expression] = None
+        self._columns = []
+
+    def filter(self, filter_expression: Expression) -> "QueryEnabledStoreReader":
+        self._filter_expression = filter_expression
+        return self
+
+    def select(self, *columns: str) -> "QueryEnabledStoreReader":
+        self._columns = columns
+        return self
+
+    def read(self):
+        return self._store._apply_filter(
+            path=self._path, filter_expression=self._filter_expression, columns=self._columns
+        )

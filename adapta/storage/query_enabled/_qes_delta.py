@@ -1,10 +1,15 @@
 import re
 from dataclasses import dataclass
-from typing import final
+from pydoc import locate
+from typing import final, Union, Iterator
 
+import pandas
 from dataclasses_json import DataClassJsonMixin
 
-from adapta.storage.query_enabled._models import QueryEnabledStoreConnection, CONNECTION_STRING_REGEX
+from adapta.storage.delta_lake import load
+from adapta.storage.models.base import DataPath
+from adapta.storage.models.filter_expression import Expression
+from adapta.storage.query_enabled._models import QueryEnabledStore, CONNECTION_STRING_REGEX
 
 
 @dataclass
@@ -18,19 +23,27 @@ class DeltaCredential(DataClassJsonMixin):
 
 @dataclass
 class DeltaSettings(DataClassJsonMixin):
-    account: str
-    container: str
-
-    def __post_init__(self):
-        if not self.account or not self.container:
-            raise ValueError("Authentication plugin requires both account and container value to be set")
+    """
+    Delta QES has no additional settings.
+    """
 
 
 @final
-class DeltaQes(QueryEnabledStoreConnection[DeltaCredential, DeltaSettings]):
+class DeltaQes(QueryEnabledStore[DeltaCredential, DeltaSettings]):
     @classmethod
-    def _from_connection_string(
-        cls, connection_string: str
-    ) -> "QueryEnabledStoreConnection[DeltaCredential, DeltaSettings]":
+    def _from_connection_string(cls, connection_string: str) -> "QueryEnabledStore[DeltaCredential, DeltaSettings]":
         _, credentials, settings = re.findall(re.compile(CONNECTION_STRING_REGEX), connection_string)[0]
         return cls(credentials=DeltaCredential.from_json(credentials), settings=DeltaSettings.from_json(settings))
+
+    def _apply_filter(
+        self, path: DataPath, filter_expression: Expression, columns: list[str]
+    ) -> Union[pandas.DataFrame, Iterator[pandas.DataFrame]]:
+        return load(
+            auth_client=locate(self.credentials.auth_client_class)(),
+            path=path,
+            row_filter=filter_expression,
+            columns=columns,
+        )
+
+    def _apply_query(self, query: str) -> Union[pandas.DataFrame, Iterator[pandas.DataFrame]]:
+        raise NotImplementedError("Text queries are not supported by Delta QES")

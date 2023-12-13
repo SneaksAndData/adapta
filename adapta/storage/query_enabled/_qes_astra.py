@@ -7,7 +7,7 @@ from adapta._version import __version__
 
 from dataclasses_json import DataClassJsonMixin
 
-from adapta.storage.query_enabled._models import QueryEnabledStoreConnection, CONNECTION_STRING_REGEX
+from adapta.storage.query_enabled._models import QueryEnabledStore, CONNECTION_STRING_REGEX
 
 
 @dataclass
@@ -35,10 +35,8 @@ class AstraSettings(DataClassJsonMixin):
 
 
 @final
-class AstraQes(QueryEnabledStoreConnection[AstraCredential, AstraSettings]):
+class AstraQes(QueryEnabledStore[AstraCredential, AstraSettings]):
     @classmethod
-    def _from_connection_string(
-        cls, connection_string: str
-    ) -> "QueryEnabledStoreConnection[AstraCredential, AstraSettings]":
+    def _from_connection_string(cls, connection_string: str) -> "QueryEnabledStore[AstraCredential, AstraSettings]":
         _, credentials, settings = re.findall(re.compile(CONNECTION_STRING_REGEX), connection_string)[0]
         return cls(credentials=AstraCredential.from_json(credentials), settings=AstraSettings.from_json(settings))

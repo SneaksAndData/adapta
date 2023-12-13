@@ -7,47 +7,16 @@ Supported API:
 - read and filter a delta table without loading all rows in memory
 
 ## Example usage for Azure Datalake Gen2
-1. Create table
-```cassandraql
-create table delta_lake_test_filtering using delta as
-select
-    "some-value" as my_column,
-     "123" as my_other_column,
-      456L as another_column
-union all
-select
-    "some-value" as my_column,
-     "another-value" as my_other_column,
-     0L as another_column
-union all
-select
-    "something1" as my_column,
-     "else" as my_other_column,
-     1L as another_column
-union all
-select
-    "something1" as my_column,
-     "nonexistent" as my_other_column,
-     2L as another_column
-union all
-select
-    "something1" as my_column,
-     "nonexistent1" as my_other_column,
-     123L as another_column
-```
-2. Prepare connection and load
+Prepare connection and load
+
 ```python
 import os
-import datetime
 from adapta.security.clients import AzureClient
 from adapta.storage.models.azure import AdlsGen2Path
-from adapta.storage.models.hive import HivePath
-from adapta.storage.delta_lake import load, load_cached
-from adapta.logs import SemanticLogger
-from adapta.storage.cache.redis_cache import RedisCache
-from adapta.storage.models.filter_expression import FilterField
+from adapta.storage.delta_lake import load
 
-azure_client = AzureClient(subscription_id='6c5538ce-b24a-4e2a-877f-979ad71287ff')
+os.environ["PROTEUS__USE_AZURE_CREDENTIAL"] = "1"
+azure_client = AzureClient()
 adls_path = AdlsGen2Path.from_hdfs_path('abfss://container@account.dfs.core.windows.net/path/to/my/table')
 
 # get Iterable[pandas.DataFrame]
@@ -56,6 +25,8 @@ batches = load(azure_client, adls_path, batch_size=1000)
 ## Using the Filtering API.
 1. Create generic filter expressions
 ```python
+from adapta.storage.models.filter_expression import FilterField
+
 simple_filter = FilterField("my_column") == "some-value"
 combined_filter = (FilterField("my_column") == "some-value") & (FilterField("other_column") == "another-value")
 combined_filter_with_collection = (FilterField("my_column") == "something1") & (FilterField("other_column").isin(['else', 'nonexistent']))
