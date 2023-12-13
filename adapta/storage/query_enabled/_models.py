@@ -1,6 +1,7 @@
 """
  Query Enabled Store Connection interface.
 """
+import os
 
 #  Copyright (c) 2023. ECCO Sneaks & Data
 #
@@ -19,6 +20,7 @@
 
 import re
 from abc import ABC, abstractmethod
+from enum import Enum
 from pydoc import locate
 from typing import TypeVar, Generic, Type, Iterator, Union, final, Optional
 
@@ -30,9 +32,16 @@ from adapta.storage.models.filter_expression import Expression
 TCredential = TypeVar("TCredential")
 TSettings = TypeVar("TSettings")
 
-# TODO: allow credential class as string or as a enum
-CONNECTION_STRING_TEMPLATE = "qes://class={credential_class};plaintext_credentials={credentials};settings={settings}"
 CONNECTION_STRING_REGEX = r"^qes:\/\/class=(.*?);plaintext_credentials=(.*?);settings=(.*?)$"
+
+
+@final
+class StableQes(Enum):
+    DELTA = "adapta.storage.query_enabled.DeltaQes"
+    ASTRA = "adapta.storage.query_enabled.AstraQes"
+
+
+STABLE_STORES = [store.name for store in StableQes]
 
 
 class QueryEnabledStore(Generic[TCredential, TSettings], ABC):
@@ -80,8 +89,14 @@ class QueryEnabledStore(Generic[TCredential, TSettings], ABC):
 
     @staticmethod
     def from_string(connection_string: str) -> "QueryEnabledStore[TCredential, TSettings]":
+        def get_qes_class(name: str) -> Type[QueryEnabledStore[TCredential, TSettings]]:
+            if name in STABLE_STORES:
+                return locate(StableQes(class_name).value)
+
+            return locate(name)
+
         class_name, _, _ = re.findall(re.compile(CONNECTION_STRING_REGEX), connection_string)[0]
-        class_object: Type[QueryEnabledStore[TCredential, TSettings]] = locate(class_name)
+        class_object = get_qes_class(class_name)
         return class_object._from_connection_string(connection_string)
 
 
@@ -91,7 +106,7 @@ class QueryEnabledStoreReader:
         self._store = store
         self._path = path
         self._filter_expression: Optional[Expression] = None
-        self._columns = []
+        self._columns: list[str] = []
 
     def filter(self, filter_expression: Expression) -> "QueryEnabledStoreReader":
         self._filter_expression = filter_expression
