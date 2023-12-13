@@ -1,3 +1,6 @@
+"""
+ QES implementations for delta-rs.
+"""
 import re
 from dataclasses import dataclass
 from pydoc import locate
@@ -14,6 +17,10 @@ from adapta.storage.query_enabled._models import QueryEnabledStore, CONNECTION_S
 
 @dataclass
 class DeltaCredential(DataClassJsonMixin):
+    """
+    Delta-rs credential helper for QES.
+    """
+
     auth_client_class: str
 
     def __post_init__(self):
@@ -30,6 +37,10 @@ class DeltaSettings(DataClassJsonMixin):
 
 @final
 class DeltaQes(QueryEnabledStore[DeltaCredential, DeltaSettings]):
+    """
+    QES Client for Delta Lake reads using delta-rs.
+    """
+
     @classmethod
     def _from_connection_string(cls, connection_string: str) -> "QueryEnabledStore[DeltaCredential, DeltaSettings]":
         _, credentials, settings = re.findall(re.compile(CONNECTION_STRING_REGEX), connection_string)[0]

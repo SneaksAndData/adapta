@@ -1,7 +1,6 @@
 """
  Query Enabled Store Connection interface.
 """
-import os
 
 #  Copyright (c) 2023. ECCO Sneaks & Data
 #
@@ -29,22 +28,30 @@ import pandas
 from adapta.storage.models.base import DataPath
 from adapta.storage.models.filter_expression import Expression
 
-TCredential = TypeVar("TCredential")
-TSettings = TypeVar("TSettings")
+TCredential = TypeVar("TCredential")  # pylint: disable=C0103
+TSettings = TypeVar("TSettings")  # pylint: disable=C0103
 
 CONNECTION_STRING_REGEX = r"^qes:\/\/class=(.*?);plaintext_credentials=(.*?);settings=(.*?)$"
 
 
 @final
-class StableQes(Enum):
+class BundledQes(Enum):
+    """
+    QES Implementations aliases that are bundled with Adapta.
+    """
+
     DELTA = "adapta.storage.query_enabled.DeltaQes"
     ASTRA = "adapta.storage.query_enabled.AstraQes"
 
 
-STABLE_STORES = [store.name for store in StableQes]
+BUNDLED_STORES = {store.name: store.value for store in BundledQes}
 
 
 class QueryEnabledStore(Generic[TCredential, TSettings], ABC):
+    """
+    QES base class.
+    """
+
     def __init__(self, credentials: TCredential, settings: TSettings):
         self._credentials = credentials
         self._settings = settings
@@ -64,6 +71,9 @@ class QueryEnabledStore(Generic[TCredential, TSettings], ABC):
         return self._settings
 
     def open(self, path: DataPath) -> "QueryEnabledStoreReader":
+        """
+        Construct a reader object for QES to proxy to the underlying store implementation.
+        """
         return QueryEnabledStoreReader(self, path)
 
     @abstractmethod
@@ -89,11 +99,12 @@ class QueryEnabledStore(Generic[TCredential, TSettings], ABC):
 
     @staticmethod
     def from_string(connection_string: str) -> "QueryEnabledStore[TCredential, TSettings]":
-        def get_qes_class(name: str) -> Type[QueryEnabledStore[TCredential, TSettings]]:
-            if name in STABLE_STORES:
-                return locate(StableQes(class_name).value)
+        """
+        Constructs a concrete QES instance from a connection string.
+        """
 
-            return locate(name)
+        def get_qes_class(name: str) -> Type[QueryEnabledStore[TCredential, TSettings]]:
+            return locate(BUNDLED_STORES.get(name, name))
 
         class_name, _, _ = re.findall(re.compile(CONNECTION_STRING_REGEX), connection_string)[0]
         class_object = get_qes_class(class_name)
@@ -102,6 +113,10 @@ class QueryEnabledStore(Generic[TCredential, TSettings], ABC):
 
 @final
 class QueryEnabledStoreReader:
+    """
+    Builder-pattern support for querying via QES.
+    """
+
     def __init__(self, store: QueryEnabledStore, path: DataPath):
         self._store = store
         self._path = path
@@ -109,14 +124,23 @@ class QueryEnabledStoreReader:
         self._columns: list[str] = []
 
     def filter(self, filter_expression: Expression) -> "QueryEnabledStoreReader":
+        """
+        Use the provided expression when querying the underlying storage.
+        """
         self._filter_expression = filter_expression
         return self
 
     def select(self, *columns: str) -> "QueryEnabledStoreReader":
-        self._columns = columns
+        """
+        Request the underlying store to project the result onto the provided column set.
+        """
+        self._columns = list(columns)
         return self
 
-    def read(self):
+    def read(self) -> Union[pandas.DataFrame, Iterator[pandas.DataFrame]]:
+        """
+        Execute the query on the underlying store.
+        """
         return self._store._apply_filter(
             path=self._path, filter_expression=self._filter_expression, columns=self._columns
         )

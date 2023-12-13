@@ -1,3 +1,6 @@
+"""
+ QES implementations for DataStax Astra.
+"""
 import os
 import re
 from dataclasses import dataclass
@@ -5,10 +8,9 @@ from typing import final, Optional, Union, Iterator
 
 import pandas
 
-from adapta._version import __version__
-
 from dataclasses_json import DataClassJsonMixin
 
+from adapta._version import __version__
 from adapta.storage.distributed_object_store.datastax_astra.astra_client import AstraClient
 from adapta.storage.models.astra import AstraPath
 from adapta.storage.models.base import DataPath
@@ -19,6 +21,10 @@ from adapta.storage.query_enabled._models import QueryEnabledStore, CONNECTION_S
 
 @dataclass
 class AstraCredential(DataClassJsonMixin):
+    """
+    Astra DB credential helper for QES.
+    """
+
     secret_connection_bundle_bytes: Optional[str] = None
     client_id: Optional[str] = None
     client_secret: Optional[str] = None
@@ -33,6 +39,10 @@ class AstraCredential(DataClassJsonMixin):
 
 @dataclass
 class AstraSettings(DataClassJsonMixin):
+    """
+    Astra DB connection settings for QES.
+    """
+
     client_name: Optional[str] = None
     keyspace: Optional[str] = None
 
@@ -43,6 +53,10 @@ class AstraSettings(DataClassJsonMixin):
 
 @final
 class AstraQes(QueryEnabledStore[AstraCredential, AstraSettings]):
+    """
+    QES Client for Astra DB (Cassandra).
+    """
+
     def _apply_filter(
         self, path: DataPath, filter_expression: Expression, columns: list[str]
     ) -> Union[pandas.DataFrame, Iterator[pandas.DataFrame]]:
