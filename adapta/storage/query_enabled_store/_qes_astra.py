@@ -16,7 +16,7 @@ from adapta.storage.models.astra import AstraPath
 from adapta.storage.models.base import DataPath
 from adapta.storage.models.filter_expression import Expression
 
-from adapta.storage.query_enabled._models import QueryEnabledStore, CONNECTION_STRING_REGEX
+from adapta.storage.query_enabled_store._models import QueryEnabledStore, CONNECTION_STRING_REGEX
 
 
 @dataclass
@@ -52,7 +52,7 @@ class AstraSettings(DataClassJsonMixin):
 
 
 @final
-class AstraQes(QueryEnabledStore[AstraCredential, AstraSettings]):
+class AstraQueryEnabledStore(QueryEnabledStore[AstraCredential, AstraSettings]):
     """
     QES Client for Astra DB (Cassandra).
     """

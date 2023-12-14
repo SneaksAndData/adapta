@@ -12,7 +12,7 @@ from dataclasses_json import DataClassJsonMixin
 from adapta.storage.delta_lake import load
 from adapta.storage.models.base import DataPath
 from adapta.storage.models.filter_expression import Expression
-from adapta.storage.query_enabled._models import QueryEnabledStore, CONNECTION_STRING_REGEX
+from adapta.storage.query_enabled_store._models import QueryEnabledStore, CONNECTION_STRING_REGEX
 
 
 @dataclass
@@ -36,7 +36,7 @@ class DeltaSettings(DataClassJsonMixin):
 
 
 @final
-class DeltaQes(QueryEnabledStore[DeltaCredential, DeltaSettings]):
+class DeltaQueryEnabledStore(QueryEnabledStore[DeltaCredential, DeltaSettings]):
     """
     QES Client for Delta Lake reads using delta-rs.
     """

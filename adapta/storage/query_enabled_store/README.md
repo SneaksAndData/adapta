@@ -20,9 +20,10 @@ conn = "qes://class=adapta.storage.query_enabled.DeltaQes;plaintext_credentials=
 conn_bundled = "qes://class=DELTA;plaintext_credentials={\"auth_client_class\":\"adapta.security.clients.AzureClient\"};settings={}"
 ```
 Now, initialize a QES object from that connection and read some data:
+
 ```python
 import os
-from adapta.storage.query_enabled import QueryEnabledStore
+from adapta.storage.query_enabled_store import QueryEnabledStore
 from adapta.storage.models.azure import AdlsGen2Path
 from adapta.storage.models.filter_expression import FilterField
 

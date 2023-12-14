@@ -31,7 +31,7 @@ from adapta.storage.models.filter_expression import Expression
 TCredential = TypeVar("TCredential")  # pylint: disable=C0103
 TSettings = TypeVar("TSettings")  # pylint: disable=C0103
 
-CONNECTION_STRING_REGEX = r"^qes:\/\/class=(.*?);plaintext_credentials=(.*?);settings=(.*?)$"
+CONNECTION_STRING_REGEX = r"^qes:\/\/engine=(.*?);plaintext_credentials=(.*?);settings=(.*?)$"
 
 
 @final
@@ -40,8 +40,8 @@ class BundledQes(Enum):
     QES Implementations aliases that are bundled with Adapta.
     """
 
-    DELTA = "adapta.storage.query_enabled.DeltaQes"
-    ASTRA = "adapta.storage.query_enabled.AstraQes"
+    DELTA = "adapta.storage.query_enabled_store.DeltaQueryEnabledStore"
+    ASTRA = "adapta.storage.query_enabled_store.AstraQueryEnabledStore"
 
 
 BUNDLED_STORES = {store.name: store.value for store in BundledQes}
@@ -70,11 +70,11 @@ class QueryEnabledStore(Generic[TCredential, TSettings], ABC):
         """
         return self._settings
 
-    def open(self, path: DataPath) -> "QueryEnabledStoreReader":
+    def open(self, path: DataPath) -> "QueryConfigurationBuilder":
         """
         Construct a reader object for QES to proxy to the underlying store implementation.
         """
-        return QueryEnabledStoreReader(self, path)
+        return QueryConfigurationBuilder(self, path)
 
     @abstractmethod
     def _apply_filter(
@@ -112,7 +112,7 @@ class QueryEnabledStore(Generic[TCredential, TSettings], ABC):
 
 
 @final
-class QueryEnabledStoreReader:
+class QueryConfigurationBuilder:
     """
     Builder-pattern support for querying via QES.
     """
@@ -123,14 +123,16 @@ class QueryEnabledStoreReader:
         self._filter_expression: Optional[Expression] = None
         self._columns: list[str] = []
 
-    def filter(self, filter_expression: Expression) -> "QueryEnabledStoreReader":
+    def filter(self, filter_expression: Expression) -> "QueryConfigurationBuilder":
         """
         Use the provided expression when querying the underlying storage.
         """
-        self._filter_expression = filter_expression
+        self._filter_expression = (
+            filter_expression if self._filter_expression is None else self._filter_expression and filter_expression
+        )
         return self
 
-    def select(self, *columns: str) -> "QueryEnabledStoreReader":
+    def select(self, *columns: str) -> "QueryConfigurationBuilder":
         """
         Request the underlying store to project the result onto the provided column set.
         """
