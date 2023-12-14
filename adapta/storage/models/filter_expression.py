@@ -1,8 +1,8 @@
 import math
 from abc import ABC, abstractmethod
 from typing import final, List, Any, Union, TypeVar, Generic, Dict, Type
-import pyarrow.compute
 from enum import Enum
+import pyarrow.compute
 from pyarrow.dataset import field as pyarrow_field
 
 from adapta.utils import chunk_list
@@ -149,13 +149,17 @@ class Expression:
 
     def split_expression(self) -> List[Subexpression]:
         """
-        Splits the expression into smaller parts and returns a list of tuples.
-        Each tuple contains a sub-expression and the operation to combine it with the next sub-expression.
+        Splits the expression into smaller parts and returns a list of Subexpression.
+        Each Subexpression contains a expression and the operation to combine it with.
         """
         expressions = []
         stack = [(self, None)]
         while stack:
             current, parent_operation = stack.pop()
+
+            if isinstance(current.left_operand, FilterField):
+                expressions.append(Subexpression(current, parent_operation))
+                continue
 
             if not isinstance(current, Expression):
                 # Base case or leaf node
@@ -172,6 +176,18 @@ class Expression:
             stack.append((current.left_operand, current.operation))
 
         return expressions
+
+    def __str__(self):
+        if isinstance(self.left_operand, Expression):
+            left_str = f"({str(self.left_operand)})"
+        else:
+            left_str = str(self.left_operand)
+
+        if isinstance(self.right_operand, Expression):
+            right_str = f"({str(self.right_operand)})"
+        else:
+            right_str = str(self.right_operand)
+        return f"{left_str} {FilterExpressionOperation.to_string(self.operation)} {right_str}"
 
 
 class FilterExpression(Generic[TCompileResult], ABC):
