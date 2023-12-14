@@ -27,6 +27,11 @@ class DeltaCredential(DataClassJsonMixin):
         if not self.auth_client_class:
             raise ValueError("Authentication plugin class name not provided but is required")
 
+        if locate(self.auth_client_class) is None:
+            raise ModuleNotFoundError(
+                "Authentication plugin class name cannot be loaded. Please check the spelling and make sure your application can resolve the import"
+            )
+
 
 @dataclass
 class DeltaSettings(DataClassJsonMixin):

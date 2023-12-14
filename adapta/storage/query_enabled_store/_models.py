@@ -108,6 +108,10 @@ class QueryEnabledStore(Generic[TCredential, TSettings], ABC):
 
         class_name, _, _ = re.findall(re.compile(CONNECTION_STRING_REGEX), connection_string)[0]
         class_object = get_qes_class(class_name)
+        if class_object is None:
+            raise ModuleNotFoundError(
+                f"Cannot locate QES implementation: {class_name}. Please check the name for spelling errors and make sure your application can resolve the import"
+            )
         return class_object._from_connection_string(connection_string)
 
 

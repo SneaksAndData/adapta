@@ -15,9 +15,9 @@ Some QES implementations are bundled with `adapta`: `ASTRA`, `DELTA`. In case yo
 Example of a connection string, for a delta table stored on Azure:
 ```python
 # using dynamic import
-conn = "qes://class=adapta.storage.query_enabled.DeltaQes;plaintext_credentials={\"auth_client_class\":\"adapta.security.clients.AzureClient\"};settings={}"
+conn = "qes://engine=adapta.storage.query_enabled.DeltaQes;plaintext_credentials={\"auth_client_class\":\"adapta.security.clients.AzureClient\"};settings={}"
 # using bundled QES
-conn_bundled = "qes://class=DELTA;plaintext_credentials={\"auth_client_class\":\"adapta.security.clients.AzureClient\"};settings={}"
+conn_bundled = "qes://engine=DELTA;plaintext_credentials={\"auth_client_class\":\"adapta.security.clients.AzureClient\"};settings={}"
 ```
 Now, initialize a QES object from that connection and read some data:
 
