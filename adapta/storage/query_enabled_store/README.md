@@ -31,7 +31,7 @@ from adapta.storage.models.filter_expression import FilterField
 os.environ["PROTEUS__USE_AZURE_CREDENTIAL"] = "1"
 adls_path = AdlsGen2Path.from_hdfs_path('abfss://container@account.dfs.core.windows.net/path/to/table')
 
-conn = "qes://class=DELTA;plaintext_credentials={\"auth_client_class\":\"adapta.security.clients.AzureClient\"};settings={}"
+conn = "qes://engine=DELTA;plaintext_credentials={\"auth_client_class\":\"adapta.security.clients.AzureClient\"};settings={}"
 store = QueryEnabledStore.from_string(conn)
 data = store.open(adls_path).filter(FilterField("date_key") == "20230101").select("date_key", "year").read()
 

@@ -35,7 +35,7 @@ CONNECTION_STRING_REGEX = r"^qes:\/\/engine=(.*?);plaintext_credentials=(.*?);se
 
 
 @final
-class BundledQes(Enum):
+class BundledQueryEnabledStores(Enum):
     """
     QES Implementations aliases that are bundled with Adapta.
     """
@@ -44,7 +44,7 @@ class BundledQes(Enum):
     ASTRA = "adapta.storage.query_enabled_store.AstraQueryEnabledStore"
 
 
-BUNDLED_STORES = {store.name: store.value for store in BundledQes}
+BUNDLED_STORES = {store.name: store.value for store in BundledQueryEnabledStores}
 
 
 class QueryEnabledStore(Generic[TCredential, TSettings], ABC):
