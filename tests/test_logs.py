@@ -33,6 +33,7 @@ from pytest_mock import MockerFixture
 from adapta.logs import SemanticLogger
 from adapta.logs.handlers.datadog_api_handler import DataDogApiHandler
 from adapta.logs.models import LogLevel
+from adapta.utils.environment import set_domain_environment_variable
 
 EXPECTED_MESSAGE = (
     "This a unit test logger 1, Fixed message1 this is a fixed message1, Fixed message2 this is a fixed message2\n"
@@ -112,9 +113,9 @@ def test_log_format(
 
 
 def test_datadog_api_handler(mocker: MockerFixture):
-    os.environ.setdefault("PROTEUS__DD_API_KEY", "some-key")
-    os.environ.setdefault("PROTEUS__DD_APP_KEY", "some-app-key")
-    os.environ.setdefault("PROTEUS__DD_SITE", "some-site.dog")
+    set_domain_environment_variable("DD_API_KEY", "some-key")
+    set_domain_environment_variable("DD_APP_KEY", "some-app-key")
+    set_domain_environment_variable("DD_SITE", "some-site.dog")
 
     mocker.patch(
         "adapta.logs.handlers.datadog_api_handler.DataDogApiHandler._flush",

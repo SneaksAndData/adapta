@@ -27,6 +27,7 @@ from datadog_api_client.v1.model.metric_metadata import MetricMetadata
 
 from adapta.metrics._base import MetricsProvider
 from adapta.utils import convert_datadog_tags
+from adapta.utils.environment import get_domain_environment_variable
 
 
 class EventAlertType(Enum):
@@ -47,11 +48,11 @@ class DatadogMetricsProvider(MetricsProvider):
 
     def __init__(self, metric_namespace: str, fixed_tags: Dict[str, str] = None, debug=False):
         self._options = {
-            "statsd_host": os.getenv("PROTEUS__DD_STATSD_HOST"),
-            "statsd_port": os.getenv("PROTEUS__DD_STATSD_PORT"),
-            "api_key": os.getenv("PROTEUS__DD_API_KEY"),
-            "app_key": os.getenv("PROTEUS__DD_APP_KEY"),
-            "api_host": os.getenv("PROTEUS__DD_API_HOST"),
+            "statsd_host": get_domain_environment_variable("DD_STATSD_HOST"),
+            "statsd_port": get_domain_environment_variable("DD_STATSD_PORT"),
+            "api_key": get_domain_environment_variable("DD_API_KEY"),
+            "app_key": get_domain_environment_variable("DD_APP_KEY"),
+            "api_host": get_domain_environment_variable("DD_API_HOST"),
             "statsd_namespace": metric_namespace,
             "statsd_constant_tags": convert_datadog_tags(fixed_tags) if fixed_tags else None,
         }

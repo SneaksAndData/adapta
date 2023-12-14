@@ -60,12 +60,12 @@ import pandas
 from adapta.storage.database.trino_sql import TrinoClient
 
 # use Basic Auth
-os.environ['PROTEUS__TRINO_USERNAME'] = 'foo'
-os.environ['PROTEUS__TRINO_PASSWORD'] = 'bar'
+os.environ['ADAPTA__TRINO_USERNAME'] = 'foo'
+os.environ['ADAPTA__TRINO_PASSWORD'] = 'bar'
 tc_basic_auth = TrinoClient(host="trino.production.sneaksanddata.com", catalog="trinodatalake")
 
 # use OAuth2 (interactive browser)
-os.environ['PROTEUS__TRINO_OAUTH2_USERNAME'] = 'ME@ecco.com'
+os.environ['ADAPTA__TRINO_OAUTH2_USERNAME'] = 'ME@ecco.com'
 tc_oauth2 = TrinoClient(host="trino.production.sneaksanddata.com", catalog="trinodatalake")
 
 # query a table using Basic auth and print results

@@ -18,6 +18,8 @@ Contains credentials provider for AWS clients
 import os
 from abc import ABC, abstractmethod
 
+from adapta.utils.environment import get_domain_environment_variable
+
 
 class AccessKeyCredentials(ABC):
     """
@@ -46,17 +48,17 @@ class EnvironmentAwsCredentials(AccessKeyCredentials):
     """
 
     def __init__(self):
-        if "PROTEUS__AWS_SECRET_ACCESS_KEY" not in os.environ:
-            raise ValueError("PROTEUS__AWS_SECRET_ACCESS_KEY must be set")
-        self._access_key = os.environ["PROTEUS__AWS_SECRET_ACCESS_KEY"]
+        self._access_key = get_domain_environment_variable("AWS_SECRET_ACCESS_KEY")
+        if not self._access_key:
+            raise ValueError("ADAPTA__AWS_SECRET_ACCESS_KEY must be set")
 
-        if "PROTEUS__AWS_ACCESS_KEY_ID" not in os.environ:
-            raise ValueError("PROTEUS__AWS_ACCESS_KEY_ID must be set")
-        self._access_key_id = os.environ["PROTEUS__AWS_ACCESS_KEY_ID"]
+        self._access_key_id = get_domain_environment_variable("AWS_ACCESS_KEY_ID")
+        if not self._access_key_id:
+            raise ValueError("ADAPTA__AWS_ACCESS_KEY_ID must be set")
 
-        if "PROTEUS__AWS_REGION" not in os.environ:
-            raise ValueError("PROTEUS__AWS_REGION must be set")
-        self._region = os.environ["PROTEUS__AWS_REGION"]
+        self._region = get_domain_environment_variable("AWS_REGION")
+        if not self._region:
+            raise ValueError("ADAPTA__AWS_REGION must be set")
 
     @property
     def access_key(self) -> str:
