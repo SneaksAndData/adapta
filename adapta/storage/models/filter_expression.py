@@ -1,3 +1,6 @@
+"""
+    Models for generating filter expressions for PyArrow and Astra.
+"""
 import math
 from abc import ABC, abstractmethod
 from typing import final, List, Any, Union, TypeVar, Generic, Dict, Type
@@ -116,12 +119,20 @@ class FilterField:
 
 
 class Subexpression:
+    """
+    Represents a subexpression of an expression.
+    """
+
     def __init__(self, expression: "Expression", combine_operation: FilterExpressionOperation):
         self.expression = expression
         self.combine_operation = combine_operation
 
 
 class Expression:
+    """
+    Represents an expression used to filter data.
+    """
+
     def __init__(
         self,
         left_operand: Union["Expression", FilterField],
