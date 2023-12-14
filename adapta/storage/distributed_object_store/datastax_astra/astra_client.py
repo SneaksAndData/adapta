@@ -33,6 +33,8 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import fields, is_dataclass
 from typing import Optional, Dict, TypeVar, Callable, Type, List, Any, get_origin, Union
 
+from adapta.utils.environment import get_domain_environment_variable
+
 try:
     from _socket import IPPROTO_TCP, TCP_NODELAY, TCP_USER_TIMEOUT
 except ImportError:
@@ -107,9 +109,11 @@ class AstraClient:
         log_transient_errors=True,
         metadata_fetch_timeout_s=30,
     ):
-        self._secure_connect_bundle_bytes = secure_connect_bundle_bytes or os.getenv("PROTEUS__ASTRA_BUNDLE_BYTES")
-        self._client_id = client_id or os.getenv("PROTEUS__ASTRA_CLIENT_ID")
-        self._client_secret = client_secret or os.getenv("PROTEUS__ASTRA_CLIENT_SECRET")
+        self._secure_connect_bundle_bytes = secure_connect_bundle_bytes or get_domain_environment_variable(
+            "ASTRA_BUNDLE_BYTES"
+        )
+        self._client_id = client_id or get_domain_environment_variable("ASTRA_CLIENT_ID")
+        self._client_secret = client_secret or get_domain_environment_variable("ASTRA_CLIENT_SECRET")
         self._keyspace = keyspace
         self._tmp_bundle_path = os.path.join(tempfile.gettempdir(), ".astra")
         self._client_name = client_name

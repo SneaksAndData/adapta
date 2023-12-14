@@ -40,6 +40,7 @@ from urllib3.exceptions import HTTPError
 
 from adapta.logs.models import CompositeLogMetadata
 from adapta.utils import convert_datadog_tags
+from adapta.utils.environment import get_domain_environment_variable
 
 
 class DataDogApiHandler(Handler):
@@ -70,20 +71,20 @@ class DataDogApiHandler(Handler):
             - environment: Environment sending logs. If not provided, will be inferred depending on the actual runtime.
         """
         super().__init__()
-        assert os.getenv(
-            "PROTEUS__DD_API_KEY"
-        ), "PROTEUS__DD_API_KEY environment variable must be set in order to use DataDogApiHandler"
-        assert os.getenv(
-            "PROTEUS__DD_APP_KEY"
-        ), "PROTEUS__DD_APP_KEY environment variable must be set in order to use DataDogApiHandler"
-        assert os.getenv(
-            "PROTEUS__DD_SITE"
-        ), "PROTEUS__DD_SITE environment variable must be set in order to use DataDogApiHandler"
+        assert get_domain_environment_variable(
+            "DD_API_KEY"
+        ), "ADAPTA__DD_API_KEY environment variable must be set in order to use DataDogApiHandler"
+        assert get_domain_environment_variable(
+            "DD_APP_KEY"
+        ), "ADAPTA__DD_APP_KEY environment variable must be set in order to use DataDogApiHandler"
+        assert get_domain_environment_variable(
+            "DD_SITE"
+        ), "ADAPTA__DD_SITE environment variable must be set in order to use DataDogApiHandler"
 
         configuration = Configuration()
-        configuration.server_variables["site"] = os.getenv("PROTEUS__DD_SITE")
-        configuration.api_key["apiKeyAuth"] = os.getenv("PROTEUS__DD_API_KEY")
-        configuration.api_key["appKeyAuth"] = os.getenv("PROTEUS__DD_APP_KEY")
+        configuration.server_variables["site"] = get_domain_environment_variable("DD_SITE")
+        configuration.api_key["apiKeyAuth"] = get_domain_environment_variable("DD_API_KEY")
+        configuration.api_key["appKeyAuth"] = get_domain_environment_variable("DD_APP_KEY")
 
         if debug:
             configuration.debug = True

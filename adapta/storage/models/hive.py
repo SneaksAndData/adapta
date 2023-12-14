@@ -24,6 +24,7 @@ from adapta.storage.database.azure_sql import AzureSqlClient
 from adapta.storage.models.base import DataPath, DataProtocols
 from adapta.storage.database.models import DatabaseType
 from adapta.logs import SemanticLogger
+from adapta.utils.environment import get_domain_environment_variable
 
 
 @dataclass
@@ -89,20 +90,20 @@ class HivePath(DataPath):
         :return: A valid HivePath
         """
         assert (
-            os.getenv("PROTEUS__HIVE_SERVER")
-            and os.getenv("PROTEUS__HIVE_SERVER_PORT")
-            and os.getenv("PROTEUS__HIVE_SERVER_DATABASE")
-            and os.getenv("PROTEUS__HIVE_SERVER_ENGINE")
-        ), "PROTEUS__HIVE_SERVER, PROTEUS__HIVE_SERVER_PORT and PROTEUS__HIVE_SERVER_ENGINE must be set to construct a valid HivePath"
+            get_domain_environment_variable("HIVE_SERVER")
+            and get_domain_environment_variable("HIVE_SERVER_PORT")
+            and get_domain_environment_variable("HIVE_SERVER_DATABASE")
+            and get_domain_environment_variable("HIVE_SERVER_ENGINE")
+        ), "ADAPTA__HIVE_SERVER, ADAPTA__HIVE_SERVER_PORT and ADAPTA__HIVE_SERVER_ENGINE must be set to construct a valid HivePath"
 
         return HivePath(
-            hive_server=os.getenv("PROTEUS__HIVE_SERVER"),
-            hive_server_port=os.getenv("PROTEUS__HIVE_SERVER_PORT"),
-            hive_database=os.getenv("PROTEUS__HIVE_SERVER_DATABASE"),
-            hive_engine=os.getenv("PROTEUS__HIVE_SERVER_ENGINE"),
+            hive_server=get_domain_environment_variable("HIVE_SERVER"),
+            hive_server_port=get_domain_environment_variable("HIVE_SERVER_PORT"),
+            hive_database=get_domain_environment_variable("HIVE_SERVER_DATABASE"),
+            hive_engine=get_domain_environment_variable("HIVE_SERVER_ENGINE"),
             hive_schema=schema,
             hive_table=table,
-            path=f"{os.getenv('PROTEUS__HIVE_SERVER_DATABASE')}/{schema}/{table}",
+            path=f"{get_domain_environment_variable('HIVE_SERVER_DATABASE')}/{schema}/{table}",
             database_type=database_type,
         )
 
@@ -126,8 +127,8 @@ class HivePath(DataPath):
                 host_name=self.hive_server,
                 port=int(self.hive_server_port),
                 database=self.hive_database,
-                user_name=os.environ["PROTEUS__HIVE_USER"],
-                password=os.environ["PROTEUS__HIVE_PASSWORD"],
+                user_name=get_domain_environment_variable("HIVE_USER"),
+                password=get_domain_environment_variable("HIVE_PASSWORD"),
                 database_type=self.database_type,
             ) as hive_db_client:
                 db_info = hive_db_client.query(f"select * from DBS where name = '{self.hive_schema}'").to_dict(

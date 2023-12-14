@@ -29,6 +29,7 @@ from trino.auth import OAuth2Authentication
 from adapta.logs.models import LogLevel
 from adapta.logs import SemanticLogger
 from adapta.storage.secrets import SecretStorageClient
+from adapta.utils.environment import get_domain_environment_variable
 
 
 class TrinoClient:
@@ -56,7 +57,7 @@ class TrinoClient:
         :param catalog: Trino catalog.
         :param port: Trino connection port (443 default).
         :param oauth2_username: Optional username to use if authenticating with interactive OAuth2.
-               Can also be provided via PROTEUS__TRINO_OAUTH2_USERNAME.
+               Can also be provided via ADAPTA__TRINO_OAUTH2_USERNAME.
         :param credentials_provider: Optional secret provider to use to read Basic Auth credentials.
         :param logger: CompositeLogger instance.
         """
@@ -64,13 +65,13 @@ class TrinoClient:
         self._host = host
         self._catalog = catalog
         self._port = port
-        if "PROTEUS__TRINO_USERNAME" in os.environ:
+        if get_domain_environment_variable("TRINO_USERNAME"):
             self._engine = create_engine(
-                f"trino://{os.getenv('PROTEUS__TRINO_USERNAME')}:{os.getenv('PROTEUS__TRINO_PASSWORD')}@{self._host}:{self._port}/{self._catalog}"
+                f"trino://{get_domain_environment_variable('TRINO_USERNAME')}:{get_domain_environment_variable('TRINO_PASSWORD')}@{self._host}:{self._port}/{self._catalog}"
             )
-        elif "PROTEUS__TRINO_OAUTH2_USERNAME" in os.environ or oauth2_username:
+        elif get_domain_environment_variable("TRINO_OAUTH2_USERNAME") or oauth2_username:
             self._engine = create_engine(
-                f"trino://{os.getenv('PROTEUS__TRINO_OAUTH2_USERNAME')}@{self._host}:{self._port}/{self._catalog}",
+                f"trino://{get_domain_environment_variable('TRINO_OAUTH2_USERNAME')}@{self._host}:{self._port}/{self._catalog}",
                 connect_args={
                     "auth": OAuth2Authentication(),
                     "http_scheme": "https",
@@ -83,7 +84,7 @@ class TrinoClient:
             )
         else:
             raise ConnectionError(
-                "Neither PROTEUS__TRINO_USERNAME or PROTEUS__TRINO_OAUTH2_USERNAME is specified. Cannot authenticate to the provided host."
+                "Neither ADAPTA__TRINO_USERNAME or ADAPTA__TRINO_OAUTH2_USERNAME is specified. Cannot authenticate to the provided host."
             )
 
         self._logger = logger

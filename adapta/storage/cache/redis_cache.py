@@ -27,6 +27,7 @@ from redis.cluster import RedisCluster
 from redis.retry import Retry
 
 from adapta.storage.cache import KeyValueCache
+from adapta.utils.environment import get_domain_environment_variable
 
 
 class RedisCache(KeyValueCache):
@@ -48,7 +49,7 @@ class RedisCache(KeyValueCache):
                 host=host,
                 port=port,
                 db=database_number,
-                password=os.environ["PROTEUS__CACHE_REDIS_PASSWORD"],
+                password=get_domain_environment_variable("CACHE_REDIS_PASSWORD"),
                 ssl_cert_reqs=ssl.CERT_REQUIRED,
                 ssl=True,
                 decode_responses=False,
@@ -59,7 +60,7 @@ class RedisCache(KeyValueCache):
             self._redis = RedisCluster(
                 host=host,
                 port=port,
-                password=os.environ["PROTEUS__CACHE_REDIS_PASSWORD"],
+                password=get_domain_environment_variable("CACHE_REDIS_PASSWORD"),
                 retry=Retry(default_backoff(), 3),
                 ssl_cert_reqs=ssl.CERT_REQUIRED,
                 ssl=True,
