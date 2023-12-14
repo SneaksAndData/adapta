@@ -33,6 +33,14 @@ from adapta.storage.query_enabled_store import QueryEnabledStore, DeltaQueryEnab
             AstraQueryEnabledStore,
         ),
         (
+            'qes://engine=adapta.storage.query_enabled_store.AstraQueryEnabledStore;plaintext_credentials={"secret_connection_bundle_bytes":"test", "client_id": "test", "client_secret": "test"};settings={"client_name": "test", "keyspace": "tmp"}',
+            AstraQueryEnabledStore,
+        ),
+        (
+            'qes://engine=adapta.storage.query_enabled_store.AstraQueryEnabledStore;plaintext_credentials={};settings={"client_name": "test", "keyspace": "tmp"}',
+            RuntimeError,
+        ),
+        (
             'qes://engine=DELT;plaintext_credentials={"auth_client_class":"adapta.security.clients.AzureClient"};settings={}',
             ModuleNotFoundError,
         ),
