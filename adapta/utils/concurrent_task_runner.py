@@ -78,7 +78,7 @@ class ConcurrentTaskRunner(Generic[T]):
         :return: A dictionary of (callable_name, callable_future)
         """
         worker_count = self._num_threads or (
-            len(os.sched_getaffinity(0)) if sys.platform != "win32" else os.cpu_count()
+            len(os.sched_getaffinity(0)) if sys.platform not in ["win32", "darwin"] else os.cpu_count()
         )
         runner_pool = (
             ProcessPoolExecutor(max_workers=worker_count)
