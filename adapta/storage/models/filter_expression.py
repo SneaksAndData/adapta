@@ -121,6 +121,9 @@ class FilterField:
 class Subexpression:
     """
     Represents a subexpression of an expression.
+
+    expression (Expression): The sub-expression. combine_operation (FilterExpressionOperation): The operation used to
+    combine the sub-expression with the rest of the expression.
     """
 
     def __init__(self, expression: "Expression", combine_operation: FilterExpressionOperation):
@@ -164,10 +167,13 @@ class Expression:
         Each Subexpression contains a expression and the operation to combine it with.
         """
         expressions = []
+        # Initialize a stack with the top-level expression and a null parent operation
         stack = [(self, None)]
+
         while stack:
             current, parent_operation = stack.pop()
 
+            # If the current expression is a FilterField, add it to the expressions list as a sub-expression
             if isinstance(current.left_operand, FilterField):
                 expressions.append(Subexpression(current, parent_operation))
                 continue
@@ -177,6 +183,8 @@ class Expression:
                 expressions.append(Subexpression(current, parent_operation))
                 continue
 
+            # If the current operation is not the same as the parent operation
+            # add the current expression to the expressions list as a sub-expression
             if parent_operation and current.operation != parent_operation:
                 expressions.append(Subexpression(current, parent_operation))
                 continue
