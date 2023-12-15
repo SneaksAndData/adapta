@@ -80,6 +80,7 @@ class AstraQueryEnabledStore(QueryEnabledStore[AstraCredential, AstraSettings]):
                 key_column_filter_values=filter_expression,
                 table_name=astra_path.table,
                 select_columns=columns,
+                num_threads=-1,  # auto-infer, see method documentation
             )
 
     def _apply_query(self, query: str) -> Union[pandas.DataFrame, Iterator[pandas.DataFrame]]:
