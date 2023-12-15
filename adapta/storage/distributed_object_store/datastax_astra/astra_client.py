@@ -245,7 +245,7 @@ class AstraClient:
         :param: partition_keys: An optional list of columns that constitute a partition key, if it cannot be inferred from is_partition_key metadata on a dataclass field.
         :param: custom_indexes: An optional list of custom indexes, if it cannot be inferred from is_custom_index on a dataclass field.
         :param: deduplicate: Optionally deduplicate query result, for example when only the partition key part of a primary key is used to fetch results.
-        :param: num_threads: Optionally run filtering using multiple threads.
+        :param: num_threads: Optionally run filtering using multiple threads. Setting this to -1 will cause this method to automatically evaluate number of threads based on filter expression size.
         """
 
         @backoff.on_exception(
@@ -305,7 +305,12 @@ class AstraClient:
         )
 
         if num_threads:
-            with ThreadPoolExecutor(max_workers=num_threads) as tpe:
+            max_threads = (
+                max([len(compiled_filter_values) // 2, num_threads, os.cpu_count()])
+                if num_threads == -1
+                else num_threads
+            )
+            with ThreadPoolExecutor(max_workers=max_threads) as tpe:
                 result = pandas.concat(
                     tpe.map(
                         lambda args: to_pandas(*args),
