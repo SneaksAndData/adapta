@@ -1,3 +1,5 @@
+from functools import reduce
+
 import pytest
 
 from adapta.storage.models.filter_expression import (
@@ -171,3 +173,26 @@ def test_long_is_in_list(
 ):
     assert compile_expression(filter_expr, ArrowFilterExpression).equals(pyarrow_expected_expr)
     assert compile_expression(filter_expr, AstraFilterExpression) == astra_expected_expr
+
+
+@pytest.mark.parametrize(
+    "filter_expr",
+    [
+        reduce(
+            lambda x, y: x | y,
+            [
+                (FilterField(TEST_ENTITY_SCHEMA.col_d).isin([col_d]))
+                & (FilterField(TEST_ENTITY_SCHEMA.col_a) == col_a)
+                & (FilterField(TEST_ENTITY_SCHEMA.col_b) == col_b)
+                for col_a in [str(i) for i in range(1, 30)]
+                for col_b in [str(i) for i in range(1, 50)]
+                for col_d in [str(i) for i in range(1, 150)]
+            ],
+        )
+    ],
+)
+def test_large_filter(filter_expr: Union[FilterField, FilterExpression]):
+    try:
+        compile_expression(filter_expr, AstraFilterExpression)
+    except RecursionError as re:
+        assert False, f"Raised RecursionError for large filters"
