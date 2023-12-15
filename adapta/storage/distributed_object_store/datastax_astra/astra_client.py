@@ -22,6 +22,7 @@ import dataclasses
 import datetime
 import enum
 import logging
+import math
 import os
 import platform
 import re
@@ -306,7 +307,7 @@ class AstraClient:
 
         if num_threads:
             max_threads = (
-                max([len(compiled_filter_values) // 2, num_threads, os.cpu_count()])
+                max([int(math.sqrt(len(compiled_filter_values) + 1) / 2), num_threads, os.cpu_count()])
                 if num_threads == -1
                 else num_threads
             )
