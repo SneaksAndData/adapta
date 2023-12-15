@@ -118,7 +118,7 @@ class FilterField:
         return self._field_name
 
 
-class Subexpression:
+class _Subexpression:
     """
     Represents a subexpression of an expression.
 
@@ -161,7 +161,7 @@ class Expression:
     def __or__(self, other: "Expression") -> "Expression":
         return Expression(left_operand=self, right_operand=other, operation=FilterExpressionOperation.OR)
 
-    def split_expression(self) -> List[Subexpression]:
+    def split_expression(self) -> List[_Subexpression]:
         """
         Splits the expression into smaller parts and returns a list of Subexpression.
         Each Subexpression contains a expression and the operation to combine it with.
@@ -175,18 +175,18 @@ class Expression:
 
             # If the current expression is a FilterField, add it to the expressions list as a sub-expression
             if isinstance(current.left_operand, FilterField):
-                expressions.append(Subexpression(current, parent_operation))
+                expressions.append(_Subexpression(current, parent_operation))
                 continue
 
             if not isinstance(current, Expression):
                 # Base case or leaf node
-                expressions.append(Subexpression(current, parent_operation))
+                expressions.append(_Subexpression(current, parent_operation))
                 continue
 
             # If the current operation is not the same as the parent operation
             # add the current expression to the expressions list as a sub-expression
             if parent_operation and current.operation != parent_operation:
-                expressions.append(Subexpression(current, parent_operation))
+                expressions.append(_Subexpression(current, parent_operation))
                 continue
 
             # Current operation is consistent with the parent operation or there's no parent
@@ -230,7 +230,7 @@ class FilterExpression(Generic[TCompileResult], ABC):
         Combines two compiled results of filter expressions.
         """
 
-    def compile(self, subexpressions: List[Subexpression]) -> TCompileResult:
+    def compile(self, subexpressions: List[_Subexpression]) -> TCompileResult:
         """
         Compiles a subexpression, which includes a list of expressions and an operation.
         """
@@ -257,8 +257,8 @@ class FilterExpression(Generic[TCompileResult], ABC):
             return self._compile_base_case(expr.left_operand.field_name, expr.right_operand, expr.operation)
 
         # If the operands are also expressions, compile them recursively
-        compiled_left = self.compile([Subexpression(expr.left_operand, expr.operation)])
-        compiled_right = self.compile([Subexpression(expr.right_operand, expr.operation)])
+        compiled_left = self.compile([_Subexpression(expr.left_operand, expr.operation)])
+        compiled_right = self.compile([_Subexpression(expr.right_operand, expr.operation)])
 
         # Combine the compiled left and right operands
         return self._combine_results(compiled_left, compiled_right, expr.operation)
