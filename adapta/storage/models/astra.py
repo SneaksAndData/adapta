@@ -17,9 +17,13 @@
 #
 
 from dataclasses import dataclass
+from pydoc import locate
+from typing import Optional, TypeVar, Type
 from urllib.parse import urlparse
 
 from adapta.storage.models.base import DataPath, DataProtocols
+
+TModel = TypeVar("TModel")  # pylint: disable=C0103
 
 
 @dataclass
@@ -40,6 +44,7 @@ class AstraPath(DataPath):
 
     keyspace: str
     table: str
+    model_class_name: Optional[str] = None
     protocol: str = DataProtocols.ASTRA.value
 
     @classmethod
@@ -53,3 +58,12 @@ class AstraPath(DataPath):
 
     def to_delta_rs_path(self) -> str:
         raise NotImplementedError
+
+    def model_class(self) -> Optional[Type[TModel]]:
+        """
+        Locates and returns model class name.
+        """
+        if self.model_class_name:
+            return locate(self.model_class_name)
+
+        return None
