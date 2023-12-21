@@ -20,7 +20,7 @@
 from abc import ABC
 from typing import Optional, Union, Iterator
 
-import pandas
+from pandas import DataFrame, read_sql
 import sqlalchemy
 from sqlalchemy.connectors import pyodbc
 from sqlalchemy.engine import URL
@@ -125,9 +125,7 @@ class OdbcClient(ABC):
 
         return self._connection
 
-    def query(
-        self, query: str, chunksize: Optional[int] = None
-    ) -> Optional[Union[pandas.DataFrame, Iterator[pandas.DataFrame]]]:
+    def query(self, query: str, chunksize: Optional[int] = None) -> Optional[Union[DataFrame, Iterator[DataFrame]]]:
         """
           Read result of SQL query into a pandas dataframe.
 
@@ -137,9 +135,9 @@ class OdbcClient(ABC):
         """
         try:
             if chunksize:
-                return pandas.read_sql(query, con=self._get_connection(), chunksize=chunksize)
+                return read_sql(query, con=self._get_connection(), chunksize=chunksize)
 
-            return pandas.read_sql(query, con=self._get_connection())
+            return read_sql(query, con=self._get_connection())
         except SQLAlchemyError as ex:
             self._logger.error("Engine error while executing query {query}", query=query, exception=ex)
             return None
@@ -153,7 +151,7 @@ class OdbcClient(ABC):
 
     def materialize(
         self,
-        data: pandas.DataFrame,
+        data: DataFrame,
         schema: str,
         name: str,
         overwrite: bool = False,

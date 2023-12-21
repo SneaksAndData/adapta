@@ -4,7 +4,7 @@
 from types import TracebackType
 from typing import Optional
 
-import pandas
+from pandas import DataFrame
 import snowflake.connector
 
 from snowflake.connector.errors import DatabaseError, ProgrammingError
@@ -77,7 +77,7 @@ class SnowflakeClient:
         if exc_val is not None:
             self._logger.error(f"An error occurred while closing the database connection: {exc_val}")
 
-    def query(self, query: str) -> pandas.DataFrame | None:
+    def query(self, query: str) -> DataFrame | None:
         """
         Executes the given SQL query and returns the result as a Pandas DataFrame.
 

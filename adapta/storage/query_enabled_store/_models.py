@@ -23,7 +23,7 @@ from enum import Enum
 from pydoc import locate
 from typing import TypeVar, Generic, Type, Iterator, Union, final, Optional
 
-import pandas
+from pandas import DataFrame
 
 from adapta.storage.models.base import DataPath
 from adapta.storage.models.filter_expression import Expression
@@ -79,13 +79,13 @@ class QueryEnabledStore(Generic[TCredential, TSettings], ABC):
     @abstractmethod
     def _apply_filter(
         self, path: DataPath, filter_expression: Expression, columns: list[str]
-    ) -> Union[pandas.DataFrame, Iterator[pandas.DataFrame]]:
+    ) -> Union[DataFrame, Iterator[DataFrame]]:
         """
         Applies the provided filter expression to this Store and returns the result in a pandas DataFrame
         """
 
     @abstractmethod
-    def _apply_query(self, query: str) -> Union[pandas.DataFrame, Iterator[pandas.DataFrame]]:
+    def _apply_query(self, query: str) -> Union[DataFrame, Iterator[DataFrame]]:
         """
         Applies a plaintext query to this Store and returns the result in a pandas DataFrame
         """
@@ -143,7 +143,7 @@ class QueryConfigurationBuilder:
         self._columns = list(columns)
         return self
 
-    def read(self) -> Union[pandas.DataFrame, Iterator[pandas.DataFrame]]:
+    def read(self) -> Union[DataFrame, Iterator[DataFrame]]:
         """
         Execute the query on the underlying store.
         """

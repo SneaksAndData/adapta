@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pydoc import locate
 from typing import final, Union, Iterator
 
-import pandas
+from pandas import DataFrame
 from dataclasses_json import DataClassJsonMixin
 
 from adapta.storage.delta_lake import load
@@ -53,7 +53,7 @@ class DeltaQueryEnabledStore(QueryEnabledStore[DeltaCredential, DeltaSettings]):
 
     def _apply_filter(
         self, path: DataPath, filter_expression: Expression, columns: list[str]
-    ) -> Union[pandas.DataFrame, Iterator[pandas.DataFrame]]:
+    ) -> Union[DataFrame, Iterator[DataFrame]]:
         return load(
             auth_client=locate(self.credentials.auth_client_class)(),
             path=path,
@@ -61,5 +61,5 @@ class DeltaQueryEnabledStore(QueryEnabledStore[DeltaCredential, DeltaSettings]):
             columns=columns,
         )
 
-    def _apply_query(self, query: str) -> Union[pandas.DataFrame, Iterator[pandas.DataFrame]]:
+    def _apply_query(self, query: str) -> Union[DataFrame, Iterator[DataFrame]]:
         raise NotImplementedError("Text queries are not supported by Delta QES")

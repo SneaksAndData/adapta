@@ -18,7 +18,6 @@
 #
 
 import base64
-import dataclasses
 import datetime
 import enum
 import logging
@@ -29,9 +28,9 @@ import re
 import sys
 import tempfile
 import typing
-import uuid
+from uuid import uuid4
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import fields, is_dataclass
+from dataclasses import fields, is_dataclass, asdict
 from typing import Optional, Dict, TypeVar, Callable, Type, List, Any, get_origin, Union
 
 try:
@@ -41,8 +40,8 @@ except ImportError:
     # So we removed TCP_USER_TIMEOUT from _socket import
     from socket import IPPROTO_TCP, TCP_NODELAY
 
-import backoff
-import pandas
+from backoff import on_exception, expo
+from pandas import DataFrame, concat
 from cassandra import ConsistencyLevel, WriteTimeout
 from cassandra.auth import PlainTextAuthProvider
 from cassandra.cluster import (  # pylint: disable=E0611
@@ -132,7 +131,7 @@ class AstraClient:
         """
         Creates an Astra client for this context.
         """
-        tmp_bundle_file_name = str(uuid.uuid4())
+        tmp_bundle_file_name = str(uuid4())
         os.makedirs(self._tmp_bundle_path, exist_ok=True)
 
         with open(os.path.join(self._tmp_bundle_path, tmp_bundle_file_name), "wb") as bundle_file:
@@ -204,14 +203,14 @@ class AstraClient:
         named_table = NamedTable(self._keyspace, table_name)
         return named_table.objects[0]
 
-    def get_entities_from_query(self, query: str, mapper: Callable[[Dict], TModel]) -> pandas.DataFrame:
+    def get_entities_from_query(self, query: str, mapper: Callable[[Dict], TModel]) -> DataFrame:
         """
         Maps query result to a pandas Dataframe using custom mapper
 
         :param: query: A CQL query to execute.
         :param: mapper: A mapping function from a Dictionary to the desired model type.
         """
-        return pandas.DataFrame([mapper(entity) for entity in self._session.execute(query)])
+        return DataFrame([mapper(entity) for entity in self._session.execute(query)])
 
     def filter_entities(
         self,
@@ -224,7 +223,7 @@ class AstraClient:
         custom_indexes: Optional[List[str]] = None,
         deduplicate=False,
         num_threads: Optional[int] = None,
-    ) -> pandas.DataFrame:
+    ) -> DataFrame:
         """
         Run a filter query on the entity of type TModel backed by table `table_name`.
 
@@ -249,8 +248,8 @@ class AstraClient:
         :param: num_threads: Optionally run filtering using multiple threads. Setting this to -1 will cause this method to automatically evaluate number of threads based on filter expression size.
         """
 
-        @backoff.on_exception(
-            wait_gen=backoff.expo,
+        @on_exception(
+            wait_gen=expo,
             exception=(
                 OverloadedErrorMessage,
                 IsBootstrappingErrorMessage,
@@ -274,8 +273,8 @@ class AstraClient:
 
         def to_pandas(
             model: Type[Model], key_column_filter: Dict[str, Any], columns_to_select: Optional[List[str]]
-        ) -> pandas.DataFrame:
-            return pandas.DataFrame(
+        ) -> DataFrame:
+            return DataFrame(
                 data=[dict(v.items()) for v in list(apply(model, key_column_filter, columns_to_select))],
                 columns=select_columns,
             )
@@ -312,7 +311,7 @@ class AstraClient:
                 else num_threads
             )
             with ThreadPoolExecutor(max_workers=max_threads) as tpe:
-                result = pandas.concat(
+                result = concat(
                     tpe.map(
                         lambda args: to_pandas(*args),
                         [
@@ -323,9 +322,9 @@ class AstraClient:
                     )
                 )
         else:
-            result = pandas.concat(
+            result = concat(
                 [
-                    pandas.DataFrame(
+                    DataFrame(
                         data=[dict(v.items()) for v in list(apply(model_class, key_column_filter, select_columns))],
                         columns=select_columns,
                     )
@@ -338,13 +337,13 @@ class AstraClient:
 
         return result
 
-    def get_entities_raw(self, query: str) -> pandas.DataFrame:
+    def get_entities_raw(self, query: str) -> DataFrame:
         """
          Maps query result to a pandas Dataframe
 
         :param: query: A CQL query to run.
         """
-        return pandas.DataFrame(self._session.execute(query))
+        return DataFrame(self._session.execute(query))
 
     def _model_dataclass(
         self,
@@ -499,8 +498,8 @@ class AstraClient:
         :param: table_name: Table to delete entity from.
         """
 
-        @backoff.on_exception(
-            wait_gen=backoff.expo,
+        @on_exception(
+            wait_gen=expo,
             exception=(
                 OverloadedErrorMessage,
                 IsBootstrappingErrorMessage,
@@ -533,8 +532,8 @@ class AstraClient:
         :param: client_rate_limit: the limit string to parse (eg: "1 per hour"), default: "1000 per second"
         """
 
-        @backoff.on_exception(
-            wait_gen=backoff.expo,
+        @on_exception(
+            wait_gen=expo,
             exception=(OverloadedErrorMessage, IsBootstrappingErrorMessage, WriteTimeout),
             max_tries=self._transient_error_max_retries,
             max_time=self._transient_error_max_wait_s,
@@ -546,7 +545,7 @@ class AstraClient:
 
         primary_keys = [field.name for field in fields(type(entity)) if field.metadata.get("is_primary_key", False)]
         model_class = self._model_dataclass(value=type(entity), table_name=table_name, primary_keys=primary_keys)
-        _save_entity(model_class(**dataclasses.asdict(entity)))
+        _save_entity(model_class(**asdict(entity)))
 
     def upsert_batch(
         self,
@@ -566,8 +565,8 @@ class AstraClient:
         :param: client_rate_limit: the limit string to parse (eg: "1 per hour"), default: "1000 per second"
         """
 
-        @backoff.on_exception(
-            wait_gen=backoff.expo,
+        @on_exception(
+            wait_gen=expo,
             exception=(OverloadedErrorMessage, IsBootstrappingErrorMessage, WriteTimeout),
             max_tries=self._transient_error_max_retries,
             max_time=self._transient_error_max_wait_s,
@@ -594,7 +593,7 @@ class AstraClient:
         similarity_function: SimilarityFunction = SimilarityFunction.COSINE,
         table_name: Optional[str] = None,
         num_results=1,
-    ) -> pandas.DataFrame:
+    ) -> DataFrame:
         """
         Performs a simple ANN-based search for vectors most similar to the provided one in the specified entity. Results are ordered based on similarity metric value.
 
@@ -621,4 +620,4 @@ class AstraClient:
             num_results=num_results,
         )
 
-        return pandas.DataFrame(self._session.execute(str(query)))
+        return DataFrame(self._session.execute(str(query)))
