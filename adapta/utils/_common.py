@@ -24,7 +24,7 @@ from collections import namedtuple
 from functools import partial
 from typing import List, Optional, Dict, Any, Tuple, Union
 
-import pandas
+from pandas import DataFrame, Series, to_numeric
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3 import Retry
@@ -163,11 +163,11 @@ def memory_limit(*, memory_limit_percentage: Optional[float] = None, memory_limi
 
 
 def map_column_names(
-    dataframe: pandas.DataFrame,
+    dataframe: DataFrame,
     column_map: Dict[str, str],
     default_values: Optional[Dict[str, Union[str, int, float]]] = None,
     drop_missing: bool = True,
-) -> pandas.DataFrame:
+) -> DataFrame:
     """
     Maps a dataframe from one nomenclature to another. Original dataframe is not mutated.
 
@@ -188,7 +188,7 @@ def map_column_names(
     return dataframe
 
 
-def downcast_dataframe(dataframe: pandas.DataFrame, columns: Optional[List[str]] = None) -> pandas.DataFrame:
+def downcast_dataframe(dataframe: DataFrame, columns: Optional[List[str]] = None) -> DataFrame:
     """
     Downcasts a Pandas dataframe to the smallest possible data type for each column. Only interger and float
     columns are downcasted. Other columns are left as is.
@@ -201,7 +201,7 @@ def downcast_dataframe(dataframe: pandas.DataFrame, columns: Optional[List[str]]
 
     columns = list(dataframe.columns) if columns is None else columns
 
-    def get_downcast_type(column: pandas.Series) -> Optional[str]:
+    def get_downcast_type(column: Series) -> Optional[str]:
         """
         Returns the downcast type for a Pandas column.
 
@@ -216,7 +216,7 @@ def downcast_dataframe(dataframe: pandas.DataFrame, columns: Optional[List[str]]
             return "unsigned"
         raise ValueError(f"Unsupported dtype: {column.dtype}")
 
-    def downcast_supported(column: pandas.Series) -> bool:
+    def downcast_supported(column: Series) -> bool:
         """
         Checks if a Pandas column can be downcasted.
 
@@ -227,7 +227,7 @@ def downcast_dataframe(dataframe: pandas.DataFrame, columns: Optional[List[str]]
 
     return dataframe.assign(
         **{
-            column: lambda x, c=column: pandas.to_numeric(x[c], downcast=get_downcast_type(x[c]))
+            column: lambda x, c=column: to_numeric(x[c], downcast=get_downcast_type(x[c]))
             if downcast_supported(x[c])
             else x[c]
             for column in dataframe.columns

@@ -21,7 +21,7 @@ import hashlib
 import zlib
 from typing import Optional, Union, Iterator, List, Iterable, Tuple
 
-import pandas
+from pandas import DataFrame, concat
 import pyarrow
 from deltalake import DeltaTable
 from pyarrow import RecordBatch, Table
@@ -44,7 +44,7 @@ def load(  # pylint: disable=R0913
     columns: Optional[List[str]] = None,
     batch_size: Optional[int] = None,
     partition_filter_expressions: Optional[List[Tuple]] = None,
-) -> Union[DeltaTable, pandas.DataFrame, Iterator[pandas.DataFrame]]:
+) -> Union[DeltaTable, DataFrame, Iterator[DataFrame]]:
     """
      Loads Delta Lake table from Azure storage and converts it to a pandas dataframe.
 
@@ -163,7 +163,7 @@ def load_cached(  # pylint: disable=R0913
     columns: Optional[List[str]] = None,
     partition_filter_expressions: Optional[List[Tuple]] = None,
     logger: Optional[SemanticLogger] = None,
-) -> pandas.DataFrame:
+) -> DataFrame:
     """
      Loads Delta Lake table from an external cache and converts it to a single pandas dataframe (after applying column projections and row filters).
      If a cache entry is missing, falls back to reading data from storage path.
@@ -215,7 +215,7 @@ def load_cached(  # pylint: disable=R0913
             logger.debug("Cache hit for {cache_key}", cache_key=cache_key)
 
         try:
-            return pandas.concat(
+            return concat(
                 [
                     DataFrameParquetSerializationFormat().deserialize(zlib.decompress(cached_batch))
                     for batch_key, cached_batch in cache.get(cache_key, is_map=True).items()
@@ -250,7 +250,7 @@ def load_cached(  # pylint: disable=R0913
         partition_filter_expressions=partition_filter_expressions,
     )
 
-    aggregate_batch = pandas.concat(
+    aggregate_batch = concat(
         [
             cache.include(
                 key=cache_key,

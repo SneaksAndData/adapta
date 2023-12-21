@@ -22,7 +22,7 @@ import pickle
 from abc import ABC, abstractmethod
 from typing import Generic, TypeVar
 
-import pandas
+from pandas import DataFrame, read_parquet, read_csv, read_json
 
 T = TypeVar("T")  # pylint: disable=C0103
 
@@ -49,12 +49,12 @@ class SerializationFormat(ABC, Generic[T]):
         """
 
 
-class DataFrameParquetSerializationFormat(SerializationFormat[pandas.DataFrame]):
+class DataFrameParquetSerializationFormat(SerializationFormat[DataFrame]):
     """
     Serializes dataframes as parquet format.
     """
 
-    def serialize(self, data: pandas.DataFrame) -> bytes:
+    def serialize(self, data: DataFrame) -> bytes:
         """
         Serializes dataframe to bytes using parquet format.
         :param data: Dataframe to serialize.
@@ -62,21 +62,21 @@ class DataFrameParquetSerializationFormat(SerializationFormat[pandas.DataFrame])
         """
         return data.to_parquet()
 
-    def deserialize(self, data: bytes) -> pandas.DataFrame:
+    def deserialize(self, data: bytes) -> DataFrame:
         """
         Deserializes dataframe from bytes using parquet format.
         :param data: Dataframe to deserialize in parquet format as bytes.
         :return: Deserialized dataframe.
         """
-        return pandas.read_parquet(io.BytesIO(data))
+        return read_parquet(io.BytesIO(data))
 
 
-class DataFrameCsvSerializationFormat(SerializationFormat[pandas.DataFrame]):
+class DataFrameCsvSerializationFormat(SerializationFormat[DataFrame]):
     """
     Serializes dataframes as CSV format.
     """
 
-    def serialize(self, data: pandas.DataFrame) -> bytes:
+    def serialize(self, data: DataFrame) -> bytes:
         """
         Serializes dataframe to bytes using CSV format.
         :param data: Dataframe to serialize.
@@ -84,13 +84,13 @@ class DataFrameCsvSerializationFormat(SerializationFormat[pandas.DataFrame]):
         """
         return data.to_csv(index=False).encode(encoding="utf-8")
 
-    def deserialize(self, data: bytes) -> pandas.DataFrame:
+    def deserialize(self, data: bytes) -> DataFrame:
         """
         Deserializes dataframe from bytes using CSV format.
         :param data: Dataframe to deserialize in CSV format as bytes.
         :return: Deserialized dataframe.
         """
-        return pandas.read_csv(io.BytesIO(data))
+        return read_csv(io.BytesIO(data))
 
 
 class DictJsonSerializationFormat(SerializationFormat[dict]):
@@ -115,12 +115,12 @@ class DictJsonSerializationFormat(SerializationFormat[dict]):
         return json.loads(data.decode("utf-8"))
 
 
-class DataFrameJsonSerializationFormat(SerializationFormat[pandas.DataFrame]):
+class DataFrameJsonSerializationFormat(SerializationFormat[DataFrame]):
     """
     Serializes dataframes as JSON format.
     """
 
-    def serialize(self, data: pandas.DataFrame) -> bytes:
+    def serialize(self, data: DataFrame) -> bytes:
         """
         Serializes dataframe to bytes using JSON format.
         :param data: Dataframe to serialize.
@@ -128,13 +128,13 @@ class DataFrameJsonSerializationFormat(SerializationFormat[pandas.DataFrame]):
         """
         return json.dumps(data.to_dict(orient="records")).encode(encoding="utf-8")
 
-    def deserialize(self, data: bytes) -> pandas.DataFrame:
+    def deserialize(self, data: bytes) -> DataFrame:
         """
         Deserializes dataframe from bytes using JSON format.
         :param data: Dataframe to deserialize in JSON format as bytes.
         :return: Deserialized dataframe.
         """
-        return pandas.read_json(io.BytesIO(data), orient="records")
+        return read_json(io.BytesIO(data), orient="records")
 
 
 class UnitSerializationFormat(SerializationFormat[bytes]):

@@ -6,7 +6,7 @@ import re
 from dataclasses import dataclass
 from typing import final, Optional, Union, Iterator
 
-import pandas
+from pandas import DataFrame
 
 from dataclasses_json import DataClassJsonMixin
 
@@ -64,7 +64,7 @@ class AstraQueryEnabledStore(QueryEnabledStore[AstraCredential, AstraSettings]):
 
     def _apply_filter(
         self, path: DataPath, filter_expression: Expression, columns: list[str]
-    ) -> Union[pandas.DataFrame, Iterator[pandas.DataFrame]]:
+    ) -> Union[DataFrame, Iterator[DataFrame]]:
         assert isinstance(path, AstraPath)
         astra_path: AstraPath = path
 
@@ -83,7 +83,7 @@ class AstraQueryEnabledStore(QueryEnabledStore[AstraCredential, AstraSettings]):
                 num_threads=-1,  # auto-infer, see method documentation
             )
 
-    def _apply_query(self, query: str) -> Union[pandas.DataFrame, Iterator[pandas.DataFrame]]:
+    def _apply_query(self, query: str) -> Union[DataFrame, Iterator[DataFrame]]:
         with AstraClient(
             client_name=self.settings.client_name,
             keyspace=self.settings.keyspace,
