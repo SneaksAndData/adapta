@@ -25,29 +25,28 @@ import tempfile
 from contextlib import contextmanager
 
 from logging import Handler, StreamHandler
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, final
 
+from adapta.logs._internal_logger import _InternalLogger
 from adapta.logs.models import LogLevel
 from adapta.logs._internal import MetadataLogger, from_log_level
 
 
-class SemanticLogger:
+@final
+class SemanticLogger(_InternalLogger):
     """
     Proxy for a collection of python loggers that use the same formatting interface.
     """
 
-    def __init__(
-        self,
-        fixed_template: Optional[Dict[str, Dict[str, str]]] = None,
-        fixed_template_delimiter=", ",
-    ):
+    def __init__(self, fixed_template: Optional[Dict[str, Dict[str, str]]] = None, fixed_template_delimiter=", "):
         """
-          Creates a new instance of a CompositeLogger
+          Creates a new instance of a SemanticLogger
 
         :param fixed_template: Additional template to append to message templates provided via logging methods.
         :param fixed_template_delimiter: Optional delimiter to use when appending fixed templates.
         """
-        self._loggers = {}
+        super().__init__(fixed_template, fixed_template_delimiter)
+        self._loggers: Dict[str, logging.Logger] = {}
         self._default_log_source = None
         self._fixed_template = fixed_template
         self._fixed_template_delimiter = fixed_template_delimiter
@@ -76,13 +75,13 @@ class SemanticLogger:
         if not log_handlers or len(log_handlers) == 0:
             log_handlers = [StreamHandler()]
 
-        for log_handler in log_handlers:
-            new_logger.addHandler(log_handler)
-
         self._loggers.setdefault(log_source_name, new_logger)
 
         if is_default:
             self._default_log_source = log_source_name
+
+        for log_handler in log_handlers:
+            new_logger.addHandler(log_handler)
 
         return self
 
@@ -110,26 +109,6 @@ class SemanticLogger:
 
         return self._loggers[log_source_name or self._default_log_source]
 
-    def __get_metadata_fields(self, kwargs):
-        fields = kwargs
-        fields.update(self._get_fixed_args())
-        return fields
-
-    def _get_fixed_args(self) -> Dict:
-        fixed_args = {}
-        if self._fixed_template:
-            for fixed_value in self._fixed_template.values():
-                fixed_args = {**fixed_args, **fixed_value}
-
-        return fixed_args
-
-    def _get_template(self, template) -> str:
-        return (
-            self._fixed_template_delimiter.join([template, ", ".join(self._fixed_template.keys())])
-            if self._fixed_template
-            else template
-        )
-
     def info(
         self,
         template: str,
@@ -147,17 +126,7 @@ class SemanticLogger:
         :return:
         """
         logger = self._get_logger(log_source_name)
-        msg = self._get_template(template).format(**self._get_fixed_args(), **kwargs)
-        logger.log_with_metadata(
-            logging.INFO,
-            msg=msg,
-            template=self._get_template(template),
-            tags=tags,
-            diagnostics=None,
-            stack_info=False,
-            exception=None,
-            metadata_fields=self.__get_metadata_fields(kwargs),
-        )
+        self.meta_info(template=template, logger=logger, tags=tags, **kwargs)
 
     def warning(
         self,
@@ -178,17 +147,7 @@ class SemanticLogger:
         :return:
         """
         logger = self._get_logger(log_source_name)
-        msg = self._get_template(template).format(**self._get_fixed_args(), **kwargs)
-        logger.log_with_metadata(
-            logging.WARN,
-            msg=msg,
-            tags=tags,
-            template=template,
-            diagnostics=None,
-            stack_info=False,
-            exception=exception,
-            metadata_fields=self.__get_metadata_fields(kwargs),
-        )
+        self.meta_warning(template=template, logger=logger, tags=tags, exception=exception, **kwargs)
 
     def error(
         self,
@@ -209,17 +168,7 @@ class SemanticLogger:
         :return:
         """
         logger = self._get_logger(log_source_name)
-        msg = self._get_template(template).format(**self._get_fixed_args(), **kwargs)
-        logger.log_with_metadata(
-            logging.ERROR,
-            msg=msg,
-            template=template,
-            tags=tags,
-            diagnostics=None,
-            stack_info=False,
-            exception=exception,
-            metadata_fields=self.__get_metadata_fields(kwargs),
-        )
+        self.meta_error(template=template, logger=logger, tags=tags, exception=exception, **kwargs)
 
     def debug(
         self,
@@ -242,16 +191,8 @@ class SemanticLogger:
         :return:
         """
         logger = self._get_logger(log_source_name)
-        msg = self._get_template(template).format(**self._get_fixed_args(), **kwargs)
-        logger.log_with_metadata(
-            logging.DEBUG,
-            msg=msg,
-            template=template,
-            tags=tags,
-            diagnostics=diagnostics,
-            stack_info=False,
-            exception=exception,
-            metadata_fields=self.__get_metadata_fields(kwargs),
+        self.meta_debug(
+            template=template, logger=logger, tags=tags, exception=exception, diagnostics=diagnostics, **kwargs
         )
 
     def _print_redirect_state(self, logger, log_level, state, tags):
