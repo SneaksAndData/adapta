@@ -126,7 +126,7 @@ class SemanticLogger(_InternalLogger):
         :return:
         """
         logger = self._get_logger(log_source_name)
-        self.meta_info(template=template, logger=logger, tags=tags, **kwargs)
+        self._meta_info(template=template, logger=logger, tags=tags, **kwargs)
 
     def warning(
         self,
@@ -147,7 +147,7 @@ class SemanticLogger(_InternalLogger):
         :return:
         """
         logger = self._get_logger(log_source_name)
-        self.meta_warning(template=template, logger=logger, tags=tags, exception=exception, **kwargs)
+        self._meta_warning(template=template, logger=logger, tags=tags, exception=exception, **kwargs)
 
     def error(
         self,
@@ -168,7 +168,7 @@ class SemanticLogger(_InternalLogger):
         :return:
         """
         logger = self._get_logger(log_source_name)
-        self.meta_error(template=template, logger=logger, tags=tags, exception=exception, **kwargs)
+        self._meta_error(template=template, logger=logger, tags=tags, exception=exception, **kwargs)
 
     def debug(
         self,
@@ -191,7 +191,7 @@ class SemanticLogger(_InternalLogger):
         :return:
         """
         logger = self._get_logger(log_source_name)
-        self.meta_debug(
+        self._meta_debug(
             template=template, logger=logger, tags=tags, exception=exception, diagnostics=diagnostics, **kwargs
         )
 

@@ -65,7 +65,7 @@ class _AsyncLogger(Generic[TLogger], _InternalLogger):
         :param kwargs: Templated arguments (key=value).
         :return:
         """
-        self.meta_info(template=template, logger=self._logger, tags=tags, **kwargs)
+        self._meta_info(template=template, logger=self._logger, tags=tags, **kwargs)
 
     def warning(
         self,
@@ -83,7 +83,7 @@ class _AsyncLogger(Generic[TLogger], _InternalLogger):
         :param kwargs: Templated arguments (key=value).
         :return:
         """
-        self.meta_warning(template=template, logger=self._logger, tags=tags, exception=exception, **kwargs)
+        self._meta_warning(template=template, logger=self._logger, tags=tags, exception=exception, **kwargs)
 
     def error(
         self,
@@ -101,7 +101,7 @@ class _AsyncLogger(Generic[TLogger], _InternalLogger):
         :param kwargs: Templated arguments (key=value).
         :return:
         """
-        self.meta_error(template=template, logger=self._logger, tags=tags, exception=exception, **kwargs)
+        self._meta_error(template=template, logger=self._logger, tags=tags, exception=exception, **kwargs)
 
     def debug(
         self,
@@ -121,7 +121,7 @@ class _AsyncLogger(Generic[TLogger], _InternalLogger):
         :param kwargs: Templated arguments (key=value).
         :return:
         """
-        self.meta_debug(
+        self._meta_debug(
             template=template, logger=self._logger, tags=tags, exception=exception, diagnostics=diagnostics, **kwargs
         )
 

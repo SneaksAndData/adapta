@@ -58,7 +58,7 @@ class _InternalLogger:
             else template
         )
 
-    def meta_info(
+    def _meta_info(
         self,
         template: str,
         logger: MetadataLogger,
@@ -86,7 +86,7 @@ class _InternalLogger:
             metadata_fields=self._get_metadata_fields(kwargs),
         )
 
-    def meta_warning(
+    def _meta_warning(
         self,
         template: str,
         logger: MetadataLogger,
@@ -116,7 +116,7 @@ class _InternalLogger:
             metadata_fields=self._get_metadata_fields(kwargs),
         )
 
-    def meta_error(
+    def _meta_error(
         self,
         template: str,
         logger: MetadataLogger,
@@ -146,7 +146,7 @@ class _InternalLogger:
             metadata_fields=self._get_metadata_fields(kwargs),
         )
 
-    def meta_debug(
+    def _meta_debug(
         self,
         template: str,
         logger: MetadataLogger,
