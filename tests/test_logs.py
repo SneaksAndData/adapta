@@ -12,11 +12,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
-
+import asyncio
 import json
 import logging
 import os
-import sys
 import traceback
 from logging import StreamHandler
 
@@ -30,13 +29,17 @@ import uuid
 import requests
 from pytest_mock import MockerFixture
 
-from adapta.logs import SemanticLogger
+from adapta.logs import SemanticLogger, create_async_logger
 from adapta.logs.handlers.datadog_api_handler import DataDogApiHandler
 from adapta.logs.models import LogLevel
 
 EXPECTED_MESSAGE = (
     "This a unit test logger 1, Fixed message1 this is a fixed message1, Fixed message2 this is a fixed message2\n"
 )
+
+
+class TestLoggerClass:
+    pass
 
 
 @pytest.mark.parametrize(
@@ -248,3 +251,86 @@ def test_fixed_template(mocker: MockerFixture, restore_logger_class):
             "text": "Custom template=my-value|running with job id my_job_id on owner",
         }
     ]
+
+
+@pytest.mark.asyncio
+async def test_log_level_async(restore_logger_class, datadog_handler):
+    with create_async_logger(logger_type=TestLoggerClass, log_handlers=[datadog_handler]) as logger:
+        logger.debug("Debug message: {value}", value=1)
+        logger.info("Info message: {value}", value=2)
+
+    await asyncio.sleep(1)
+    buffer = [json.loads(msg.message) for msg in logger._log_handlers[0]._buffer]
+    assert buffer == [{"template": "Info message: {value}", "text": "Info message: 2", "value": 2}]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "level,template,args,exception,diagnostics,expected_message",
+    [
+        (
+            LogLevel.INFO,
+            "This a unit test logger {index}",
+            {"index": 1},
+            None,
+            None,
+            EXPECTED_MESSAGE,
+        ),
+        (
+            LogLevel.WARN,
+            "This a unit test logger {index}",
+            {"index": 1},
+            ValueError("test warning"),
+            None,
+            EXPECTED_MESSAGE,
+        ),
+        (
+            LogLevel.ERROR,
+            "This a unit test logger {index}",
+            {"index": 1},
+            ValueError("test error"),
+            None,
+            EXPECTED_MESSAGE,
+        ),
+        (
+            LogLevel.DEBUG,
+            "This a unit test logger {index}",
+            {"index": 1},
+            ValueError("test error"),
+            "additional debug info",
+            EXPECTED_MESSAGE,
+        ),
+    ],
+)
+async def test_log_format_async(
+    level: LogLevel,
+    template: str,
+    args: Dict,
+    exception: BaseException,
+    diagnostics: str,
+    expected_message: str,
+):
+    test_file_path = os.path.join(tempfile.gettempdir(), str(uuid.uuid4()))
+    with open(test_file_path, "w") as log_stream:
+        with create_async_logger(
+            logger_type=TestLoggerClass,
+            min_log_level=LogLevel.DEBUG,
+            log_handlers=[StreamHandler(stream=log_stream)],
+            fixed_template={
+                "Fixed message1 {message1}": {"message1": "this is a fixed message1"},
+                "Fixed message2 {message2}": {"message2": "this is a fixed message2"},
+            },
+        ) as logger:
+            if level == LogLevel.INFO:
+                logger.info(template=template, **args)
+            if level == LogLevel.WARN:
+                logger.warning(template=template, exception=exception, **args)
+            if level == LogLevel.ERROR:
+                logger.error(template=template, exception=exception, **args)
+            if level == LogLevel.DEBUG:
+                logger.debug(template=template, exception=exception, diagnostics=diagnostics, **args)
+
+        await asyncio.sleep(1)
+
+        logged_lines = open(test_file_path, "r").readlines()
+        assert expected_message in logged_lines
