@@ -205,7 +205,7 @@ class SemanticLogger(_InternalLogger):
             diagnostics=None,
             stack_info=None,
             exception=None,
-            metadata_fields=self.__get_metadata_fields({}),
+            metadata_fields=self._get_metadata_fields({}),
             template=template,
         )
 
@@ -219,7 +219,7 @@ class SemanticLogger(_InternalLogger):
             diagnostics=None,
             stack_info=None,
             exception=None,
-            metadata_fields=self.__get_metadata_fields({}),
+            metadata_fields=self._get_metadata_fields({}),
             template=template,
         )
 
