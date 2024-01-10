@@ -1,7 +1,7 @@
 """
  Storage Client implementation for Azure Cloud.
 """
-#  Copyright (c) 2023. ECCO Sneaks & Data
+#  Copyright (c) 2023-2024. ECCO Sneaks & Data
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -34,8 +34,10 @@ from azure.storage.blob import (
     ContainerClient,
 )
 
+from adapta.process_communication import DataSocket
 from adapta.storage.blob.base import StorageClient
 from adapta.security.clients import AzureClient
+from adapta.storage.models import parse_data_path
 from adapta.storage.models.azure import AdlsGen2Path, WasbPath, cast_path
 from adapta.storage.models.base import DataPath
 from adapta.storage.models.format import SerializationFormat
@@ -76,6 +78,14 @@ class AzureStorageClient(StorageClient):
             self._blob_service_client: BlobServiceClient = BlobServiceClient.from_connection_string(
                 connection_string, retry_policy=retry_policy
             )
+
+    @classmethod
+    def for_storage_path(cls, path: str) -> "AzureStorageClient":
+        """
+        Generate client instance that can operate on the provided path
+        """
+        azure_path = cast_path(parse_data_path(path))
+        return cls(base_client=AzureClient(), path=azure_path)
 
     def _get_blob_client(self, blob_path: DataPath) -> BlobClient:
         azure_path = cast_path(blob_path)

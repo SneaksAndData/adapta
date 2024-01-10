@@ -1,7 +1,7 @@
 """
  Abstraction for storage operations.
 """
-#  Copyright (c) 2023. ECCO Sneaks & Data
+#  Copyright (c) 2023-2024. ECCO Sneaks & Data
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -149,4 +149,11 @@ class StorageClient(ABC):
         :param blob_path: Path to source blob.
         :param target_blob_path: Path to target blob.
         :param doze_period_ms: number of ms to doze between polling the status of the copy.
+        """
+
+    @classmethod
+    @abstractmethod
+    def for_storage_path(cls, path: str) -> "StorageClient":
+        """
+        Create client instance that can operate on the provided path
         """

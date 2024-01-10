@@ -1,7 +1,7 @@
 """
  Storage Client implementation for AWS S3.
 """
-#  Copyright (c) 2023. ECCO Sneaks & Data
+#  Copyright (c) 2023-2024. ECCO Sneaks & Data
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ from typing import Optional, Callable, Type, Iterator, Dict, TypeVar
 from adapta.security.clients import AwsClient
 from adapta.storage.blob.base import StorageClient
 from adapta.storage.exceptions import StorageClientError
+from adapta.storage.models import parse_data_path
 from adapta.storage.models.aws import cast_path
 from adapta.storage.models.base import DataPath
 from adapta.storage.models.format import SerializationFormat
@@ -139,3 +140,11 @@ class S3StorageClient(StorageClient, ABC):
         Not implemented in S3 Client
         """
         raise NotImplementedError("Not implemented in S3StorageClient")
+
+    @classmethod
+    def for_storage_path(cls, path: str) -> "S3StorageClient":
+        """
+        Generate client instance that can operate on the provided path. Always uses EnvironmentCredentials/
+        """
+        _ = cast_path(parse_data_path(path))
+        return cls(base_client=AwsClient())
