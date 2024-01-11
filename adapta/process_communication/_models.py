@@ -1,7 +1,7 @@
 """
   Models used for inter-process communication in data processing applications.
 """
-#  Copyright (c) 2023. ECCO Sneaks & Data
+#  Copyright (c) 2023-2024. ECCO Sneaks & Data
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ from typing import Optional, List, Iterable
 
 from dataclasses_json import DataClassJsonMixin
 
+from adapta.storage.models import parse_data_path
 from adapta.storage.models.astra import AstraPath
 from adapta.storage.models.base import DataPath
 from adapta.storage.models.azure import AdlsGen2Path, WasbPath
@@ -61,13 +62,7 @@ class DataSocket(DataClassJsonMixin):
 
         :return:
         """
-        for candidate in candidates:
-            try:
-                return candidate.from_hdfs_path(self.data_path)
-            except:  # pylint: disable=W0702
-                continue
-
-        return None
+        return parse_data_path(self.data_path, candidates=candidates)
 
     def serialize(self) -> str:
         """

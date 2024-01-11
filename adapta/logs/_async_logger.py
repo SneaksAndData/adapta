@@ -1,7 +1,7 @@
 """
  Asyncio-safe implementation of a Semantic Logger.
 """
-#  Copyright (c) 2023. ECCO Sneaks & Data
+#  Copyright (c) 2023-2024. ECCO Sneaks & Data
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -125,13 +125,25 @@ class _AsyncLogger(Generic[TLogger], _InternalLogger):
             template=template, logger=self._logger, tags=tags, exception=exception, diagnostics=diagnostics, **kwargs
         )
 
-    def __enter__(self):
+    def start(self):
+        """
+        Starts the async listener.
+        """
         self._listener = QueueListener(self._logger_message_queue, *self._log_handlers, respect_handler_level=True)
         self._listener.start()
+
+    def stop(self):
+        """
+        Stops the async listener and flushes the buffer out to all handlers.
+        """
+        self._listener.stop()
+
+    def __enter__(self):
+        self.start()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self._listener.stop()
+        self.stop()
 
 
 def create_async_logger(
