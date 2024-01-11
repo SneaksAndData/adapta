@@ -1,6 +1,6 @@
 """ Module for common decorator methods. """
 from functools import wraps
-from typing import Coroutine, Optional, Dict
+from typing import Optional, Dict
 
 from adapta.logs import SemanticLogger
 from adapta.logs._async_logger import _AsyncLogger
