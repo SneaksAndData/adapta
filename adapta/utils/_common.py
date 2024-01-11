@@ -95,8 +95,6 @@ def convert_datadog_tags(tag_dict: Optional[Dict[str, str]]) -> Optional[List[st
 def operation_time():
     """
       Returns execution time for the context block.
-
-    :param operation: A method to measure execution time for.
     :return: A tuple of (method_execution_time_ns, method_result)
     """
     result = namedtuple("OperationDuration", ["start", "end", "elapsed"])

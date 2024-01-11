@@ -1,7 +1,9 @@
 """ Module for common decorator methods. """
 from functools import wraps
+from typing import Optional, Dict
 
 from adapta.logs import SemanticLogger
+from adapta.logs._async_logger import _AsyncLogger
 from adapta.logs.models import LogLevel
 from adapta.metrics import MetricsProvider
 from adapta.utils._common import operation_time
@@ -51,3 +53,44 @@ def run_time_metrics(metric_name: str, tag_function_name: bool = False, log_leve
         return inner_runtime_decorator
 
     return outer_runtime_decorator
+
+
+def run_time_metrics_async(metric_name: str, tag_function_name: bool = False):
+    """
+    Decorator that records runtime of decorated method to logging source and metrics_provider.
+
+    :param metric_name: Description of method type that can be used to capture logging in metric sink.
+    :param tag_function_name: Boolean flag to indicate if function name should be added as tag to metric. Default False.
+    """
+
+    def outer(func):
+        @wraps(func)
+        async def inner_runtime_decorator(
+            metrics_provider: MetricsProvider,
+            logger: _AsyncLogger,
+            metric_tags: Optional[Dict[str, str]] = None,
+            **kwargs,
+        ):
+            metric_tags = (metric_tags or {}) | ({"function_name": str(func.__name__)} if tag_function_name else {})
+
+            logger.debug("Running {run_type} on method {method_name}", run_type=metric_name, method_name=func.__name__)
+
+            with operation_time() as ot:
+                result = await func(metrics_provider=metrics_provider, logger=logger, metric_tags=metric_tags, **kwargs)
+
+            metrics_provider.gauge(
+                metric_name=metric_name,
+                metric_value=round(ot.elapsed / 1e9, 2),
+                tags=metric_tags,
+            )
+
+            logger.debug(
+                "Method {method_name} finished in {elapsed:.2f}s seconds",
+                method_name=func.__name__,
+                elapsed=(ot.elapsed / 1e9),
+            )
+            return result
+
+        return inner_runtime_decorator
+
+    return outer
