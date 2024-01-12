@@ -371,8 +371,7 @@ async def test_runtime_decorator_async(caplog, tag_func_name: bool):
         return True
 
     await test_function(logger=async_logger, metrics_provider=metrics_provider)
-    assert "test_function" in caplog.text and run_type in caplog.text
-    assert "finished in" in caplog.text and "s seconds" in caplog.text
+    assert "Method test_function finished in 1.20s seconds" in caplog.text
     assert print_from_func in caplog.text
 
 
