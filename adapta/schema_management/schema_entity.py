@@ -18,14 +18,15 @@
 """
 
 from dataclasses import Field
-from typing import Union, Any, List
+from typing import Union, Any, List, get_args
 
 
 class PythonSchemaEntity:
     """Entity used to override getattr to provide schema hints"""
 
     def __init__(self, underlying_type: Union[Any, List[Field]]) -> None:
-        for field_name in underlying_type.__dataclass_fields__:
+        self.underlying_fields = underlying_type.__dataclass_fields__
+        for field_name in self.underlying_fields:
             self.__setattr__(field_name, field_name)
 
     # We should implement here __getattribute__ explicitly to avoid `no-member` warning from pylint
@@ -33,10 +34,23 @@ class PythonSchemaEntity:
         # pylint: disable=W0235
         return super().__getattribute__(item)
 
-    def get_field_names(self) -> List[str]:
+    def get_field_names(self) -> list[str]:
         """
         Returns the list of field names of the schema instance
 
         :return: list of field names
         """
         return list(self.__dict__.keys())
+
+    def get_field_data_types(self) -> dict[str, any]:
+        """
+        Returns the list of field data types of the schema instance
+
+        :return: list of field data types
+        """
+        return {
+            self.underlying_fields[field].name:
+                list(get_args(self.underlying_fields[field].type)) if get_args(self.underlying_fields[field].type) else
+                [self.underlying_fields[field].type]
+            for field in self.underlying_fields
+        }
