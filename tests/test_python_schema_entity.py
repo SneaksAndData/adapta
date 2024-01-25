@@ -19,7 +19,7 @@ class TestSchema:
         ["col_a", "col_b", "col_c", "col_d"],
     ],
 )
-def test_generic_filtering(
-    SCHEMA, columns: List[str]
+def test_get_field_names(
+    SCHEMA, columns: list[str]
 ):
     assert SCHEMA.get_field_names() == columns
