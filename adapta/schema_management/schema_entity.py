@@ -32,6 +32,11 @@ class PythonSchemaEntity:
     def __getattribute__(self, item):
         # pylint: disable=W0235
         return super().__getattribute__(item)
-     
+
     def get_field_names(self) -> List[str]:
+        """
+        Returns the list of field names of the schema instance
+
+        :return: list of field names
+        """
         return list(self.__dict__.keys())
