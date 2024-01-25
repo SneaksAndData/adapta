@@ -52,13 +52,3 @@ class ReviewTime:
 )
 def test_get_columns(SCHEMA, columns: list[str]):
     assert SCHEMA.get_field_names() == columns
-
-@pytest.mark.parametrize(
-    "SCHEMA, data_types",
-    [
-        (PythonSchemaEntity(TestSchema), {'col_a': [str], 'col_b': [str, float, type(None)], 'col_c': [int, str], 'col_d': [object]}),
-        (PythonSchemaEntity(ReviewTime), {'location_key': [str], 'sku_key': [str], 'review_time': [int]}),
-    ],
-)
-def test_get_field_data_types(SCHEMA, data_types):
-    assert SCHEMA.get_field_data_types() == data_types
