@@ -18,7 +18,7 @@
 """
 
 from dataclasses import Field
-from typing import Union, Any, List, get_args
+from typing import Union, Any, List
 
 
 class PythonSchemaEntity:

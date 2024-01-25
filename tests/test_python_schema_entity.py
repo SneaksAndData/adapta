@@ -10,8 +10,8 @@ from adapta.schema_management.schema_entity import PythonSchemaEntity
 @dataclass
 class TestSchema:
     col_a: str
-    col_b: Optional[Union[float,str]]
-    col_c: Union[int,str]
+    col_b: Optional[Union[float, str]]
+    col_c: Union[int, str]
     col_d: object
 
 
