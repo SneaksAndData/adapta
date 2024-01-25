@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 
+import numpy as np
 import pytest
 
 from adapta.schema_management.schema_entity import PythonSchemaEntity
@@ -44,13 +45,9 @@ class ReviewTime:
 @pytest.mark.parametrize(
     "SCHEMA, columns",
     [
-        PythonSchemaEntity(TestSchema),
-        ["col_a", "col_b", "col_c", "col_d"],
-    ],
-    [
-        PythonSchemaEntity(ReviewTime),
-        ["location_key", "sku_key", "review_time"],
+        (PythonSchemaEntity(TestSchema), ["col_a", "col_b", "col_c", "col_d"]),
+        (PythonSchemaEntity(ReviewTime), ["location_key", "sku_key", "review_time"]),
     ],
 )
-def test_get_field_names(SCHEMA, columns: list[str]):
-    assert SCHEMA.get_field_names() == columns
+def test_get_columns(SCHEMA, columns):
+    assert (np.array(SCHEMA.get_columns()) == np.array(columns)).all()
