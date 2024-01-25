@@ -49,5 +49,5 @@ class ReviewTime:
         (PythonSchemaEntity(ReviewTime), ["location_key", "sku_key", "review_time"]),
     ],
 )
-def test_get_columns(SCHEMA, columns):
-    assert (np.array(SCHEMA.get_columns()) == np.array(columns)).all()
+def test_get_columns(SCHEMA, columns: list[str]):
+    assert (np.array(SCHEMA.get_field_names()) == np.array(columns)).all()
