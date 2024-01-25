@@ -40,7 +40,7 @@ class PythonSchemaEntity:
 
         :return: list of field names
         """
-        return list(self.__dict__.keys())
+        return [self.underlying_fields[field].name for field in self.underlying_fields]
 
     def get_field_data_types(self) -> dict[str, any]:
         """

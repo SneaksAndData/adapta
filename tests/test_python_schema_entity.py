@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from typing import Optional, Union
 
 import numpy as np
 import pytest
@@ -9,8 +10,8 @@ from adapta.schema_management.schema_entity import PythonSchemaEntity
 @dataclass
 class TestSchema:
     col_a: str
-    col_b: float
-    col_c: int
+    col_b: Optional[Union[float,str]]
+    col_c: Union[int,str]
     col_d: object
 
 
@@ -50,4 +51,14 @@ class ReviewTime:
     ],
 )
 def test_get_columns(SCHEMA, columns: list[str]):
-    assert (np.array(SCHEMA.get_field_names()) == np.array(columns)).all()
+    assert SCHEMA.get_field_names() == columns
+
+@pytest.mark.parametrize(
+    "SCHEMA, data_types",
+    [
+        (PythonSchemaEntity(TestSchema), {'col_a': [str], 'col_b': [str, float, type(None)], 'col_c': [int, str], 'col_d': [object]}),
+        (PythonSchemaEntity(ReviewTime), {'location_key': [str], 'sku_key': [str], 'review_time': [int]}),
+    ],
+)
+def test_get_field_data_types(SCHEMA, data_types):
+    assert SCHEMA.get_field_data_types() == data_types
