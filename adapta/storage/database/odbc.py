@@ -22,6 +22,7 @@ from typing import Optional, Union, Iterator
 
 from pandas import DataFrame, read_sql
 import sqlalchemy
+from sqlalchemy import text
 from sqlalchemy.connectors import pyodbc
 from sqlalchemy.engine import URL
 from sqlalchemy.exc import SQLAlchemyError, OperationalError
@@ -171,9 +172,9 @@ class OdbcClient(ABC):
             if overwrite:
                 try:
                     if self._dialect.dialect == DatabaseType.SQLITE_ODBC.value.dialect:
-                        self._get_connection().execute(f"DELETE FROM {schema}.{name}")
+                        self._get_connection().execute(text(f"DELETE FROM {schema}.{name}"))
                     else:
-                        self._get_connection().execute(f"TRUNCATE TABLE {schema}.{name}")
+                        self._get_connection().execute(text(f"TRUNCATE TABLE {schema}.{name}"))
                 except OperationalError as ex:
                     # The table does not exist. Do nothing and let the Pandas API handle the creation of the table.
                     self._logger.warning(
