@@ -13,7 +13,7 @@ python = ">=3.9, <3.12"
 requests = "^2.26"
 backoff = "^2.2"
 cryptography = "~36.0"
-pandas = { version = ">=2.0.0,<3.0", extras = ["performance"] }
+pandas = { version = ">=2.0.0,<2.2", extras = ["performance"] }
 pyarrow = ">=7.0"
 dataclasses-json = "~0.6"
 limits = "~3.7"
