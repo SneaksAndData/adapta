@@ -18,12 +18,14 @@
 
 
 import logging
+from abc import ABC
 from typing import Optional, Dict
 
 from adapta.logs._internal import MetadataLogger
+from adapta.logs._logger_interface import LoggerInterface
 
 
-class _InternalLogger:
+class _InternalLogger(LoggerInterface, ABC):
     def __init__(
         self,
         fixed_template: Optional[Dict[str, Dict[str, str]]] = None,

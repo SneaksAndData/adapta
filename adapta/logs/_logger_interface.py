@@ -1,6 +1,9 @@
 """
- Module index.
+ Marker interface for logging API
 """
+from abc import ABC, abstractmethod
+
+
 #  Copyright (c) 2023-2024. ECCO Sneaks & Data
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,6 +19,28 @@
 #  limitations under the License.
 #
 
-from adapta.logs._base import SemanticLogger
-from adapta.logs._async_logger import create_async_logger
-from adapta.logs._logger_interface import LoggerInterface
+
+class LoggerInterface(ABC):
+    @abstractmethod
+    def info(self, **kwargs):
+        """
+        Logs a message on INFO level
+        """
+
+    @abstractmethod
+    def warning(self, **kwargs):
+        """
+        Logs a message on WARN level
+        """
+
+    @abstractmethod
+    def error(self, **kwargs):
+        """
+        Logs a message on ERROR level
+        """
+
+    @abstractmethod
+    def debug(self, **kwargs):
+        """
+        Logs a message on DEBUG level
+        """
