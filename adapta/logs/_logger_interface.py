@@ -2,6 +2,7 @@
  Marker interface for logging API
 """
 from abc import ABC, abstractmethod
+from typing import Optional, Dict
 
 
 #  Copyright (c) 2023-2024. ECCO Sneaks & Data
@@ -21,26 +22,41 @@ from abc import ABC, abstractmethod
 
 
 class LoggerInterface(ABC):
+    """
+    Abstract logger interface, enables interchangeability between sync/async loggers
+    """
+
     @abstractmethod
-    def info(self, **kwargs):
+    def info(self, template: str, tags: Optional[Dict[str, str]] = None, **kwargs):
         """
         Logs a message on INFO level
         """
 
     @abstractmethod
-    def warning(self, **kwargs):
+    def warning(
+        self, template: str, exception: Optional[BaseException] = None, tags: Optional[Dict[str, str]] = None, **kwargs
+    ):
         """
         Logs a message on WARN level
         """
 
     @abstractmethod
-    def error(self, **kwargs):
+    def error(
+        self, template: str, exception: Optional[BaseException] = None, tags: Optional[Dict[str, str]] = None, **kwargs
+    ):
         """
         Logs a message on ERROR level
         """
 
     @abstractmethod
-    def debug(self, **kwargs):
+    def debug(
+        self,
+        template: str,
+        exception: Optional[BaseException] = None,
+        diagnostics: Optional[str] = None,
+        tags: Optional[Dict[str, str]] = None,
+        **kwargs
+    ):
         """
         Logs a message on DEBUG level
         """
