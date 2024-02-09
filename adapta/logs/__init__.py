@@ -18,3 +18,4 @@
 
 from adapta.logs._base import SemanticLogger
 from adapta.logs._async_logger import create_async_logger
+from adapta.logs._logger_interface import LoggerInterface
