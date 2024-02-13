@@ -60,3 +60,13 @@ class LoggerInterface(ABC):
         """
         Logs a message on DEBUG level
         """
+
+    def start(self) -> None:
+        """
+         Optional method to start the logger, if required.
+        """
+
+    def stop(self) -> None:
+        """
+         Optional method to stop and flush the logger, if required.
+        """
