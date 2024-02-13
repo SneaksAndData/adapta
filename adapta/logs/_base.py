@@ -38,6 +38,12 @@ class SemanticLogger(_InternalLogger):
     Proxy for a collection of python loggers that use the same formatting interface.
     """
 
+    def start(self) -> None:
+        pass
+
+    def stop(self) -> None:
+        pass
+
     def __init__(self, fixed_template: Optional[Dict[str, Dict[str, str]]] = None, fixed_template_delimiter=", "):
         """
           Creates a new instance of a SemanticLogger
