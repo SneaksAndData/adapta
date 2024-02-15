@@ -92,7 +92,8 @@ storage = [
 ]
 
 aws = [
-    "boto3"
+    "boto3",
+    "botocore"
 ]
 
 [tool.poetry.group.dev.dependencies]
