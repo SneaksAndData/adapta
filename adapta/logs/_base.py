@@ -17,13 +17,7 @@
 #
 
 import logging
-import sys
-
-from contextlib import contextmanager
-
 from logging import Handler, StreamHandler
-from threading import Thread
-from time import sleep
 from typing import List, Optional, Dict, final
 
 from adapta.logs._internal_logger import _InternalLogger
@@ -36,6 +30,9 @@ class SemanticLogger(_InternalLogger):
     """
     Proxy for a collection of python loggers that use the same formatting interface.
     """
+
+    async def redirect_async(self, tags: Optional[Dict[str, str]] = None, **kwargs):
+        raise NotImplementedError("Async operations are not supported by this logger")
 
     def redirect(self, tags: Optional[Dict[str, str]] = None, log_source_name: Optional[str] = None, **kwargs):
         return self._redirect(logger=self._get_logger(log_source_name), tags=tags)

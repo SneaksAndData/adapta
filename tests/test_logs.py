@@ -18,7 +18,6 @@ import json
 import logging
 import os
 import traceback
-from ctypes import CDLL, cdll
 from logging import StreamHandler
 
 import tempfile
@@ -119,10 +118,6 @@ def test_log_format(
 
 
 def test_datadog_api_handler(mocker: MockerFixture):
-    os.environ.setdefault("PROTEUS__DD_API_KEY", "some-key")
-    os.environ.setdefault("PROTEUS__DD_APP_KEY", "some-app-key")
-    os.environ.setdefault("PROTEUS__DD_SITE", "some-site.dog")
-
     mocker.patch(
         "adapta.logs.handlers.datadog_api_handler.DataDogApiHandler._flush",
         return_value=None,
@@ -346,11 +341,17 @@ def printf_messages(message_count: int) -> None:
         libc.printf(b"Testing: %s\n", f"Test log message #{log_n}".encode("utf-8"))
 
 
-def test_redirect(datadog_handler):
+def test_redirect(restore_logger_class, mocker: MockerFixture):
+    mocker.patch(
+        "adapta.logs.handlers.datadog_api_handler.DataDogApiHandler._flush",
+        return_value=None,
+    )
+    handler = DataDogApiHandler()
+
     logger = SemanticLogger().add_log_source(
         log_source_name="test",
         min_log_level=LogLevel.INFO,
-        log_handlers=[datadog_handler],
+        log_handlers=[handler],
         is_default=True,
     )
 
@@ -360,7 +361,7 @@ def test_redirect(datadog_handler):
         print_thread.start()
         sleep(1)
 
-    buffer = [json.loads(msg.message) for msg in datadog_handler._buffer]
+    buffer = [json.loads(msg.message) for msg in handler._buffer]
 
     assert len(buffer) == 10
 

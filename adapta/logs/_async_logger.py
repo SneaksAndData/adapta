@@ -42,7 +42,7 @@ class _AsyncLogger(Generic[TLogger], _InternalLogger):
         return self._redirect(logger=self._logger, tags=tags)
 
     @asynccontextmanager
-    async def redirect_async(self, tags: Optional[Dict[str, str]] = None, **kwargs):
+    async def redirect_async(self, tags: Optional[Dict[str, str]] = None, **kwargs):  # pylint: disable=R0801
         is_active = False
         tmp_symlink = b""
 

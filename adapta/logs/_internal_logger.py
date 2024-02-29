@@ -249,7 +249,7 @@ class _InternalLogger(LoggerInterface, ABC):
                 pass
 
     @contextmanager
-    def _redirect(self, logger: MetadataLogger, tags: Optional[Dict[str, str]] = None, log_level=LogLevel.INFO, **_):
+    def _redirect(self, logger: MetadataLogger, tags: Optional[Dict[str, str]] = None, log_level=LogLevel.INFO, **_):  # pylint: disable=R0801
         is_active = False
         tmp_symlink = b""
 

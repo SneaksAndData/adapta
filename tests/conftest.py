@@ -52,7 +52,7 @@ def set_env():
 
 
 @pytest.fixture
-def datadog_handler():
+def datadog_handler():  # only for async method (mocker does not work there)
     class MockDataDogApiHandler(DataDogApiHandler):
         def _flush(self) -> None:
             pass
