@@ -19,9 +19,8 @@ import asyncio
 #
 
 import logging
-import os
 import sys
-from contextlib import contextmanager
+from contextlib import asynccontextmanager
 from logging.handlers import QueueHandler, QueueListener
 from multiprocessing import Queue
 from typing import final, TypeVar, Generic, Type, List, Optional, Dict
@@ -39,15 +38,18 @@ class _AsyncLogger(Generic[TLogger], _InternalLogger):
     Asyncio-safe wrapper for MetadataLogger
     """
 
-    @contextmanager
     def redirect(self, tags: Optional[Dict[str, str]] = None, **kwargs):
-        is_ready = False
-        is_active = False
+        return self._redirect(logger=self._logger, tags=tags)
 
-        async def log_redirected(tmp_file_path: bytes) -> None:
+    @asynccontextmanager
+    async def redirect_async(self, tags: Optional[Dict[str, str]] = None, **kwargs):
+        is_active = False
+        tmp_symlink = b""
+
+        async def log_redirected() -> int:
             def flush_and_log(pos: int) -> int:
                 sys.stdout.flush()
-                with open(tmp_file_path, encoding="utf-8") as output:
+                with open(tmp_symlink, encoding="utf-8") as output:
                     output.seek(pos)
                     for line in output.readlines():
                         self._log_redirect_message(
@@ -57,7 +59,7 @@ class _AsyncLogger(Generic[TLogger], _InternalLogger):
 
             start_position = 0
             # externally control flush activation
-            while not is_ready:
+            while tmp_symlink == b"":
                 await asyncio.sleep(0.1)
 
             # externally control the flushing process
@@ -65,19 +67,20 @@ class _AsyncLogger(Generic[TLogger], _InternalLogger):
                 start_position = flush_and_log(start_position)
                 await asyncio.sleep(0.1)
 
-            flush_and_log(start_position)
+            return flush_and_log(start_position)
 
         self._handle_unsupported_redirect(tags)
         libc, saved_stdout, tmp_file = self._prepare_redirect()
-        os.chmod(tmp_file, 666)
-        read_task = asyncio.create_task(log_redirected(tmp_file))
+        read_task = asyncio.create_task(log_redirected())
         try:
-            self._activate_redirect(libc, tmp_file)
-            is_ready = True
+            tmp_symlink = self._activate_redirect(libc, tmp_file)
+            is_active = True
             yield None
+        except Exception as ex:
+            raise ex
         finally:
             is_active = False
-            _ = read_task.result()
+            _ = await read_task
             self._close_redirect(libc, saved_stdout)
 
     def __init__(

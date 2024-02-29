@@ -13,13 +13,17 @@
 #  limitations under the License.
 #
 import asyncio
+import ctypes
 import json
 import logging
 import os
 import traceback
+from ctypes import CDLL, cdll
 from logging import StreamHandler
 
 import tempfile
+from threading import Thread
+from time import sleep
 from typing import Dict
 from unittest.mock import patch
 
@@ -334,3 +338,64 @@ async def test_log_format_async(
 
         logged_lines = open(test_file_path, "r").readlines()
         assert expected_message in logged_lines
+
+
+def printf_messages(message_count: int) -> None:
+    libc = ctypes.cdll.LoadLibrary("libc.so.6")
+    for log_n in range(message_count):
+        libc.printf(b"Testing: %s\n", f"Test log message #{log_n}".encode("utf-8"))
+
+
+def test_redirect(datadog_handler):
+    logger = SemanticLogger().add_log_source(
+        log_source_name="test",
+        min_log_level=LogLevel.INFO,
+        log_handlers=[datadog_handler],
+        is_default=True,
+    )
+
+    print_thread = Thread(target=printf_messages, args=(10,))
+
+    with logger.redirect():
+        print_thread.start()
+        sleep(1)
+
+    buffer = [json.loads(msg.message) for msg in datadog_handler._buffer]
+
+    assert len(buffer) == 10
+
+
+@pytest.mark.asyncio
+async def test_redirect_async_legacy(restore_logger_class, datadog_handler):
+    with create_async_logger(
+        logger_type=TestLoggerClass,
+        min_log_level=LogLevel.DEBUG,
+        log_handlers=[datadog_handler],
+        fixed_template={"Fixed message1 {message1}": {"message1": "this is a fixed message1"}},
+    ) as logger:
+        print_thread = Thread(target=printf_messages, args=(10,))
+        with logger.redirect():
+            print_thread.start()
+            await asyncio.sleep(1)
+
+        buffer = [json.loads(msg.message) for msg in logger._log_handlers[0]._buffer]
+
+        assert len(buffer) == 10
+
+
+@pytest.mark.asyncio
+async def test_redirect_async(restore_logger_class, datadog_handler):
+    with create_async_logger(
+        logger_type=TestLoggerClass,
+        min_log_level=LogLevel.DEBUG,
+        log_handlers=[datadog_handler],
+        fixed_template={"Fixed message1 {message1}": {"message1": "this is a fixed message1"}},
+    ) as logger:
+        print_thread = Thread(target=printf_messages, args=(10,))
+        async with logger.redirect_async():
+            print_thread.start()
+            await asyncio.sleep(1)
+
+        buffer = [json.loads(msg.message) for msg in logger._log_handlers[0]._buffer]
+
+        assert len(buffer) == 10

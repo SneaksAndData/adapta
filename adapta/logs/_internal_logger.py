@@ -23,7 +23,11 @@ import logging
 import os
 import sys
 import tempfile
+import uuid
 from abc import ABC
+from contextlib import contextmanager
+from threading import Thread
+from time import sleep
 from typing import Optional, Dict, Any
 
 from adapta.logs._internal import MetadataLogger, from_log_level
@@ -216,10 +220,14 @@ class _InternalLogger(LoggerInterface, ABC):
 
         return libc, saved_stdout, tmp_file
 
-    def _activate_redirect(self, libc: ctypes.CDLL, tmp_file: bytes):
+    def _activate_redirect(self, libc: ctypes.CDLL, tmp_file: bytes) -> bytes:
         redirected_fd = libc.creat(tmp_file)
         libc.dup2(redirected_fd, 1)
         libc.close(redirected_fd)
+        tmp_symlink = os.path.join(tempfile.gettempdir(), str(uuid.uuid4())).encode("utf-8")
+        os.symlink(tmp_file, tmp_symlink)
+        os.chmod(tmp_symlink, 420)
+        return tmp_symlink
 
     def _close_redirect(self, libc: ctypes.CDLL, saved_stdout: Any):
         libc.dup2(saved_stdout, 1)
@@ -239,3 +247,47 @@ class _InternalLogger(LoggerInterface, ABC):
                 return
             finally:
                 pass
+
+    @contextmanager
+    def _redirect(self, logger: MetadataLogger, tags: Optional[Dict[str, str]] = None, log_level=LogLevel.INFO, **_):
+        is_active = False
+        tmp_symlink = b""
+
+        def log_redirected() -> int:
+            def flush_and_log(pos: int) -> int:
+                sys.stdout.flush()
+                with open(tmp_symlink, encoding="utf-8") as output:
+                    output.seek(pos)
+                    for line in output.readlines():
+                        self._log_redirect_message(
+                            logger,
+                            base_template="Redirected output: {message}",
+                            message=line,
+                            tags=tags,
+                            log_level=log_level,
+                        )
+                    return output.tell()
+
+            start_position = 0
+            # externally control flush activation
+            while tmp_symlink == b"":
+                sleep(0.1)
+
+            # externally control the flushing process
+            while is_active:
+                start_position = flush_and_log(start_position)
+                sleep(0.1)
+
+            return flush_and_log(start_position)
+
+        self._handle_unsupported_redirect(tags)
+        libc, saved_stdout, tmp_file = self._prepare_redirect()
+        log_thread = Thread(target=log_redirected)
+        log_thread.start()
+        try:
+            tmp_symlink = self._activate_redirect(libc, tmp_file)
+            is_active = True
+            yield None
+        finally:
+            is_active = False
+            self._close_redirect(libc, saved_stdout)

@@ -51,7 +51,7 @@ def set_env():
     }
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def datadog_handler():
     class MockDataDogApiHandler(DataDogApiHandler):
         def _flush(self) -> None:

@@ -17,17 +17,18 @@
 #
 
 import logging
-import os.path
 import sys
 
 from contextlib import contextmanager
 
 from logging import Handler, StreamHandler
+from threading import Thread
+from time import sleep
 from typing import List, Optional, Dict, final
 
 from adapta.logs._internal_logger import _InternalLogger
 from adapta.logs.models import LogLevel
-from adapta.logs._internal import MetadataLogger, from_log_level
+from adapta.logs._internal import MetadataLogger
 
 
 @final
@@ -35,6 +36,9 @@ class SemanticLogger(_InternalLogger):
     """
     Proxy for a collection of python loggers that use the same formatting interface.
     """
+
+    def redirect(self, tags: Optional[Dict[str, str]] = None, log_source_name: Optional[str] = None, **kwargs):
+        return self._redirect(logger=self._get_logger(log_source_name), tags=tags)
 
     def start(self) -> None:
         pass
@@ -198,43 +202,3 @@ class SemanticLogger(_InternalLogger):
         self._meta_debug(
             template=template, logger=logger, tags=tags, exception=exception, diagnostics=diagnostics, **kwargs
         )
-
-    @contextmanager
-    def redirect(
-        self, tags: Optional[Dict[str, str]] = None, log_level=LogLevel.INFO, log_source_name: Optional[str] = None, **_
-    ):
-        self._handle_unsupported_redirect(tags)
-        libc, saved_stdout, tmp_file = self._prepare_redirect()
-        try:
-            self._activate_redirect(libc, tmp_file)
-            yield None
-        finally:
-            sys.stdout.flush()
-            self._close_redirect(libc, saved_stdout)
-            os.chmod(tmp_file, 420)
-
-            logger = self._get_logger(log_source_name)
-
-            self._log_redirect_message(
-                logger=logger,
-                base_template=">> Redirected output {state} <<",
-                message="BEGIN",
-                tags=tags,
-                log_level=log_level,
-            )
-            with open(tmp_file, encoding="utf-8") as output:
-                for line in output.readlines():
-                    self._log_redirect_message(
-                        logger=logger,
-                        base_template="Redirected output: {message}",
-                        message=line,
-                        tags=tags,
-                        log_level=log_level,
-                    )
-            self._log_redirect_message(
-                logger=logger,
-                base_template=">> Redirected output {state} <<",
-                message="END",
-                tags=tags,
-                log_level=log_level,
-            )
