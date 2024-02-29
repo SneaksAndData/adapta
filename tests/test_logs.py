@@ -342,6 +342,9 @@ def printf_messages(message_count: int) -> None:
 
 
 def test_redirect(restore_logger_class, mocker: MockerFixture):
+    """
+    Test sync redirect in a sync program from an external non-python process print.
+    """
     mocker.patch(
         "adapta.logs.handlers.datadog_api_handler.DataDogApiHandler._flush",
         return_value=None,
@@ -368,6 +371,9 @@ def test_redirect(restore_logger_class, mocker: MockerFixture):
 
 @pytest.mark.asyncio
 async def test_redirect_async_legacy(restore_logger_class, datadog_handler):
+    """
+    Test sync redirect when running inside asyncio loop, from an external non-python process print.
+    """
     with create_async_logger(
         logger_type=TestLoggerClass,
         min_log_level=LogLevel.DEBUG,
@@ -386,6 +392,9 @@ async def test_redirect_async_legacy(restore_logger_class, datadog_handler):
 
 @pytest.mark.asyncio
 async def test_redirect_async(restore_logger_class, datadog_handler):
+    """
+    Test async redirect from an external non-python process print, when running inside asyncio loop
+    """
     with create_async_logger(
         logger_type=TestLoggerClass,
         min_log_level=LogLevel.DEBUG,

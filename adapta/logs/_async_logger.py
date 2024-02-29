@@ -19,7 +19,6 @@ import asyncio
 #
 
 import logging
-import sys
 from contextlib import asynccontextmanager
 from logging.handlers import QueueHandler, QueueListener
 from multiprocessing import Queue
@@ -42,21 +41,11 @@ class _AsyncLogger(Generic[TLogger], _InternalLogger):
         return self._redirect(logger=self._logger, tags=tags)
 
     @asynccontextmanager
-    async def redirect_async(self, tags: Optional[Dict[str, str]] = None, **kwargs):  # pylint: disable=R0801
+    async def redirect_async(self, tags: Optional[Dict[str, str]] = None, **kwargs):
         is_active = False
         tmp_symlink = b""
 
         async def log_redirected() -> int:
-            def flush_and_log(pos: int) -> int:
-                sys.stdout.flush()
-                with open(tmp_symlink, encoding="utf-8") as output:
-                    output.seek(pos)
-                    for line in output.readlines():
-                        self._log_redirect_message(
-                            self._logger, base_template="Redirected output: {message}", message=line, tags=tags
-                        )
-                    return output.tell()
-
             start_position = 0
             # externally control flush activation
             while tmp_symlink == b"":
@@ -64,10 +53,12 @@ class _AsyncLogger(Generic[TLogger], _InternalLogger):
 
             # externally control the flushing process
             while is_active:
-                start_position = flush_and_log(start_position)
+                start_position = self._flush_and_log(
+                    pos=start_position, tmp_symlink=tmp_symlink, logger=self._logger, tags=tags
+                )
                 await asyncio.sleep(0.1)
 
-            return flush_and_log(start_position)
+            return self._flush_and_log(pos=start_position, tmp_symlink=tmp_symlink, logger=self._logger, tags=tags)
 
         self._handle_unsupported_redirect(tags)
         libc, saved_stdout, tmp_file = self._prepare_redirect()

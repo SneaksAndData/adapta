@@ -103,5 +103,5 @@ class LoggerInterface(ABC):
     @abstractmethod
     async def redirect_async(self, tags: Optional[Dict[str, str]] = None, **kwargs):
         """
-         Async version of a redirect. Not supported in sync client
+        Async version of a redirect. Not supported in sync client
         """

@@ -232,6 +232,27 @@ class _InternalLogger(LoggerInterface, ABC):
     def _close_redirect(self, libc: ctypes.CDLL, saved_stdout: Any):
         libc.dup2(saved_stdout, 1)
 
+    def _flush_and_log(
+        self,
+        pos: int,
+        tmp_symlink: bytes,
+        logger: MetadataLogger,
+        tags: Optional[Dict[str, str]] = None,
+        log_level: Optional[LogLevel] = None,
+    ) -> int:
+        sys.stdout.flush()
+        with open(tmp_symlink, encoding="utf-8") as output:
+            output.seek(pos)
+            for line in output.readlines():
+                self._log_redirect_message(
+                    logger,
+                    base_template="Redirected output: {message}",
+                    message=line,
+                    tags=tags,
+                    log_level=log_level,
+                )
+            return output.tell()
+
     def _handle_unsupported_redirect(
         self,
         tags: Optional[Dict[str, str]] = None,
@@ -249,36 +270,27 @@ class _InternalLogger(LoggerInterface, ABC):
                 pass
 
     @contextmanager
-    def _redirect(self, logger: MetadataLogger, tags: Optional[Dict[str, str]] = None, log_level=LogLevel.INFO, **_):  # pylint: disable=R0801
+    def _redirect(self, logger: MetadataLogger, tags: Optional[Dict[str, str]] = None, log_level=LogLevel.INFO, **_):
         is_active = False
         tmp_symlink = b""
 
         def log_redirected() -> int:
-            def flush_and_log(pos: int) -> int:
-                sys.stdout.flush()
-                with open(tmp_symlink, encoding="utf-8") as output:
-                    output.seek(pos)
-                    for line in output.readlines():
-                        self._log_redirect_message(
-                            logger,
-                            base_template="Redirected output: {message}",
-                            message=line,
-                            tags=tags,
-                            log_level=log_level,
-                        )
-                    return output.tell()
-
             start_position = 0
+
             # externally control flush activation
             while tmp_symlink == b"":
                 sleep(0.1)
 
             # externally control the flushing process
             while is_active:
-                start_position = flush_and_log(start_position)
+                start_position = self._flush_and_log(
+                    pos=start_position, tmp_symlink=tmp_symlink, logger=logger, tags=tags, log_level=log_level
+                )
                 sleep(0.1)
 
-            return flush_and_log(start_position)
+            return self._flush_and_log(
+                pos=start_position, tmp_symlink=tmp_symlink, logger=logger, tags=tags, log_level=log_level
+            )
 
         self._handle_unsupported_redirect(tags)
         libc, saved_stdout, tmp_file = self._prepare_redirect()
