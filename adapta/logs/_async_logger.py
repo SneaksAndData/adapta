@@ -1,6 +1,8 @@
 """
  Asyncio-safe implementation of a Semantic Logger.
 """
+import asyncio
+
 #  Copyright (c) 2023-2024. ECCO Sneaks & Data
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,6 +19,9 @@
 #
 
 import logging
+import os
+import sys
+from contextlib import contextmanager
 from logging.handlers import QueueHandler, QueueListener
 from multiprocessing import Queue
 from typing import final, TypeVar, Generic, Type, List, Optional, Dict
@@ -33,6 +38,47 @@ class _AsyncLogger(Generic[TLogger], _InternalLogger):
     """
     Asyncio-safe wrapper for MetadataLogger
     """
+
+    @contextmanager
+    def redirect(self, tags: Optional[Dict[str, str]] = None, **kwargs):
+        is_ready = False
+        is_active = False
+
+        async def log_redirected(tmp_file_path: bytes) -> None:
+            def flush_and_log(pos: int) -> int:
+                sys.stdout.flush()
+                with open(tmp_file_path, encoding="utf-8") as output:
+                    output.seek(pos)
+                    for line in output.readlines():
+                        self._log_redirect_message(
+                            self._logger, base_template="Redirected output: {message}", message=line, tags=tags
+                        )
+                    return output.tell()
+
+            start_position = 0
+            # externally control flush activation
+            while not is_ready:
+                await asyncio.sleep(0.1)
+
+            # externally control the flushing process
+            while is_active:
+                start_position = flush_and_log(start_position)
+                await asyncio.sleep(0.1)
+
+            flush_and_log(start_position)
+
+        self._handle_unsupported_redirect(tags)
+        libc, saved_stdout, tmp_file = self._prepare_redirect()
+        os.chmod(tmp_file, 666)
+        read_task = asyncio.create_task(log_redirected(tmp_file))
+        try:
+            self._activate_redirect(libc, tmp_file)
+            is_ready = True
+            yield None
+        finally:
+            is_active = False
+            _ = read_task.result()
+            self._close_redirect(libc, saved_stdout)
 
     def __init__(
         self,

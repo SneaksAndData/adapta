@@ -77,10 +77,12 @@ class MetadataLogger(logging.Logger):
         )
 
 
-def from_log_level(log_level: LogLevel) -> int:
+def from_log_level(log_level: Optional[LogLevel]) -> Optional[int]:
     """
     Converts adapta log level to logging log level
     """
+    if log_level is None:
+        return None
     log_method = {
         LogLevel.INFO: logging.INFO,
         LogLevel.WARN: logging.WARN,

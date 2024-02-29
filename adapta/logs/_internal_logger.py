@@ -1,6 +1,8 @@
 """
  Shared functionality for the MetadataLogger enricher implementations.
 """
+import ctypes
+
 #  Copyright (c) 2023-2024. ECCO Sneaks & Data
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,11 +20,15 @@
 
 
 import logging
+import os
+import sys
+import tempfile
 from abc import ABC
-from typing import Optional, Dict
+from typing import Optional, Dict, Any
 
-from adapta.logs._internal import MetadataLogger
+from adapta.logs._internal import MetadataLogger, from_log_level
 from adapta.logs._logger_interface import LoggerInterface
+from adapta.logs.models import LogLevel
 
 
 class _InternalLogger(LoggerInterface, ABC):
@@ -178,3 +184,58 @@ class _InternalLogger(LoggerInterface, ABC):
             exception=exception,
             metadata_fields=self._get_metadata_fields(kwargs),
         )
+
+    def _log_redirect_message(
+        self,
+        logger: MetadataLogger,
+        base_template: str,
+        message: str,
+        tags: Optional[Dict[str, str]] = None,
+        log_level: Optional[LogLevel] = None,
+    ):
+        template = self._get_template(base_template)
+        msg = template.format(**self._get_fixed_args(), message=message)
+        logger.log_with_metadata(
+            from_log_level(log_level) or logger.level,
+            msg=msg,
+            tags=tags,
+            diagnostics=None,
+            stack_info=None,
+            exception=None,
+            metadata_fields=self._get_metadata_fields({}),
+            template=template,
+        )
+
+    def _prepare_redirect(self) -> tuple[ctypes.CDLL, Any, bytes]:
+        """
+        Prepares objects needed for output redirection
+        """
+        libc = ctypes.CDLL(None)
+        saved_stdout = libc.dup(1)
+        tmp_file = os.path.join(tempfile.gettempdir(), tempfile.mktemp()).encode("utf-8")
+
+        return libc, saved_stdout, tmp_file
+
+    def _activate_redirect(self, libc: ctypes.CDLL, tmp_file: bytes):
+        redirected_fd = libc.creat(tmp_file)
+        libc.dup2(redirected_fd, 1)
+        libc.close(redirected_fd)
+
+    def _close_redirect(self, libc: ctypes.CDLL, saved_stdout: Any):
+        libc.dup2(saved_stdout, 1)
+
+    def _handle_unsupported_redirect(
+        self,
+        tags: Optional[Dict[str, str]] = None,
+    ):
+        if sys.platform == "win32":
+            self.info(
+                self._get_template(">> Output redirection not supported on this platform: {platform} <<"),
+                platform=sys.platform,
+                tags=tags,
+            )
+            try:
+                yield None
+                return
+            finally:
+                pass
