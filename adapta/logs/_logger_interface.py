@@ -2,6 +2,7 @@
  Marker interface for logging API
 """
 from abc import ABC, abstractmethod
+from contextlib import contextmanager, asynccontextmanager
 from typing import Optional, Dict
 
 
@@ -71,4 +72,36 @@ class LoggerInterface(ABC):
     def stop(self) -> None:
         """
         Optional method to stop and flush the logger, if required.
+        """
+
+    @contextmanager
+    @abstractmethod
+    def redirect(self, tags: Optional[Dict[str, str]] = None, **kwargs):
+        """
+         Redirects stdout to a temporary file and dumps its contents as INFO messages
+         once the wrapped code block finishes execution. Stdout is restored after the block completes execution.
+         Note that timestamps appended by the logger will not correlate with the actual timestamp
+         of the reported message, if one is present in the output. This method works for the whole process,
+         including external libraries (C/C++ etc). Example usage:
+
+         with composite_logger.redirect():
+             # from here, output will be redirected and collected separately
+             call_my_function()
+             call_my_other_function()
+
+         # once `with` block ends, vanilla logging behaviour is restored.
+         call_my_other_other_function()
+
+         NB: This method only works on Linux. Invoking it on Windows will have no effect.
+
+        :param tags: Optional message tags.
+        :param log_level: Optional logging level for a redirected log source. Defaults to INFO.
+        :return:
+        """
+
+    @asynccontextmanager
+    @abstractmethod
+    async def redirect_async(self, tags: Optional[Dict[str, str]] = None, **kwargs):
+        """
+        Async version of a redirect. Not supported in sync client
         """

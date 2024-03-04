@@ -48,11 +48,12 @@ def set_env():
         "PROTEUS__DD_API_KEY": "some-key",
         "PROTEUS__DD_APP_KEY": "some-app-key",
         "PROTEUS__DD_SITE": "some-site.dog",
+        "PYTHONUNBUFFERED": "1",
     }
 
 
-@pytest.fixture(scope="session")
-def datadog_handler():
+@pytest.fixture
+def datadog_handler():  # only for async method (mocker does not work there)
     class MockDataDogApiHandler(DataDogApiHandler):
         def _flush(self) -> None:
             pass

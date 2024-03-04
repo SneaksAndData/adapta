@@ -13,6 +13,7 @@
 #  limitations under the License.
 #
 import asyncio
+import ctypes
 import json
 import logging
 import os
@@ -20,6 +21,8 @@ import traceback
 from logging import StreamHandler
 
 import tempfile
+from threading import Thread
+from time import sleep
 from typing import Dict
 from unittest.mock import patch
 
@@ -115,10 +118,6 @@ def test_log_format(
 
 
 def test_datadog_api_handler(mocker: MockerFixture):
-    os.environ.setdefault("PROTEUS__DD_API_KEY", "some-key")
-    os.environ.setdefault("PROTEUS__DD_APP_KEY", "some-app-key")
-    os.environ.setdefault("PROTEUS__DD_SITE", "some-site.dog")
-
     mocker.patch(
         "adapta.logs.handlers.datadog_api_handler.DataDogApiHandler._flush",
         return_value=None,
@@ -334,3 +333,111 @@ async def test_log_format_async(
 
         logged_lines = open(test_file_path, "r").readlines()
         assert expected_message in logged_lines
+
+
+def printf_messages(message_count: int, output_type: str) -> None:
+    libc = ctypes.cdll.LoadLibrary("libc.so.6")
+    cstd = ctypes.c_void_p.in_dll(libc, output_type)
+    libc.setbuf(cstd, None)
+    for log_n in range(message_count):
+        libc.fprintf(cstd, b"Testing: %s\n", f"Test log message #{log_n}".encode("utf-8"))
+
+
+@pytest.mark.parametrize(
+    "std_type",
+    ["stdout", "stderr"],
+)
+def test_redirect(restore_logger_class, mocker: MockerFixture, std_type: str):
+    """
+    Test sync redirect in a sync program from an external non-python process print.
+    """
+    mocker.patch(
+        "adapta.logs.handlers.datadog_api_handler.DataDogApiHandler._flush",
+        return_value=None,
+    )
+    handler = DataDogApiHandler()
+
+    logger = SemanticLogger().add_log_source(
+        log_source_name="test",
+        min_log_level=LogLevel.INFO,
+        log_handlers=[handler],
+        is_default=True,
+    )
+
+    print_thread = Thread(
+        target=printf_messages,
+        args=(
+            10,
+            std_type,
+        ),
+    )
+
+    with logger.redirect():
+        print_thread.start()
+        sleep(1)
+
+    buffer = [json.loads(msg.message) for msg in handler._buffer]
+
+    assert len(buffer) == 10
+
+
+@pytest.mark.parametrize(
+    "std_type",
+    ["stdout", "stderr"],
+)
+@pytest.mark.asyncio
+async def test_redirect_async_legacy(restore_logger_class, datadog_handler, std_type: str):
+    """
+    Test sync redirect when running inside asyncio loop, from an external non-python process print.
+    """
+    with create_async_logger(
+        logger_type=TestLoggerClass,
+        min_log_level=LogLevel.DEBUG,
+        log_handlers=[datadog_handler],
+        fixed_template={"Fixed message1 {message1}": {"message1": "this is a fixed message1"}},
+    ) as logger:
+        print_thread = Thread(
+            target=printf_messages,
+            args=(
+                10,
+                std_type,
+            ),
+        )
+        with logger.redirect():
+            print_thread.start()
+            await asyncio.sleep(1)
+
+        buffer = [json.loads(msg.message) for msg in logger._log_handlers[0]._buffer]
+
+        assert len(buffer) == 10
+
+
+@pytest.mark.parametrize(
+    "std_type",
+    ["stdout", "stderr"],
+)
+@pytest.mark.asyncio
+async def test_redirect_async(restore_logger_class, datadog_handler, std_type: str):
+    """
+    Test async redirect from an external non-python process print, when running inside asyncio loop
+    """
+    with create_async_logger(
+        logger_type=TestLoggerClass,
+        min_log_level=LogLevel.DEBUG,
+        log_handlers=[datadog_handler],
+        fixed_template={"Fixed message1 {message1}": {"message1": "this is a fixed message1"}},
+    ) as logger:
+        print_thread = Thread(
+            target=printf_messages,
+            args=(
+                10,
+                std_type,
+            ),
+        )
+        async with logger.redirect_async():
+            print_thread.start()
+            await asyncio.sleep(1)
+
+        buffer = [json.loads(msg.message) for msg in logger._log_handlers[0]._buffer]
+
+        assert len(buffer) == 10

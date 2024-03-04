@@ -1,6 +1,8 @@
 """
  Asyncio-safe implementation of a Semantic Logger.
 """
+import asyncio
+
 #  Copyright (c) 2023-2024. ECCO Sneaks & Data
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,6 +19,7 @@
 #
 
 import logging
+from contextlib import asynccontextmanager
 from logging.handlers import QueueHandler, QueueListener
 from multiprocessing import Queue
 from typing import final, TypeVar, Generic, Type, List, Optional, Dict
@@ -33,6 +36,50 @@ class _AsyncLogger(Generic[TLogger], _InternalLogger):
     """
     Asyncio-safe wrapper for MetadataLogger
     """
+
+    def redirect(self, tags: Optional[Dict[str, str]] = None, **kwargs):
+        return self._redirect(logger=self._logger, tags=tags)
+
+    @asynccontextmanager
+    async def redirect_async(self, tags: Optional[Dict[str, str]] = None, **kwargs):
+        is_active = False
+        tmp_symlink_out = b""
+        tmp_symlink_err = b""
+
+        async def log_redirected() -> tuple[int, int]:
+            start_position_out = 0
+            start_position_err = 0
+            # externally control flush activation
+            while tmp_symlink_out == b"" and tmp_symlink_err == b"":
+                await asyncio.sleep(0.1)
+
+            # externally control the flushing process
+            while is_active:
+                start_position_out = self._flush_and_log(
+                    pos=start_position_out, tmp_symlink=tmp_symlink_out, logger=self._logger, tags=tags
+                )
+                start_position_err = self._flush_and_log(
+                    pos=start_position_err, tmp_symlink=tmp_symlink_err, logger=self._logger, tags=tags
+                )
+                await asyncio.sleep(0.1)
+
+            return self._flush_and_log(
+                pos=start_position_out, tmp_symlink=tmp_symlink_out, logger=self._logger, tags=tags
+            ), self._flush_and_log(pos=start_position_err, tmp_symlink=tmp_symlink_err, logger=self._logger, tags=tags)
+
+        self._handle_unsupported_redirect(tags)
+        libc, saved_stdout, saved_stderr, tmp_file_out, tmp_file_err = self._prepare_redirect()
+        read_task = asyncio.create_task(log_redirected())
+        try:
+            tmp_symlink_out, tmp_symlink_err = self._activate_redirect(libc, tmp_file_out, tmp_file_err)
+            is_active = True
+            yield None
+        except Exception as ex:
+            raise ex
+        finally:
+            is_active = False
+            _ = await read_task
+            self._close_redirect(libc, saved_stdout, saved_stderr)
 
     def __init__(
         self,
