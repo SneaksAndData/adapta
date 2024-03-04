@@ -336,10 +336,11 @@ async def test_log_format_async(
 
 
 def printf_messages(message_count: int) -> None:
-    libc = ctypes.cdll.LoadLibrary("libc.so.6")
+    # libc lines fail on GH actions - to be investigated
+    # libc = ctypes.cdll.LoadLibrary("libc.so.6")
     for log_n in range(message_count):
-        # os.system(f"echo Test #{log_n}")
-        libc.printf(b"Testing: %s\n", f"Test log message #{log_n}".encode("utf-8"))
+        os.system(f"echo Test #{log_n}")
+        # libc.printf(b"Testing: %s\n", f"Test log message #{log_n}".encode("utf-8"))
 
 
 def test_redirect(restore_logger_class, mocker: MockerFixture):
