@@ -48,6 +48,7 @@ def set_env():
         "PROTEUS__DD_API_KEY": "some-key",
         "PROTEUS__DD_APP_KEY": "some-app-key",
         "PROTEUS__DD_SITE": "some-site.dog",
+        "PYTHONUNBUFFERED": "1",
     }
 
 

@@ -241,9 +241,7 @@ class _InternalLogger(LoggerInterface, ABC):
         log_level: Optional[LogLevel] = None,
     ) -> int:
         sys.stdout.flush()
-        libc = ctypes.CDLL(None)
         with open(tmp_symlink, "r", encoding="utf-8") as output:
-            libc.fsync(output.fileno())
             output.seek(pos)
             for line in output.readlines():
                 self._log_redirect_message(
