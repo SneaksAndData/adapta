@@ -335,15 +335,18 @@ async def test_log_format_async(
         assert expected_message in logged_lines
 
 
-def printf_messages(message_count: int) -> None:
-    # libc lines fail on GH actions - to be investigated
-    # libc = ctypes.cdll.LoadLibrary("libc.so.6")
+def printf_messages(message_count: int, output_type: str) -> None:
+    libc = ctypes.cdll.LoadLibrary("libc.so.6")
     for log_n in range(message_count):
-        os.system(f"echo Test #{log_n}")
-        # libc.printf(b"Testing: %s\n", f"Test log message #{log_n}".encode("utf-8"))
+        cstd = ctypes.c_void_p.in_dll(libc, output_type)
+        libc.fprintf(cstd, b"Testing: %s\n", f"Test log message #{log_n}".encode("utf-8"))
 
 
-def test_redirect(restore_logger_class, mocker: MockerFixture):
+@pytest.mark.parametrize(
+    "std_type",
+    ["stdout", "stderr"],
+)
+def test_redirect(restore_logger_class, mocker: MockerFixture, std_type: str):
     """
     Test sync redirect in a sync program from an external non-python process print.
     """
@@ -360,7 +363,13 @@ def test_redirect(restore_logger_class, mocker: MockerFixture):
         is_default=True,
     )
 
-    print_thread = Thread(target=printf_messages, args=(10,))
+    print_thread = Thread(
+        target=printf_messages,
+        args=(
+            10,
+            std_type,
+        ),
+    )
 
     with logger.redirect():
         print_thread.start()
@@ -371,8 +380,12 @@ def test_redirect(restore_logger_class, mocker: MockerFixture):
     assert len(buffer) == 10
 
 
+@pytest.mark.parametrize(
+    "std_type",
+    ["stdout", "stderr"],
+)
 @pytest.mark.asyncio
-async def test_redirect_async_legacy(restore_logger_class, datadog_handler):
+async def test_redirect_async_legacy(restore_logger_class, datadog_handler, std_type: str):
     """
     Test sync redirect when running inside asyncio loop, from an external non-python process print.
     """
@@ -382,7 +395,13 @@ async def test_redirect_async_legacy(restore_logger_class, datadog_handler):
         log_handlers=[datadog_handler],
         fixed_template={"Fixed message1 {message1}": {"message1": "this is a fixed message1"}},
     ) as logger:
-        print_thread = Thread(target=printf_messages, args=(10,))
+        print_thread = Thread(
+            target=printf_messages,
+            args=(
+                10,
+                std_type,
+            ),
+        )
         with logger.redirect():
             print_thread.start()
             await asyncio.sleep(1)
@@ -392,8 +411,12 @@ async def test_redirect_async_legacy(restore_logger_class, datadog_handler):
         assert len(buffer) == 10
 
 
+@pytest.mark.parametrize(
+    "std_type",
+    ["stdout", "stderr"],
+)
 @pytest.mark.asyncio
-async def test_redirect_async(restore_logger_class, datadog_handler):
+async def test_redirect_async(restore_logger_class, datadog_handler, std_type: str):
     """
     Test async redirect from an external non-python process print, when running inside asyncio loop
     """
@@ -403,7 +426,13 @@ async def test_redirect_async(restore_logger_class, datadog_handler):
         log_handlers=[datadog_handler],
         fixed_template={"Fixed message1 {message1}": {"message1": "this is a fixed message1"}},
     ) as logger:
-        print_thread = Thread(target=printf_messages, args=(10,))
+        print_thread = Thread(
+            target=printf_messages,
+            args=(
+                10,
+                std_type,
+            ),
+        )
         async with logger.redirect_async():
             print_thread.start()
             await asyncio.sleep(1)

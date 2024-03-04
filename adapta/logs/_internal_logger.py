@@ -210,27 +210,43 @@ class _InternalLogger(LoggerInterface, ABC):
             template=template,
         )
 
-    def _prepare_redirect(self) -> tuple[ctypes.CDLL, Any, bytes]:
+    def _prepare_redirect(self) -> tuple[ctypes.CDLL, Any, Any, bytes, bytes]:
         """
         Prepares objects needed for output redirection
         """
         libc = ctypes.CDLL(None)
         saved_stdout = libc.dup(1)
-        tmp_file = os.path.join(tempfile.gettempdir(), tempfile.mktemp()).encode("utf-8")
+        saved_stderr = libc.dup(2)
+        tmp_file_stdout = os.path.join(tempfile.gettempdir(), f"{tempfile.mktemp()}-out").encode("utf-8")
+        tmp_file_stderr = os.path.join(tempfile.gettempdir(), f"{tempfile.mktemp()}-out").encode("utf-8")
 
-        return libc, saved_stdout, tmp_file
+        return libc, saved_stdout, saved_stderr, tmp_file_stdout, tmp_file_stderr
 
-    def _activate_redirect(self, libc: ctypes.CDLL, tmp_file: bytes) -> bytes:
-        redirected_fd = libc.creat(tmp_file)
-        libc.dup2(redirected_fd, 1)
-        libc.close(redirected_fd)
-        tmp_symlink = os.path.join(tempfile.gettempdir(), str(uuid.uuid4())).encode("utf-8")
-        os.symlink(tmp_file, tmp_symlink)
-        os.chmod(tmp_symlink, 420)
-        return tmp_symlink
+    def _activate_redirect(
+        self, libc: ctypes.CDLL, tmp_file_stdout: bytes, tmp_file_stderr: bytes
+    ) -> tuple[bytes, bytes]:
+        redirected_fd_stdout = libc.creat(tmp_file_stdout)
+        redirected_fd_stderr = libc.creat(tmp_file_stderr)
 
-    def _close_redirect(self, libc: ctypes.CDLL, saved_stdout: Any):
+        libc.dup2(redirected_fd_stdout, 1)
+        libc.dup2(redirected_fd_stderr, 2)
+
+        libc.close(redirected_fd_stdout)
+        libc.close(redirected_fd_stderr)
+
+        tmp_symlink_stdout = os.path.join(tempfile.gettempdir(), f"{str(uuid.uuid4())}-out").encode("utf-8")
+        tmp_symlink_stderr = os.path.join(tempfile.gettempdir(), f"{str(uuid.uuid4())}-err").encode("utf-8")
+
+        os.symlink(tmp_file_stdout, tmp_symlink_stdout)
+        os.symlink(tmp_file_stderr, tmp_symlink_stderr)
+
+        os.chmod(tmp_symlink_stdout, 420)
+        os.chmod(tmp_symlink_stderr, 420)
+        return tmp_symlink_stdout, tmp_symlink_stderr
+
+    def _close_redirect(self, libc: ctypes.CDLL, saved_stdout: Any, saved_stderr: Any):
         libc.dup2(saved_stdout, 1)
+        libc.dup2(saved_stderr, 2)
 
     def _flush_and_log(
         self,
@@ -272,34 +288,41 @@ class _InternalLogger(LoggerInterface, ABC):
     @contextmanager
     def _redirect(self, logger: MetadataLogger, tags: Optional[Dict[str, str]] = None, log_level=LogLevel.INFO, **_):
         is_active = False
-        tmp_symlink = b""
+        tmp_symlink_out = b""
+        tmp_symlink_err = b""
 
-        def log_redirected() -> int:
-            start_position = 0
+        def log_redirected() -> tuple[int, int]:
+            start_position_out = 0
+            start_position_err = 0
 
             # externally control flush activation
-            while tmp_symlink == b"":
+            while tmp_symlink_out == b"" and tmp_symlink_err == b"":
                 sleep(0.1)
 
             # externally control the flushing process
             while is_active:
-                start_position = self._flush_and_log(
-                    pos=start_position, tmp_symlink=tmp_symlink, logger=logger, tags=tags, log_level=log_level
+                start_position_out = self._flush_and_log(
+                    pos=start_position_out, tmp_symlink=tmp_symlink_out, logger=logger, tags=tags, log_level=log_level
+                )
+                start_position_err = self._flush_and_log(
+                    pos=start_position_err, tmp_symlink=tmp_symlink_err, logger=logger, tags=tags, log_level=log_level
                 )
                 sleep(0.1)
 
             return self._flush_and_log(
-                pos=start_position, tmp_symlink=tmp_symlink, logger=logger, tags=tags, log_level=log_level
+                pos=start_position_out, tmp_symlink=tmp_symlink_out, logger=logger, tags=tags, log_level=log_level
+            ), self._flush_and_log(
+                pos=start_position_err, tmp_symlink=tmp_symlink_err, logger=logger, tags=tags, log_level=log_level
             )
 
         self._handle_unsupported_redirect(tags)
-        libc, saved_stdout, tmp_file = self._prepare_redirect()
+        libc, saved_stdout, saved_stderr, tmp_file_out, tmp_file_err = self._prepare_redirect()
         log_thread = Thread(target=log_redirected)
         log_thread.start()
         try:
-            tmp_symlink = self._activate_redirect(libc, tmp_file)
+            tmp_symlink_out, tmp_symlink_err = self._activate_redirect(libc, tmp_file_out, tmp_file_err)
             is_active = True
             yield None
         finally:
             is_active = False
-            self._close_redirect(libc, saved_stdout)
+            self._close_redirect(libc, saved_stdout, saved_stderr)
