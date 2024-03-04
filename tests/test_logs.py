@@ -337,8 +337,9 @@ async def test_log_format_async(
 
 def printf_messages(message_count: int, output_type: str) -> None:
     libc = ctypes.cdll.LoadLibrary("libc.so.6")
+    cstd = ctypes.c_void_p.in_dll(libc, output_type)
+    libc.setbuf(cstd, None)
     for log_n in range(message_count):
-        cstd = ctypes.c_void_p.in_dll(libc, output_type)
         libc.fprintf(cstd, b"Testing: %s\n", f"Test log message #{log_n}".encode("utf-8"))
 
 
