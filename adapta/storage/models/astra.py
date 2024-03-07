@@ -1,7 +1,6 @@
 """
  Models used by Astra DB when working with storage.
 """
-import re
 
 #  Copyright (c) 2023-2024. ECCO Sneaks & Data
 #
@@ -18,10 +17,10 @@ import re
 #  limitations under the License.
 #
 
+import re
 from dataclasses import dataclass
 from pydoc import locate
 from typing import Optional, TypeVar, Type
-from urllib.parse import urlparse
 
 from adapta.storage.models.base import DataPath, DataProtocols
 
