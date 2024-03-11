@@ -192,8 +192,9 @@ class _AsyncLogger(Generic[TLogger], _InternalLogger):
         Stops the async listener and flushes the buffer out to all handlers.
         """
         with self._lock:
-            self._listener.stop()
-            self._is_active = False
+            if self._is_active:
+                self._listener.stop()
+                self._is_active = False
 
     def __enter__(self):
         self.start()
