@@ -19,6 +19,7 @@ import asyncio
 #
 
 import logging
+import threading
 from contextlib import asynccontextmanager
 from logging.handlers import QueueHandler, QueueListener
 from multiprocessing import Queue
@@ -97,6 +98,8 @@ class _AsyncLogger(Generic[TLogger], _InternalLogger):
         self._logger.addHandler(self._logger_queue_handler)
         self._log_handlers = log_handlers
         self._listener: Optional[QueueListener] = None
+        self._is_active: bool = False
+        self._lock = threading.RLock()
 
     def info(
         self,
@@ -176,14 +179,21 @@ class _AsyncLogger(Generic[TLogger], _InternalLogger):
         """
         Starts the async listener.
         """
-        self._listener = QueueListener(self._logger_message_queue, *self._log_handlers, respect_handler_level=True)
-        self._listener.start()
+        with self._lock:
+            if not self._is_active:
+                self._listener = QueueListener(
+                    self._logger_message_queue, *self._log_handlers, respect_handler_level=True
+                )
+                self._listener.start()
+                self._is_active = True
 
     def stop(self):
         """
         Stops the async listener and flushes the buffer out to all handlers.
         """
-        self._listener.stop()
+        with self._lock:
+            self._listener.stop()
+            self._is_active = False
 
     def __enter__(self):
         self.start()
