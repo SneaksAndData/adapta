@@ -72,7 +72,7 @@ class QueryEnabledStore(Generic[TCredential, TSettings], ABC):
 
     def open(self, path: DataPath) -> "QueryConfigurationBuilder":
         """
-         Construct a reader object for QES to proxy to the underlying store implementation.
+        Construct a reader object for QES to proxy to the underlying store implementation.
         """
         return QueryConfigurationBuilder(self, path)
 
