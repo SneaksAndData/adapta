@@ -176,6 +176,9 @@ class AstraClient:
         os.remove(os.path.join(self._tmp_bundle_path, tmp_bundle_file_name))
 
     def disconnect(self) -> None:
+        """
+         Disconnect from the database and destroy the session.
+        """
         self._session.shutdown()
         self._session = None
 
