@@ -62,36 +62,36 @@ class AstraQueryEnabledStore(QueryEnabledStore[AstraCredential, AstraSettings]):
     QES Client for Astra DB (Cassandra).
     """
 
+    def close(self) -> None:
+        self._astra_client.disconnect()
+
+    def __init__(self, credentials: AstraCredential, settings: AstraSettings):
+        super().__init__(credentials, settings)
+        self._astra_client = AstraClient(
+            client_name=self.settings.client_name,
+            secure_connect_bundle_bytes=self.credentials.secret_connection_bundle_bytes,
+            client_id=self.credentials.client_id,
+            client_secret=self.credentials.client_secret,
+        )
+        self._astra_client.connect()
+
     def _apply_filter(
         self, path: DataPath, filter_expression: Expression, columns: list[str]
     ) -> Union[DataFrame, Iterator[DataFrame]]:
         assert isinstance(path, AstraPath)
         astra_path: AstraPath = path
 
-        with AstraClient(
-            client_name=self.settings.client_name,
+        return self._astra_client.filter_entities(
+            model_class=astra_path.model_class(),
+            key_column_filter_values=filter_expression,
             keyspace=astra_path.keyspace,
-            secure_connect_bundle_bytes=self.credentials.secret_connection_bundle_bytes,
-            client_id=self.credentials.client_id,
-            client_secret=self.credentials.client_secret,
-        ) as astra_client:
-            return astra_client.filter_entities(
-                model_class=astra_path.model_class(),
-                key_column_filter_values=filter_expression,
-                table_name=astra_path.table,
-                select_columns=columns,
-                num_threads=-1,  # auto-infer, see method documentation
-            )
+            table_name=astra_path.table,
+            select_columns=columns,
+            num_threads=-1,  # auto-infer, see method documentation
+        )
 
     def _apply_query(self, query: str) -> Union[DataFrame, Iterator[DataFrame]]:
-        with AstraClient(
-            client_name=self.settings.client_name,
-            keyspace=self.settings.keyspace,
-            secure_connect_bundle_bytes=self.credentials.secret_connection_bundle_bytes,
-            client_id=self.credentials.client_id,
-            client_secret=self.credentials.client_secret,
-        ) as astra_client:
-            return astra_client.get_entities_raw(query)
+        return self._astra_client.get_entities_raw(query)
 
     @classmethod
     def _from_connection_string(cls, connection_string: str) -> "QueryEnabledStore[AstraCredential, AstraSettings]":
