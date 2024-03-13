@@ -98,15 +98,23 @@ class QueryEnabledStore(Generic[TCredential, TSettings], ABC):
 
     @classmethod
     @abstractmethod
-    def _from_connection_string(cls, connection_string: str) -> "QueryEnabledStore[TCredential, TSettings]":
+    def _from_connection_string(
+        cls, connection_string: str, lazy_init: bool = False
+    ) -> "QueryEnabledStore[TCredential, TSettings]":
         """
         Constructs the connection from a connection string
+
+        :param: connection_string: QES connection string.
+        :param: lazy_init: Whether to set this instance QES for querying eagerly or lazily.
         """
 
     @staticmethod
-    def from_string(connection_string: str) -> "QueryEnabledStore[TCredential, TSettings]":
+    def from_string(connection_string: str, lazy_init: bool = False) -> "QueryEnabledStore[TCredential, TSettings]":
         """
         Constructs a concrete QES instance from a connection string.
+
+        :param: connection_string: QES connection string.
+        :param: lazy_init: Whether to set this instance QES for querying eagerly or lazily.
         """
 
         def get_qes_class(name: str) -> Type[QueryEnabledStore[TCredential, TSettings]]:
@@ -118,7 +126,7 @@ class QueryEnabledStore(Generic[TCredential, TSettings], ABC):
             raise ModuleNotFoundError(
                 f"Cannot locate QES implementation: {class_name}. Please check the name for spelling errors and make sure your application can resolve the import"
             )
-        return class_object._from_connection_string(connection_string)
+        return class_object._from_connection_string(connection_string, lazy_init)
 
 
 @final

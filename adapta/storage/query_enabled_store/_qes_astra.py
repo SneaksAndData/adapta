@@ -63,9 +63,10 @@ class AstraQueryEnabledStore(QueryEnabledStore[AstraCredential, AstraSettings]):
     """
 
     def close(self) -> None:
-        self._astra_client.disconnect()
+        if not self._lazy:
+            self._astra_client.disconnect()
 
-    def __init__(self, credentials: AstraCredential, settings: AstraSettings):
+    def __init__(self, credentials: AstraCredential, settings: AstraSettings, lazy_init: bool):
         super().__init__(credentials, settings)
         self._astra_client = AstraClient(
             client_name=self.settings.client_name,
@@ -73,13 +74,25 @@ class AstraQueryEnabledStore(QueryEnabledStore[AstraCredential, AstraSettings]):
             client_id=self.credentials.client_id,
             client_secret=self.credentials.client_secret,
         )
-        self._astra_client.connect()
+        self._lazy = lazy_init
+        if not lazy_init:
+            self._astra_client.connect()
 
     def _apply_filter(
         self, path: DataPath, filter_expression: Expression, columns: list[str]
     ) -> Union[DataFrame, Iterator[DataFrame]]:
         assert isinstance(path, AstraPath)
         astra_path: AstraPath = path
+        if self._lazy:
+            with self._astra_client as astra_client:
+                return astra_client.filter_entities(
+                    model_class=astra_path.model_class(),
+                    key_column_filter_values=filter_expression,
+                    keyspace=astra_path.keyspace,
+                    table_name=astra_path.table,
+                    select_columns=columns,
+                    num_threads=-1,  # auto-infer, see method documentation
+                )
 
         return self._astra_client.filter_entities(
             model_class=astra_path.model_class(),
@@ -91,9 +104,18 @@ class AstraQueryEnabledStore(QueryEnabledStore[AstraCredential, AstraSettings]):
         )
 
     def _apply_query(self, query: str) -> Union[DataFrame, Iterator[DataFrame]]:
+        if self._lazy:
+            with self._astra_client as astra_client:
+                return astra_client.get_entities_raw(query)
         return self._astra_client.get_entities_raw(query)
 
     @classmethod
-    def _from_connection_string(cls, connection_string: str) -> "QueryEnabledStore[AstraCredential, AstraSettings]":
+    def _from_connection_string(
+        cls, connection_string: str, lazy_init: bool = False
+    ) -> "QueryEnabledStore[AstraCredential, AstraSettings]":
         _, credentials, settings = re.findall(re.compile(CONNECTION_STRING_REGEX), connection_string)[0]
-        return cls(credentials=AstraCredential.from_json(credentials), settings=AstraSettings.from_json(settings))
+        return cls(
+            credentials=AstraCredential.from_json(credentials),
+            settings=AstraSettings.from_json(settings),
+            lazy_init=lazy_init,
+        )

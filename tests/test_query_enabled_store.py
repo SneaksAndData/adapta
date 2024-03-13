@@ -50,7 +50,7 @@ def test_query_store_instantiation(
     connection_string: str, expected_store_type: Union[Type[QueryEnabledStore], Exception]
 ):
     try:
-        store = QueryEnabledStore.from_string(connection_string)
+        store = QueryEnabledStore.from_string(connection_string, lazy_init=True)
 
         assert isinstance(store, expected_store_type)
     except Exception as load_error:
