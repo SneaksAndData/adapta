@@ -46,8 +46,13 @@ class DeltaQueryEnabledStore(QueryEnabledStore[DeltaCredential, DeltaSettings]):
     QES Client for Delta Lake reads using delta-rs.
     """
 
+    def close(self) -> None:
+        pass
+
     @classmethod
-    def _from_connection_string(cls, connection_string: str) -> "QueryEnabledStore[DeltaCredential, DeltaSettings]":
+    def _from_connection_string(
+        cls, connection_string: str, lazy_init: bool = False
+    ) -> "QueryEnabledStore[DeltaCredential, DeltaSettings]":
         _, credentials, settings = re.findall(re.compile(CONNECTION_STRING_REGEX), connection_string)[0]
         return cls(credentials=DeltaCredential.from_json(credentials), settings=DeltaSettings.from_json(settings))
 

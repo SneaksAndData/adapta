@@ -70,6 +70,7 @@ from adapta.utils import chunk_list, rate_limit
 TModel = TypeVar("TModel")  # pylint: disable=C0103
 
 
+@typing.final
 class AstraClient:
     """
     DataStax Astra (https://astra.datastax.com) credentials provider.
@@ -94,7 +95,7 @@ class AstraClient:
     def __init__(
         self,
         client_name: str,
-        keyspace: str,
+        keyspace: Optional[str] = None,
         secure_connect_bundle_bytes: Optional[str] = None,
         client_id: Optional[str] = None,
         client_secret: Optional[str] = None,
@@ -127,9 +128,9 @@ class AstraClient:
         if log_transient_errors:
             logging.getLogger("backoff").addHandler(logging.StreamHandler())
 
-    def __enter__(self) -> "AstraClient":
+    def connect(self) -> None:
         """
-        Creates an Astra client for this context.
+        Connects to the Astra database
         """
         tmp_bundle_file_name = str(uuid4())
         os.makedirs(self._tmp_bundle_path, exist_ok=True)
@@ -174,11 +175,22 @@ class AstraClient:
 
         os.remove(os.path.join(self._tmp_bundle_path, tmp_bundle_file_name))
 
+    def disconnect(self) -> None:
+        """
+        Disconnect from the database and destroy the session.
+        """
+        self._session.shutdown()
+        self._session = None
+
+    def __enter__(self) -> "AstraClient":
+        """
+        Creates an Astra client for this context.
+        """
+        self.connect()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self._session.shutdown()
-        self._session = None
+        self.disconnect()
 
     def get_table_metadata(self, table_name: str) -> TableMetadata:
         """
@@ -216,6 +228,7 @@ class AstraClient:
         self,
         model_class: Type[TModel],
         key_column_filter_values: Union[Expression, List[Dict[str, Any]]],
+        keyspace: Optional[str] = None,
         table_name: Optional[str] = None,
         select_columns: Optional[List[str]] = None,
         primary_keys: Optional[List[str]] = None,
@@ -239,6 +252,7 @@ class AstraClient:
 
         :param: model_class: A dataclass type that should be mapped to Astra Model.
         :param: key_column_filter_values: Primary key filters in a form of list of dictionaries of my_key: my_value. Multiple entries will result in multiple queries being run and concatenated
+        :param: keyspace: Optional keyspace name, if not provided in the client constructor
         :param: table_name: Optional Astra table name, if it cannot be inferred from class name by converting it to snake_case.
         :param: select_columns: An optional list of columns to return with the query.
         :param: primary_keys: An optional list of columns that constitute a primary key, if it cannot be inferred from is_primary_key metadata on a dataclass field.
@@ -291,6 +305,7 @@ class AstraClient:
 
         model_class: Type[Model] = self._model_dataclass(
             value=model_class,
+            keyspace=keyspace,
             table_name=table_name,
             primary_keys=primary_keys,
             partition_keys=partition_keys,
@@ -348,6 +363,7 @@ class AstraClient:
     def _model_dataclass(
         self,
         value: Type[TModel],
+        keyspace: Optional[str] = None,
         table_name: Optional[str] = None,
         primary_keys: Optional[List[str]] = None,
         partition_keys: Optional[List[str]] = None,
@@ -358,6 +374,7 @@ class AstraClient:
         Maps a Python dataclass to Cassandra model.
 
         :param: value: A dataclass type that should be mapped to Astra Model.
+        :param: keyspace: Optional keyspace name, if not provided in the client constructor.
         :param: table_name: Astra table name, if it cannot be inferred from class name by converting it to snake_case.
         :param: primary_keys: An optional list of columns that constitute a primary key, if it cannot be inferred from is_primary_key metadata on a dataclass field.
         :param: partition_keys: An optional list of columns that constitute a partition key, if it cannot be inferred from is_partition_key metadata on a dataclass field.
@@ -467,7 +484,7 @@ class AstraClient:
 
         table_name = table_name or self._snake_pattern.sub("_", value.__name__).lower()
 
-        models_attributes: Dict[str, Column] = {
+        models_attributes: Dict[str, Union[Column, str]] = {
             field.name: map_to_cassandra(
                 field.type,
                 field.name,
@@ -477,6 +494,9 @@ class AstraClient:
             )
             for field in selected_fields
         }
+
+        if keyspace:
+            models_attributes |= {"__keyspace__": keyspace}
 
         return type(table_name, (Model,), models_attributes)
 
@@ -490,12 +510,13 @@ class AstraClient:
         """
         self._session.execute(f"ALTER TABLE {self._keyspace}.{table_name} with {option_name}={option_value};")
 
-    def delete_entity(self, entity: TModel, table_name: Optional[str] = None) -> None:
+    def delete_entity(self, entity: TModel, table_name: Optional[str] = None, keyspace: Optional[str] = None) -> None:
         """
          Delete an entity from Astra table
 
         :param: entity: entity to delete
         :param: table_name: Table to delete entity from.
+        :param: keyspace: Optional keyspace name, if not provided in the client constructor.
         """
 
         @on_exception(
@@ -514,13 +535,16 @@ class AstraClient:
         primary_keys = [field.name for field in fields(type(entity)) if field.metadata.get("is_primary_key", False)]
 
         _delete_entity(
-            model_class=self._model_dataclass(value=type(entity), table_name=table_name, primary_keys=primary_keys),
+            model_class=self._model_dataclass(
+                value=type(entity), table_name=table_name, primary_keys=primary_keys, keyspace=keyspace
+            ),
             key_filter={key: getattr(entity, key) for key in primary_keys},
         )
 
     def upsert_entity(
         self,
         entity: TModel,
+        keyspace: Optional[str] = None,
         table_name: Optional[str] = None,
         client_rate_limit: str = "1000 per second",
     ) -> None:
@@ -529,6 +553,7 @@ class AstraClient:
 
         :param: entity: an object to insert
         :param: table_name: Table to insert entity into.
+        :param: keyspace: Optional keyspace name, if not provided in the client constructor.
         :param: client_rate_limit: the limit string to parse (eg: "1 per hour"), default: "1000 per second"
         """
 
@@ -544,13 +569,16 @@ class AstraClient:
             model_object.save()
 
         primary_keys = [field.name for field in fields(type(entity)) if field.metadata.get("is_primary_key", False)]
-        model_class = self._model_dataclass(value=type(entity), table_name=table_name, primary_keys=primary_keys)
+        model_class = self._model_dataclass(
+            value=type(entity), table_name=table_name, primary_keys=primary_keys, keyspace=keyspace
+        )
         _save_entity(model_class(**asdict(entity)))
 
     def upsert_batch(
         self,
         entities: List[dict],
         entity_type: Type[TModel],
+        keyspace: Optional[str] = None,
         table_name: Optional[str] = None,
         batch_size=1000,
         client_rate_limit: str = "1000 per second",
@@ -559,7 +587,8 @@ class AstraClient:
          Inserts a batch into existing table.
 
         :param: entities: entity batch to insert.
-        :param: entity_type: type of entity in a batch .
+        :param: entity_type: type of entity in a batch.
+        :param: keyspace: Optional keyspace name, if not provided in the client constructor.
         :param: table_name: Table to insert entity into.
         :param: batch_size: elements per batch to upsert.
         :param: client_rate_limit: the limit string to parse (eg: "1 per hour"), default: "1000 per second"
@@ -582,7 +611,9 @@ class AstraClient:
 
         for chunk in chunk_list(entities, batch_size):
             _save_entities(
-                model_class=self._model_dataclass(value=entity_type, table_name=table_name, primary_keys=primary_keys),
+                model_class=self._model_dataclass(
+                    value=entity_type, table_name=table_name, primary_keys=primary_keys, keyspace=keyspace
+                ),
                 values=chunk,
             )
 
