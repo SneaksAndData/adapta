@@ -70,6 +70,14 @@ def xmltree_to_dict_collection(xml_source: Union[str, Path], node_type: type[Xml
         """
         return base_node if node_type is dict else node_type.from_dict(base_node)
 
+    def with_all_leaves(node: ET.Element) -> bool:
+        """
+         Check if current node's children are all leaves
+        :param node: Current node (not leaf)
+        """
+
+        return all(len(child) == 0 for child in node)
+
     def backtrack(node: ET.Element, converted_node: Dict):
         """
          Generate all the combinations from root to the node closest to leaves based on the backtracking algorithm
@@ -98,8 +106,8 @@ def xmltree_to_dict_collection(xml_source: Union[str, Path], node_type: type[Xml
         :return:
         """
 
-        # when the node's children are leaves
-        if len(node) > 0 and len(node[0]) == 0:
+        # when the node's all children are leaves
+        if len(node) > 0 and with_all_leaves(node):
             # all the leaves have the same tag, directly append to combinations
             if len(node.findall(node[0].tag)) > 1:
                 for leaf in node:
@@ -110,6 +118,11 @@ def xmltree_to_dict_collection(xml_source: Union[str, Path], node_type: type[Xml
                     converted_node |= merge(node, leaf)
 
                 converted_nodes.append(node_type_convert(converted_node))
+
+        # current node is a leaf，and it has at least one node at the same level that is not a leaf
+        # which means the current node does not have text, so we only need to add its attributes
+        elif len(node) == 0:
+            converted_nodes.append(converted_node | node_attributes_to_dict(node))
 
         # when the node is far away from leaves
         else:
