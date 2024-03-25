@@ -73,6 +73,7 @@ def xmltree_to_dict_collection(xml_source: Union[str, Path], node_type: type[Xml
     def with_all_leaves(node: ET.Element) -> bool:
         """
          Check if current node's children are all leaves
+
         :param node: Current node (not leaf)
         """
 
@@ -119,8 +120,8 @@ def xmltree_to_dict_collection(xml_source: Union[str, Path], node_type: type[Xml
 
                 converted_nodes.append(node_type_convert(converted_node))
 
-        # current node is a leaf，and it has at least one node at the same level that is not a leaf
-        # which means the current node does not have text, so we only need to add its attributes
+        # the node is a leaf, but it has at least one sibling node is not a leaf
+        # which also means the current node does not have text, so we only need to add its attributes
         elif len(node) == 0:
             converted_nodes.append(node_type_convert(converted_node | node_attributes_to_dict(node)))
 
