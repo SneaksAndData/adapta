@@ -122,7 +122,7 @@ def xmltree_to_dict_collection(xml_source: Union[str, Path], node_type: type[Xml
         # current node is a leaf，and it has at least one node at the same level that is not a leaf
         # which means the current node does not have text, so we only need to add its attributes
         elif len(node) == 0:
-            converted_nodes.append(converted_node | node_attributes_to_dict(node))
+            converted_nodes.append(node_type_convert(converted_node | node_attributes_to_dict(node)))
 
         # when the node is far away from leaves
         else:

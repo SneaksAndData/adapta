@@ -428,14 +428,14 @@ class Complicated(DataClassJsonMixin):
     """
 
     date_id: str
-    time_id: int
-    books_id: int
-    books_listname: str
-    books_database: str
-    book_color: str
-    book_size: float
-    description: str
-    price: float
+    time_id: Optional[int] = None
+    books_id: Optional[int] = None
+    books_listname: Optional[str] = None
+    books_database: Optional[str] = None
+    book_color: Optional[str] = None
+    book_size: Optional[float] = None
+    description: Optional[str] = None
+    price: Optional[float] = None
     price_currency: Optional[str] = None
 
 
@@ -508,6 +508,130 @@ class Complicated(DataClassJsonMixin):
                     "price": "30",
                 },
             ],
+            dict,
+        ),
+        (
+            "test_leaves_1.xml",
+            (
+                [
+                    Complicated.from_dict(element)
+                    for element in [
+                        {
+                            'date_id': '15.11.2023',
+                            'time_id': '123123',
+                            'books_id': '12345',
+                            'books_listname': 'List of book',
+                            'books_database': 'database1'
+                        },
+                        {
+                            'date_id': '15.11.2023',
+                            'time_id': '123123',
+                            'books_id': '56789',
+                            'books_listname': 'List of book',
+                            'books_database': 'database2',
+                            'book_color': '789/101',
+                            'book_size': '100',
+                            'description': 'haha',
+                            'price': '80'
+                        },
+                        {
+                            'date_id': '15.11.2023',
+                            'time_id': '123123',
+                            'books_id': '56789',
+                            'books_listname': 'List of book',
+                            'books_database': 'database2',
+                            'book_color': '121/314',
+                            'book_size': '58',
+                            'description': 'enen',
+                            'price': '29'
+                        },
+                        {
+                            'date_id': '15.11.2023',
+                            'time_id': '456456'
+                        },
+                        {
+                            'date_id': '14.11.2023',
+                            'time_id': '789789',
+                            'books_id': '131415',
+                            'books_listname': 'List of book',
+                            'books_database': 'database4',
+                            'book_color': 'ghi/jkl',
+                            'book_size': '102',
+                            'description': 'descriptiondescription',
+                            'price': '300'
+                        }
+                    ]
+                ]
+            ),
+            Complicated,
+        ),
+        (
+            "test_leaves_2.xml",
+            (
+                [
+                    {
+                        'date_id': '16.11.2023'
+                    },
+                    {
+                        'date_id': '15.11.2023',
+                        'time_id': '123123',
+                        'books_id': '12345',
+                        'books_listname': 'List of book',
+                        'books_database': 'database1',
+                        'book_color': '123/234',
+                        'book_size': '10',
+                        'description': 'After an inadvertant trip through a Heisenberg, Uncertainty Device',
+                        'price_currency': 'CNY',
+                        'price': '10'
+                    },
+                    {
+                        'date_id': '15.11.2023',
+                        'time_id': '123123',
+                        'books_id': '56789',
+                        'books_listname': 'List of book',
+                        'books_database': 'database2',
+                        'book_color': '121/314',
+                        'book_size': '58'
+                    },
+                    {
+                        'date_id': '15.11.2023',
+                        'time_id': '123123',
+                        'books_id': '56789',
+                        'books_listname': 'List of book',
+                        'books_database': 'database2',
+                        'book_color': '789/101',
+                        'book_size': '100',
+                        'description': 'haha',
+                        'price': '80'
+                    },
+                    {
+                        'date_id': '15.11.2023',
+                        'time_id': '123123',
+                        'books_id': '56789',
+                        'books_listname': 'List of book',
+                        'books_database': 'database2',
+                        'book_color': '121/314',
+                        'book_size': '58'
+                    },
+                    {
+                        'date_id': '14.11.2023'
+                    },
+                    {
+                        'date_id': '14.11.2023',
+                        'time_id': '789789',
+                        'books_id': '131415',
+                        'books_listname': 'List of book',
+                        'books_database': 'database4',
+                        'book_color': 'ghi/jkl',
+                        'book_size': '102',
+                        'description': 'descriptiondescription',
+                        'price': '300'
+                    },
+                    {
+                        'date_id': '13.11.2023'
+                    }
+                ]
+            ),
             dict,
         ),
         (
