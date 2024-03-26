@@ -278,15 +278,16 @@ def test_data_adapter(drop_missing: bool):
 
 
 class AssertiveMetricProvider:
-    def __init__(self, run_type: str, tag_func_name: bool):
+    def __init__(self, run_type: str, tag_func_name: bool, function_name: str = "test_function"):
         self._run_type = run_type
         self._tag_func_name = tag_func_name
+        self._function_name = function_name
 
     def gauge(self, metric_name: str, metric_value: float, tags: dict[str, str]):
         """Dummy provider to assert passed values"""
         assert metric_name == self._run_type
         assert type(metric_value) == float
-        assert not self._tag_func_name or tags["function_name"] == "test_function"
+        assert not self._tag_func_name or tags["function_name"] == self._function_name
 
 
 @pytest.mark.parametrize("reporting_level", [LogLevel.DEBUG, LogLevel.INFO])
@@ -362,7 +363,6 @@ async def test_runtime_decorator_async(caplog, tag_func_name: bool):
 
     run_type = "test_execution"
     print_from_func = "from_function_call"
-    metrics_provider = AssertiveMetricProvider(run_type=run_type, tag_func_name=tag_func_name)
 
     @run_time_metrics_async(metric_name=run_type, tag_function_name=True)
     async def test_function(logger: _AsyncLogger, **_kwargs):
@@ -370,8 +370,12 @@ async def test_runtime_decorator_async(caplog, tag_func_name: bool):
         await asyncio.sleep(1.2)
         return True
 
+    metrics_provider = AssertiveMetricProvider(
+        run_type=run_type, tag_func_name=tag_func_name, function_name=test_function.__qualname__
+    )
+
     await test_function(logger=async_logger, metrics_provider=metrics_provider)
-    assert "Method test_function finished in 1.20s seconds" in caplog.text
+    assert f"Method {test_function.__qualname__} finished in 1.20s seconds" in caplog.text
     assert print_from_func in caplog.text
 
 
