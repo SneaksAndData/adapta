@@ -78,9 +78,9 @@ def run_time_metrics_async(
             metric_tags: Optional[Dict[str, str]] = None,
             **kwargs,
         ):
-            metric_tags = (metric_tags or {}) | ({"function_name": str(func.__name__)} if tag_function_name else {})
+            metric_tags = (metric_tags or {}) | ({"function_name": str(func.__qualname__)} if tag_function_name else {})
 
-            logger.debug("Running {method_name}", method_name=func.__name__)
+            logger.debug("Running {method_name}", method_name=func.__qualname__)
 
             with operation_time() as ot:
                 result = await func(metrics_provider=metrics_provider, logger=logger, metric_tags=metric_tags, **kwargs)
@@ -91,7 +91,7 @@ def run_time_metrics_async(
                 tags=metric_tags,
             )
             nonlocal template_args
-            template_args = (template_args or {"method_name": func.__name__}) | {"elapsed": ot.elapsed / 1e9}
+            template_args = (template_args or {"method_name": func.__qualname__}) | {"elapsed": ot.elapsed / 1e9}
 
             logger.info(
                 on_finish_message_template,
