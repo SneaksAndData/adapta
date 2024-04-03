@@ -2,10 +2,10 @@
 import sys
 from typing import Type, get_origin, Union, get_args
 
-TypeHint = Type  # pylint: disable=invalid-name
+TypeHint = Type
 if sys.version_info >= (3, 10):
     from types import UnionType
-    TypeHint = Union[UnionType, Type]
+    TypeHint = Union[UnionType, Type]  # pylint: disable=invalid-name
 
 
 def is_optional(type_: TypeHint) -> bool:
