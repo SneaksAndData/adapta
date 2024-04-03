@@ -2,13 +2,13 @@
 import sys
 from typing import Type, get_origin, Union, get_args
 
-type_hint = Type
+TypeHint = Type
 if sys.version_info >= (3, 10):
     from types import UnionType
-    type_hint = Union[UnionType, Type]
+    TypeHint = Union[UnionType, Type]
 
 
-def is_optional(type_: type_hint) -> bool:
+def is_optional(type_: TypeHint) -> bool:
     """
     Checks if a type is Optional.
 
@@ -18,7 +18,6 @@ def is_optional(type_: type_hint) -> bool:
     origin_type = get_origin(type_)
 
     if sys.version_info >= (3, 10):
-        from types import UnionType
         return (origin_type is UnionType or origin_type is Union) and type(None) in get_args(type_)
 
     return origin_type is Union and type(None) in get_args(type_)
