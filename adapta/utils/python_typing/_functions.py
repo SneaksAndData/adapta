@@ -5,6 +5,7 @@ from typing import Type, get_origin, Union, get_args
 TypeHint = Type
 if sys.version_info >= (3, 10):
     from types import UnionType
+
     TypeHint = Union[UnionType, Type]  # pylint: disable=invalid-name
 
 
