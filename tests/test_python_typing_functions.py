@@ -1,3 +1,4 @@
+import sys
 from typing import Optional, Union, List, Tuple, Any
 
 import pytest
@@ -16,7 +17,6 @@ from adapta.utils.python_typing import is_optional
         (Union[str, int], False),
         (List[str], False),
         (Tuple[int, ...], False),
-        (str | None, True),  # Semantically equivalent to Optional[str], but not the same union type
     ],
 )
 def test_is_optional(type_: Any, expected: bool):
@@ -25,3 +25,14 @@ def test_is_optional(type_: Any, expected: bool):
     """
 
     assert is_optional(type_) == expected
+
+
+@pytest.mark.skipif(sys.version_info < (3, 10), reason="Only run this test on Python 3.10+")
+def test_is_optional_python310():
+    """
+    Test that the is_optional function correctly identifies optional types on Python 3.10+.
+
+    str | None is semantically equivalent to Optional[str], but not the same union type
+    """
+
+    assert is_optional(str | None)
