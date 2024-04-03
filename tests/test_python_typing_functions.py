@@ -36,3 +36,4 @@ def test_is_optional_python310():
     """
 
     assert is_optional(str | None)
+    assert not is_optional(str | int)
