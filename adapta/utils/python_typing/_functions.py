@@ -5,7 +5,7 @@ from typing import Type, get_origin, Union, get_args
 type_hint = Type
 if sys.version_info >= (3, 10):
     from types import UnionType
-    type_hint = Union[UnionType, Union]
+    type_hint = Union[UnionType, Type]
 
 
 def is_optional(type_: type_hint) -> bool:
