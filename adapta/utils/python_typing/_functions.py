@@ -2,14 +2,14 @@
 import sys
 from typing import Type, get_origin, Union, get_args
 
-TypeHint = Type
+ArgumentType = Type
 if sys.version_info >= (3, 10):
     from types import UnionType
 
-    TypeHint = Union[UnionType, Type]  # pylint: disable=invalid-name
+    ArgumentType = Union[UnionType, Type]
 
 
-def is_optional(type_: TypeHint) -> bool:
+def is_optional(type_: ArgumentType) -> bool:
     """
     Checks if a type is Optional.
 
