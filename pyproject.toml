@@ -18,9 +18,9 @@ pyarrow = ">=7.0"
 dataclasses-json = "~0.6"
 limits = "~3.7"
 
-cassandra-driver = { version = "~3.28.0", optional = true }
+cassandra-driver = { version = "~3.29.1", optional = true }
 
-deltalake = { version = "~0.8.1", optional = true }
+deltalake = { version = "~0.17.2", optional = true }
 
 azure-identity = { version = "~1.7", optional = true }
 azure-storage-blob = { version = ">12.7.0,<=12.16.0", optional = true }
@@ -32,7 +32,7 @@ adlfs = { version = '~2023', optional = true }
 boto3 = { version = "^1.28.0", optional = true}
 botocore = { version = "^1.31", optional = true}
 
-datadog = { version = "~0.47.0", optional = true }
+datadog = { version = "~0.49.1", optional = true }
 datadog-api-client = { version = "~2.18.0", optional = true }
 
 SQLAlchemy = { version = "~2.0", optional = true }
