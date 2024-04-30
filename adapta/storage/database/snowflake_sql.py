@@ -1,16 +1,24 @@
 """
   Snowflake Client Wrapper
 """
+
+import os
 from types import TracebackType
 from typing import Optional
 
 from pandas import DataFrame
 import snowflake.connector
+import pyarrow
+from deltalake import DeltaTable
 
 from snowflake.connector.errors import DatabaseError, ProgrammingError
 
 from adapta.logs.models import LogLevel
 from adapta.logs import SemanticLogger
+
+from adapta.storage.models.azure import AdlsGen2Path
+
+from adapta.security.clients import AzureClient
 
 
 class SnowflakeClient:
@@ -91,3 +99,93 @@ class SnowflakeClient:
         except ProgrammingError as ex:
             self._logger.error("Error executing query {query}", query=query, exception=ex)
             return None
+
+    def _get_snowflake_type(self, data_type: pyarrow.DataType) -> str:
+        """Maps pyarrow type to Snowflake type"""
+
+        type_map = {
+            pyarrow.types.is_string: "TEXT",
+            pyarrow.types.is_integer: "INTEGER",
+            pyarrow.types.is_floating: "FLOAT",
+            pyarrow.types.is_timestamp: "TIMESTAMP_NTZ",
+            pyarrow.types.is_date: "DATE",
+            pyarrow.types.is_struct: "VARIANT",
+            pyarrow.types.is_list: "VARIANT",
+            pyarrow.types.is_boolean: "BOOLEAN",
+            pyarrow.types.is_binary: "BINARY",
+        }
+
+        for type_checker, snowflake_type_name in type_map.items():
+            if type_checker(data_type):
+                return snowflake_type_name
+
+        if pyarrow.types.is_decimal(data_type):
+            return f"DECIMAL({data_type.precision},{data_type.scale})"
+
+        raise ValueError(f"found type:{data_type} which is currently not supported")
+
+    def publish_external_delta_table(
+        self,
+        database: str,
+        schema: str,
+        table: str,
+        path: AdlsGen2Path,
+        storage_integration: Optional[str] = None,
+    ) -> None:
+        """
+        Creates delta table as external table in Snowflake
+
+        :param database: name of the database, in Snowflake, to create the table
+        :param schema: name of the schema, in Snowflake, to create the table
+        :param table: name of the table to be created in Snowflake
+        :param path: path to the delta table in datalake
+        :param storage_integration: name of the storage integration to use in Snowflake. Default to the name of the storage account
+        """
+
+        delta_table = DeltaTable(
+            path.to_delta_rs_path(),
+            storage_options=AzureClient().connect_storage(path),
+        )
+
+        self.query(f"create schema if not exists {database}.{schema}")
+
+        self.query(
+            f"""create stage if not exists {database}.{schema}.stage_{table} 
+            storage_integration = {storage_integration if storage_integration is not None else path.account} 
+            url = azure://{path.account}.blob.core.windows.net/{path.container}/{path.path};"""
+        )
+
+        partition_expr = ",".join(delta_table.metadata().partition_columns)
+        partition_columns = [
+            f"\"{partition_column}\" TEXT AS (split_part(split_part(metadata$filename, '=', {2 + i}), '/', 1))"
+            for i, partition_column in enumerate(delta_table.metadata().partition_columns)
+        ]
+
+        snowflake_columns = [
+            (column.name, self._get_snowflake_type(column.type))
+            for column in delta_table.schema().to_pyarrow()
+            if column.name not in delta_table.metadata().partition_columns
+        ]
+
+        columns = [
+            f'"{column}" {col_type} AS ($1:"{column}"::{col_type})' for column, col_type in snowflake_columns
+        ] + partition_columns
+
+        column_expr = ("," + os.linesep).join(columns)
+
+        self.query(
+            f"""
+            create or replace external table "{database}"."{schema}"."{table}"
+            (
+                {column_expr}
+            )
+            {f"partition by ({partition_expr})" if partition_expr else ""}
+            location={database}.{schema}.stage_{table}  
+            auto_refresh = false   
+            refresh_on_create=false   
+            file_format = (type = parquet)    
+            table_format = delta;
+        """
+        )
+
+        self.query(f'alter external table "{database}"."{schema}"."{table}" refresh;')
