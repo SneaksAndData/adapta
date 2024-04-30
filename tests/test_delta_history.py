@@ -46,8 +46,8 @@ def test_delta_history_2(get_client_and_path):
     operations = [tran.operation.value for tran in transactions]
 
     assert len(transactions) == 2 and operations == [
-        DeltaOperation.WRITE.value,
         DeltaOperation.UPDATE.value,
+        DeltaOperation.WRITE.value,
     ]
 
 
@@ -57,7 +57,7 @@ def test_delta_history_full(get_client_and_path):
     operations = [tran.operation.value for tran in transactions]
 
     assert len(transactions) == 3 and operations == [
-        DeltaOperation.CREATE_TABLE_AS_SELECT.value,
-        DeltaOperation.WRITE.value,
         DeltaOperation.UPDATE.value,
+        DeltaOperation.WRITE.value,
+        DeltaOperation.CREATE_TABLE_AS_SELECT.value,
     ]

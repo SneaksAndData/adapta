@@ -17,7 +17,7 @@ from adapta.storage.query_enabled_store import QueryEnabledStore, DeltaQueryEnab
             DeltaQueryEnabledStore,
         ),
         (
-            'qes://engine=DELTA;plaintext_credentials={"auth_client_class":"adapta.security.clients.AwsClient"};settings={}',
+            'qes://engine=DELTA;plaintext_credentials={"auth_client_class":"adapta.security.clients.aws.AwsClient"};settings={}',
             DeltaQueryEnabledStore,
         ),
         (

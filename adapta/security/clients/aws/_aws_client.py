@@ -19,7 +19,7 @@
 from typing import Optional, Dict, final
 
 import boto3
-from pyarrow.filesystem import FileSystem
+from pyarrow.fs import FileSystem
 
 from adapta.security.clients._base import AuthenticationClient
 from adapta.security.clients.aws._aws_credentials import AccessKeyCredentials, EnvironmentAwsCredentials
