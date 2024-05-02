@@ -18,11 +18,11 @@ jobs:
           ref: refs/pull/${{github.event.issue.number}}/merge
           fetch-depth: 0
       - name: Install Poetry and dependencies
-        uses: SneaksAndData/github-actions/install_poetry@remove-reliance-on-az-auth
+        uses: SneaksAndData/github-actions/install_poetry@v0.1.7
         with:
           skip_dependencies: true
       - name: Create package
-        uses: SneaksAndData/github-actions/create_package@remove-reliance-on-az-auth
+        uses: SneaksAndData/github-actions/create_package@v0.1.7
         with:
           public_package_index_token: ${{ secrets.PYPI_API_TOKEN }}
           package_name: adapta

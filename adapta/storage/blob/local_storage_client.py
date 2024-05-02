@@ -24,7 +24,7 @@ from typing import final, Optional, Callable, Type, Iterator, Dict
 
 from adapta.security.clients import LocalClient
 from adapta.storage.blob.base import StorageClient, T
-from adapta.storage.models import DataPath, LocalPath
+from adapta.storage.models import DataPath, LocalPath, parse_data_path
 from adapta.storage.models.format import SerializationFormat
 
 
@@ -49,8 +49,11 @@ class LocalStorageClient(StorageClient):
         overwrite: bool = False,
     ) -> None:
         bytes_ = serialization_format().serialize(data)
+        file_path = cast_path(blob_path).path
 
-        with open(cast_path(blob_path).path, "wb") as target:
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
+        with open(file_path, "wb") as target:
             target.write(bytes_)
 
     def delete_blob(self, blob_path: DataPath) -> None:
@@ -68,8 +71,9 @@ class LocalStorageClient(StorageClient):
         serialization_format: Type[SerializationFormat[T]],
         filter_predicate: Optional[Callable[[...], bool]] = None,
     ) -> Iterator[T]:
-        for blob in os.listdir(cast_path(blob_path).path):
-            with open(blob, "rb") as blob_file:
+        dir_path = cast_path(blob_path).path
+        for blob in os.listdir(dir_path):
+            with open(os.path.join(dir_path, blob), "rb") as blob_file:
                 yield serialization_format().deserialize(blob_file.read())
 
     def download_blobs(
@@ -86,7 +90,7 @@ class LocalStorageClient(StorageClient):
 
     @classmethod
     def for_storage_path(cls, path: str) -> "StorageClient":
-        _ = cast_path(path)
+        _ = cast_path(parse_data_path(path))
         return cls(base_client=LocalClient())
 
 

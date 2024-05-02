@@ -20,7 +20,7 @@ jobs:
           architecture: 'x64'
 
       - name: Install Poetry and dependencies
-        uses: SneaksAndData/github-actions/install_poetry@remove-reliance-on-az-auth
+        uses: SneaksAndData/github-actions/install_poetry@v0.1.7
         with:
           install_extras: all
 
