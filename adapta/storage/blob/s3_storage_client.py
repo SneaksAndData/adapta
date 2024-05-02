@@ -17,7 +17,7 @@
 #
 
 from abc import ABC
-from typing import Optional, Callable, Type, Iterator, Dict, TypeVar
+from typing import Optional, Callable, Type, Iterator, Dict, TypeVar, final
 
 from adapta.security.clients import AwsClient
 from adapta.storage.blob.base import StorageClient
@@ -30,6 +30,7 @@ from adapta.storage.models.format import SerializationFormat
 T = TypeVar("T")  # pylint: disable=C0103
 
 
+@final
 class S3StorageClient(StorageClient, ABC):
     """
     S3 Storage Client.

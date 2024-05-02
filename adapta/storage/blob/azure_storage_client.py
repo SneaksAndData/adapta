@@ -21,7 +21,7 @@ from datetime import datetime, timedelta
 from functools import partial
 import signal
 from threading import Thread
-from typing import Union, Optional, Dict, Type, TypeVar, Iterator, List, Callable
+from typing import Union, Optional, Dict, Type, TypeVar, Iterator, List, Callable, final
 
 from azure.core.paging import ItemPaged
 from azure.storage.blob import (
@@ -45,6 +45,7 @@ from adapta.utils import chunk_list, doze
 T = TypeVar("T")  # pylint: disable=C0103
 
 
+@final
 class AzureStorageClient(StorageClient):
     """
     Azure Storage (Blob and ADLS) Client.
