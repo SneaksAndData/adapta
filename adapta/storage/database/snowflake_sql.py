@@ -157,7 +157,7 @@ class SnowflakeClient:
             ]
         else:
             partition_expr = ""
-            partition_select = ""
+            partition_select = []
             partition_columns = []
 
         snowflake_columns = [
