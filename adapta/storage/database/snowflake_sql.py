@@ -4,12 +4,11 @@
 
 import os
 from types import TracebackType
-from typing import Optional
+from typing import List, Optional
 
 from pandas import DataFrame
 import snowflake.connector
 import pyarrow
-from deltalake import DeltaTable
 
 from snowflake.connector.errors import DatabaseError, ProgrammingError
 
@@ -17,8 +16,6 @@ from adapta.logs.models import LogLevel
 from adapta.logs import SemanticLogger
 
 from adapta.storage.models.azure import AdlsGen2Path
-
-from adapta.security.clients import AzureClient
 
 
 class SnowflakeClient:
@@ -130,6 +127,8 @@ class SnowflakeClient:
         schema: str,
         table: str,
         path: AdlsGen2Path,
+        table_schema: pyarrow.Schema,
+        partition_columns: Optional[List[str]] = None,
         storage_integration: Optional[str] = None,
     ) -> None:
         """
@@ -142,11 +141,6 @@ class SnowflakeClient:
         :param storage_integration: name of the storage integration to use in Snowflake. Default to the name of the storage account
         """
 
-        delta_table = DeltaTable(
-            path.to_delta_rs_path(),
-            storage_options=AzureClient().connect_storage(path),
-        )
-
         self.query(f"create schema if not exists {database}.{schema}")
 
         self.query(
@@ -155,21 +149,26 @@ class SnowflakeClient:
             url = azure://{path.account}.blob.core.windows.net/{path.container}/{path.path};"""
         )
 
-        partition_expr = ",".join(delta_table.metadata().partition_columns)
-        partition_columns = [
-            f"\"{partition_column}\" TEXT AS (split_part(split_part(metadata$filename, '=', {2 + i}), '/', 1))"
-            for i, partition_column in enumerate(delta_table.metadata().partition_columns)
-        ]
+        if partition_columns is not None:
+            partition_expr = ",".join(partition_columns)
+            partition_select = [
+                f"\"{partition_column}\" TEXT AS (split_part(split_part(metadata$filename, '=', {2 + i}), '/', 1))"
+                for i, partition_column in enumerate(partition_columns)
+            ]
+        else:
+            partition_expr = ""
+            partition_select = ""
+            partition_columns = []
 
         snowflake_columns = [
             (column.name, self._get_snowflake_type(column.type))
-            for column in delta_table.schema().to_pyarrow()
-            if column.name not in delta_table.metadata().partition_columns
+            for column in table_schema
+            if column.name not in partition_columns
         ]
 
         columns = [
             f'"{column}" {col_type} AS ($1:"{column}"::{col_type})' for column, col_type in snowflake_columns
-        ] + partition_columns
+        ] + partition_select
 
         column_expr = ("," + os.linesep).join(columns)
 
@@ -184,8 +183,7 @@ class SnowflakeClient:
             auto_refresh = false   
             refresh_on_create=false   
             file_format = (type = parquet)    
-            table_format = delta;
-        """
+            table_format = delta;"""
         )
 
         self.query(f'alter external table "{database}"."{schema}"."{table}" refresh;')
