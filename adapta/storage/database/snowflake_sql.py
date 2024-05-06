@@ -107,6 +107,7 @@ class SnowflakeClient:
             pyarrow.types.is_timestamp: "TIMESTAMP_NTZ",
             pyarrow.types.is_date: "DATE",
             pyarrow.types.is_struct: "VARIANT",
+            pyarrow.types.is_map: "VARIANT",
             pyarrow.types.is_list: "VARIANT",
             pyarrow.types.is_boolean: "BOOLEAN",
             pyarrow.types.is_binary: "BINARY",
