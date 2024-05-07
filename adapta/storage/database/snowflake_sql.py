@@ -67,9 +67,9 @@ class SnowflakeClient:
 
     def __exit__(
         self,
-        exc_type: type[BaseException] | None,
-        exc_val: BaseException | None,
-        exc_tb: TracebackType | None,
+        exc_type: Optional[type[BaseException]] = None,
+        exc_val: Optional[BaseException] = None,
+        exc_tb: Optional[TracebackType] = None,
     ) -> None:
         """
         Exits the context manager and closes the database connection.
@@ -82,7 +82,7 @@ class SnowflakeClient:
         if exc_val is not None:
             self._logger.error(f"An error occurred while closing the database connection: {exc_val}")
 
-    def query(self, query: str) -> DataFrame | None:
+    def query(self, query: str) -> Optional[DataFrame]:
         """
         Executes the given SQL query and returns the result as a Pandas DataFrame.
 
