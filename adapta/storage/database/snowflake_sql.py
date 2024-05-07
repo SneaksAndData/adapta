@@ -1,16 +1,21 @@
 """
   Snowflake Client Wrapper
 """
+
+import os
 from types import TracebackType
-from typing import Optional
+from typing import List, Optional
 
 from pandas import DataFrame
 import snowflake.connector
+import pyarrow
 
 from snowflake.connector.errors import DatabaseError, ProgrammingError
 
 from adapta.logs.models import LogLevel
 from adapta.logs import SemanticLogger
+
+from adapta.storage.models.azure import AdlsGen2Path
 
 
 class SnowflakeClient:
@@ -62,9 +67,9 @@ class SnowflakeClient:
 
     def __exit__(
         self,
-        exc_type: type[BaseException] | None,
-        exc_val: BaseException | None,
-        exc_tb: TracebackType | None,
+        exc_type: Optional[type[BaseException]] = None,
+        exc_val: Optional[BaseException] = None,
+        exc_tb: Optional[TracebackType] = None,
     ) -> None:
         """
         Exits the context manager and closes the database connection.
@@ -77,7 +82,7 @@ class SnowflakeClient:
         if exc_val is not None:
             self._logger.error(f"An error occurred while closing the database connection: {exc_val}")
 
-    def query(self, query: str) -> DataFrame | None:
+    def query(self, query: str) -> Optional[DataFrame]:
         """
         Executes the given SQL query and returns the result as a Pandas DataFrame.
 
@@ -91,3 +96,95 @@ class SnowflakeClient:
         except ProgrammingError as ex:
             self._logger.error("Error executing query {query}", query=query, exception=ex)
             return None
+
+    def _get_snowflake_type(self, data_type: pyarrow.DataType) -> str:
+        """Maps pyarrow type to Snowflake type"""
+
+        type_map = {
+            pyarrow.types.is_string: "TEXT",
+            pyarrow.types.is_integer: "INTEGER",
+            pyarrow.types.is_floating: "FLOAT",
+            pyarrow.types.is_timestamp: "TIMESTAMP_NTZ",
+            pyarrow.types.is_date: "DATE",
+            pyarrow.types.is_struct: "VARIANT",
+            pyarrow.types.is_map: "VARIANT",
+            pyarrow.types.is_list: "VARIANT",
+            pyarrow.types.is_boolean: "BOOLEAN",
+            pyarrow.types.is_binary: "BINARY",
+        }
+
+        for type_checker, snowflake_type_name in type_map.items():
+            if type_checker(data_type):
+                return snowflake_type_name
+
+        if pyarrow.types.is_decimal(data_type):
+            return f"DECIMAL({data_type.precision},{data_type.scale})"
+
+        raise ValueError(f"found type:{data_type} which is currently not supported")
+
+    def publish_external_delta_table(
+        self,
+        database: str,
+        schema: str,
+        table: str,
+        path: AdlsGen2Path,
+        table_schema: pyarrow.Schema,
+        partition_columns: Optional[List[str]] = None,
+        storage_integration: Optional[str] = None,
+    ) -> None:
+        """
+        Creates delta table as external table in Snowflake
+
+        :param database: name of the database, in Snowflake, to create the table
+        :param schema: name of the schema, in Snowflake, to create the table
+        :param table: name of the table to be created in Snowflake
+        :param path: path to the delta table in datalake
+        :param storage_integration: name of the storage integration to use in Snowflake. Default to the name of the storage account
+        """
+
+        self.query(f"create schema if not exists {database}.{schema}")
+
+        self.query(
+            f"""create stage if not exists {database}.{schema}.stage_{table} 
+            storage_integration = {storage_integration if storage_integration is not None else path.account} 
+            url = azure://{path.account}.blob.core.windows.net/{path.container}/{path.path};"""
+        )
+
+        if partition_columns is not None:
+            partition_expr = ",".join(partition_columns)
+            partition_select = [
+                f"\"{partition_column}\" TEXT AS (split_part(split_part(metadata$filename, '=', {2 + i}), '/', 1))"
+                for i, partition_column in enumerate(partition_columns)
+            ]
+        else:
+            partition_expr = ""
+            partition_select = []
+            partition_columns = []
+
+        snowflake_columns = [
+            (column.name, self._get_snowflake_type(column.type))
+            for column in table_schema
+            if column.name not in partition_columns
+        ]
+
+        columns = [
+            f'"{column}" {col_type} AS ($1:"{column}"::{col_type})' for column, col_type in snowflake_columns
+        ] + partition_select
+
+        column_expr = ("," + os.linesep).join(columns)
+
+        self.query(
+            f"""
+            create or replace external table "{database}"."{schema}"."{table}"
+            (
+                {column_expr}
+            )
+            {f"partition by ({partition_expr})" if partition_expr else ""}
+            location={database}.{schema}.stage_{table}  
+            auto_refresh = false   
+            refresh_on_create=false   
+            file_format = (type = parquet)    
+            table_format = delta;"""
+        )
+
+        self.query(f'alter external table "{database}"."{schema}"."{table}" refresh;')
