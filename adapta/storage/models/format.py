@@ -123,7 +123,7 @@ class PolarsDataFrameParquetSerializationFormat(SerializationFormat[PolarsDataFr
         return polars_read_parquet(io.BytesIO(data))
 
 
-class PolarsDataFrameCsvSerializationFormat(SerializationFormat[PandasDataFrame]):
+class PolarsDataFrameCsvSerializationFormat(SerializationFormat[PolarsDataFrame]):
     """
     Serializes dataframes as CSV format.
     """
@@ -146,7 +146,7 @@ class PolarsDataFrameCsvSerializationFormat(SerializationFormat[PandasDataFrame]
         return polars_read_csv(io.BytesIO(data))
 
 
-class PolarsDataFrameJsonSerializationFormat(SerializationFormat[PandasDataFrame]):
+class PolarsDataFrameJsonSerializationFormat(SerializationFormat[PolarsDataFrame]):
     """
     Serializes dataframes as JSON format.
     """
