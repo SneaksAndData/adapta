@@ -29,8 +29,10 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3 import Retry
 
-if sys.platform != "win32":
+try:
     import resource
+except (ImportError, ModuleNotFoundError):
+    pass
 
 
 def doze(seconds: int, doze_period_ms: int = 100) -> int:
