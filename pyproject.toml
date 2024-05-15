@@ -56,8 +56,10 @@ azure = [
     'azure-storage-blob',
     'azure-mgmt-storage',
     'azure-keyvault-secrets',
-    'azure-servicebus',
     'adlfs'
+]
+azure-servicebus = [
+    'azure-servicebus',
 ]
 datadog = [
     'datadog',
