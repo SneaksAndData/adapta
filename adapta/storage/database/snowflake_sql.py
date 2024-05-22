@@ -129,6 +129,7 @@ class SnowflakeClient:
         table: str,
         path: AdlsGen2Path,
         table_schema: pyarrow.Schema,
+        skip_initialize: bool = False,
         partition_columns: Optional[List[str]] = None,
         storage_integration: Optional[str] = None,
     ) -> None:
@@ -139,52 +140,54 @@ class SnowflakeClient:
         :param schema: name of the schema, in Snowflake, to create the table
         :param table: name of the table to be created in Snowflake
         :param path: path to the delta table in datalake
+        :param skip_initialize: Skip initializing phases, like creating schema and generation table schemas, when table exists in snowflake
         :param storage_integration: name of the storage integration to use in Snowflake. Default to the name of the storage account
         """
 
-        self.query(f"create schema if not exists {database}.{schema}")
+        if not skip_initialize:
+            self.query(f"create schema if not exists {database}.{schema}")
 
-        self.query(
-            f"""create stage if not exists {database}.{schema}.stage_{table} 
-            storage_integration = {storage_integration if storage_integration is not None else path.account} 
-            url = azure://{path.account}.blob.core.windows.net/{path.container}/{path.path};"""
-        )
-
-        if partition_columns is not None:
-            partition_expr = ",".join(partition_columns)
-            partition_select = [
-                f"\"{partition_column}\" TEXT AS (split_part(split_part(metadata$filename, '=', {2 + i}), '/', 1))"
-                for i, partition_column in enumerate(partition_columns)
-            ]
-        else:
-            partition_expr = ""
-            partition_select = []
-            partition_columns = []
-
-        snowflake_columns = [
-            (column.name, self._get_snowflake_type(column.type))
-            for column in table_schema
-            if column.name not in partition_columns
-        ]
-
-        columns = [
-            f'"{column}" {col_type} AS ($1:"{column}"::{col_type})' for column, col_type in snowflake_columns
-        ] + partition_select
-
-        column_expr = ("," + os.linesep).join(columns)
-
-        self.query(
-            f"""
-            create or replace external table "{database}"."{schema}"."{table}"
-            (
-                {column_expr}
+            self.query(
+                f"""create stage if not exists {database}.{schema}.stage_{table} 
+                storage_integration = {storage_integration if storage_integration is not None else path.account} 
+                url = azure://{path.account}.blob.core.windows.net/{path.container}/{path.path};"""
             )
-            {f"partition by ({partition_expr})" if partition_expr else ""}
-            location={database}.{schema}.stage_{table}  
-            auto_refresh = false   
-            refresh_on_create=false   
-            file_format = (type = parquet)    
-            table_format = delta;"""
-        )
+
+            if partition_columns is not None:
+                partition_expr = ",".join(partition_columns)
+                partition_select = [
+                    f"\"{partition_column}\" TEXT AS (split_part(split_part(metadata$filename, '=', {2 + i}), '/', 1))"
+                    for i, partition_column in enumerate(partition_columns)
+                ]
+            else:
+                partition_expr = ""
+                partition_select = []
+                partition_columns = []
+
+            snowflake_columns = [
+                (column.name, self._get_snowflake_type(column.type))
+                for column in table_schema
+                if column.name not in partition_columns
+            ]
+
+            columns = [
+                f'"{column}" {col_type} AS ($1:"{column}"::{col_type})' for column, col_type in snowflake_columns
+            ] + partition_select
+
+            column_expr = ("," + os.linesep).join(columns)
+
+            self.query(
+                f"""
+                create or replace external table "{database}"."{schema}"."{table}"
+                (
+                    {column_expr}
+                )
+                {f"partition by ({partition_expr})" if partition_expr else ""}
+                location={database}.{schema}.stage_{table}  
+                auto_refresh = false   
+                refresh_on_create=false   
+                file_format = (type = parquet)    
+                table_format = delta;"""
+            )
 
         self.query(f'alter external table "{database}"."{schema}"."{table}" refresh;')

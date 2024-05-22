@@ -15,6 +15,7 @@
 import pathlib
 from unittest.mock import patch, MagicMock
 
+import pytest
 from deltalake import DeltaTable
 
 from adapta.storage.database.snowflake_sql import SnowflakeClient
@@ -103,4 +104,30 @@ def test_publish_external_delta_table_partitioned(
             file_format = (type = parquet)    
             table_format = delta;"""
     )
+    mock_query.assert_any_call('alter external table "test_database"."test_schema"."test_table" refresh;')
+
+
+@patch("adapta.storage.database.snowflake_sql.SnowflakeClient.query")
+def test_publish_external_delta_table_skip_initialize(
+    mock_query: MagicMock,
+):
+    test_data_path = f"{pathlib.Path(__file__).parent.resolve()}/delta_table"
+    snowflake_client = SnowflakeClient(user="", account="", warehouse="")
+    path = AdlsGen2Path.from_hdfs_path("abfss://container@account.dfs.core.windows.net/test_schema/test_table")
+    delta_table = DeltaTable(
+        f"{test_data_path}",
+    )
+    snowflake_client.publish_external_delta_table(
+        database="test_database",
+        schema="test_schema",
+        table="test_table",
+        path=path,
+        skip_initialize=True,
+        table_schema=delta_table.schema().to_pyarrow(),
+    )
+
+    with pytest.raises(AssertionError):
+        # test if skip the initializing phase
+        mock_query.assert_any_call("create schema if not exists test_database.test_schema")
+
     mock_query.assert_any_call('alter external table "test_database"."test_schema"."test_table" refresh;')
