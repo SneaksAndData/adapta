@@ -44,22 +44,22 @@ def test_publish_external_delta_table(
     mock_query.assert_any_call("create schema if not exists test_database.test_schema")
     mock_query.assert_any_call(
         """create stage if not exists test_database.test_schema.stage_test_table 
-            storage_integration = account 
-            url = azure://account.blob.core.windows.net/container/test_schema/test_table;"""
+                storage_integration = account 
+                url = azure://account.blob.core.windows.net/container/test_schema/test_table;"""
     )
     mock_query.assert_any_call(
         """
-            create or replace external table "test_database"."test_schema"."test_table"
-            (
-                "A" TEXT AS ($1:"A"::TEXT),
+                create or replace external table "test_database"."test_schema"."test_table"
+                (
+                    "A" TEXT AS ($1:"A"::TEXT),
 "B" TEXT AS ($1:"B"::TEXT)
-            )
-            
-            location=test_database.test_schema.stage_test_table  
-            auto_refresh = false   
-            refresh_on_create=false   
-            file_format = (type = parquet)    
-            table_format = delta;"""
+                )
+                
+                location=test_database.test_schema.stage_test_table  
+                auto_refresh = false   
+                refresh_on_create=false   
+                file_format = (type = parquet)    
+                table_format = delta;"""
     )
     mock_query.assert_any_call('alter external table "test_database"."test_schema"."test_table" refresh;')
 
@@ -86,23 +86,23 @@ def test_publish_external_delta_table_partitioned(
     mock_query.assert_any_call("create schema if not exists test_database.test_schema")
     mock_query.assert_any_call(
         """create stage if not exists test_database.test_schema.stage_test_table 
-            storage_integration = account 
-            url = azure://account.blob.core.windows.net/container/test_schema/test_table;"""
+                storage_integration = account 
+                url = azure://account.blob.core.windows.net/container/test_schema/test_table;"""
     )
     mock_query.assert_any_call(
         """
-            create or replace external table "test_database"."test_schema"."test_table"
-            (
-                "colA" INTEGER AS ($1:"colA"::INTEGER),
+                create or replace external table "test_database"."test_schema"."test_table"
+                (
+                    "colA" INTEGER AS ($1:"colA"::INTEGER),
 "colB" TEXT AS ($1:"colB"::TEXT),
 "colP" TEXT AS (split_part(split_part(metadata$filename, \'=\', 2), \'/\', 1))
-            )
-            partition by (colP)
-            location=test_database.test_schema.stage_test_table  
-            auto_refresh = false   
-            refresh_on_create=false   
-            file_format = (type = parquet)    
-            table_format = delta;"""
+                )
+                partition by (colP)
+                location=test_database.test_schema.stage_test_table  
+                auto_refresh = false   
+                refresh_on_create=false   
+                file_format = (type = parquet)    
+                table_format = delta;"""
     )
     mock_query.assert_any_call('alter external table "test_database"."test_schema"."test_table" refresh;')
 
@@ -127,7 +127,6 @@ def test_publish_external_delta_table_skip_initialize(
     )
 
     with pytest.raises(AssertionError):
-        # test if skip the initializing phase
         mock_query.assert_any_call("create schema if not exists test_database.test_schema")
 
     mock_query.assert_any_call('alter external table "test_database"."test_schema"."test_table" refresh;')
