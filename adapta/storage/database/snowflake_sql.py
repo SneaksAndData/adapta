@@ -3,12 +3,12 @@
 """
 
 import os
+import re
 from types import TracebackType
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 from pandas import DataFrame
 import snowflake.connector
-import pyarrow
 
 from snowflake.connector.errors import DatabaseError, ProgrammingError
 
@@ -97,28 +97,30 @@ class SnowflakeClient:
             self._logger.error("Error executing query {query}", query=query, exception=ex)
             return None
 
-    def _get_snowflake_type(self, data_type: pyarrow.DataType) -> str:
+    def _get_snowflake_type(self, data_type: str) -> str:
         """Maps pyarrow type to Snowflake type"""
 
         type_map = {
-            pyarrow.types.is_string: "TEXT",
-            pyarrow.types.is_integer: "INTEGER",
-            pyarrow.types.is_floating: "FLOAT",
-            pyarrow.types.is_timestamp: "TIMESTAMP_NTZ",
-            pyarrow.types.is_date: "DATE",
-            pyarrow.types.is_struct: "VARIANT",
-            pyarrow.types.is_map: "VARIANT",
-            pyarrow.types.is_list: "VARIANT",
-            pyarrow.types.is_boolean: "BOOLEAN",
-            pyarrow.types.is_binary: "BINARY",
+            "string": "TEXT",
+            "integer": "INTEGER",
+            "float": "FLOAT",
+            "double": "FLOAT",
+            "timestamp": "TIMESTAMP_NTZ",
+            "date": "DATE",
+            "struct": "VARIANT",
+            "map": "VARIANT",
+            "array": "VARIANT",
+            "boolean": "BOOLEAN",
+            "binary": "BINARY",
         }
 
-        for type_checker, snowflake_type_name in type_map.items():
-            if type_checker(data_type):
-                return snowflake_type_name
+        snowflake_type = type_map.get(data_type, None)
+        if snowflake_type:
+            return snowflake_type
 
-        if pyarrow.types.is_decimal(data_type):
-            return f"DECIMAL({data_type.precision},{data_type.scale})"
+        if data_type.startswith("decimal"):
+            decimal_info = [int(num) for num in re.findall(r"\d+", data_type)]
+            return f"DECIMAL({decimal_info[0]},{decimal_info[1]})"
 
         raise ValueError(f"found type:{data_type} which is currently not supported")
 
@@ -127,9 +129,9 @@ class SnowflakeClient:
         database: str,
         schema: str,
         table: str,
-        path: AdlsGen2Path,
-        table_schema: pyarrow.Schema,
         skip_initialize: bool = False,
+        path: Optional[AdlsGen2Path] = None,
+        table_schema: Optional[Dict[str, str]] = None,
         partition_columns: Optional[List[str]] = None,
         storage_integration: Optional[str] = None,
     ) -> None:
@@ -139,12 +141,18 @@ class SnowflakeClient:
         :param database: name of the database, in Snowflake, to create the table
         :param schema: name of the schema, in Snowflake, to create the table
         :param table: name of the table to be created in Snowflake
-        :param path: path to the delta table in datalake
         :param skip_initialize: Skip initializing phases, like creating schema and generation table schemas, when table exists in snowflake
+        :param path: path to the delta table in datalake
+        :param table_schema: A mapping from column name to column type (the type should be in the lower case and supported by delta table)
+                             , like {'ColumnA': 'struct', 'ColumnB': 'decimal(10, 2)'}
+        :param partition_columns: A list of partition column names
         :param storage_integration: name of the storage integration to use in Snowflake. Default to the name of the storage account
         """
 
         if not skip_initialize:
+            assert path, "Path to the delta table needed! Please check!"
+            assert table_schema, "Table schema needed! Please check!"
+
             self.query(f"create schema if not exists {database}.{schema}")
 
             self.query(
@@ -165,9 +173,9 @@ class SnowflakeClient:
                 partition_columns = []
 
             snowflake_columns = [
-                (column.name, self._get_snowflake_type(column.type))
-                for column in table_schema
-                if column.name not in partition_columns
+                (column_name, self._get_snowflake_type(column_type))
+                for column_name, column_type in table_schema.items()
+                if column_name not in partition_columns
             ]
 
             columns = [

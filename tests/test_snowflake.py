@@ -27,7 +27,7 @@ from adapta.storage.models.azure import AdlsGen2Path
 def test_publish_external_delta_table(
     mock_query: MagicMock,
 ):
-    test_data_path = f"{pathlib.Path(__file__).parent.resolve()}/delta_table"
+    test_data_path = f"{pathlib.Path(__file__).parent.resolve()}/delta_table_type_test"
     snowflake_client = SnowflakeClient(user="", account="", warehouse="")
     path = AdlsGen2Path.from_hdfs_path("abfss://container@account.dfs.core.windows.net/test_schema/test_table")
     delta_table = DeltaTable(
@@ -38,7 +38,7 @@ def test_publish_external_delta_table(
         schema="test_schema",
         table="test_table",
         path=path,
-        table_schema=delta_table.schema().to_pyarrow(),
+        table_schema={column.name: column.type.type for column in delta_table.schema().fields},
     )
 
     mock_query.assert_any_call("create schema if not exists test_database.test_schema")
@@ -51,8 +51,17 @@ def test_publish_external_delta_table(
         """
                 create or replace external table "test_database"."test_schema"."test_table"
                 (
-                    "A" TEXT AS ($1:"A"::TEXT),
-"B" TEXT AS ($1:"B"::TEXT)
+                    "integer_field" INTEGER AS ($1:"integer_field"::INTEGER),
+"string_field" TEXT AS ($1:"string_field"::TEXT),
+"boolean_field" BOOLEAN AS ($1:"boolean_field"::BOOLEAN),
+"double_field" FLOAT AS ($1:"double_field"::FLOAT),
+"binary_field" BINARY AS ($1:"binary_field"::BINARY),
+"float_field" FLOAT AS ($1:"float_field"::FLOAT),
+"date_field" DATE AS ($1:"date_field"::DATE),
+"timestamp_field" TIMESTAMP_NTZ AS ($1:"timestamp_field"::TIMESTAMP_NTZ),
+"decimal_field" DECIMAL(10,2) AS ($1:"decimal_field"::DECIMAL(10,2)),
+"map_field" VARIANT AS ($1:"map_field"::VARIANT),
+"array_field" VARIANT AS ($1:"array_field"::VARIANT)
                 )
                 
                 location=test_database.test_schema.stage_test_table  
@@ -79,7 +88,7 @@ def test_publish_external_delta_table_partitioned(
         schema="test_schema",
         table="test_table",
         path=path,
-        table_schema=delta_table.schema().to_pyarrow(),
+        table_schema={column.name: column.type.type for column in delta_table.schema().fields},
         partition_columns=["colP"],
     )
 
@@ -111,19 +120,10 @@ def test_publish_external_delta_table_partitioned(
 def test_publish_external_delta_table_skip_initialize(
     mock_query: MagicMock,
 ):
-    test_data_path = f"{pathlib.Path(__file__).parent.resolve()}/delta_table"
     snowflake_client = SnowflakeClient(user="", account="", warehouse="")
-    path = AdlsGen2Path.from_hdfs_path("abfss://container@account.dfs.core.windows.net/test_schema/test_table")
-    delta_table = DeltaTable(
-        f"{test_data_path}",
-    )
+
     snowflake_client.publish_external_delta_table(
-        database="test_database",
-        schema="test_schema",
-        table="test_table",
-        path=path,
-        skip_initialize=True,
-        table_schema=delta_table.schema().to_pyarrow(),
+        database="test_database", schema="test_schema", table="test_table", skip_initialize=True
     )
 
     with pytest.raises(AssertionError):
