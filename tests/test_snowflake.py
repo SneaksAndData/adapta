@@ -123,7 +123,7 @@ def test_publish_external_delta_table_skip_initialize(
     snowflake_client = SnowflakeClient(user="", account="", warehouse="")
 
     snowflake_client.publish_external_delta_table(
-        database="test_database", schema="test_schema", table="test_table", skip_initialize=True
+        database="test_database", schema="test_schema", table="test_table", refresh_metadata_only=True
     )
 
     with pytest.raises(AssertionError):

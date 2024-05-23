@@ -98,7 +98,7 @@ class SnowflakeClient:
             return None
 
     def _get_snowflake_type(self, data_type: str) -> str:
-        """Maps pyarrow type to Snowflake type"""
+        """Maps delta type to Snowflake type"""
 
         type_map = {
             "string": "TEXT",
@@ -129,7 +129,7 @@ class SnowflakeClient:
         database: str,
         schema: str,
         table: str,
-        skip_initialize: bool = False,
+        refresh_metadata_only: bool = False,
         path: Optional[AdlsGen2Path] = None,
         table_schema: Optional[Dict[str, str]] = None,
         partition_columns: Optional[List[str]] = None,
@@ -141,7 +141,8 @@ class SnowflakeClient:
         :param database: name of the database, in Snowflake, to create the table
         :param schema: name of the schema, in Snowflake, to create the table
         :param table: name of the table to be created in Snowflake
-        :param skip_initialize: Skip initializing phases, like creating schema and generation table schemas, when table exists in snowflake
+        :param refresh_metadata_only: Only refresh metadata, when table has already existed in snowflake.
+                                      So skip the initializing phases like creating schema, creating external table, etc.
         :param path: path to the delta table in datalake
         :param table_schema: A mapping from column name to column type (the type should be in the lower case and supported by delta table)
                              , like {'ColumnA': 'struct', 'ColumnB': 'decimal(10, 2)'}
@@ -149,7 +150,7 @@ class SnowflakeClient:
         :param storage_integration: name of the storage integration to use in Snowflake. Default to the name of the storage account
         """
 
-        if not skip_initialize:
+        if not refresh_metadata_only:
             assert path, "Path to the delta table needed! Please check!"
             assert table_schema, "Table schema needed! Please check!"
 
