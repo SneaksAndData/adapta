@@ -71,12 +71,14 @@ from adapta.utils import chunk_list, rate_limit
 TModel = TypeVar("TModel")  # pylint: disable=C0103
 
 
-class JsonEncodedDict(columns.Text):
+class JsonEncodedDict(columns.UserDefinedType):
     """
     A custom Cassandra column type for storing JSON-serialized Python objects.
     """
 
-    def to_python(self, value: str) -> Any:
+    value = columns.Text()
+
+    def to_python(self, value):
         """
         Convert a JSON string to a Python object.
 
@@ -85,12 +87,12 @@ class JsonEncodedDict(columns.Text):
         """
         return json.loads(value)
 
-    def to_database(self, value: Any) -> str:
+    def to_database(self, value):
         """
         Convert a Python object to a JSON string.
 
         :param value: The Python object to convert.
-        :return: The JSON string representing the Python object.
+        :return: A dict with the JSON string representing the Python object.
         """
         return json.dumps(value)
 
@@ -406,7 +408,7 @@ class AstraClient:
         :param: select_columns: An optional list of columns to select from the entity. If omitted, all columns will be selected.
         """
 
-        def map_to_column(  # pylint: disable=R0911
+        def map_to_column(  # pylint: disable=R0911 # pylint: disable=R0912
             python_type: Type,
         ) -> typing.Union[
             typing.Tuple[Type[columns.List],],
