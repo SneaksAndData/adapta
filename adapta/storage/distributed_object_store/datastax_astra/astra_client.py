@@ -20,6 +20,7 @@
 import base64
 import datetime
 import enum
+import json
 import logging
 import math
 import os
@@ -69,6 +70,29 @@ from adapta.utils import chunk_list, rate_limit
 
 TModel = TypeVar("TModel")  # pylint: disable=C0103
 
+
+class JsonEncodedDict(columns.Text):
+    """
+    A custom Cassandra column type for storing JSON-serialized Python objects.
+    """
+
+    def to_python(self, value: str) -> Any:
+        """
+        Convert a JSON string to a Python object.
+
+        :param value: The JSON string to convert.
+        :return: The Python object represented by the JSON string.
+        """
+        return json.loads(value)
+
+    def to_database(self, value: Any) -> str:
+        """
+        Convert a Python object to a JSON string.
+
+        :param value: The Python object to convert.
+        :return: The JSON string representing the Python object.
+        """
+        return json.dumps(value)
 
 @typing.final
 class AstraClient:
@@ -390,6 +414,7 @@ class AstraClient:
             typing.Tuple[Type[Column],],
             typing.Tuple[Type[Column], Type[Column]],
             typing.Tuple[Type[Column], Type[Column], Type[Column]],
+            typing.Tuple[Type[JsonEncodedDict],],
         ]:
             if python_type is type(None):
                 raise TypeError("NoneType cannot be mapped to any existing table column types")
@@ -414,10 +439,16 @@ class AstraClient:
             ):  # assume all enums are strings - for now
                 return (columns.Text,)
             if get_origin(python_type) == list:
-                return (
-                    columns.List,
-                    map_to_column(typing.get_args(python_type)[0])[0],
-                )
+                args = typing.get_args(python_type)
+                if get_origin(args[0]) == dict:
+                    dict_args = typing.get_args(args[0])
+                    if dict_args == (str, typing.Union[float, int]):
+                        return (JsonEncodedDict,)
+                else:
+                    return (
+                        columns.List,
+                        map_to_column(typing.get_args(python_type)[0])[0],
+                    )
             if get_origin(python_type) == dict:
                 return (
                     columns.Map,
@@ -434,7 +465,7 @@ class AstraClient:
             python_type: Type, db_field: str, is_primary_key: bool, is_partition_key: bool, is_custom_index: bool
         ) -> Column:
             cassandra_types = map_to_column(python_type)
-            if len(cassandra_types) == 1:  # simple type
+            if len(cassandra_types) == 1:  # simple type or encoded JSON
                 return cassandra_types[0](
                     primary_key=is_primary_key,
                     partition_key=is_partition_key,
