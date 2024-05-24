@@ -41,12 +41,14 @@ class SnowflakeClient:
             min_log_level=LogLevel.INFO,
             is_default=True,
         ),
+        password: Optional[str] = None,
     ):
         self._user = user
         self._account = account
         self._warehouse = warehouse
         self._authenticator = authenticator
         self._logger = logger
+        self._password = password
         self._conn = None
 
     def __enter__(self) -> Optional["SnowflakeClient"]:
@@ -56,7 +58,11 @@ class SnowflakeClient:
         """
         try:
             self._conn = snowflake.connector.connect(
-                user=self._user, account=self._account, warehouse=self._warehouse, authenticator=self._authenticator
+                user=self._user,
+                account=self._account,
+                password=self._password,
+                warehouse=self._warehouse,
+                authenticator=self._authenticator,
             )
             return self
         except DatabaseError as ex:
