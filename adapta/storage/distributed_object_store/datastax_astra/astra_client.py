@@ -70,32 +70,6 @@ from adapta.utils import chunk_list, rate_limit
 
 TModel = TypeVar("TModel")  # pylint: disable=C0103
 
-
-class JsonEncodedDict(columns.UserDefinedType):
-    """
-    A custom Cassandra column type for storing JSON-serialized Python objects.
-    """
-
-    value = columns.Text()
-
-    def to_python(self, value):
-        """
-        Convert a JSON string to a Python object.
-
-        :param value: The JSON string to convert.
-        :return: The Python object represented by the JSON string.
-        """
-        return json.loads(value)
-
-    def to_database(self, value):
-        """
-        Convert a Python object to a JSON string.
-
-        :param value: The Python object to convert.
-        :return: A dict with the JSON string representing the Python object.
-        """
-        return json.dumps(value)
-
 @typing.final
 class AstraClient:
     """
@@ -416,7 +390,6 @@ class AstraClient:
             typing.Tuple[Type[Column],],
             typing.Tuple[Type[Column], Type[Column]],
             typing.Tuple[Type[Column], Type[Column], Type[Column]],
-            typing.Tuple[Type[JsonEncodedDict],],
         ]:
             if python_type is type(None):
                 raise TypeError("NoneType cannot be mapped to any existing table column types")
