@@ -28,6 +28,7 @@ class SnowflakeClient:
     :param warehouse: The warehouse name for the Snowflake account.
     :param authenticator: The authentication mechanism to use for the Snowflake account.
     :param logger: The logger to use for logging messages. Defaults to a new SemanticLogger instance.
+    :param password: Optional - The password for the Snowflake account, used when running jobs.
     """
 
     def __init__(
