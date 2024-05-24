@@ -20,7 +20,6 @@
 import base64
 import datetime
 import enum
-import json
 import logging
 import math
 import os
@@ -382,7 +381,7 @@ class AstraClient:
         :param: select_columns: An optional list of columns to select from the entity. If omitted, all columns will be selected.
         """
 
-        def map_to_column(  # pylint: disable=R0911 # pylint: disable=R0912
+        def map_to_column(  # pylint: disable=R0911
             python_type: Type,
         ) -> typing.Union[
             typing.Tuple[Type[columns.List],],
@@ -445,7 +444,7 @@ class AstraClient:
             python_type: Type, db_field: str, is_primary_key: bool, is_partition_key: bool, is_custom_index: bool
         ) -> Column:
             cassandra_types = map_to_column(python_type)
-            if len(cassandra_types) == 1:  # simple type or encoded JSON
+            if len(cassandra_types) == 1:  # simple type
                 return cassandra_types[0](
                     primary_key=is_primary_key,
                     partition_key=is_partition_key,
