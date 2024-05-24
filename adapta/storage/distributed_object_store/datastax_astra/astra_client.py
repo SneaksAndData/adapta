@@ -444,8 +444,13 @@ class AstraClient:
                 args = typing.get_args(python_type)
                 if get_origin(args[0]) == dict:
                     dict_args = typing.get_args(args[0])
-                    if dict_args == (str, typing.Union[float, int]):
-                        return (JsonEncodedDict,)
+                    return (
+                        columns.List,
+                        columns.Map(
+                            map_to_column(dict_args[0])[0],
+                            map_to_column(dict_args[1])[0],
+                        ),
+                    )
                 else:
                     return (
                         columns.List,
