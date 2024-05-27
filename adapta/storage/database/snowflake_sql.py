@@ -29,7 +29,7 @@ class SnowflakeClient:
     :param authenticator: The authentication mechanism to use for the Snowflake account.
     :param logger: The logger to use for logging messages. Defaults to a new SemanticLogger instance.
     :param password: Optional - The password for the Snowflake user. Should be combined with `authenticator='snowflake'` to enable password authentication
-    :param role: Optional - The default role for the Snowflake user.
+    :param role: Optional - The role for the Snowflake user.
     """
 
     def __init__(
@@ -61,23 +61,13 @@ class SnowflakeClient:
         :return: The SnowflakeClient instance, or None if there was an error connecting to the database.
         """
         try:
-            self._conn = (
-                snowflake.connector.connect(
-                    user=self._user,
-                    account=self._account,
-                    password=self._password,
-                    warehouse=self._warehouse,
-                    authenticator=self._authenticator,
-                    role=self._role,
-                )
-                if self._role
-                else snowflake.connector.connect(
-                    user=self._user,
-                    account=self._account,
-                    password=self._password,
-                    warehouse=self._warehouse,
-                    authenticator=self._authenticator,
-                )
+            self._conn = snowflake.connector.connect(
+                user=self._user,
+                account=self._account,
+                password=self._password,
+                warehouse=self._warehouse,
+                authenticator=self._authenticator,
+                role=self._role,
             )
             return self
         except DatabaseError as ex:
