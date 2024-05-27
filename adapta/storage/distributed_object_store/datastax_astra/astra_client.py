@@ -390,7 +390,7 @@ class AstraClient:
             typing.Tuple[Type[Column],],
             typing.Tuple[Type[Column], Type[Column]],
             typing.Tuple[Type[Column], Type[Column], Type[Column]],
-            typing.Tuple[Type[columns.List], Type[columns.Map]],
+            typing.Tuple[Type[columns.List], columns.Map],
         ]:
             if python_type is type(None):
                 raise TypeError("NoneType cannot be mapped to any existing table column types")
