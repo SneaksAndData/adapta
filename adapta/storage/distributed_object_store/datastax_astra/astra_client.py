@@ -69,6 +69,7 @@ from adapta.utils import chunk_list, rate_limit
 
 TModel = TypeVar("TModel")  # pylint: disable=C0103
 
+
 @typing.final
 class AstraClient:
     """
@@ -389,6 +390,7 @@ class AstraClient:
             typing.Tuple[Type[Column],],
             typing.Tuple[Type[Column], Type[Column]],
             typing.Tuple[Type[Column], Type[Column], Type[Column]],
+            typing.Tuple[Type[columns.List], Type[columns.Map]],
         ]:
             if python_type is type(None):
                 raise TypeError("NoneType cannot be mapped to any existing table column types")
@@ -423,11 +425,10 @@ class AstraClient:
                             map_to_column(dict_args[1])[0],
                         ),
                     )
-                else:
-                    return (
-                        columns.List,
-                        map_to_column(typing.get_args(python_type)[0])[0],
-                    )
+                return (
+                    columns.List,
+                    map_to_column(typing.get_args(python_type)[0])[0],
+                )
             if get_origin(python_type) == dict:
                 return (
                     columns.Map,
