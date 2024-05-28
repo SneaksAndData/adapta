@@ -16,14 +16,18 @@
 import pytest
 from typing import Type
 import pandas
+import polars
 from adapta.storage.models.format import (
     DictJsonSerializationFormat,
     SerializationFormat,
-    DataFrameParquetSerializationFormat,
-    DataFrameJsonSerializationFormat,
-    DataFrameCsvSerializationFormat,
     UnitSerializationFormat,
     PickleSerializationFormat,
+    PolarsDataFrameJsonSerializationFormat,
+    PolarsDataFrameCsvSerializationFormat,
+    PolarsDataFrameParquetSerializationFormat,
+    PandasDataFrameParquetSerializationFormat,
+    PandasDataFrameJsonSerializationFormat,
+    PandasDataFrameCsvSerializationFormat,
 )
 
 
@@ -32,11 +36,23 @@ from adapta.storage.models.format import (
     [
         (DictJsonSerializationFormat, {"test": "test"}),
         (
-            DataFrameParquetSerializationFormat,
+            PandasDataFrameParquetSerializationFormat,
             pandas.DataFrame(data={"test": [1, 2, 3]}),
         ),
-        (DataFrameJsonSerializationFormat, pandas.DataFrame(data={"test": [1, 2, 3]})),
-        (DataFrameCsvSerializationFormat, pandas.DataFrame(data={"test": [1, 2, 3]})),
+        (PandasDataFrameJsonSerializationFormat, pandas.DataFrame(data={"test": [1, 2, 3]})),
+        (PandasDataFrameCsvSerializationFormat, pandas.DataFrame(data={"test": [1, 2, 3]})),
+        (
+            PolarsDataFrameParquetSerializationFormat,
+            polars.DataFrame(data={"test": [1, 2, 3]}),
+        ),
+        (
+            PolarsDataFrameCsvSerializationFormat,
+            polars.DataFrame(data={"test": [1, 2, 3]}),
+        ),
+        (
+            PolarsDataFrameJsonSerializationFormat,
+            polars.DataFrame(data={"test": [1, 2, 3]}),
+        ),
         (PickleSerializationFormat, pandas.DataFrame(data={"test": [1, 2, 3]})),
         (PickleSerializationFormat, [1, 2, 3]),
         (PickleSerializationFormat, {"foo": "bar"}),
@@ -49,7 +65,7 @@ def test_unit_serialization(serializer: Type[SerializationFormat], data: any):
     """
     Tests that serializing and then immediately deserializing any data equals the original data.
     """
-    if isinstance(data, pandas.DataFrame):
+    if isinstance(data, pandas.DataFrame) | isinstance(data, polars.DataFrame):
         assert data.equals(serializer().deserialize(serializer().serialize(data)))
     else:
         assert data == serializer().deserialize(serializer().serialize(data))
