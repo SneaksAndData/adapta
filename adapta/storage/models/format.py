@@ -250,6 +250,7 @@ class PickleSerializationFormat(SerializationFormat[T]):
         """
         return pickle.loads(data)
 
+
 # Temporary aliases
 PandasDataFrameParquetSerializationFormat = DataFrameParquetSerializationFormat
 PandasDataFrameCsvSerializationFormat = DataFrameCsvSerializationFormat
