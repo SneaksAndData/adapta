@@ -103,7 +103,11 @@ class SnowflakeClient:
         """
         try:
             with self._conn.cursor() as cursor:
-                return cursor.execute(query).fetch_pandas_all()
+                return (
+                    cursor.execute(query).fetch_pandas_all()
+                    if query.split()[0].lower() == "select"
+                    else cursor.execute(query)
+                )
         except ProgrammingError as ex:
             self._logger.error("Error executing query {query}", query=query, exception=ex)
             return None
