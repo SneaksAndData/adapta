@@ -35,4 +35,3 @@ jobs:
         run: |
           set -euxo pipefail
           poetry run black . --check --diff
-
