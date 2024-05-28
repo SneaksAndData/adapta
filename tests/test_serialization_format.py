@@ -20,14 +20,14 @@ import polars
 from adapta.storage.models.format import (
     DictJsonSerializationFormat,
     SerializationFormat,
-    DataFrameParquetSerializationFormat,
-    DataFrameJsonSerializationFormat,
-    DataFrameCsvSerializationFormat,
     UnitSerializationFormat,
     PickleSerializationFormat,
     PolarsDataFrameJsonSerializationFormat,
     PolarsDataFrameCsvSerializationFormat,
     PolarsDataFrameParquetSerializationFormat,
+    PandasDataFrameParquetSerializationFormat,
+    PandasDataFrameJsonSerializationFormat,
+    PandasDataFrameCsvSerializationFormat,
 )
 
 
@@ -36,11 +36,11 @@ from adapta.storage.models.format import (
     [
         (DictJsonSerializationFormat, {"test": "test"}),
         (
-            DataFrameParquetSerializationFormat,
+            PandasDataFrameParquetSerializationFormat,
             pandas.DataFrame(data={"test": [1, 2, 3]}),
         ),
-        (DataFrameJsonSerializationFormat, pandas.DataFrame(data={"test": [1, 2, 3]})),
-        (DataFrameCsvSerializationFormat, pandas.DataFrame(data={"test": [1, 2, 3]})),
+        (PandasDataFrameJsonSerializationFormat, pandas.DataFrame(data={"test": [1, 2, 3]})),
+        (PandasDataFrameCsvSerializationFormat, pandas.DataFrame(data={"test": [1, 2, 3]})),
         (
             PolarsDataFrameParquetSerializationFormat,
             polars.DataFrame(data={"test": [1, 2, 3]}),
