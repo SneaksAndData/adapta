@@ -104,9 +104,9 @@ class SnowflakeClient:
         """
         try:
             with self._conn.cursor() as cursor:
+                result = cursor.execute(query)
                 if fetch_pandas:
-                    return cursor.execute(query).fetch_pandas_all()
-                cursor.execute(query)
+                    return result.fetch_pandas_all()
                 return None
 
         except ProgrammingError as ex:
