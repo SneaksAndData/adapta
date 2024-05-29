@@ -106,8 +106,8 @@ class SnowflakeClient:
             with self._conn.cursor() as cursor:
                 if fetch_pandas:
                     return cursor.execute(query).fetch_pandas_all()
-                else:
-                    cursor.execute(query)
+                cursor.execute(query)
+
         except ProgrammingError as ex:
             self._logger.error("Error executing query {query}", query=query, exception=ex)
             return None
@@ -172,8 +172,8 @@ class SnowflakeClient:
             self.query(query=f"create schema if not exists {database}.{schema}", fetch_pandas=False)
 
             self.query(
-                query=f"""create stage if not exists {database}.{schema}.stage_{table} 
-                storage_integration = {storage_integration if storage_integration is not None else path.account} 
+                query=f"""create stage if not exists {database}.{schema}.stage_{table}
+                storage_integration = {storage_integration if storage_integration is not None else path.account}
                 url = azure://{path.account}.blob.core.windows.net/{path.container}/{path.path};""",
                 fetch_pandas=False,
             )
