@@ -107,6 +107,7 @@ class SnowflakeClient:
                 if fetch_pandas:
                     return cursor.execute(query).fetch_pandas_all()
                 cursor.execute(query)
+                return None
 
         except ProgrammingError as ex:
             self._logger.error("Error executing query {query}", query=query, exception=ex)
