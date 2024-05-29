@@ -41,14 +41,15 @@ def test_publish_external_delta_table(
         table_schema={column.name: column.type.type for column in delta_table.schema().fields},
     )
 
-    mock_query.assert_any_call("create schema if not exists test_database.test_schema")
+    mock_query.assert_any_call(query="create schema if not exists test_database.test_schema", fetch_pandas=False)
     mock_query.assert_any_call(
-        """create stage if not exists test_database.test_schema.stage_test_table 
+        query="""create stage if not exists test_database.test_schema.stage_test_table 
                 storage_integration = account 
-                url = azure://account.blob.core.windows.net/container/test_schema/test_table;"""
+                url = azure://account.blob.core.windows.net/container/test_schema/test_table;""",
+        fetch_pandas=False,
     )
     mock_query.assert_any_call(
-        """
+        query="""
                 create or replace external table "test_database"."test_schema"."test_table"
                 (
                     "integer_field" INTEGER AS ($1:"integer_field"::INTEGER),
@@ -68,9 +69,12 @@ def test_publish_external_delta_table(
                 auto_refresh = false   
                 refresh_on_create=false   
                 file_format = (type = parquet)    
-                table_format = delta;"""
+                table_format = delta;""",
+        fetch_pandas=False,
     )
-    mock_query.assert_any_call('alter external table "test_database"."test_schema"."test_table" refresh;')
+    mock_query.assert_any_call(
+        query='alter external table "test_database"."test_schema"."test_table" refresh;', fetch_pandas=False
+    )
 
 
 @patch("adapta.storage.database.snowflake_sql.SnowflakeClient.query")
@@ -92,14 +96,15 @@ def test_publish_external_delta_table_partitioned(
         partition_columns=["colP"],
     )
 
-    mock_query.assert_any_call("create schema if not exists test_database.test_schema")
+    mock_query.assert_any_call(query="create schema if not exists test_database.test_schema", fetch_pandas=False)
     mock_query.assert_any_call(
-        """create stage if not exists test_database.test_schema.stage_test_table 
+        query="""create stage if not exists test_database.test_schema.stage_test_table 
                 storage_integration = account 
-                url = azure://account.blob.core.windows.net/container/test_schema/test_table;"""
+                url = azure://account.blob.core.windows.net/container/test_schema/test_table;""",
+        fetch_pandas=False,
     )
     mock_query.assert_any_call(
-        """
+        query="""
                 create or replace external table "test_database"."test_schema"."test_table"
                 (
                     "colA" INTEGER AS ($1:"colA"::INTEGER),
@@ -111,9 +116,12 @@ def test_publish_external_delta_table_partitioned(
                 auto_refresh = false   
                 refresh_on_create=false   
                 file_format = (type = parquet)    
-                table_format = delta;"""
+                table_format = delta;""",
+        fetch_pandas=False,
     )
-    mock_query.assert_any_call('alter external table "test_database"."test_schema"."test_table" refresh;')
+    mock_query.assert_any_call(
+        query='alter external table "test_database"."test_schema"."test_table" refresh;', fetch_pandas=False
+    )
 
 
 @patch("adapta.storage.database.snowflake_sql.SnowflakeClient.query")
@@ -127,6 +135,8 @@ def test_publish_external_delta_table_skip_initialize(
     )
 
     with pytest.raises(AssertionError):
-        mock_query.assert_any_call("create schema if not exists test_database.test_schema")
+        mock_query.assert_any_call(query="create schema if not exists test_database.test_schema", fetch_pandas=False)
 
-    mock_query.assert_any_call('alter external table "test_database"."test_schema"."test_table" refresh;')
+    mock_query.assert_any_call(
+        query='alter external table "test_database"."test_schema"."test_table" refresh;', fetch_pandas=False
+    )

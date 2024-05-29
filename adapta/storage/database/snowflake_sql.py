@@ -93,21 +93,21 @@ class SnowflakeClient:
         if exc_val is not None:
             self._logger.error(f"An error occurred while closing the database connection: {exc_val}")
 
-    def query(self, query: str) -> Optional[DataFrame]:
+    def query(self, query: str, fetch_pandas: bool = True) -> Optional[DataFrame]:
         """
         Executes the given SQL query and returns the result as a Pandas DataFrame.
 
         :param query: The SQL query to execute.
+        :param fetch_pandas: Fetch Pandas dataframes in batches, otherwise only execute the query
         :return: An iterator of Pandas DataFrames, one for each result set returned by the query, or None if there was
             an error executing the query.
         """
         try:
             with self._conn.cursor() as cursor:
-                return (
-                    cursor.execute(query).fetch_pandas_all()
-                    if query.split()[0].lower() == "select"
-                    else cursor.execute(query)
-                )
+                if fetch_pandas:
+                    return cursor.execute(query).fetch_pandas_all()
+                else:
+                    cursor.execute(query)
         except ProgrammingError as ex:
             self._logger.error("Error executing query {query}", query=query, exception=ex)
             return None
@@ -169,12 +169,13 @@ class SnowflakeClient:
             assert path, "Path to the delta table needed! Please check!"
             assert table_schema, "Table schema needed! Please check!"
 
-            self.query(f"create schema if not exists {database}.{schema}")
+            self.query(query=f"create schema if not exists {database}.{schema}", fetch_pandas=False)
 
             self.query(
-                f"""create stage if not exists {database}.{schema}.stage_{table} 
+                query=f"""create stage if not exists {database}.{schema}.stage_{table} 
                 storage_integration = {storage_integration if storage_integration is not None else path.account} 
-                url = azure://{path.account}.blob.core.windows.net/{path.container}/{path.path};"""
+                url = azure://{path.account}.blob.core.windows.net/{path.container}/{path.path};""",
+                fetch_pandas=False,
             )
 
             if partition_columns is not None:
@@ -201,7 +202,7 @@ class SnowflakeClient:
             column_expr = ("," + os.linesep).join(columns)
 
             self.query(
-                f"""
+                query=f"""
                 create or replace external table "{database}"."{schema}"."{table}"
                 (
                     {column_expr}
@@ -211,7 +212,8 @@ class SnowflakeClient:
                 auto_refresh = false   
                 refresh_on_create=false   
                 file_format = (type = parquet)    
-                table_format = delta;"""
+                table_format = delta;""",
+                fetch_pandas=False,
             )
 
-        self.query(f'alter external table "{database}"."{schema}"."{table}" refresh;')
+        self.query(query=f'alter external table "{database}"."{schema}"."{table}" refresh;', fetch_pandas=False)

@@ -92,3 +92,14 @@ with snowflake_client as sc:
     result = sc.query(query)
     print(result)
 ```
+If you want to run non-SELECT query, let `pandas_fetch=False` will only execute query to avoid `NotSupportedError`
+```python
+from adapta.storage.database.snowflake_sql import SnowflakeClient
+
+snowflake_client = SnowflakeClient(user="email@email.com", account="ACCOUNT", warehouse="WAREHOUSE")
+
+query = "create schema if not exists schema_name.table_name"
+
+with snowflake_client as sc:
+    sc.query(query=query, fetch_pandas=False) # return nothing
+```
