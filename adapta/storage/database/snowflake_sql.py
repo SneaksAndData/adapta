@@ -175,7 +175,7 @@ class SnowflakeClient:
             self.query(
                 query=f"""create stage if not exists {database}.{schema}.stage_{table}
                 storage_integration = {storage_integration if storage_integration is not None else path.account}
-                url = azure://{path.account}.blob.core.windows.net/{path.container}/{path.path};""",
+                url = 'azure://{path.account}.blob.core.windows.net/{path.container}/{path.path}';""",
                 fetch_pandas=False,
             )
 
@@ -209,7 +209,7 @@ class SnowflakeClient:
                     {column_expr}
                 )
                 {f"partition by ({partition_expr})" if partition_expr else ""}
-                location={database}.{schema}.stage_{table}  
+                location=@{database}.{schema}.stage_{table}  
                 auto_refresh = false   
                 refresh_on_create=false   
                 file_format = (type = parquet)    
