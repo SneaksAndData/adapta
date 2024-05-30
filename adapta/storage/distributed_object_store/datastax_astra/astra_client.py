@@ -415,15 +415,10 @@ class AstraClient:
             ):  # assume all enums are strings - for now
                 return (columns.Text,)
             if get_origin(python_type) == list:
-                args = typing.get_args(python_type)
-                if get_origin(args[0]) == dict:
-                    dict_args = typing.get_args(args[0])
+                if typing.get_origin(typing.get_args(python_type)[0]) == dict:
                     return (
                         columns.List,
-                        columns.Map(
-                            map_to_column(dict_args[0])[0],
-                            map_to_column(dict_args[1])[0],
-                        ),
+                        map_to_column(typing.get_args(python_type))[0],
                     )
                 return (
                     columns.List,
