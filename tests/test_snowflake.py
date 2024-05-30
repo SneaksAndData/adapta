@@ -45,7 +45,7 @@ def test_publish_external_delta_table(
     mock_query.assert_any_call(
         query="""create stage if not exists test_database.test_schema.stage_test_table
                 storage_integration = account
-                url = azure://account.blob.core.windows.net/container/test_schema/test_table;""",
+                url = 'azure://account.blob.core.windows.net/container/test_schema/test_table';""",
         fetch_pandas=False,
     )
     mock_query.assert_any_call(
@@ -65,7 +65,7 @@ def test_publish_external_delta_table(
 "array_field" VARIANT AS ($1:"array_field"::VARIANT)
                 )
                 
-                location=test_database.test_schema.stage_test_table  
+                location=@test_database.test_schema.stage_test_table  
                 auto_refresh = false   
                 refresh_on_create=false   
                 file_format = (type = parquet)    
@@ -100,7 +100,7 @@ def test_publish_external_delta_table_partitioned(
     mock_query.assert_any_call(
         query="""create stage if not exists test_database.test_schema.stage_test_table
                 storage_integration = account
-                url = azure://account.blob.core.windows.net/container/test_schema/test_table;""",
+                url = 'azure://account.blob.core.windows.net/container/test_schema/test_table';""",
         fetch_pandas=False,
     )
     mock_query.assert_any_call(
@@ -112,7 +112,7 @@ def test_publish_external_delta_table_partitioned(
 "colP" TEXT AS (split_part(split_part(metadata$filename, \'=\', 2), \'/\', 1))
                 )
                 partition by (colP)
-                location=test_database.test_schema.stage_test_table  
+                location=@test_database.test_schema.stage_test_table  
                 auto_refresh = false   
                 refresh_on_create=false   
                 file_format = (type = parquet)    
