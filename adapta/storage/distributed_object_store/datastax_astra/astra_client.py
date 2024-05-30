@@ -418,7 +418,7 @@ class AstraClient:
                 if typing.get_origin(typing.get_args(python_type)[0]) == dict:
                     return (
                         columns.List,
-                        map_to_column(typing.get_args(python_type))[0],
+                        map_to_column(typing.get_args(python_type)[0])[0],
                     )
                 return (
                     columns.List,
