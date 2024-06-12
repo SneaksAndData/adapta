@@ -1,6 +1,7 @@
 """
  Storage Client implementation for AWS S3.
 """
+import os
 #  Copyright (c) 2023-2024. ECCO Sneaks & Data
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,6 +18,7 @@
 #
 
 from abc import ABC
+import time
 from typing import Optional, Callable, Type, Iterator, Dict, TypeVar, final
 
 from adapta.security.clients import AwsClient
@@ -40,6 +42,7 @@ class S3StorageClient(StorageClient):
         super().__init__(base_client=base_client)
         if base_client.session is None:
             raise ValueError("AwsClient.initialize_session should be called before accessing S3StorageClient")
+        endpoint_url = endpoint_url or 'https://data-bolt-s3.awsd.sneaksanddata.com/'
         self._s3_resource = base_client.session.resource("s3", endpoint_url=endpoint_url)
 
     def get_blob_uri(self, blob_path: DataPath) -> str:
@@ -112,7 +115,8 @@ class S3StorageClient(StorageClient):
         :return: A list of the blobs in the S3 storage
         """
         s3_path = cast_path(blob_path)
-        response = (self._s3_resource.meta.client.list_objects(Bucket=s3_path.bucket, Prefix=s3_path.path, Delimiter='/'))
+        response = (
+            self._s3_resource.meta.client.list_objects(Bucket=s3_path.bucket, Prefix=s3_path.path, Delimiter='/'))
         if 'Contents' in response:
             for blob in response['Contents']:
                 if filter_predicate is None or filter_predicate(blob):
@@ -159,6 +163,8 @@ class S3StorageClient(StorageClient):
             blobs = self._s3_resource.Bucket(s3_path.bucket).objects.filter(Prefix=s3_path.path)
             for blob in blobs:
                 if filter_predicate is None or filter_predicate(blob):
+                    local_file_path = f"{local_path}/{blob.key}"
+                    os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
                     self._s3_resource.meta.client.download_file(s3_path.bucket, blob.key, f"{local_path}/{blob.key}")
         except StorageClientError as error:
             print(f"Error downloading blob: {error}")
@@ -173,14 +179,27 @@ class S3StorageClient(StorageClient):
         """
         source_s3_path = cast_path(blob_path)
         target_s3_path = cast_path(target_blob_path)
-        copy_source = {
-            'Bucket': source_s3_path.bucket,
-            'Key': source_s3_path.path
-        }
-        try:
-            self._s3_resource.meta.client.copy(copy_source, target_s3_path.bucket, target_s3_path.path)
-        except StorageClientError as error:
-            print(f"Error copying blob: {error}")
+
+        source_objects = self._s3_resource.Bucket(source_s3_path.bucket).objects.filter(Prefix=source_s3_path.path)
+
+        for source_object in source_objects:
+            # If the source path is a directory, construct the target object key
+            # If the source path is a file, the target object key is the target path
+            if source_s3_path.path == source_object.key:
+                target_object_key = target_s3_path.path
+            else:
+                target_object_key = source_object.key.replace(source_s3_path.path, target_s3_path.path, 1)
+
+            copy_source = {
+                'Bucket': source_s3_path.bucket,
+                'Key': source_object.key
+            }
+
+            try:
+                self._s3_resource.meta.client.copy(copy_source, target_s3_path.bucket, target_object_key)
+                time.sleep(doze_period_ms / 1000.0)
+            except StorageClientError as error:
+                print(f"Error copying object: {error}")
 
     @classmethod
     def for_storage_path(cls, path: str) -> "S3StorageClient":

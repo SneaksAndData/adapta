@@ -73,3 +73,45 @@ s3_client.save_data_as_blob(
 # read files from S3
 blobs = s3_client.read_blobs(s3_path, serialization_format=DictJsonSerializationFormat)
 ```
+
+#### Download a single blob:
+```python
+from adapta.security.clients import AwsClient
+from adapta.storage.models.aws import S3Path
+from adapta.storage.blob.s3_storage_client import S3StorageClient
+from adapta.storage.models.format import DictJsonSerializationFormat
+
+# Create client
+credentials = EnvironmentAwsCredentials()
+aws_client = AwsClient(credentials)
+
+# Initialize session
+aws_client.initialize_session()
+
+# Target path for copy_blob
+blob_path = "dev/EXAMPLE@ecco.com/blob.file" "# It can be either a 'blob.file' or a 'folder/'
+s3_path = S3Path.from_hdfs_path(blob_path)
+
+# Init storage client
+s3_client = S3StorageClient(base_client=aws_client)
+
+# Save data to S3
+s3_client.save_data_as_blob(
+    data={"data_value": "very_important_data"}, blob_path=s3_path, serialization_format=DictJsonSerializationFormat, overwrite=True
+)
+
+# List blobs in S3
+blob_list = s3_client.list_blobs(s3_path)
+for blob in blob_list:
+    print(blob)
+
+# Read files from S3
+blobs = s3_client.read_blobs(s3_path, serialization_format=DictJsonSerializationFormat)
+
+# Download files from S3
+s3_client.download_blobs(s3_path, local_path="/local/path/to/download")
+
+# Copy blob from one location to another in S3
+target_s3_path='s3a://dev/EXAMPLES@ecco.com/blob_copy/'
+s3_client.copy_blob(blob_path=s3_path, target_blob_path=target_s3_path, doze_period_ms=1000) # Time in ms between files being copied
+```

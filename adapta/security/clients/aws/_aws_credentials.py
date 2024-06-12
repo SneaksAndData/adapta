@@ -17,6 +17,7 @@ Contains credentials provider for AWS clients
 #
 import os
 from abc import ABC, abstractmethod
+from typing import Optional
 
 
 class AccessKeyCredentials(ABC):
@@ -46,6 +47,8 @@ class EnvironmentAwsCredentials(AccessKeyCredentials):
     """
 
     def __init__(self):
+        self._session_token = None
+
         if "PROTEUS__AWS_SECRET_ACCESS_KEY" not in os.environ:
             raise ValueError("PROTEUS__AWS_SECRET_ACCESS_KEY must be set")
         self._access_key = os.environ["PROTEUS__AWS_SECRET_ACCESS_KEY"]
@@ -58,6 +61,9 @@ class EnvironmentAwsCredentials(AccessKeyCredentials):
             raise ValueError("PROTEUS__AWS_REGION must be set")
         self._region = os.environ["PROTEUS__AWS_REGION"]
 
+        if "PROTEUS__AWS_SESSION_TOKEN" in os.environ:
+            self._session_token = os.environ["PROTEUS__AWS_SESSION_TOKEN"]
+
     @property
     def access_key(self) -> str:
         return self._access_key
@@ -68,8 +74,11 @@ class EnvironmentAwsCredentials(AccessKeyCredentials):
 
     @property
     def region(self) -> str:
-        return self.region
+        return self._region
 
+    @property
+    def session_token(self) -> Optional[str]:
+        return self._session_token
 
 class ExplicitAwsCredentials(AccessKeyCredentials):
     """
@@ -80,6 +89,7 @@ class ExplicitAwsCredentials(AccessKeyCredentials):
         self._access_key = access_key
         self._access_key_id = access_key_id
         self._region = region
+        # TODO: session
 
     @property
     def access_key(self) -> str:

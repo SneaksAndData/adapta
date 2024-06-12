@@ -24,6 +24,7 @@ from pyarrow.fs import FileSystem
 from adapta.security.clients._base import AuthenticationClient
 from adapta.security.clients.aws._aws_credentials import AccessKeyCredentials, EnvironmentAwsCredentials
 from adapta.storage.models.base import DataPath
+from botocore.credentials import Credentials
 
 
 @final
@@ -65,7 +66,6 @@ class AwsClient(AuthenticationClient):
          Not used in AWS.
         :return:
         """
-        raise NotImplementedError("Authentication with temporary credentials is not supported yet in AwsClient")
 
     def connect_storage(self, path: DataPath, set_env: bool = False) -> Optional[Dict]:
         """
@@ -80,7 +80,7 @@ class AwsClient(AuthenticationClient):
         """
 
     def get_pyarrow_filesystem(self, path: DataPath, connection_options: Optional[Dict[str, str]] = None) -> FileSystem:
-        raise ValueError("Not supported  in AwsClient")
+        raise ValueError("Not supported in AwsClient")
 
     def initialize_session(self) -> "AwsClient":
         """
@@ -90,5 +90,7 @@ class AwsClient(AuthenticationClient):
             aws_access_key_id=self._credentials.access_key_id,
             aws_secret_access_key=self._credentials.access_key,
             region_name=self._credentials.region,
+            aws_session_token=self._credentials.session_token
         )
+
         return self
