@@ -31,22 +31,26 @@ T = TypeVar("T")  # pylint: disable=C0103
 
 
 @final
-class S3StorageClient(StorageClient, ABC):
+class S3StorageClient(StorageClient):
     """
     S3 Storage Client.
     """
 
-    def __init__(self, *, base_client: AwsClient):
+    def __init__(self, *, base_client: AwsClient, endpoint_url: Optional[str] = None):
         super().__init__(base_client=base_client)
         if base_client.session is None:
             raise ValueError("AwsClient.initialize_session should be called before accessing S3StorageClient")
-        self._s3_resource = base_client.session.resource("s3")
+        self._s3_resource = base_client.session.resource("s3", endpoint_url=endpoint_url)
 
-    def get_blob_uri(self, blob_path: DataPath, **kwargs) -> str:
+    def get_blob_uri(self, blob_path: DataPath) -> str:
+        """Returns the URI for a blob in S3 storage.
+
+        :param blob_path: Path to blob
+
+        :return: The URI for the given blob path
         """
-        Not implemented in S3 Client
-        """
-        raise NotImplementedError("Not implemented in S3StorageClient")
+        s3_path = cast_path(blob_path)
+        return f"s3://{s3_path.bucket}/{s3_path.path}"
 
     def blob_exists(self, blob_path: DataPath) -> bool:
         """Checks if blob located at blob_path exists
@@ -59,12 +63,12 @@ class S3StorageClient(StorageClient, ABC):
         return any(self._s3_resource.Bucket(s3_path.bucket).objects.filter(Prefix=s3_path.path))
 
     def save_data_as_blob(
-        self,
-        data: T,
-        blob_path: DataPath,
-        serialization_format: Type[SerializationFormat[T]],
-        metadata: Optional[Dict[str, str]] = None,
-        overwrite: bool = False,
+            self,
+            data: T,
+            blob_path: DataPath,
+            serialization_format: Type[SerializationFormat[T]],
+            metadata: Optional[Dict[str, str]] = None,
+            overwrite: bool = False,
     ) -> None:
         """
          Saves any data with the given serialization format.
@@ -72,7 +76,7 @@ class S3StorageClient(StorageClient, ABC):
         :param data: Data to save.
         :param blob_path: Blob path in DataPath notation.
         :param metadata: Optional blob tags or metadata to attach.
-        :param overwrite: whether a blob should be overwritten or an exception thrown if it already exists.
+        :param overwrite: Whether a blob should be overwritten or an exception thrown if it already exists.
         :param serialization_format: The serialization format.
             The type (T) of the serialization format must be compatible with the provided data.
         :return:
@@ -97,18 +101,28 @@ class S3StorageClient(StorageClient, ABC):
         self._s3_resource.Bucket(s3_path.bucket).Object(blob_path.path).delete()
 
     def list_blobs(
-        self, blob_path: DataPath, filter_predicate: Optional[Callable[[...], bool]] = None
+            self, blob_path: DataPath, filter_predicate: Optional[Callable[[...], bool]] = None
     ) -> Iterator[DataPath]:
         """
-        Not implemented in S3 Client
+        Lists blobs in S3 storage.
+    
+        :param blob_path: Path to blob
+        :param filter_predicate: Optional callable to filter blobs
+    
+        :return: A list of the blobs in the S3 storage
         """
-        raise NotImplementedError("Not implemented in S3StorageClient")
+        s3_path = cast_path(blob_path)
+        response = (self._s3_resource.meta.client.list_objects(Bucket=s3_path.bucket, Prefix=s3_path.path, Delimiter='/'))
+        if 'Contents' in response:
+            for blob in response['Contents']:
+                if filter_predicate is None or filter_predicate(blob):
+                    yield blob
 
     def read_blobs(
-        self,
-        blob_path: DataPath,
-        serialization_format: Type[SerializationFormat[T]],
-        filter_predicate: Optional[Callable[[...], bool]] = None,
+            self,
+            blob_path: DataPath,
+            serialization_format: Type[SerializationFormat[T]],
+            filter_predicate: Optional[Callable[[...], bool]] = None,
     ) -> Iterator[T]:
         """
          Reads data under provided path into the given format.
@@ -125,22 +139,48 @@ class S3StorageClient(StorageClient, ABC):
             yield serialization_format().deserialize(blob.get()["Body"].read())
 
     def download_blobs(
-        self,
-        blob_path: DataPath,
-        local_path: str,
-        threads: Optional[int] = None,
-        filter_predicate: Optional[Callable[[...], bool]] = None,
+            self,
+            blob_path: DataPath,
+            local_path: str,
+            threads: Optional[int] = None,
+            filter_predicate: Optional[Callable[[...], bool]] = None,
     ) -> None:
         """
-        Not yet implemented in S3 Client
+        Downloads blobs from S3 storage to a local path.
+
+        :param blob_path: Path to blob
+        :param local_path: Local path to download the blobs to
+        :param threads: Number of threads to use for the download
+        :param filter_predicate: Optional callable to filter blobs
+        :return: Blod downloaded
         """
-        raise NotImplementedError("Not yet implemented in S3StorageClient")
+        s3_path = cast_path(blob_path)
+        try:
+            blobs = self._s3_resource.Bucket(s3_path.bucket).objects.filter(Prefix=s3_path.path)
+            for blob in blobs:
+                if filter_predicate is None or filter_predicate(blob):
+                    self._s3_resource.meta.client.download_file(s3_path.bucket, blob.key, f"{local_path}/{blob.key}")
+        except StorageClientError as error:
+            print(f"Error downloading blob: {error}")
 
     def copy_blob(self, blob_path: DataPath, target_blob_path: DataPath, doze_period_ms: int) -> None:
         """
-        Not implemented in S3 Client
+        Copies a blob from one location to another in S3 storage.
+
+        :param blob_path: Path to the source blob
+        :param target_blob_path: Path to the target location
+        :param doze_period_ms: Time to sleep between operations in milliseconds
         """
-        raise NotImplementedError("Not implemented in S3StorageClient")
+        source_s3_path = cast_path(blob_path)
+        target_s3_path = cast_path(target_blob_path)
+        copy_source = {
+            'Bucket': source_s3_path.bucket,
+            'Key': source_s3_path.path
+        }
+        try:
+            self._s3_resource.meta.client.copy(copy_source, target_s3_path.bucket, target_s3_path.path)
+        except StorageClientError as error:
+            print(f"Error copying blob: {error}")
 
     @classmethod
     def for_storage_path(cls, path: str) -> "S3StorageClient":
