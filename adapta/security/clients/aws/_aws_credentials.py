@@ -40,7 +40,6 @@ class AccessKeyCredentials(ABC):
     def region(self) -> str:
         """AWS region"""
 
-
 class EnvironmentAwsCredentials(AccessKeyCredentials):
     """
     Reads credentials from environment variables
@@ -68,7 +67,6 @@ class EnvironmentAwsCredentials(AccessKeyCredentials):
         if "PROTEUS__AWS_ENDPOINT" in os.environ:
             self._endpoint = os.environ["PROTEUS__AWS_ENDPOINT"]
 
-
     @property
     def access_key(self) -> str:
         return self._access_key
@@ -90,17 +88,17 @@ class EnvironmentAwsCredentials(AccessKeyCredentials):
         return self._endpoint
 
 
-
 class ExplicitAwsCredentials(AccessKeyCredentials):
     """
     Explicitly passed AWS credentials
     """
 
-    def __init__(self, access_key, access_key_id, region, session_token=None):
+    def __init__(self, access_key, access_key_id, region, session_token=None, endpoint=None):
         self._access_key = access_key
         self._access_key_id = access_key_id
         self._region = region
         self._session_token = session_token
+        self._endpoint = endpoint
 
     @property
     def access_key(self) -> str:
@@ -117,3 +115,7 @@ class ExplicitAwsCredentials(AccessKeyCredentials):
     @property
     def session_token(self) -> Optional[str]:
         return self._session_token
+
+    @property
+    def endpoint(self) -> Optional[str]:
+        return self._endpoint
