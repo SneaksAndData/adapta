@@ -42,7 +42,7 @@ class S3StorageClient(StorageClient):
         super().__init__(base_client=base_client)
         if base_client.session is None:
             raise ValueError("AwsClient.initialize_session should be called before accessing S3StorageClient")
-        endpoint_url = endpoint_url or 'https://data-bolt-s3.awsd.sneaksanddata.com/'
+        endpoint_url = endpoint_url or base_client._credentials.endpoint
         self._s3_resource = base_client.session.resource("s3", endpoint_url=endpoint_url)
 
     def get_blob_uri(self, blob_path: DataPath) -> str:
@@ -112,7 +112,7 @@ class S3StorageClient(StorageClient):
         :param blob_path: Path to blob
         :param filter_predicate: Optional callable to filter blobs
     
-        :return: A list of the blobs in the S3 storage
+        :return: An iterator over a list of the blobs in the S3 storage
         """
         s3_path = cast_path(blob_path)
         response = (
@@ -156,7 +156,7 @@ class S3StorageClient(StorageClient):
         :param local_path: Local path to download the blobs to
         :param threads: Number of threads to use for the download
         :param filter_predicate: Optional callable to filter blobs
-        :return: Blod downloaded
+        :return:
         """
         s3_path = cast_path(blob_path)
         try:

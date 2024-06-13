@@ -48,6 +48,7 @@ class EnvironmentAwsCredentials(AccessKeyCredentials):
 
     def __init__(self):
         self._session_token = None
+        self._endpoint = None
 
         if "PROTEUS__AWS_SECRET_ACCESS_KEY" not in os.environ:
             raise ValueError("PROTEUS__AWS_SECRET_ACCESS_KEY must be set")
@@ -63,6 +64,10 @@ class EnvironmentAwsCredentials(AccessKeyCredentials):
 
         if "PROTEUS__AWS_SESSION_TOKEN" in os.environ:
             self._session_token = os.environ["PROTEUS__AWS_SESSION_TOKEN"]
+
+        if "PROTEUS__AWS_ENDPOINT" in os.environ:
+            self._endpoint = os.environ["PROTEUS__AWS_ENDPOINT"]
+
 
     @property
     def access_key(self) -> str:
@@ -80,16 +85,22 @@ class EnvironmentAwsCredentials(AccessKeyCredentials):
     def session_token(self) -> Optional[str]:
         return self._session_token
 
+    @property
+    def endpoint(self) -> Optional[str]:
+        return self._endpoint
+
+
+
 class ExplicitAwsCredentials(AccessKeyCredentials):
     """
     Explicitly passed AWS credentials
     """
 
-    def __init__(self, access_key, access_key_id, region):
+    def __init__(self, access_key, access_key_id, region, session_token=None):
         self._access_key = access_key
         self._access_key_id = access_key_id
         self._region = region
-        # TODO: session
+        self._session_token = session_token
 
     @property
     def access_key(self) -> str:
@@ -102,3 +113,7 @@ class ExplicitAwsCredentials(AccessKeyCredentials):
     @property
     def region(self) -> str:
         return self._region
+
+    @property
+    def session_token(self) -> Optional[str]:
+        return self._session_token

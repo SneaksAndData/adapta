@@ -19,6 +19,7 @@
 from typing import Optional, Dict, final
 
 import boto3
+
 from pyarrow.fs import FileSystem
 
 from adapta.security.clients._base import AuthenticationClient
@@ -34,8 +35,8 @@ class AwsClient(AuthenticationClient):
     """
 
     def __init__(self, aws_credentials: Optional[AccessKeyCredentials] = None):
-        self._session = None
-        self._credentials = aws_credentials or EnvironmentAwsCredentials()
+        self._session = boto3._get_default_session()
+        self._credentials = aws_credentials or self._session.get_credentials() or EnvironmentAwsCredentials()
 
     @property
     def session(self):
