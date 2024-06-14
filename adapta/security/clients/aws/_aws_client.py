@@ -52,7 +52,6 @@ class AwsClient(AuthenticationClient):
         """
         return self._credentials.endpoint
 
-
     @classmethod
     def from_base_client(cls, client: AuthenticationClient) -> Optional["AwsClient"]:
         """
@@ -89,7 +88,11 @@ class AwsClient(AuthenticationClient):
         """
 
     def get_pyarrow_filesystem(self, path: DataPath, connection_options: Optional[Dict[str, str]] = None) -> FileSystem:
-        raise ValueError("Not supported in AwsClient")
+        """
+        Not supported in AwsClient.
+        :return: None
+        """
+        return None
 
     def initialize_session(self) -> "AwsClient":
         """
