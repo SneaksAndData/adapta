@@ -1,3 +1,5 @@
+from functools import reduce
+
 import pytest
 
 from adapta.storage.models.filter_expression import (
@@ -104,3 +106,93 @@ def test_generic_filtering(
 ):
     assert compile_expression(filter_expr, ArrowFilterExpression).equals(pyarrow_expected_expr)
     assert compile_expression(filter_expr, AstraFilterExpression) == astra_expected_expr
+
+
+@pytest.mark.parametrize(
+    "filter_expr, expected_output",
+    [
+        (FilterField(TEST_ENTITY_SCHEMA.col_a) == "test", "col_a == test"),
+        (FilterField(TEST_ENTITY_SCHEMA.col_a) > "test", "col_a > test"),
+        (FilterField(TEST_ENTITY_SCHEMA.col_a) >= "test", "col_a >= test"),
+        (FilterField(TEST_ENTITY_SCHEMA.col_a) < "test", "col_a < test"),
+        (FilterField(TEST_ENTITY_SCHEMA.col_a) <= "test", "col_a <= test"),
+        (
+            (
+                (FilterField(TEST_ENTITY_SCHEMA.col_a) == "test") & (FilterField(TEST_ENTITY_SCHEMA.col_c) == 1)
+                | (FilterField(TEST_ENTITY_SCHEMA.col_b) == "other")
+                & ((FilterField(TEST_ENTITY_SCHEMA.col_c) == 2) | (FilterField(TEST_ENTITY_SCHEMA.col_d).isin([1, 2])))
+            ),
+            "((col_a == test) AND (col_c == 1)) OR ((col_b == other) AND ((col_c == 2) OR (col_d IN [1, 2])))",
+        ),
+    ],
+)
+def test_print_filter_expression(filter_expr: FilterExpression, expected_output: str):
+    assert str(filter_expr) == expected_output
+
+
+@pytest.mark.parametrize(
+    "filter_expr, pyarrow_expected_expr, astra_expected_expr",
+    [
+        (
+            (FilterField(TEST_ENTITY_SCHEMA.col_d).isin([str(i) for i in range(1, 28)])),
+            ((pyarrow_field("col_d").isin([str(i) for i in range(1, 28)]))),
+            (
+                [
+                    {"col_d__in": [str(i) for i in range(1, 15)]},
+                    {"col_d__in": [str(i) for i in range(15, 28)]},
+                ]
+            ),
+        ),
+        (
+            (FilterField(TEST_ENTITY_SCHEMA.col_d).isin([str(i) for i in range(1, 26)])),
+            (pyarrow_field("col_d").isin([str(i) for i in range(1, 26)])),
+            (
+                [
+                    {"col_d__in": [str(i) for i in range(1, 26)]},
+                ]
+            ),
+        ),
+        (
+            (FilterField(TEST_ENTITY_SCHEMA.col_d).isin([str(i) for i in range(1, 101)])),
+            ((pyarrow_field("col_d").isin([str(i) for i in range(1, 101)]))),
+            (
+                [
+                    {"col_d__in": [str(i) for i in range(1, 26)]},
+                    {"col_d__in": [str(i) for i in range(26, 51)]},
+                    {"col_d__in": [str(i) for i in range(51, 76)]},
+                    {"col_d__in": [str(i) for i in range(76, 101)]},
+                ]
+            ),
+        ),
+    ],
+)
+def test_long_is_in_list(
+    filter_expr: Union[FilterField, FilterExpression],
+    pyarrow_expected_expr: pc.Expression,
+    astra_expected_expr: Dict[str, Any],
+):
+    assert compile_expression(filter_expr, ArrowFilterExpression).equals(pyarrow_expected_expr)
+    assert compile_expression(filter_expr, AstraFilterExpression) == astra_expected_expr
+
+
+@pytest.mark.parametrize(
+    "filter_expr",
+    [
+        reduce(
+            lambda x, y: x | y,
+            [
+                (FilterField(TEST_ENTITY_SCHEMA.col_d).isin([col_d]))
+                & (FilterField(TEST_ENTITY_SCHEMA.col_a) == col_a)
+                & (FilterField(TEST_ENTITY_SCHEMA.col_b) == col_b)
+                for col_a in [str(i) for i in range(1, 20)]
+                for col_b in [str(i) for i in range(1, 50)]
+                for col_d in [str(i) for i in range(1, 50)]
+            ],
+        )
+    ],
+)
+def test_large_filter(filter_expr: Union[FilterField, FilterExpression]):
+    try:
+        compile_expression(filter_expr, AstraFilterExpression)
+    except RecursionError as re:
+        assert False, f"Raised RecursionError for large filters"

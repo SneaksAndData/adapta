@@ -1,4 +1,4 @@
-#  Copyright (c) 2023. ECCO Sneaks & Data
+#  Copyright (c) 2023-2024. ECCO Sneaks & Data
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -14,9 +14,11 @@
 #
 
 import logging
+import os
 
 import pytest
 
+from adapta.logs.handlers.datadog_api_handler import DataDogApiHandler
 from adapta.logs.models import LogLevel
 from adapta.logs import SemanticLogger
 from adapta.storage.database.odbc import OdbcClient
@@ -38,3 +40,22 @@ def restore_logger_class():
     yield
     pass
     logging.setLoggerClass(_class)
+
+
+@pytest.fixture(scope="session", autouse=True)
+def set_env():
+    os.environ |= {
+        "PROTEUS__DD_API_KEY": "some-key",
+        "PROTEUS__DD_APP_KEY": "some-app-key",
+        "PROTEUS__DD_SITE": "some-site.dog",
+        "PYTHONUNBUFFERED": "1",
+    }
+
+
+@pytest.fixture
+def datadog_handler():  # only for async method (mocker does not work there)
+    class MockDataDogApiHandler(DataDogApiHandler):
+        def _flush(self) -> None:
+            pass
+
+    return MockDataDogApiHandler()

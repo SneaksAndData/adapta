@@ -1,7 +1,7 @@
 """
  Metrics integration abstraction.
 """
-#  Copyright (c) 2023. ECCO Sneaks & Data
+#  Copyright (c) 2023-2024. ECCO Sneaks & Data
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ class MetricsProvider(ABC):
     """
 
     @abstractmethod
-    def increment(self, metric_name: str, tags: Optional[Dict[str, str]]) -> None:
+    def increment(self, metric_name: str, tags: Optional[Dict[str, str]] = None) -> None:
         """
 
         :param metric_name:
@@ -35,7 +35,7 @@ class MetricsProvider(ABC):
         """
 
     @abstractmethod
-    def decrement(self, metric_name: str, tags: Optional[Dict[str, str]]) -> None:
+    def decrement(self, metric_name: str, tags: Optional[Dict[str, str]] = None) -> None:
         """
 
         :param metric_name:
@@ -44,17 +44,7 @@ class MetricsProvider(ABC):
         """
 
     @abstractmethod
-    def count(self, metric_name: str, metric_value: int, tags: Optional[Dict[str, str]]) -> None:
-        """
-
-        :param metric_name:
-        :param metric_value:
-        :param tags:
-        :return:
-        """
-
-    @abstractmethod
-    def gauge(self, metric_name: str, metric_value: float, tags: Optional[Dict[str, str]]) -> None:
+    def count(self, metric_name: str, metric_value: int, tags: Optional[Dict[str, str]] = None) -> None:
         """
 
         :param metric_name:
@@ -64,7 +54,7 @@ class MetricsProvider(ABC):
         """
 
     @abstractmethod
-    def set(self, metric_name: str, metric_value: float, tags: Optional[Dict[str, str]]) -> None:
+    def gauge(self, metric_name: str, metric_value: float, tags: Optional[Dict[str, str]] = None) -> None:
         """
 
         :param metric_name:
@@ -74,7 +64,17 @@ class MetricsProvider(ABC):
         """
 
     @abstractmethod
-    def histogram(self, metric_name: str, metric_value: float, tags: Optional[Dict[str, str]]) -> None:
+    def set(self, metric_name: str, metric_value: float, tags: Optional[Dict[str, str]] = None) -> None:
+        """
+
+        :param metric_name:
+        :param metric_value:
+        :param tags:
+        :return:
+        """
+
+    @abstractmethod
+    def histogram(self, metric_name: str, metric_value: float, tags: Optional[Dict[str, str]] = None) -> None:
         """
 
         :param metric_name:

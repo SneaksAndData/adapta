@@ -2,7 +2,7 @@
  Import index.
 """
 
-#  Copyright (c) 2023. ECCO Sneaks & Data
+#  Copyright (c) 2023-2024. ECCO Sneaks & Data
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -50,5 +50,10 @@ except ImportError:
 
 try:
     from adapta.security.clients._azure_client import AzureClient
+except ImportError:
+    pass
+
+try:
+    from adapta.security.clients.aws import AwsClient
 except ImportError:
     pass

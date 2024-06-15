@@ -2,7 +2,7 @@
  Utilities module index.
 """
 
-#  Copyright (c) 2023. ECCO Sneaks & Data
+#  Copyright (c) 2023-2024. ECCO Sneaks & Data
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -19,3 +19,5 @@
 
 from adapta.utils._common import *
 from adapta.utils.decorators import run_time_metrics
+from adapta.utils.decorators import rate_limit
+from adapta.utils.data_structures import *

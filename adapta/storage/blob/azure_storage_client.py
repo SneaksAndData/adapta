@@ -1,7 +1,7 @@
 """
  Storage Client implementation for Azure Cloud.
 """
-#  Copyright (c) 2023. ECCO Sneaks & Data
+#  Copyright (c) 2023-2024. ECCO Sneaks & Data
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ from datetime import datetime, timedelta
 from functools import partial
 import signal
 from threading import Thread
-from typing import Union, Optional, Dict, Type, TypeVar, Iterator, List, Callable
+from typing import Union, Optional, Dict, Type, TypeVar, Iterator, List, Callable, final
 
 from azure.core.paging import ItemPaged
 from azure.storage.blob import (
@@ -36,6 +36,7 @@ from azure.storage.blob import (
 
 from adapta.storage.blob.base import StorageClient
 from adapta.security.clients import AzureClient
+from adapta.storage.models import parse_data_path
 from adapta.storage.models.azure import AdlsGen2Path, WasbPath, cast_path
 from adapta.storage.models.base import DataPath
 from adapta.storage.models.format import SerializationFormat
@@ -44,6 +45,7 @@ from adapta.utils import chunk_list, doze
 T = TypeVar("T")  # pylint: disable=C0103
 
 
+@final
 class AzureStorageClient(StorageClient):
     """
     Azure Storage (Blob and ADLS) Client.
@@ -76,6 +78,14 @@ class AzureStorageClient(StorageClient):
             self._blob_service_client: BlobServiceClient = BlobServiceClient.from_connection_string(
                 connection_string, retry_policy=retry_policy
             )
+
+    @classmethod
+    def for_storage_path(cls, path: str) -> "AzureStorageClient":
+        """
+        Generate client instance that can operate on the provided path
+        """
+        azure_path = cast_path(parse_data_path(path))
+        return cls(base_client=AzureClient(), path=azure_path)
 
     def _get_blob_client(self, blob_path: DataPath) -> BlobClient:
         azure_path = cast_path(blob_path)
@@ -169,6 +179,25 @@ class AzureStorageClient(StorageClient):
                 )
 
                 yield serialization_format().deserialize(blob_data)
+
+    def download_blob(
+        self,
+        blob_path: DataPath,
+        local_path: str,
+    ) -> None:
+        """Download a file from ADLS"""
+        azure_path = cast_path(blob_path)
+
+        os.makedirs(local_path, exist_ok=True)
+        with open(os.path.join(local_path, azure_path.path.split("/")[-1]), "wb") as downloaded_blob:
+            downloaded_blob.write(
+                self._blob_service_client.get_blob_client(
+                    container=azure_path.container,
+                    blob=azure_path.path,
+                )
+                .download_blob()
+                .readall()
+            )
 
     def download_blobs(
         self,

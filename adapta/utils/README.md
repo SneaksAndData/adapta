@@ -156,3 +156,83 @@ semantic_logger = SemanticLogger().add_log_source(log_source_name='test_logger_1
 adder(5, 4, logger=semantic_logger, metrics_provider=provider, metric_tags=datadog_tags)
 upgrade_message('Lorum Ipsum', logger=semantic_logger, metrics_provider=provider, metric_tags=datadog_tags)
 ```
+
+## xmltree_to_dict_collection
+This function is used to convert a XML source (supports both xml file and string) to a list of objects.
+
+Parameters:
+* `xml_source`: A valid XML string or a path to a valid XML file
+* `node_type`: The type of each element in returned list, like `dict` or a class inheriting from `DataClassJsonMixin`
+
+Example Usage:
+
+* When input is a XML file, with path `/path/to/my/file`, and `node_type` is `dict`
+```xml
+<?xml version="1.0"?>
+<!-- Content of /path/to/my/file -->
+<catalog>
+   <book>book_name1</book>
+   <book>book_name2</book>
+</catalog>
+```
+```python
+from pathlib import Path
+from adapta.utils import xmltree_to_dict_collection
+
+file_path = Path("/path/to/my/file")
+converted_result = xmltree_to_dict_collection(file_path, dict)
+print(converted_result)
+```
+Output:
+```
+[{'book': 'book_name1'}, {'book': 'book_name2'}]
+```
+* When input is a XML string and `node_type` is a customized class
+```python
+from dataclasses import dataclass
+from adapta.utils import xmltree_to_dict_collection
+from dataclasses_json import DataClassJsonMixin
+
+@dataclass
+class ExampleNodeType(DataClassJsonMixin):
+    """
+    A node type example
+    """
+    book: str
+
+xml_str = "<?xml version='1.0'?><catalog><book>book_name1</book><book>book_name2</book></catalog>"
+converted_result = xmltree_to_dict_collection(xml_str, ExampleNodeType)
+print(converted_result)
+```
+Output:
+```
+[ExampleNodeType(book='book_name1'), ExampleNodeType(book='book_name2')]
+```
+### rate_limit:
+
+Decorator that allows users to rate limit the execution of a function.
+This is useful if you need to limit calls on a client side.
+
+Currently, this decorator only supports the `memory://` backend.
+
+Parameters:
+* `limit`: A rate limit in [string notation](https://limits.readthedocs.io/en/latest/quickstart.html#rate-limit-string-notation) (e.g. ``1/second`` or ``1 per second``)
+* `strategy`: A rate limiting algorithm to use. List of the available strategies can be found in the [limits](https://github.com/alisaifee/limits) repository documentation.
+* `delay_func`: Function that called to delay the execution of the function. Defaults to `doze(1)`.
+
+Example Usage:
+
+```python
+from adapta.utils import rate_limit
+from adapta.utils import session_with_retries
+
+
+@rate_limit(limit="2 per second")
+def call_api(url, session):
+    response = session.get(url)
+    return response.json()
+
+http_session = session_with_retries(retry_count=4)
+for _ in range(10):
+    call_api("https://example.com", http_session)
+```

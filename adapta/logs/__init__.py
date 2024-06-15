@@ -1,7 +1,7 @@
 """
  Module index.
 """
-#  Copyright (c) 2023. ECCO Sneaks & Data
+#  Copyright (c) 2023-2024. ECCO Sneaks & Data
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -17,3 +17,5 @@
 #
 
 from adapta.logs._base import SemanticLogger
+from adapta.logs._async_logger import create_async_logger
+from adapta.logs._logger_interface import LoggerInterface

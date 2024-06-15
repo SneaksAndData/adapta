@@ -2,7 +2,7 @@
  Database client that uses an ODBC driver.
 """
 
-#  Copyright (c) 2023. ECCO Sneaks & Data
+#  Copyright (c) 2023-2024. ECCO Sneaks & Data
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -20,8 +20,9 @@
 from abc import ABC
 from typing import Optional, Union, Iterator
 
-import pandas
+from pandas import DataFrame, read_sql
 import sqlalchemy
+from sqlalchemy import text
 from sqlalchemy.connectors import pyodbc
 from sqlalchemy.engine import URL
 from sqlalchemy.exc import SQLAlchemyError, OperationalError
@@ -125,9 +126,7 @@ class OdbcClient(ABC):
 
         return self._connection
 
-    def query(
-        self, query: str, chunksize: Optional[int] = None
-    ) -> Optional[Union[pandas.DataFrame, Iterator[pandas.DataFrame]]]:
+    def query(self, query: str, chunksize: Optional[int] = None) -> Optional[Union[DataFrame, Iterator[DataFrame]]]:
         """
           Read result of SQL query into a pandas dataframe.
 
@@ -137,9 +136,9 @@ class OdbcClient(ABC):
         """
         try:
             if chunksize:
-                return pandas.read_sql(query, con=self._get_connection(), chunksize=chunksize)
+                return read_sql(query, con=self._get_connection(), chunksize=chunksize)
 
-            return pandas.read_sql(query, con=self._get_connection())
+            return read_sql(query, con=self._get_connection())
         except SQLAlchemyError as ex:
             self._logger.error("Engine error while executing query {query}", query=query, exception=ex)
             return None
@@ -153,7 +152,7 @@ class OdbcClient(ABC):
 
     def materialize(
         self,
-        data: pandas.DataFrame,
+        data: DataFrame,
         schema: str,
         name: str,
         overwrite: bool = False,
@@ -173,9 +172,9 @@ class OdbcClient(ABC):
             if overwrite:
                 try:
                     if self._dialect.dialect == DatabaseType.SQLITE_ODBC.value.dialect:
-                        self._get_connection().execute(f"DELETE FROM {schema}.{name}")
+                        self._get_connection().execute(text(f"DELETE FROM {schema}.{name}"))
                     else:
-                        self._get_connection().execute(f"TRUNCATE TABLE {schema}.{name}")
+                        self._get_connection().execute(text(f"TRUNCATE TABLE {schema}.{name}"))
                 except OperationalError as ex:
                     # The table does not exist. Do nothing and let the Pandas API handle the creation of the table.
                     self._logger.warning(

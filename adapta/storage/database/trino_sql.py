@@ -2,7 +2,7 @@
   SqlAlchemy-based Trino Client Wrapper
 """
 
-#  Copyright (c) 2023. ECCO Sneaks & Data
+#  Copyright (c) 2023-2024. ECCO Sneaks & Data
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@
 import os
 from typing import Optional, Iterator, Tuple
 
-import pandas
+from pandas import DataFrame, read_sql_query
 import sqlalchemy.engine
 from sqlalchemy import create_engine
 from sqlalchemy.exc import SQLAlchemyError
@@ -106,7 +106,7 @@ class TrinoClient:
         self._connection.close()
         self._engine.dispose()
 
-    def query(self, query: str, batch_size: int = 1000) -> Iterator[pandas.DataFrame]:
+    def query(self, query: str, batch_size: int = 1000) -> Iterator[DataFrame]:
         """
         Executes a Trino DML query and converts the result into a Pandas dataframe.
 
@@ -116,4 +116,4 @@ class TrinoClient:
         :param batch_size: Optional batch size to return rows iteratively.
         """
 
-        return pandas.read_sql_query(sql=query, con=self._connection, chunksize=batch_size)
+        return read_sql_query(sql=query, con=self._connection, chunksize=batch_size)

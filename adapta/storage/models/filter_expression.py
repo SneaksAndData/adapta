@@ -1,13 +1,14 @@
 """
     Models for generating filter expressions for PyArrow and Astra.
 """
-
+import math
+from abc import ABC, abstractmethod
+from typing import final, List, Any, Union, TypeVar, Generic, Dict, Type
 from enum import Enum
-from abc import abstractmethod, ABC
-from typing import final, List, Dict, Generic, TypeVar, Any, Union, Type
-
 import pyarrow.compute
 from pyarrow.dataset import field as pyarrow_field
+
+from adapta.utils import chunk_list
 
 TCompileResult = TypeVar("TCompileResult")  # pylint: disable=invalid-name
 
@@ -30,6 +31,29 @@ class FilterExpressionOperation(Enum):
     LE = {"arrow": pyarrow.compute.Expression.__le__, "astra": "__lte"}
     EQ = {"arrow": pyarrow.compute.Expression.__eq__, "astra": ""}
     IN = {"arrow": pyarrow.compute.Expression.isin, "astra": "__in"}
+
+    def to_string(self):
+        """
+        Returns a string representation of the FilterExpressionOperation.
+
+        This method maps each FilterExpressionOperation to its corresponding string representation using a dictionary.
+
+        Returns:
+            A string representation of the FilterExpressionOperation, or an empty string if the operation is not recognized.
+        """
+        operation_strings = {
+            FilterExpressionOperation.AND: "AND",
+            FilterExpressionOperation.OR: "OR",
+            FilterExpressionOperation.GT: ">",
+            FilterExpressionOperation.GE: ">=",
+            FilterExpressionOperation.LT: "<",
+            FilterExpressionOperation.LE: "<=",
+            FilterExpressionOperation.EQ: "==",
+            FilterExpressionOperation.IN: "IN",
+        }
+        if self not in operation_strings:
+            raise ValueError(f"Operation {self} not recognized")
+        return operation_strings[self]
 
 
 @final
@@ -79,7 +103,6 @@ class FilterField:
         """
         Generates a filter condition checking that field is less than or equal to a value.
         """
-
         return Expression(left_operand=self, right_operand=values, operation=FilterExpressionOperation.LE)
 
     def __eq__(self, values: Any) -> "Expression":
@@ -87,6 +110,25 @@ class FilterField:
         Generates a filter condition checking that field is equal to a value.
         """
         return Expression(left_operand=self, right_operand=values, operation=FilterExpressionOperation.EQ)
+
+    def __str__(self):
+        """
+        Returns the string representation of the field name.
+        """
+        return self._field_name
+
+
+class _Subexpression:
+    """
+    Represents a subexpression of an expression.
+
+    expression (Expression): The sub-expression. combine_operation (FilterExpressionOperation): The operation used to
+    combine the sub-expression with the rest of the expression.
+    """
+
+    def __init__(self, expression: "Expression", combine_operation: FilterExpressionOperation):
+        self.expression = expression
+        self.combine_operation = combine_operation
 
 
 class Expression:
@@ -119,6 +161,53 @@ class Expression:
     def __or__(self, other: "Expression") -> "Expression":
         return Expression(left_operand=self, right_operand=other, operation=FilterExpressionOperation.OR)
 
+    def split_expression(self) -> List[_Subexpression]:
+        """
+        Splits the expression into smaller parts and returns a list of Subexpression.
+        Each Subexpression contains a expression and the operation to combine it with.
+        """
+        expressions = []
+        # Initialize a stack with the top-level expression and a null parent operation
+        stack = [(self, None)]
+
+        while stack:
+            current, parent_operation = stack.pop()
+
+            # If the current expression is a FilterField, add it to the expressions list as a sub-expression
+            if isinstance(current.left_operand, FilterField):
+                expressions.append(_Subexpression(current, parent_operation))
+                continue
+
+            if not isinstance(current, Expression):
+                # Base case or leaf node
+                expressions.append(_Subexpression(current, parent_operation))
+                continue
+
+            # If the current operation is not the same as the parent operation
+            # add the current expression to the expressions list as a sub-expression
+            if parent_operation and current.operation != parent_operation:
+                expressions.append(_Subexpression(current, parent_operation))
+                continue
+
+            # Current operation is consistent with the parent operation or there's no parent
+            # Push the right and left operands onto the stack with the current operation
+            stack.append((current.right_operand, current.operation))
+            stack.append((current.left_operand, current.operation))
+
+        return expressions
+
+    def __str__(self):
+        if isinstance(self.left_operand, Expression):
+            left_str = f"({str(self.left_operand)})"
+        else:
+            left_str = str(self.left_operand)
+
+        if isinstance(self.right_operand, Expression):
+            right_str = f"({str(self.right_operand)})"
+        else:
+            right_str = str(self.right_operand)
+        return f"{left_str} {FilterExpressionOperation.to_string(self.operation)} {right_str}"
+
 
 class FilterExpression(Generic[TCompileResult], ABC):
     """
@@ -141,17 +230,38 @@ class FilterExpression(Generic[TCompileResult], ABC):
         Combines two compiled results of filter expressions.
         """
 
-    def compile(self, expr: Expression):
+    def compile(self, subexpressions: List[_Subexpression]) -> TCompileResult:
         """
-        Compiles a filter expression recursively using the concrete implementation of the 'FilterExpression' class.
+        Compiles a subexpression, which includes a list of expressions and an operation.
+        """
+        if not subexpressions:
+            raise ValueError("No expressions to compile")
+
+        if len(subexpressions) == 1:
+            return self._compile_single_expression(subexpressions[0].expression)
+
+        # Compile each expression in the subexpression
+        compiled_results = [self._compile_single_expression(subexpr.expression) for subexpr in subexpressions]
+
+        # Combine the compiled results using the specified operation
+        combined_result = compiled_results[0]
+        for i, result in enumerate(compiled_results[1:]):
+            combined_result = self._combine_results(combined_result, result, subexpressions[i].combine_operation)
+        return combined_result
+
+    def _compile_single_expression(self, expr: Expression) -> TCompileResult:
+        """
+        Compiles a single expression.
         """
         if isinstance(expr.left_operand, FilterField):
             return self._compile_base_case(expr.left_operand.field_name, expr.right_operand, expr.operation)
 
-        left_compiled = self.compile(expr.left_operand)
-        right_compiled = self.compile(expr.right_operand)
+        # If the operands are also expressions, compile them recursively
+        compiled_left = self.compile([_Subexpression(expr.left_operand, expr.operation)])
+        compiled_right = self.compile([_Subexpression(expr.right_operand, expr.operation)])
 
-        return self._combine_results(left_compiled, right_compiled, expr.operation)
+        # Combine the compiled left and right operands
+        return self._combine_results(compiled_left, compiled_right, expr.operation)
 
 
 @final
@@ -160,15 +270,35 @@ class AstraFilterExpression(FilterExpression[List[Dict[str, Any]]]):
     A concrete implementation of the 'FilterExpression' abstract class for Astra.
     """
 
+    # This value represents the threshold for the maximum length of a list in an IN filter in Astra
+    in_select_cartesian_product_failure_threshold = 25
+
     def _compile_base_case(
         self, field_name: str, field_values: Any, operation: FilterExpressionOperation
     ) -> TCompileResult:
+        if (
+            operation == FilterExpressionOperation.IN
+            and isinstance(field_values, list)
+            and len(field_values) > self.in_select_cartesian_product_failure_threshold
+        ):
+            return self._isin_large_list_result(field_name, field_values, operation)
         return [{f"{field_name}{operation.value['astra']}": field_values}]
 
     def _combine_results(
         self, compiled_result_a: TCompileResult, compiled_result_b: TCompileResult, operation: FilterExpressionOperation
     ) -> TCompileResult:
         return operation.value["astra"](compiled_result_a, compiled_result_b)
+
+    def _isin_large_list_result(
+        self, field_name: str, field_values: List[Any], operation: FilterExpressionOperation
+    ) -> TCompileResult:
+        # Compile each chunk into an IN operation expression
+        return [
+            {f"{field_name}{operation.value['astra']}": chunk}
+            for chunk in chunk_list(
+                field_values, math.ceil(len(field_values) / self.in_select_cartesian_product_failure_threshold)
+            )
+        ]
 
 
 @final
@@ -191,10 +321,11 @@ class ArrowFilterExpression(FilterExpression[pyarrow.compute.Expression]):
         return filter_operation.value["arrow"](compiled_result_a, compiled_result_b)
 
 
-def compile_expression(expr: Expression, target: Type[FilterExpression[TCompileResult]]) -> TCompileResult:
+def compile_expression(expression: Expression, target: Type[FilterExpression[TCompileResult]]) -> TCompileResult:
     """
     Compiles a filter expression using the specified target implementation.
     """
-    if not isinstance(expr, Expression):
-        raise ValueError("Invalid expression type")
-    return target().compile(expr)
+    if not isinstance(expression, Expression):
+        raise ValueError(f"Invalid expression type {type(expression)}")
+    split_filters = expression.split_expression()
+    return target().compile(split_filters)

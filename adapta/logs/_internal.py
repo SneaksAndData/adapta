@@ -1,5 +1,5 @@
 """Classes for internal use by `adapta.logs` module. Should not be imported outside this module"""
-#  Copyright (c) 2023. ECCO Sneaks & Data
+#  Copyright (c) 2023-2024. ECCO Sneaks & Data
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -77,10 +77,12 @@ class MetadataLogger(logging.Logger):
         )
 
 
-def from_log_level(log_level: LogLevel) -> int:
+def from_log_level(log_level: Optional[LogLevel]) -> Optional[int]:
     """
     Converts adapta log level to logging log level
     """
+    if log_level is None:
+        return None
     log_method = {
         LogLevel.INFO: logging.INFO,
         LogLevel.WARN: logging.WARN,

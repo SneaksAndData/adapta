@@ -1,5 +1,5 @@
 """Common utility functions. All of these are imported into __init__.py"""
-#  Copyright (c) 2023. ECCO Sneaks & Data
+#  Copyright (c) 2023-2024. ECCO Sneaks & Data
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -24,13 +24,15 @@ from collections import namedtuple
 from functools import partial
 from typing import List, Optional, Dict, Any, Tuple, Union
 
-import pandas
+from pandas import DataFrame, Series, to_numeric
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3 import Retry
 
-if sys.platform != "win32":
+try:
     import resource
+except (ImportError, ModuleNotFoundError):
+    pass
 
 
 def doze(seconds: int, doze_period_ms: int = 100) -> int:
@@ -95,8 +97,6 @@ def convert_datadog_tags(tag_dict: Optional[Dict[str, str]]) -> Optional[List[st
 def operation_time():
     """
       Returns execution time for the context block.
-
-    :param operation: A method to measure execution time for.
     :return: A tuple of (method_execution_time_ns, method_result)
     """
     result = namedtuple("OperationDuration", ["start", "end", "elapsed"])
@@ -116,6 +116,10 @@ def chunk_list(value: List[Any], num_chunks: int) -> List[List[Any]]:
     :param num_chunks: Number of chunks to generate.
     :return: A list that has num_chunks lists in it. Total length equals length of the original list.
     """
+    if num_chunks == 0:
+        raise ValueError("Number of chunks must be greater than zero")
+    if len(value) == 0:
+        return []
     chunk_size = math.ceil(len(value) / num_chunks)
     return [value[el_pos : el_pos + chunk_size] for el_pos in range(0, len(value), chunk_size)]
 
@@ -159,11 +163,11 @@ def memory_limit(*, memory_limit_percentage: Optional[float] = None, memory_limi
 
 
 def map_column_names(
-    dataframe: pandas.DataFrame,
+    dataframe: DataFrame,
     column_map: Dict[str, str],
     default_values: Optional[Dict[str, Union[str, int, float]]] = None,
     drop_missing: bool = True,
-) -> pandas.DataFrame:
+) -> DataFrame:
     """
     Maps a dataframe from one nomenclature to another. Original dataframe is not mutated.
 
@@ -182,3 +186,51 @@ def map_column_names(
     default_values = {k: v for (k, v) in default_values.items() if k not in dataframe.columns}
     dataframe[list(default_values.keys())] = list(default_values.values())
     return dataframe
+
+
+def downcast_dataframe(dataframe: DataFrame, columns: Optional[List[str]] = None) -> DataFrame:
+    """
+    Downcasts a Pandas dataframe to the smallest possible data type for each column. Only interger and float
+    columns are downcasted. Other columns are left as is.
+
+    :param dataframe: A Pandas dataframe.
+    :param columns: A list of columns to downcast. If None, all columns are downcasted.
+
+    :return: The downcasted Pandas dataframe.
+    """
+
+    columns = list(dataframe.columns) if columns is None else columns
+
+    def get_downcast_type(column: Series) -> Optional[str]:
+        """
+        Returns the downcast type for a Pandas column.
+
+        :param column: A Pandas series.
+        :return: The downcast type for the column.
+        """
+        if column.dtype.kind == "f":
+            return "float"
+        if column.dtype.kind == "i":
+            return "integer"
+        if column.dtype.kind == "u":
+            return "unsigned"
+        raise ValueError(f"Unsupported dtype: {column.dtype}")
+
+    def downcast_supported(column: Series) -> bool:
+        """
+        Checks if a Pandas column can be downcasted.
+
+        :param column: A Pandas series.
+        :return: True if the column can be downcasted, False otherwise.
+        """
+        return column.dtype.kind in ["f", "i", "u"]
+
+    return dataframe.assign(
+        **{
+            column: lambda x, c=column: to_numeric(x[c], downcast=get_downcast_type(x[c]))
+            if downcast_supported(x[c])
+            else x[c]
+            for column in dataframe.columns
+            if column in columns
+        }
+    )
