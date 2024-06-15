@@ -13,7 +13,7 @@ jobs:
         with:
           python-version: '3.9.x'
           architecture: 'x64'
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: refs/pull/${{github.event.issue.number}}/merge
           fetch-depth: 0
