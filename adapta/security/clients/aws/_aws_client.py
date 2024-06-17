@@ -72,14 +72,20 @@ class AwsClient(AuthenticationClient):
     def get_access_token(self, scope: Optional[str] = None) -> str:
         """
          Not used in AWS.
-        :return:
         """
 
     def connect_storage(self, path: DataPath, set_env: bool = False) -> Optional[Dict]:
         """
-         Not used in AWS.
-        :return:
+        Configures the necessary storage options to be used to connect the AWS client for Delta Lake operations.
+        :return: All need storage options to set up Delta Lake storage client.
         """
+        storage_options = {
+            "AWS_ACCESS_KEY_ID": self._credentials.access_key_id,
+            "AWS_SECRET_ACCESS_KEY": self._credentials.access_key,
+            "AWS_REGION": self._credentials.region,
+            "AWS_ENDPOINT_URL": '' if self._credentials.endpoint is None else self._credentials.endpoint
+        }
+        return storage_options
 
     def connect_account(self):
         """
@@ -90,9 +96,8 @@ class AwsClient(AuthenticationClient):
     def get_pyarrow_filesystem(self, path: DataPath, connection_options: Optional[Dict[str, str]] = None) -> FileSystem:
         """
         Not supported in AwsClient.
-        :return: None
+        :return:
         """
-        return None
 
     def initialize_session(self) -> "AwsClient":
         """

@@ -6,8 +6,10 @@ Supported API:
 - read a subset of columns from delta table
 - read and filter a delta table without loading all rows in memory
 
-## Example usage for Azure Datalake Gen2
+## Examples usage
 Prepare connection and load
+
+### For Azure Datalake Gen2
 
 ```python
 import os
@@ -22,6 +24,32 @@ adls_path = AdlsGen2Path.from_hdfs_path('abfss://container@account.dfs.core.wind
 # get Iterable[pandas.DataFrame]
 batches = load(azure_client, adls_path, batch_size=1000)
 ```
+
+### For S3 AWS Datalake Gen2
+
+```python
+import os
+from adapta.security.clients import AwsClient
+from adapta.security.clients.aws._aws_credentials import EnvironmentAwsCredentials
+from adapta.storage.delta_lake import load
+
+# Set up environment variables
+os.environ["PROTEUS__AWS_ACCESS_KEY_ID"] = minio_access_key_id
+os.environ["PROTEUS__AWS_SECRET_ACCESS_KEY"] = minio_secret_key
+os.environ["PROTEUS__AWS_REGION"] = "eu-central-1"
+os.environ["PROTEUS__AWS_ENDPOINT"] = "http://my-endpoint.com"
+
+credentials = EnvironmentAwsCredentials()
+aws_client = AwsClient(credentials)
+aws_client.initialize_session()
+
+blob_path = "s3a://dev/path/to/my/table"
+s3_path = S3Path.from_hdfs_path(blob_path)
+
+# get Iterable[pandas.DataFrame]
+batches = load(aws_client, s3_path, batch_size=1000))
+```
+
 ## Using the Filtering API.
 1. Create generic filter expressions
 ```python

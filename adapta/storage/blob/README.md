@@ -96,7 +96,7 @@ aws_client = AwsClient(credentials)
 aws_client.initialize_session()
 
 # Target path for copy_blob
-blob_path = "dev/EXAMPLE@ecco.com/blob.file" "# It can be either a 'blob.file' or a 'folder/'
+blob_path = "path/to/blob.file" "# It can be either a 'blob.file' or a 'folder/'
 s3_path = S3Path.from_hdfs_path(blob_path)
 
 # Init storage client
@@ -119,6 +119,6 @@ blobs = s3_client.read_blobs(s3_path, serialization_format=DictJsonSerialization
 s3_client.download_blobs(s3_path, local_path="/local/path/to/download")
 
 # Copy blob from one location to another in S3
-target_s3_path='s3a://dev/EXAMPLES@ecco.com/blob_copy/'
+target_s3_path='s3a://path/to/blob_copy/'
 s3_client.copy_blob(blob_path=s3_path, target_blob_path=target_s3_path, doze_period_ms=1000) # Time in ms between files being copied
 ```
