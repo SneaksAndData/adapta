@@ -25,7 +25,7 @@ adls_path = AdlsGen2Path.from_hdfs_path('abfss://container@account.dfs.core.wind
 batches = load(azure_client, adls_path, batch_size=1000)
 ```
 
-### For S3 AWS Datalake Gen2
+### For AWS Simple Storage Service (S3) or S3-Compatible Storage
 
 ```python
 import os
