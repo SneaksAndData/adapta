@@ -118,7 +118,7 @@ class S3StorageClient(StorageClient):
         s3_path = cast_path(blob_path)
         response = self._s3_resource.meta.client.list_objects(Bucket=s3_path.bucket, Prefix=s3_path.path, Delimiter="/")
         if "Contents" not in response:
-            return iter([])
+            yield from iter([])
 
         for blob in response["Contents"]:
             if filter_predicate is None or filter_predicate(blob):
