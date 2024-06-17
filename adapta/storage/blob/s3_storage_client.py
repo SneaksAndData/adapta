@@ -45,7 +45,7 @@ class S3StorageClient(StorageClient):
         endpoint_url = endpoint_url or base_client.endpoint
         self._s3_resource = base_client.session.resource("s3", endpoint_url=endpoint_url)
 
-    def get_blob_uri(self, blob_path: DataPath) -> str:
+    def get_blob_uri(self, blob_path: DataPath, **kwargs) -> str:
         """Returns the URI for a blob in S3 storage.
 
         :param blob_path: Path to blob
