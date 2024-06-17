@@ -78,13 +78,12 @@ class AwsClient(AuthenticationClient):
         Configures the necessary storage options to be used to connect the AWS client for Delta Lake operations.
         :return: All need storage options to set up Delta Lake storage client.
         """
-        storage_options = {
+        return {
             "AWS_ACCESS_KEY_ID": self._credentials.access_key_id,
             "AWS_SECRET_ACCESS_KEY": self._credentials.access_key,
             "AWS_REGION": self._credentials.region,
             "AWS_ENDPOINT_URL": "" if self._credentials.endpoint is None else self._credentials.endpoint,
         }
-        return storage_options
 
     def connect_account(self):
         """
