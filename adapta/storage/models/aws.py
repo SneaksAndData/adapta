@@ -46,7 +46,7 @@ class S3Path(DataPath):
         if not self.bucket:
             raise ValueError("Bucket must be defined")
 
-        return f"s3://{self.bucket}"
+        return f"https://{self.bucket}.s3.amazonaws.com"
 
     @classmethod
     def from_uri(cls, url: str) -> "S3Path":
@@ -54,10 +54,9 @@ class S3Path(DataPath):
         Creates an S3Path from a URI.
         :return: S3Path path
         """
-        assert url.startswith("s3://"), "URI should start with s3://"
+        assert url.startswith(("http://", "https://"))
         uri = urlparse(url)
-        parsed_path = uri.path.split("/")
-        return cls(bucket=uri.netloc, path="/".join(parsed_path[1:]))
+        return cls(bucket=uri.netloc, path=uri.path.lstrip("/"))
 
     bucket: str
     path: str

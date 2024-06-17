@@ -8,7 +8,6 @@ Supported API:
 
 ## Examples usage
 Prepare connection and load
-
 ### For Azure Datalake Gen2
 
 ```python
@@ -48,6 +47,11 @@ s3_path = S3Path.from_hdfs_path(blob_path)
 
 # get Iterable[pandas.DataFrame]
 batches = load(aws_client, s3_path, batch_size=1000))
+
+# Print each loaded batch
+for batch in batches:
+    print(batch)
+    print("\n---\n")
 ```
 
 ## Using the Filtering API.

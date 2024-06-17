@@ -17,7 +17,6 @@
 #
 
 import os
-import time
 from typing import Optional, Callable, Type, Iterator, Dict, TypeVar, final
 
 from adapta.security.clients import AwsClient
@@ -44,14 +43,18 @@ class S3StorageClient(StorageClient):
         self._s3_resource = base_client.session.resource("s3", endpoint_url=endpoint_url or base_client.endpoint)
 
     def get_blob_uri(self, blob_path: DataPath, **kwargs) -> str:
-        """Returns the URI for a blob in S3 storage.
+        """Returns a signed URL for a blob in S3 storage.
 
         :param blob_path: Path to blob
 
-        :return: The URI for the given blob path
+        :return: The signed URL for the given blob path
         """
         s3_path = cast_path(blob_path)
-        return f"s3://{s3_path.bucket}/{s3_path.path}"
+        params = {
+            "Bucket": s3_path.bucket,
+            "Key": s3_path.path,
+        }
+        return self._s3_resource.meta.client.generate_presigned_url("get_object", Params=params)
 
     def blob_exists(self, blob_path: DataPath) -> bool:
         """Checks if blob located at blob_path exists
@@ -114,10 +117,12 @@ class S3StorageClient(StorageClient):
         """
         s3_path = cast_path(blob_path)
         response = self._s3_resource.meta.client.list_objects(Bucket=s3_path.bucket, Prefix=s3_path.path, Delimiter="/")
-        if "Contents" in response:
-            for blob in response["Contents"]:
-                if filter_predicate is None or filter_predicate(blob):
-                    yield blob
+        if "Contents" not in response:
+            return iter([])
+
+        for blob in response["Contents"]:
+            if filter_predicate is None or filter_predicate(blob):
+                yield blob
 
     def read_blobs(
         self,
@@ -156,17 +161,17 @@ class S3StorageClient(StorageClient):
         :return:
         """
         s3_path = cast_path(blob_path)
-        try:
-            blobs = self._s3_resource.Bucket(s3_path.bucket).objects.filter(Prefix=s3_path.path)
-            for blob in blobs:
-                if filter_predicate is None or filter_predicate(blob):
-                    local_file_path = f"{local_path}/{blob.key}"
-                    os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
+        blobs = self._s3_resource.Bucket(s3_path.bucket).objects.filter(Prefix=s3_path.path)
+        for blob in blobs:
+            if filter_predicate is None or filter_predicate(blob):
+                local_file_path = f"{local_path}/{blob.key}"
+                os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
+                try:
                     self._s3_resource.meta.client.download_file(s3_path.bucket, blob.key, f"{local_path}/{blob.key}")
-        except StorageClientError as error:
-            print(f"Error downloading blob: {error}")
+                except StorageClientError as error:
+                    raise RuntimeError(f"Error downloading blob: {error}") from error
 
-    def copy_blob(self, blob_path: DataPath, target_blob_path: DataPath, doze_period_ms: int) -> None:
+    def copy_blob(self, blob_path: DataPath, target_blob_path: DataPath, doze_period_ms: int = 0) -> None:
         """
         Copies a blob from one location to another in S3 storage.
 
@@ -191,7 +196,7 @@ class S3StorageClient(StorageClient):
 
             try:
                 self._s3_resource.meta.client.copy(copy_source, target_s3_path.bucket, target_object_key)
-                time.sleep(doze_period_ms / 1000.0)
+                self._s3_resource.meta.client.head_object(Bucket=target_s3_path.bucket, Key=target_object_key)
             except StorageClientError as error:
                 print(f"Error copying object: {error}")
 

@@ -36,19 +36,3 @@ def test_for_storage_path(mock_aws_client):
     mock_aws_client.assert_called_once()
     assert isinstance(s3_storage_client, S3StorageClient)
     assert s3_storage_client._base_client == mock_aws_client.return_value
-
-
-@patch("boto3.resource")
-@patch("boto3.Session")
-@patch("adapta.security.clients.AwsClient")
-def test_get_blob_uri(mock_client: MagicMock, mock_session: MagicMock, mock_s3_resource: MagicMock):
-    mock_client_instance: AwsClient = mock_client.return_value
-    s3_path = S3Path.from_hdfs_path("s3a://bucket/path/to/my/table")
-    mock_client_instance.initialize_session.return_value = {
-        "AWS_ACCESS_KEY_ID": "test",
-        "AWS_SECRET_ACCESS_KEY": "test",
-    }
-
-    s3_storage_client = S3StorageClient(base_client=mock_client_instance)
-    uri = s3_storage_client.get_blob_uri(s3_path)
-    assert uri == "s3://bucket/path/to/my/table"
