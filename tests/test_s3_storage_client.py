@@ -17,14 +17,17 @@ from adapta.storage.blob.s3_storage_client import S3StorageClient
 from adapta.storage.models.aws import S3Path
 from unittest.mock import patch, MagicMock
 
+
 def test_from_hdfs_path():
     path = S3Path.from_hdfs_path("s3a://bucket/nested/key")
     assert path.bucket == "bucket"
     assert path.path == "nested/key"
 
+
 def test_to_hdfs_path():
     path = S3Path("bucket", "nested/key").to_hdfs_path()
     assert path == "s3a://bucket/nested/key"
+
 
 @patch("adapta.storage.blob.s3_storage_client.AwsClient")
 def test_for_storage_path(mock_aws_client):
@@ -33,6 +36,7 @@ def test_for_storage_path(mock_aws_client):
     mock_aws_client.assert_called_once()
     assert isinstance(s3_storage_client, S3StorageClient)
     assert s3_storage_client._base_client == mock_aws_client.return_value
+
 
 @patch("boto3.resource")
 @patch("boto3.Session")

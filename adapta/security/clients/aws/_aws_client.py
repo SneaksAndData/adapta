@@ -70,7 +70,7 @@ class AwsClient(AuthenticationClient):
 
     def get_access_token(self, scope: Optional[str] = None) -> str:
         """
-         Not used in AWS.
+        Not used in AWS.
         """
 
     def connect_storage(self, path: DataPath, set_env: bool = False) -> Optional[Dict]:
@@ -82,7 +82,7 @@ class AwsClient(AuthenticationClient):
             "AWS_ACCESS_KEY_ID": self._credentials.access_key_id,
             "AWS_SECRET_ACCESS_KEY": self._credentials.access_key,
             "AWS_REGION": self._credentials.region,
-            "AWS_ENDPOINT_URL": '' if self._credentials.endpoint is None else self._credentials.endpoint
+            "AWS_ENDPOINT_URL": "" if self._credentials.endpoint is None else self._credentials.endpoint,
         }
         return storage_options
 
@@ -106,7 +106,7 @@ class AwsClient(AuthenticationClient):
             aws_access_key_id=self._credentials.access_key_id,
             aws_secret_access_key=self._credentials.access_key,
             region_name=self._credentials.region,
-            aws_session_token=self._credentials.session_token
+            aws_session_token=self._credentials.session_token,
         )
 
         return self
