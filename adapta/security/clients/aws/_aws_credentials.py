@@ -40,6 +40,17 @@ class AccessKeyCredentials(ABC):
     def region(self) -> str:
         """AWS region"""
 
+    @property
+    @abstractmethod
+    def session_token(self) -> str:
+        """AWS session token"""
+
+    @property
+    @abstractmethod
+    def endpoint(self) -> str:
+        """AWS custom endpoint"""
+
+
 class EnvironmentAwsCredentials(AccessKeyCredentials):
     """
     Reads credentials from environment variables

@@ -25,7 +25,6 @@ from pyarrow.fs import FileSystem
 from adapta.security.clients._base import AuthenticationClient
 from adapta.security.clients.aws._aws_credentials import AccessKeyCredentials, EnvironmentAwsCredentials
 from adapta.storage.models.base import DataPath
-from botocore.credentials import Credentials
 
 
 @final
