@@ -30,7 +30,7 @@ from urllib.parse import urlparse
 
 import backoff
 from datadog_api_client import Configuration, ApiClient
-from datadog_api_client.exceptions import ServiceException
+from datadog_api_client.exceptions import ServiceException, ApiException
 from datadog_api_client.v2.api.logs_api import LogsApi
 from datadog_api_client.v2.model.content_encoding import ContentEncoding
 from datadog_api_client.v2.model.http_log import HTTPLog
@@ -167,6 +167,7 @@ class DataDogApiHandler(Handler):
                 ConnectionError,
                 HTTPError,
                 ServiceException,
+                ApiException,
             ),
             max_time=self._max_flush_retry_time,
             raise_on_giveup=not self._ignore_flush_failure,
