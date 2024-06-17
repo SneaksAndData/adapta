@@ -1,7 +1,6 @@
 """
  Storage Client implementation for AWS S3.
 """
-import os
 #  Copyright (c) 2023-2024. ECCO Sneaks & Data
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,6 +17,7 @@ import os
 #
 
 from abc import ABC
+import os
 import time
 from typing import Optional, Callable, Type, Iterator, Dict, TypeVar, final
 
