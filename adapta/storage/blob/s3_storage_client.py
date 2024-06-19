@@ -200,6 +200,38 @@ class S3StorageClient(StorageClient):
             except StorageClientError as error:
                 print(f"Error copying object: {error}")
 
+    def save_data_file(self, source_file_path: str, target_file_path: DataPath, doze_period_ms: int = 0) -> None:
+        """
+        Saves a target file or folder at `blob_path` to `file_path`
+
+        :param source_file_path: Source file or folder path.
+        :param target_file_path: Target file path in DataPath notation.
+        :param doze_period_ms: number of ms to doze between polling the status of the copy.
+        :return:
+        """
+        s3_path = cast_path(target_file_path)
+
+        if os.path.isdir(source_file_path):
+            for root, _, files in os.walk(source_file_path):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    relative_path = os.path.relpath(file_path, source_file_path)
+                    target_key = os.path.join(s3_path.path, relative_path)
+
+                    with open(file_path, "rb") as file:
+                        file_data = file.read()
+
+                    self._s3_resource.Bucket(s3_path.bucket).put_object(Key=target_key, Body=file_data)
+        else:
+            target_key = s3_path.path
+            if target_key.endswith("/"):
+                target_key = os.path.join(target_key, os.path.basename(source_file_path))
+
+            with open(source_file_path, "rb") as file:
+                file_data = file.read()
+
+            self._s3_resource.Bucket(s3_path.bucket).put_object(Key=target_key, Body=file_data)
+
     @classmethod
     def for_storage_path(cls, path: str) -> "S3StorageClient":
         """

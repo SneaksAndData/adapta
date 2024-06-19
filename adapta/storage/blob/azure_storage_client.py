@@ -296,3 +296,10 @@ class AzureStorageClient(StorageClient):
                 )
 
             doze(doze_period_ms)
+
+    def save_data_file(self, source_file_path: str, target_file_path: DataPath, doze_period_ms: int) -> None:
+        """
+         Not used in Azure.
+        :return:
+        """
+        raise NotImplementedError("Not implemented in AzClient")

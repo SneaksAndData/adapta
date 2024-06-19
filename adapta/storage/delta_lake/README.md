@@ -38,14 +38,36 @@ os.environ["PROTEUS__AWS_SECRET_ACCESS_KEY"] = minio_secret_key
 os.environ["PROTEUS__AWS_REGION"] = "eu-central-1"
 os.environ["PROTEUS__AWS_ENDPOINT"] = "http://my-endpoint.com"
 
+# Create client
 credentials = EnvironmentAwsCredentials()
 aws_client = AwsClient(credentials)
+
+# Initialize session
 aws_client.initialize_session()
 
-blob_path = "s3a://dev/path/to/my/table"
-s3_path = S3Path.from_hdfs_path(blob_path)
+# Creating a delta lake table with sample data
+data = {
+    'Character': ['Frodo Baggins', 'Harry Potter', 'Sherlock Holmes', 'Tony Stark', 'Darth Vader'],
+    'Occupation': ['Ring Bearer', 'Wizard', 'Detective', 'Iron Man', 'Sith Lord'],
+    'Catchphrase': [
+        'One does not simply walk into Mordor.',
+        'Expecto Patronum!',
+        'Elementary, my dear Watson.',
+        'I am Iron Man.',
+        'I find your lack of faith disturbing.'
+    ],
+    'Popularity': [10, 9, 8, 10, 7]
+} 
 
-# get Iterable[pandas.DataFrame]
+df = pd.DataFrame(data)  # Create a pandas DataFrame from the data
+table = pa.Table.from_pandas(df)  # Convert the DataFrame to a PyArrow Table
+path_test = '/path/to/store/locally/delta/lake/table'  
+deltalake.write_deltalake(path_test, table)  # Write the PyArrow Table to a Delta Lake table
+
+# Save the Delta Lake table to S3 blob storage
+s3_client.save_data_file(path_test, s3_path) 
+
+# Get Iterable[pandas.DataFrame]
 batches = load(aws_client, s3_path, batch_size=1000))
 
 # Print each loaded batch

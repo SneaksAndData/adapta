@@ -151,6 +151,17 @@ class StorageClient(ABC):
         :param doze_period_ms: number of ms to doze between polling the status of the copy.
         """
 
+    @abstractmethod
+    def save_data_file(self, source_file_path: str, target_file_path: DataPath, doze_period_ms: int) -> None:
+        """
+        Saves a target file or folder at `blob_path` to `file_path`
+
+        :param source_file_path: Source file or folder path.
+        :param target_file_path: Target file path in DataPath notation.
+        :param doze_period_ms: number of ms to doze between polling the status of the copy.
+        :return:
+        """
+
     @classmethod
     @abstractmethod
     def for_storage_path(cls, path: str) -> "StorageClient":

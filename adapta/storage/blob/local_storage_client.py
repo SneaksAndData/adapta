@@ -88,6 +88,9 @@ class LocalStorageClient(StorageClient):
     def copy_blob(self, blob_path: DataPath, target_blob_path: DataPath, doze_period_ms: int = 0) -> None:
         shutil.copyfile(cast_path(blob_path).path, cast_path(target_blob_path).path)
 
+    def save_data_file(self, source_file_path: str, target_file_path: DataPath, doze_period_ms: int) -> None:
+        raise NotImplementedError("Not supported by this client")
+
     @classmethod
     def for_storage_path(cls, path: str) -> "StorageClient":
         _ = cast_path(parse_data_path(path))
