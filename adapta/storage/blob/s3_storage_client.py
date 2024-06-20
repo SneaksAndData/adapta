@@ -206,7 +206,7 @@ class S3StorageClient(StorageClient):
 
         :param source_file_path: Source file or folder path.
         :param target_file_path: Target file path in DataPath notation.
-        :param doze_period_ms: number of ms to doze between polling the status of the copy.
+        :param doze_period_ms: Number of ms to doze between polling the status of the copy.
         :return:
         """
         s3_path = cast_path(target_file_path)
