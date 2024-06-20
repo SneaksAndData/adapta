@@ -47,7 +47,7 @@ class AccessKeyCredentials(ABC):
 
     @property
     @abstractmethod
-    def endpoint(self) -> str:
+    def endpoint(self) -> Optional[str]:
         """AWS custom endpoint"""
 
 
