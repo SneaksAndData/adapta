@@ -36,6 +36,12 @@ class StorageClient(ABC):
         self._base_client = base_client
 
     @abstractmethod
+    def initialize_session_resource(self) -> None:
+        """
+        Initialize the storage resources need for storage operations.
+        """
+
+    @abstractmethod
     def get_blob_uri(self, blob_path: DataPath, **kwargs) -> str:
         """
          Generates a URL which can be used to download this blob.

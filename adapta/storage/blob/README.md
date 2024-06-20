@@ -63,9 +63,9 @@ s3_path = S3Path.from_hdfs_path('s3a://bucket/path/to/my/table')
 
 # init storage client
 s3_client = S3StorageClient(base_client=aws_client)
+s3_client.initialize_session_resource()
 
 # Save data to S3
-
 s3_client.save_data_as_blob(
     data={"data_value": "2"}, blob_path=s3_path, serialization_format=DictJsonSerializationFormat, overwrite=True
 )
@@ -101,6 +101,7 @@ s3_path = S3Path.from_hdfs_path(blob_path)
 
 # Init storage client
 s3_client = S3StorageClient(base_client=aws_client)
+s3_client.initialize_session_resource()
 
 # Save data to S3
 s3_client.save_data_as_blob(
@@ -119,6 +120,7 @@ blobs = s3_client.read_blobs(s3_path, serialization_format=DictJsonSerialization
 s3_client.download_blobs(s3_path, local_path="/local/path/to/download")
 
 # Copy blob from one location to another in S3
-target_s3_path='s3a://path/to/blob_copy/'
-s3_client.copy_blob(blob_path=s3_path, target_blob_path=target_s3_path, doze_period_ms=1000) # Time in ms between files being copied
+target_blob_path='s3a://path/to/blob_copy/'
+s3_target_blob_path = S3Path.from_hdfs_path(target_blob_path)
+s3_client.copy_blob(blob_path=s3_path, target_blob_path=s3_target_blob_path, doze_period_ms=1000) # Time in ms between files being copied
 ```

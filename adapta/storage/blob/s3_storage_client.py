@@ -40,7 +40,14 @@ class S3StorageClient(StorageClient):
         super().__init__(base_client=base_client)
         if base_client.session is None:
             raise ValueError("AwsClient.initialize_session should be called before accessing S3StorageClient")
-        self._s3_resource = base_client.session.resource("s3", endpoint_url=endpoint_url or base_client.endpoint)
+        self._base_client = base_client
+        self._endpoint_url = endpoint_url
+        self._s3_resource = None
+
+    def initialize_session_resource(self):
+        self._s3_resource = self._base_client.session.resource(
+            "s3", endpoint_url=self._endpoint_url or self._base_client.endpoint
+        )
 
     def get_blob_uri(self, blob_path: DataPath, **kwargs) -> str:
         """Returns a signed URL for a blob in S3 storage.

@@ -79,6 +79,13 @@ class AzureStorageClient(StorageClient):
                 connection_string, retry_policy=retry_policy
             )
 
+    def initialize_session_resource(self) -> None:
+        """
+         Not used in Azure.
+        :return:
+        """
+        raise NotImplementedError("Not implemented in AzClient")
+
     @classmethod
     def for_storage_path(cls, path: str) -> "AzureStorageClient":
         """
