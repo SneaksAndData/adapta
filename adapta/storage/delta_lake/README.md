@@ -65,7 +65,7 @@ path_test = '/path/to/store/locally/delta/lake/table'
 deltalake.write_deltalake(path_test, table)  # Write the PyArrow Table to a Delta Lake table
 
 # Save the Delta Lake table to S3 blob storage
-s3_client.save_data_file(path_test, s3_path) 
+s3_client.save_data(path_test, s3_path) 
 
 # Get Iterable[pandas.DataFrame]
 batches = load(aws_client, s3_path, batch_size=1000))
