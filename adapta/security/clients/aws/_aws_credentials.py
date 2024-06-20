@@ -42,7 +42,7 @@ class AccessKeyCredentials(ABC):
 
     @property
     @abstractmethod
-    def session_token(self) -> str:
+    def session_token(self) -> Optional[str]:
         """AWS session token"""
 
     @property
