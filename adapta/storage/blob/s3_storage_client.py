@@ -184,7 +184,7 @@ class S3StorageClient(StorageClient):
 
         :param blob_path: Path to the source blob
         :param target_blob_path: Path to the target location
-        :param doze_period_ms: Time to sleep between operations in milliseconds
+        :param doze_period_ms: Not utilized for AWS operations, iIt is included to ensure interface compliance.
         """
         source_s3_path = cast_path(blob_path)
         target_s3_path = cast_path(target_blob_path)
@@ -213,7 +213,7 @@ class S3StorageClient(StorageClient):
 
         :param source_file_path: Source file or folder path.
         :param target_file_path: Target file path in DataPath notation.
-        :param doze_period_ms: Number of ms to doze between polling the status of the copy.
+        :param doze_period_ms: Not utilized for AWS operations, iIt is included to ensure interface compliance.
         :return:
         """
         s3_path = cast_path(target_file_path)
