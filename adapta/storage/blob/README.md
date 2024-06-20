@@ -86,7 +86,7 @@ os.environ["PROTEUS__AWS_ACCESS_KEY_ID"] = <aws_access_key_id>
 os.environ["PROTEUS__AWS_SESSION_TOKEN"] = <aws_session_token>
 os.environ["PROTEUS__AWS_SECRET_ACCESS_KEY"] = <aws_secret_access_key>
 os.environ["PROTEUS__AWS_REGION"] = "eu-central-1"
-os.environ["PROTEUS__AWS_ENDPOINT"] = "http://my-endpoint.com"
+os.environ["PROTEUS__AWS_ENDPOINT"] = "http://example.com"
 
 # Create client
 credentials = EnvironmentAwsCredentials()
