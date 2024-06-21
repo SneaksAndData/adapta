@@ -213,7 +213,7 @@ class S3StorageClient(StorageClient):
 
         :param source_file_path: Source file or folder path.
         :param target_file_path: Target file path in DataPath notation.
-        :param doze_period_ms: Not utilized for AWS operations, iIt is included to ensure interface compliance.
+        :param doze_period_ms: Not utilized for AWS operations, it is included to ensure interface compliance.
         :return:
         """
         s3_path = cast_path(target_file_path)
