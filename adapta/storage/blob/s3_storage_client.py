@@ -184,7 +184,7 @@ class S3StorageClient(StorageClient):
 
         :param blob_path: Path to the source blob
         :param target_blob_path: Path to the target location
-        :param doze_period_ms: Not utilized for AWS operations, iIt is included to ensure interface compliance.
+        :param doze_period_ms: Not utilized for AWS operations, it is included to ensure interface compliance.
         """
         source_s3_path = cast_path(blob_path)
         target_s3_path = cast_path(target_blob_path)
