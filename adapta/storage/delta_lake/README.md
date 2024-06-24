@@ -31,6 +31,8 @@ import os
 from adapta.security.clients import AwsClient
 from adapta.security.clients.aws._aws_credentials import EnvironmentAwsCredentials
 from adapta.storage.delta_lake import load
+import pandas as pd
+import pyarrow as pa
 
 # Set up environment variables
 os.environ["PROTEUS__AWS_ACCESS_KEY_ID"] = minio_access_key_id
