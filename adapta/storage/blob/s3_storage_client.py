@@ -171,10 +171,10 @@ class S3StorageClient(StorageClient):
         blobs = self._s3_resource.Bucket(s3_path.bucket).objects.filter(Prefix=s3_path.path)
         for blob in blobs:
             if filter_predicate is None or filter_predicate(blob):
-                local_file_path = f"{local_path}/{blob.key}"
+                local_file_path = os.path.join(local_path, os.path.basename(blob.key))
                 os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
                 try:
-                    self._s3_resource.meta.client.download_file(s3_path.bucket, blob.key, f"{local_path}/{blob.key}")
+                    self._s3_resource.meta.client.download_file(s3_path.bucket, blob.key, local_file_path)
                 except StorageClientError as error:
                     raise RuntimeError(f"Error downloading blob: {error}") from error
 
