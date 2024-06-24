@@ -34,7 +34,8 @@ class LocalStorageClient(StorageClient):
     Local Storage Client, primarily for unit tests.
     """
 
-    def initialize_session_resource(self) -> None:
+    @classmethod
+    def create(auth: AwsClient, endpoint_url: Optional[str] = None):
         raise NotImplementedError("Not supported by this client")
 
     def get_blob_uri(self, blob_path: DataPath, **kwargs) -> str:

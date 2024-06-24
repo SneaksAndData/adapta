@@ -79,7 +79,8 @@ class AzureStorageClient(StorageClient):
                 connection_string, retry_policy=retry_policy
             )
 
-    def initialize_session_resource(self) -> None:
+    @classmethod
+    def create(auth: AzureClient, endpoint_url: Optional[str] = None):
         """
          Not used in Azure.
         :return:

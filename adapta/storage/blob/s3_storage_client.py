@@ -18,6 +18,9 @@
 
 import os
 from typing import Optional, Callable, Type, Iterator, Dict, TypeVar, final
+
+from boto3 import Session
+
 from adapta.security.clients import AwsClient
 from adapta.storage.blob.base import StorageClient
 from adapta.storage.exceptions import StorageClientError
@@ -36,18 +39,18 @@ class S3StorageClient(StorageClient):
     S3 Storage Client.
     """
 
-    def __init__(self, *, base_client: AwsClient, endpoint_url: Optional[str] = None):
+    def __init__(self, *, base_client: AwsClient, s3_resource: Optional[Session] = None):
         super().__init__(base_client=base_client)
-        if base_client.session is None:
-            raise ValueError("AwsClient.initialize_session should be called before accessing S3StorageClient")
         self._base_client = base_client
-        self._endpoint_url = endpoint_url
-        self._s3_resource = None
+        self._s3_resource = s3_resource if s3_resource is not None else base_client.session.resource("s3")
 
-    def initialize_session_resource(self):
-        self._s3_resource = self._base_client.session.resource(
-            "s3", endpoint_url=self._endpoint_url or self._base_client.endpoint
+    @classmethod
+    def create(cls, auth: AwsClient, endpoint_url: Optional[str] = None):
+        s3_resource = auth.session.resource(
+            "s3", endpoint_url=endpoint_url if endpoint_url is not None else auth.endpoint
         )
+
+        return cls(base_client=auth, s3_resource=s3_resource)
 
     def get_blob_uri(self, blob_path: DataPath, **kwargs) -> str:
         """Returns a signed URL for a blob in S3 storage.
@@ -206,8 +209,8 @@ class S3StorageClient(StorageClient):
             copy_source = {"Bucket": source_s3_path.bucket, "Key": source_object.key}
 
             try:
-                test = self._s3_resource.meta.client.copy(copy_source, target_s3_path.bucket, target_object_key)
-                tes2t = self._s3_resource.meta.client.head_object(Bucket=target_s3_path.bucket, Key=target_object_key)
+                self._s3_resource.meta.client.copy(copy_source, target_s3_path.bucket, target_object_key)
+                self._s3_resource.meta.client.head_object(Bucket=target_s3_path.bucket, Key=target_object_key)
             except StorageClientError as error:
                 print(f"Error copying object: {error}")
 
