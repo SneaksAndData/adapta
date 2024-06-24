@@ -123,7 +123,7 @@ class S3StorageClient(StorageClient):
         :return: An iterator over a list of the blobs in the S3 storage
         """
         s3_path = cast_path(blob_path)
-        response = self._s3_resource.meta.client.list_objects(Bucket=s3_path.bucket, Prefix=s3_path.path, Delimiter="/")
+        response = self._s3_resource.meta.client.list_objects(Bucket=s3_path.bucket, Prefix=s3_path.path)
         if "Contents" not in response:
             yield from iter([])
 

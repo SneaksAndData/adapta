@@ -108,10 +108,10 @@ s3_client.save_data_as_blob(
     data={"data_value": "very_important_data"}, blob_path=s3_path, serialization_format=DictJsonSerializationFormat, overwrite=True
 )
 
-# List blobs in S3
+# List all blob files in an S3 storage path
 blob_list = s3_client.list_blobs(s3_path)
-for blob in blob_list:
-    print(blob)
+for blob_details in blob_list:
+    print(blob_details)
 
 # Read files from S3
 blobs = s3_client.read_blobs(s3_path, serialization_format=DictJsonSerializationFormat)
