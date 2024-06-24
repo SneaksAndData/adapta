@@ -113,7 +113,7 @@ blob_list = s3_client.list_blobs(s3_path)
 for blob_details in blob_list:
     print(blob_details)
 
-# Read files from S3
+# Read blobs from the S3 path
 blobs = s3_client.read_blobs(s3_path, serialization_format=DictJsonSerializationFormat)
 
 # Download files from S3

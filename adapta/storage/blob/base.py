@@ -158,9 +158,9 @@ class StorageClient(ABC):
         """
 
     @abstractmethod
-    def save_data(self, source_file_path: str, target_file_path: DataPath, doze_period_ms: int) -> None:
+    def upload_data(self, source_file_path: str, target_file_path: DataPath, doze_period_ms: int) -> None:
         """
-        Saves a target file or folder at `source_file_path` to `file_path`
+        Uploads a target file or folder at `source_file_path` to `file_path`
 
         :param source_file_path: Source file or folder path.
         :param target_file_path: Target file path in DataPath notation.
