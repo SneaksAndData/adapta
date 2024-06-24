@@ -74,12 +74,12 @@ class S3StorageClient(StorageClient):
         return any(self._s3_resource.Bucket(s3_path.bucket).objects.filter(Prefix=s3_path.path))
 
     def save_data_as_blob(
-        self,
-        data: T,
-        blob_path: DataPath,
-        serialization_format: Type[SerializationFormat[T]],
-        metadata: Optional[Dict[str, str]] = None,
-        overwrite: bool = False,
+            self,
+            data: T,
+            blob_path: DataPath,
+            serialization_format: Type[SerializationFormat[T]],
+            metadata: Optional[Dict[str, str]] = None,
+            overwrite: bool = False,
     ) -> None:
         """
          Saves any data with the given serialization format.
@@ -112,7 +112,7 @@ class S3StorageClient(StorageClient):
         self._s3_resource.Bucket(s3_path.bucket).Object(blob_path.path).delete()
 
     def list_blobs(
-        self, blob_path: DataPath, filter_predicate: Optional[Callable[[...], bool]] = None
+            self, blob_path: DataPath, filter_predicate: Optional[Callable[[...], bool]] = None
     ) -> Iterator[DataPath]:
         """
         Lists blobs in S3 storage.
@@ -132,10 +132,10 @@ class S3StorageClient(StorageClient):
                 yield blob
 
     def read_blobs(
-        self,
-        blob_path: DataPath,
-        serialization_format: Type[SerializationFormat[T]],
-        filter_predicate: Optional[Callable[[...], bool]] = None,
+            self,
+            blob_path: DataPath,
+            serialization_format: Type[SerializationFormat[T]],
+            filter_predicate: Optional[Callable[[...], bool]] = None,
     ) -> Iterator[T]:
         """
          Reads data under provided path into the given format.
@@ -152,11 +152,11 @@ class S3StorageClient(StorageClient):
             yield serialization_format().deserialize(blob.get()["Body"].read())
 
     def download_blobs(
-        self,
-        blob_path: DataPath,
-        local_path: str,
-        threads: Optional[int] = None,
-        filter_predicate: Optional[Callable[[...], bool]] = None,
+            self,
+            blob_path: DataPath,
+            local_path: str,
+            threads: Optional[int] = None,
+            filter_predicate: Optional[Callable[[...], bool]] = None,
     ) -> None:
         """
         Downloads blobs from S3 storage to a local path.
@@ -171,10 +171,10 @@ class S3StorageClient(StorageClient):
         blobs = self._s3_resource.Bucket(s3_path.bucket).objects.filter(Prefix=s3_path.path)
         for blob in blobs:
             if filter_predicate is None or filter_predicate(blob):
-                local_file_path = f"{local_path}/{blob.key}"
+                local_file_path = os.path.join(local_path, os.path.basename(blob.key))
                 os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
                 try:
-                    self._s3_resource.meta.client.download_file(s3_path.bucket, blob.key, f"{local_path}/{blob.key}")
+                    self._s3_resource.meta.client.download_file(s3_path.bucket, blob.key, local_file_path)
                 except StorageClientError as error:
                     raise RuntimeError(f"Error downloading blob: {error}") from error
 
