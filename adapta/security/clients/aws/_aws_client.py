@@ -19,7 +19,6 @@
 from typing import Optional, Dict, final
 
 import boto3
-
 from pyarrow.fs import FileSystem
 
 from adapta.security.clients._base import AuthenticationClient

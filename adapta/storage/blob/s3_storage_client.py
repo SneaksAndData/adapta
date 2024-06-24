@@ -18,7 +18,6 @@
 
 import os
 from typing import Optional, Callable, Type, Iterator, Dict, TypeVar, final
-
 from adapta.security.clients import AwsClient
 from adapta.storage.blob.base import StorageClient
 from adapta.storage.exceptions import StorageClientError
@@ -26,6 +25,7 @@ from adapta.storage.models import parse_data_path
 from adapta.storage.models.aws import cast_path
 from adapta.storage.models.base import DataPath
 from adapta.storage.models.format import SerializationFormat
+from datetime import datetime, timedelta
 
 T = TypeVar("T")  # pylint: disable=C0103
 
@@ -61,7 +61,11 @@ class S3StorageClient(StorageClient):
             "Bucket": s3_path.bucket,
             "Key": s3_path.path,
         }
-        return self._s3_resource.meta.client.generate_presigned_url("get_object", Params=params)
+        expiry_time = kwargs.get("expiry", datetime.utcnow() + timedelta(hours=1))
+
+        return self._s3_resource.meta.client.generate_presigned_url(
+            "get_object", Params=params, ExpiresIn=int((expiry_time - datetime.utcnow()).total_seconds())
+        )
 
     def blob_exists(self, blob_path: DataPath) -> bool:
         """Checks if blob located at blob_path exists
@@ -202,8 +206,8 @@ class S3StorageClient(StorageClient):
             copy_source = {"Bucket": source_s3_path.bucket, "Key": source_object.key}
 
             try:
-                self._s3_resource.meta.client.copy(copy_source, target_s3_path.bucket, target_object_key)
-                self._s3_resource.meta.client.head_object(Bucket=target_s3_path.bucket, Key=target_object_key)
+                test = self._s3_resource.meta.client.copy(copy_source, target_s3_path.bucket, target_object_key)
+                tes2t = self._s3_resource.meta.client.head_object(Bucket=target_s3_path.bucket, Key=target_object_key)
             except StorageClientError as error:
                 print(f"Error copying object: {error}")
 
