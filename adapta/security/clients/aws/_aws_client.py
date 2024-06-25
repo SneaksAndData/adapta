@@ -43,13 +43,6 @@ class AwsClient(AuthenticationClient):
         """
         return self._session
 
-    @property
-    def endpoint(self):
-        """
-        Returns configured endpoint (if any)
-        """
-        return self._credentials.endpoint
-
     @classmethod
     def from_base_client(cls, client: AuthenticationClient) -> Optional["AwsClient"]:
         """
