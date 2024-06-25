@@ -80,7 +80,7 @@ class AzureStorageClient(StorageClient):
             )
 
     @classmethod
-    def create(auth: AzureClient, endpoint_url: Optional[str] = None):
+    def create(cls, auth: AzureClient, endpoint_url: Optional[str] = None):
         """
          Not used in Azure.
         :return:

@@ -18,7 +18,7 @@
 
 import os
 from typing import Optional, Callable, Type, Iterator, Dict, TypeVar, final
-
+from datetime import datetime, timedelta
 from boto3 import Session
 
 from adapta.security.clients import AwsClient
@@ -28,7 +28,7 @@ from adapta.storage.models import parse_data_path
 from adapta.storage.models.aws import cast_path
 from adapta.storage.models.base import DataPath
 from adapta.storage.models.format import SerializationFormat
-from datetime import datetime, timedelta
+
 
 T = TypeVar("T")  # pylint: disable=C0103
 

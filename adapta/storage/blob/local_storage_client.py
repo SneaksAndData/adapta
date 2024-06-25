@@ -35,7 +35,7 @@ class LocalStorageClient(StorageClient):
     """
 
     @classmethod
-    def create(auth: AwsClient, endpoint_url: Optional[str] = None):
+    def create(cls, auth: AwsClient, endpoint_url: Optional[str] = None):
         raise NotImplementedError("Not supported by this client")
 
     def get_blob_uri(self, blob_path: DataPath, **kwargs) -> str:

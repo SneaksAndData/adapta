@@ -36,7 +36,7 @@ class StorageClient(ABC):
         self._base_client = base_client
 
     @classmethod
-    def create(auth: AuthenticationClient, endpoint_url: Optional[str] = None):
+    def create(cls, auth: AuthenticationClient, endpoint_url: Optional[str] = None):
         """
          Creates a Storage client using the AuthenticationClient to set up its session.
 
