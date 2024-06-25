@@ -196,3 +196,9 @@ class AzureClient(AuthenticationClient):
         return SubTreeFileSystem(
             path.to_hdfs_path(), PyFileSystem(FSSpecHandler(select_file_system(connection_options, path.account)))
         )
+
+    def initialize_session(self, session_callable=None) -> "AzureClient":
+        """
+         Not used in Azure.
+        :return:
+        """

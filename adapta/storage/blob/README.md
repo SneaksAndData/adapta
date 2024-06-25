@@ -62,8 +62,7 @@ aws_client = AwsClient()
 s3_path = S3Path.from_hdfs_path('s3a://bucket/path/to/my/table')
 
 # init storage client
-s3_client = S3StorageClient(base_client=aws_client)
-s3_client.initialize_session_resource()
+s3_client = S3StorageClient.create(base_client=aws_client)
 
 # Save data to S3
 s3_client.save_data_as_blob(
@@ -92,16 +91,12 @@ os.environ["PROTEUS__AWS_ENDPOINT"] = "http://example.com"
 credentials = EnvironmentAwsCredentials()
 aws_client = AwsClient(credentials)
 
-# Initialize session
-aws_client.initialize_session()
-
 # Target path for copy_blob
 blob_path = "path/to/blob.file" "# It can be either a 'blob.file' or a 'folder/'
 s3_path = S3Path.from_hdfs_path(blob_path)
 
 # Init storage client
-s3_client = S3StorageClient(base_client=aws_client)
-s3_client.initialize_session_resource()
+s3_client = S3StorageClient.create(base_client=aws_client)
 
 # Save data to S3
 s3_client.save_data_as_blob(

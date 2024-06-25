@@ -71,3 +71,9 @@ class AuthenticationClient(ABC):
         :param connection_options: Optional connection options to use instead of auto-discovery.
         :return:
         """
+
+    @abstractmethod
+    def initialize_session(self, session_callable=None) -> "AuthenticationClient":
+        """
+        Initializes the session by custom session function or a default one if no function is provided."
+        """

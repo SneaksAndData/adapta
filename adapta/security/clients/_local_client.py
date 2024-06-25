@@ -56,3 +56,9 @@ class LocalClient(AuthenticationClient):
 
     def get_pyarrow_filesystem(self, path: DataPath, connection_options: Optional[Dict[str, str]] = None) -> FileSystem:
         return SubTreeFileSystem(path.path, LocalFileSystem())
+
+    def initialize_session(self, session_callable=None) -> "LocalClient":
+        """
+         Not supported in local client.
+        :return:
+        """

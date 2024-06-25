@@ -46,6 +46,8 @@ class S3StorageClient(StorageClient):
 
     @classmethod
     def create(cls, auth: AwsClient, endpoint_url: Optional[str] = None):
+        auth.initialize_session()
+
         s3_resource = auth.session.resource(
             "s3", endpoint_url=endpoint_url if endpoint_url is not None else auth.endpoint
         )

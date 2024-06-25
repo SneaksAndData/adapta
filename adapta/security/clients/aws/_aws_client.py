@@ -34,7 +34,7 @@ class AwsClient(AuthenticationClient):
 
     def __init__(self, aws_credentials: Optional[AccessKeyCredentials] = None):
         self._session = None
-        self._credentials = aws_credentials or EnvironmentAwsCredentials()
+        self._credentials = aws_credentials
 
     @property
     def session(self):
@@ -96,15 +96,28 @@ class AwsClient(AuthenticationClient):
         :return:
         """
 
-    def initialize_session(self) -> "AwsClient":
+    def initialize_session(self, session_callable=None) -> "AwsClient":
         """
-        Initializes session. Should be called before any operations with client
+        Initializes the session by custom session function or a default one if no function is provided."
+        :return: AwsClient with established session.
         """
-        self._session = boto3.Session(
+        if session_callable is None:
+            session_callable = self._default_aws_session
+
+        self._session = session_callable()
+
+        return self
+
+    def _default_aws_session(self):
+        """
+        Initializes the session using stored AWS credentials. If not, retrieves them from environment variables."
+        """
+        if self._credentials is None:
+            self._credentials = EnvironmentAwsCredentials()
+
+        return boto3.Session(
             aws_access_key_id=self._credentials.access_key_id,
             aws_secret_access_key=self._credentials.access_key,
             region_name=self._credentials.region,
             aws_session_token=self._credentials.session_token,
         )
-
-        return self
