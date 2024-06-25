@@ -78,6 +78,13 @@ class HashicorpVaultClient(AuthenticationClient):
         """
         raise ValueError("Not supported  in HashicorpVaultClient")
 
+    def initialize_session(self, session_callable=None) -> "LocalClient":
+        """
+         Not supported  in HashicorpVaultClient
+        :return:
+        """
+        raise ValueError("Not supported  in HashicorpVaultClient")
+
     @abstractmethod
     def get_credentials(self):
         pass

@@ -75,5 +75,5 @@ class AuthenticationClient(ABC):
     @abstractmethod
     def initialize_session(self, session_callable=None) -> "AuthenticationClient":
         """
-        Initializes the session by custom session function or a default one if no function is provided."
+        Initializes the session by custom session function or a default one if no function is provided.
         """
