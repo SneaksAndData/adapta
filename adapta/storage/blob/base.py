@@ -163,7 +163,7 @@ class StorageClient(ABC):
         """
 
     @abstractmethod
-    def upload_data(self, source_file_path: str, target_file_path: DataPath, doze_period_ms: int) -> None:
+    def upload_blob(self, source_file_path: str, target_file_path: DataPath, doze_period_ms: int) -> None:
         """
         Uploads a target file or folder at `source_file_path` to `file_path`
 

@@ -109,9 +109,12 @@ for blob_details in blob_list:
     print(blob_details)
 
 # Read blobs from the S3 path
-blobs = s3_client.read_blobs(s3_path, serialization_format=DictJsonSerializationFormat)
+s3_path_parquet_file = S3Path.from_hdfs_path("path/to/blob.file.parquet")
+blobs = s3_client.read_blobs(s3_path_parquet_file, serialization_format=DataFrameParquetSerializationFormat)
+# Print blobs content
+print(list(blobs))
 
-# Download files from S3
+# Downloads blobs from the S3 storage path to the provided local path, as if you were navigating within the S3 path.
 s3_client.download_blobs(s3_path, local_path="/local/path/to/download")
 
 # Copy blob from one location to another in S3

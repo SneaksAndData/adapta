@@ -16,7 +16,7 @@
 #  limitations under the License.
 #
 
-from typing import Optional, Dict
+from typing import Optional, Dict, Callable
 from pyarrow.fs import FileSystem, LocalFileSystem, SubTreeFileSystem
 from adapta.security.clients._base import AuthenticationClient
 from adapta.storage.models.base import DataPath
@@ -57,7 +57,7 @@ class LocalClient(AuthenticationClient):
     def get_pyarrow_filesystem(self, path: DataPath, connection_options: Optional[Dict[str, str]] = None) -> FileSystem:
         return SubTreeFileSystem(path.path, LocalFileSystem())
 
-    def initialize_session(self, session_callable=None) -> "LocalClient":
+    def initialize_session(self, session_callable: Optional[Callable[[], None]] = None) -> "LocalClient":
         """
          Not supported in local client.
         :return:

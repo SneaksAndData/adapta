@@ -18,7 +18,7 @@
 
 import os
 from typing import Optional, Callable, Type, Iterator, Dict, TypeVar, final
-from datetime import datetime, timedelta
+from datetime import timedelta
 from boto3 import Session
 
 from adapta.security.clients import AwsClient
@@ -28,7 +28,6 @@ from adapta.storage.models import parse_data_path
 from adapta.storage.models.aws import cast_path
 from adapta.storage.models.base import DataPath
 from adapta.storage.models.format import SerializationFormat
-
 
 T = TypeVar("T")  # pylint: disable=C0103
 
@@ -49,7 +48,7 @@ class S3StorageClient(StorageClient):
         auth.initialize_session()
 
         s3_resource = auth.session.resource(
-            "s3", endpoint_url=endpoint_url if endpoint_url is not None else auth.endpoint
+            "s3", endpoint_url=endpoint_url if endpoint_url is not None else auth.get_credentials().endpoint
         )
 
         return cls(base_client=auth, s3_resource=s3_resource)
@@ -66,11 +65,9 @@ class S3StorageClient(StorageClient):
             "Bucket": s3_path.bucket,
             "Key": s3_path.path,
         }
-        expiry_time = kwargs.get("expiry", datetime.utcnow() + timedelta(hours=1))
+        expiry_time = kwargs.get("expiry", timedelta(hours=1).total_seconds())
 
-        return self._s3_resource.meta.client.generate_presigned_url(
-            "get_object", Params=params, ExpiresIn=int((expiry_time - datetime.utcnow()).total_seconds())
-        )
+        return self._s3_resource.meta.client.generate_presigned_url("get_object", Params=params, ExpiresIn=expiry_time)
 
     def blob_exists(self, blob_path: DataPath) -> bool:
         """Checks if blob located at blob_path exists
@@ -204,19 +201,16 @@ class S3StorageClient(StorageClient):
             # If the source path is a directory, construct the target object key
             # If the source path is a file, the target object key is the target path
             if source_s3_path.path == source_object.key:
-                target_object_key = target_s3_path.path
+                target_object_path_str = target_s3_path.path
             else:
-                target_object_key = source_object.key.replace(source_s3_path.path, target_s3_path.path, 1)
+                target_object_path_str = source_object.key.replace(source_s3_path.path, target_s3_path.path, 1)
 
-            copy_source = {"Bucket": source_s3_path.bucket, "Key": source_object.key}
+            if not self._copy_succeeds(
+                source_s3_path.bucket, source_object.key, target_s3_path.bucket, target_object_path_str
+            ):
+                print(f"Error copying object from {source_s3_path} to {target_s3_path}")
 
-            try:
-                self._s3_resource.meta.client.copy(copy_source, target_s3_path.bucket, target_object_key)
-                self._s3_resource.meta.client.head_object(Bucket=target_s3_path.bucket, Key=target_object_key)
-            except StorageClientError as error:
-                print(f"Error copying object: {error}")
-
-    def upload_data(self, source_file_path: str, target_file_path: DataPath, doze_period_ms: int = 0) -> None:
+    def upload_blob(self, source_file_path: str, target_file_path: DataPath, doze_period_ms: int = 0) -> None:
         """
         Uploads a target file or folder at `source_file_path` to `file_path`
 
@@ -247,6 +241,30 @@ class S3StorageClient(StorageClient):
                 file_data = file.read()
 
             self._s3_resource.Bucket(s3_path.bucket).put_object(Key=target_key, Body=file_data)
+
+    def _copy_succeeds(
+        self, source_s3_bucket: str, source_s3_path: str, target_s3_bucket: str, target_s3_path: str
+    ) -> bool:
+        """
+        Copies a blob from one location to another in S3 storage and checks if the copy operation was successful.
+
+        :param source_s3_bucket: Bucket of the source blob.
+        :param source_s3_path: Path of the source blob.
+        :param target_s3_bucket: Bucket of the target blob.
+        :param target_s3_path: Path of the target blob.
+        :return: Boolean indicating whether the copy operation was successful.
+        """
+        try:
+            self._s3_resource.meta.client.copy(
+                {"Bucket": source_s3_bucket, "Key": source_s3_path},
+                target_s3_bucket,
+                target_s3_path,
+            )
+            self._s3_resource.meta.client.head_object(Bucket=target_s3_bucket, Key=target_s3_path)
+            return True
+        except Exception as error:
+            print(f"Error copying object: {error}")
+            return False
 
     @classmethod
     def for_storage_path(cls, path: str) -> "S3StorageClient":

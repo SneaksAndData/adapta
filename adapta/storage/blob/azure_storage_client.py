@@ -305,7 +305,7 @@ class AzureStorageClient(StorageClient):
 
             doze(doze_period_ms)
 
-    def upload_data(self, source_file_path: str, target_file_path: DataPath, doze_period_ms: int) -> None:
+    def upload_blob(self, source_file_path: str, target_file_path: DataPath, doze_period_ms: int) -> None:
         """
          Not used in Azure.
         :return:

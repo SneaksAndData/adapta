@@ -20,7 +20,7 @@ import os
 
 import logging
 
-from typing import Optional, List, Dict, Tuple, Union
+from typing import Optional, List, Dict, Tuple, Union, Callable
 
 from adlfs import AzureBlobFileSystem
 from azure.mgmt.storage.v2021_08_01.models import StorageAccountKey, StorageAccount
@@ -197,7 +197,7 @@ class AzureClient(AuthenticationClient):
             path.to_hdfs_path(), PyFileSystem(FSSpecHandler(select_file_system(connection_options, path.account)))
         )
 
-    def initialize_session(self, session_callable=None) -> "AzureClient":
+    def initialize_session(self, session_callable: Optional[Callable[[], None]] = None) -> "AzureClient":
         """
          Not used in Azure.
         :return:

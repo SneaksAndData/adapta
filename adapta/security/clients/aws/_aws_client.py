@@ -16,9 +16,10 @@
 #  limitations under the License.
 #
 
-from typing import Optional, Dict, final
+from typing import Optional, Dict, final, Callable
 
 import boto3
+from boto3.session import Session
 from pyarrow.fs import FileSystem
 
 from adapta.security.clients._base import AuthenticationClient
@@ -55,10 +56,9 @@ class AwsClient(AuthenticationClient):
 
     def get_credentials(self):
         """
-         Not used in AWS.
-        :return:
+        Returns configured credentials (if any)
         """
-        raise NotImplementedError("Not implemented in AwsClient")
+        return self._credentials
 
     def get_access_token(self, scope: Optional[str] = None) -> str:
         """
@@ -89,11 +89,14 @@ class AwsClient(AuthenticationClient):
         :return:
         """
 
-    def initialize_session(self, session_callable=None) -> "AwsClient":
+    def initialize_session(self, session_callable: Optional[Callable[[], None]] = None) -> "AwsClient":
         """
         Initializes the session by custom session function or a default one if no function is provided."
         :return: AwsClient with established session.
         """
+        if self._session is not None:
+            return self
+
         if session_callable is None:
             session_callable = self._default_aws_session
 
@@ -101,7 +104,7 @@ class AwsClient(AuthenticationClient):
 
         return self
 
-    def _default_aws_session(self):
+    def _default_aws_session(self) -> Session:
         """
         Initializes the session using stored AWS credentials. If not, retrieves them from environment variables."
         """
