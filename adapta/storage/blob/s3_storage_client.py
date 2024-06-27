@@ -17,6 +17,8 @@
 #
 
 import os
+import botocore
+
 from typing import Optional, Callable, Type, Iterator, Dict, TypeVar, final
 from datetime import timedelta
 from boto3 import Session
@@ -262,7 +264,7 @@ class S3StorageClient(StorageClient):
             )
             self._s3_resource.meta.client.head_object(Bucket=target_s3_bucket, Key=target_s3_path)
             return True
-        except Exception as error:
+        except botocore.exceptions.BotoCoreError as error:
             print(f"Error copying object: {error}")
             return False
 
