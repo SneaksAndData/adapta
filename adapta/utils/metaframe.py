@@ -23,15 +23,11 @@ class PandasOptions(MetaFrameOptions):
     Options for Pandas operations.
     """
 
-    pass
-
 
 class PolarsOptions(MetaFrameOptions):
     """
     Options for Polars operations.
     """
-
-    pass
 
 
 class MetaFrame:
@@ -45,9 +41,9 @@ class MetaFrame:
         convert_to_polars: Callable[[any], polars.DataFrame],
         convert_to_pandas: Callable[[any], pandas.DataFrame],
     ):
-        self.data = data
-        self.convert_to_polars = convert_to_polars
-        self.convert_to_pandas = convert_to_pandas
+        self._data = data
+        self._convert_to_polars = convert_to_polars
+        self._convert_to_pandas = convert_to_pandas
 
     @classmethod
     def from_pandas(cls, data: pandas.DataFrame) -> "MetaFrame":
@@ -75,13 +71,13 @@ class MetaFrame:
         """
         Convert the MetaFrame to a pandas DataFrame.
         """
-        return self.convert_to_pandas(self.data)
+        return self._convert_to_pandas(self._data)
 
     def to_polars(self) -> polars.DataFrame:
         """
         Convert the MetaFrame to a Polars DataFrame.
         """
-        return self.convert_to_polars(self.data)
+        return self._convert_to_polars(self._data)
 
 
 def concat(dataframes: Iterable[MetaFrame], options: Optional[Iterable[MetaFrameOptions]] = None) -> MetaFrame:
