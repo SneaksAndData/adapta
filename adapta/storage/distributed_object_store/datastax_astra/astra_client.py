@@ -43,7 +43,6 @@ except ImportError:
 from backoff import on_exception, expo
 import pandas
 import polars
-from adapta.utils.metaframe import MetaFrame, concat
 from cassandra import ConsistencyLevel, WriteTimeout
 from cassandra.auth import PlainTextAuthProvider
 from cassandra.cluster import (  # pylint: disable=E0611
@@ -68,6 +67,7 @@ from adapta import __version__
 from adapta.storage.distributed_object_store.datastax_astra._models import SimilarityFunction, VectorSearchQuery
 from adapta.storage.models.filter_expression import Expression, AstraFilterExpression, compile_expression
 from adapta.utils import chunk_list, rate_limit
+from adapta.utils.metaframe import MetaFrame, concat
 
 TModel = TypeVar("TModel")  # pylint: disable=C0103
 
@@ -348,8 +348,12 @@ class AstraClient:
                 [
                     MetaFrame(
                         [dict(v.items()) for v in list(apply(model_class, key_column_filter, select_columns))],
-                        convert_to_polars=lambda x: polars.DataFrame(x, schema=select_columns) if not deduplicate else polars.DataFrame(x, schema=select_columns).drop_duplicates(),
-                        convert_to_pandas=lambda x: pandas.DataFrame(x, columns=select_columns) if not deduplicate else pandas.DataFrame(x, columns=select_columns).drop_duplicates(),
+                        convert_to_polars=(lambda x: polars.DataFrame(x, schema=select_columns))
+                        if not deduplicate
+                        else (lambda x: polars.DataFrame(x, schema=select_columns).unique()),
+                        convert_to_pandas=(lambda x: pandas.DataFrame(x, columns=select_columns))
+                        if not deduplicate
+                        else (lambda x: pandas.DataFrame(x, columns=select_columns).drop_duplicates()),
                     )
                     for key_column_filter in compiled_filter_values
                 ]
@@ -363,7 +367,9 @@ class AstraClient:
 
         :param: query: A CQL query to run.
         """
-        return MetaFrame(self._session.execute(query), convert_to_polars=polars.DataFrame, convert_to_pandas=pandas.DataFrame)
+        return MetaFrame(
+            self._session.execute(query), convert_to_polars=polars.DataFrame, convert_to_pandas=pandas.DataFrame
+        )
 
     def _model_dataclass(
         self,
@@ -667,4 +673,6 @@ class AstraClient:
             num_results=num_results,
         )
 
-        return MetaFrame(self._session.execute(str(query)), convert_to_polars=polars.DataFrame, convert_to_pandas=pandas.DataFrame)
+        return MetaFrame(
+            self._session.execute(str(query)), convert_to_polars=polars.DataFrame, convert_to_pandas=pandas.DataFrame
+        )

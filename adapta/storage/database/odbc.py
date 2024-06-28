@@ -20,7 +20,6 @@
 from abc import ABC
 from typing import Optional, Union, Iterable
 
-import polars
 from pandas import read_sql
 import sqlalchemy
 from sqlalchemy import text

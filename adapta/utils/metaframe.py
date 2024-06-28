@@ -52,7 +52,7 @@ class MetaFrame:
         """
         return cls(
             data=data,
-            convert_to_polars=lambda x: polars.DataFrame(x),
+            convert_to_polars=polars.DataFrame,
             convert_to_pandas=lambda x: x,
         )
 
