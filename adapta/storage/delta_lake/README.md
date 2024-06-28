@@ -49,17 +49,16 @@ aws_client.initialize_session()
 
 # Creating a delta lake table with sample data
 data = {
-    'Character': ['Frodo Baggins', 'Harry Potter', 'Sherlock Holmes', 'Tony Stark', 'Darth Vader'],
-    'Occupation': ['Ring Bearer', 'Wizard', 'Detective', 'Iron Man', 'Sith Lord'],
+    'Character': ['Boromir', 'Harry Potter', 'Sherlock Holmes', 'Tony Stark', 'Darth Vader'],
+    'Occupation': ['Professional succumber to temptation', 'Wizard', 'Detective', 'Iron Man', 'Sith Lord'],
     'Catchphrase': [
         'One does not simply walk into Mordor.',
         'Expecto Patronum!',
         'Elementary, my dear Watson.',
         'I am Iron Man.',
         'I find your lack of faith disturbing.'
-    ],
-    'Popularity': [10, 9, 8, 10, 7]
-} 
+    ]
+}
 
 df = pd.DataFrame(data)  # Create a pandas DataFrame from the data
 table = pa.Table.from_pandas(df)  # Convert the DataFrame to a PyArrow Table
@@ -76,8 +75,18 @@ batches = load(aws_client, s3_path, batch_size=1000))
 for batch in batches:
     print(batch)
     print("\n---\n")
-```
 
+# The content of the Delta Lake table should be printed in the screen
+#         Character  ...                            Catchphrase
+# 0          Boromir  ...  One does not simply walk into Mordor.
+# 1     Harry Potter  ...                      Expecto Patronum!
+# 2  Sherlock Holmes  ...            Elementary, my dear Watson.
+# 3       Tony Stark  ...                         I am Iron Man.
+# 4      Darth Vader  ...  I find your lack of faith disturbing.
+# 
+# [5 rows x 3 columns]
+# ---
+```
 ## Using the Filtering API.
 1. Create generic filter expressions
 ```python

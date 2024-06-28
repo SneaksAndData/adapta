@@ -43,7 +43,7 @@ adls_path = AdlsGen2Path.from_hdfs_path('abfss://container@account.dfs.core.wind
 azure_storage_client = AzureStorageClient(base_client=azure_client, path=adls_path)
 
 # download a file from Azure Storage to local path
-local_path = "/local/path"
+local_path = "/tmp/path"
 azure_storage_client.download_blob(adls_path, local_path)
 ```
 Showing downloaded file in terminal
@@ -108,14 +108,30 @@ blob_list = s3_client.list_blobs(s3_path)
 for blob_details in blob_list:
     print(blob_details)
 
+# A list of blobs and its details will be printed out like the following example:
+# {'Key': 'data/0-c309720b-3577-4211-b403-bbb55083e5c3-0.parquet', 'LastModified': datetime.datetime(2024, 6, 27, 14, 10, 28, 29000, tzinfo=tzutc()), 'ETag': '"29097d7d2d11d49fed28745a674af776"', 'Size': 2067, 'StorageClass': 'STANDARD', 'Owner': {'DisplayName': 'minio', 'ID': '02d61764'}}
+# {'Key': 'data/_delta_log/00000000000000000000.json', 'LastModified': datetime.datetime(2024, 6, 27, 13, 49, 2, 942000, tzinfo=tzutc()), 'ETag': '"29097d7d2d11d49fed28745a674af776"', 'Size': 2074, 'StorageClass': 'STANDARD', 'Owner': {'DisplayName': 'minio', 'ID': '02d61764'}}
+
 # Read blobs from the S3 path
 s3_path_parquet_file = S3Path.from_hdfs_path("path/to/blob.file.parquet")
 blobs = s3_client.read_blobs(s3_path_parquet_file, serialization_format=DataFrameParquetSerializationFormat)
 # Print blobs content
 print(list(blobs))
 
+# The content of the blob should be printed in the screen
+# [         Character  ...                            Catchphrase
+# 0          Boromir  ...  One does not simply walk into Mordor.
+# 1     Harry Potter  ...                      Expecto Patronum!
+# 2  Sherlock Holmes  ...            Elementary, my dear Watson.
+# 3       Tony Stark  ...                         I am Iron Man.
+# 4      Darth Vader  ...  I find your lack of faith disturbing.
+
+
 # Downloads blobs from the S3 storage path to the provided local path, as if you were navigating within the S3 path.
-s3_client.download_blobs(s3_path, local_path="/local/path/to/download")
+s3_client.download_blobs(s3_path, local_path="/tmp/path/to/download")
+
+# Upon executing the command 'ls /tmp/path/to/download' in your terminal, a list of files be visible:   
+# 0-c309720b-3577-4211-b403-bbb55083e5c3-0.parquet  _delta_log
 
 # Copy blob from one location to another in S3
 target_blob_path='s3a://path/to/blob_copy/'
