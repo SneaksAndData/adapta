@@ -49,6 +49,28 @@ class MetaFrame:
         self.convert_to_polars = convert_to_polars
         self.convert_to_pandas = convert_to_pandas
 
+    @classmethod
+    def from_pandas(cls, data: pandas.DataFrame) -> "MetaFrame":
+        """
+        Create a MetaFrame from a pandas DataFrame.
+        """
+        return cls(
+            data=data,
+            convert_to_polars=lambda x: polars.DataFrame(x),
+            convert_to_pandas=lambda x: x,
+        )
+
+    @classmethod
+    def from_polars(cls, data: polars.DataFrame) -> "MetaFrame":
+        """
+        Create a MetaFrame from a Polars DataFrame.
+        """
+        return cls(
+            data=data,
+            convert_to_polars=lambda x: x,
+            convert_to_pandas=lambda x: x.to_pandas(),
+        )
+
     def to_pandas(self) -> pandas.DataFrame:
         """
         Convert the MetaFrame to a pandas DataFrame.

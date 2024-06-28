@@ -17,6 +17,7 @@ import pandas
 from adapta.storage.database.azure_sql import AzureSqlClient
 from adapta.logs import SemanticLogger
 from adapta.logs.models import LogLevel
+from adapta.utils.metaframe import MetaFrame
 
 c_logger = SemanticLogger().add_log_source(
     log_source_name='azsql',
@@ -36,7 +37,7 @@ with AzureSqlClient(
     some_data = azsql.query('select * from dbo.big_data', chunksize=1000)
 
     for chunk in some_data:
-        print(chunk)
+        print(chunk.to_pandas())
 
     # write data to dbo.small_data
     data_to_write = pandas.DataFrame(data={
@@ -44,7 +45,7 @@ with AzureSqlClient(
         'name': ["Exostrike", "BIOM", "Collin"]
     })
 
-    azsql.materialize(data_to_write, 'dbo', 'small_data', True)
+    azsql.materialize(MetaFrame.from_pandas(data_to_write), 'dbo', 'small_data', True)
 
     # scale Azure SQL instance
     result = azsql.scale_instance(target_objective='HS_Gen4_1', max_wait_time=300)

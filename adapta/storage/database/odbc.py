@@ -18,9 +18,10 @@
 #
 
 from abc import ABC
-from typing import Optional, Union, Iterator
+from typing import Optional, Union, Iterable
 
-from pandas import DataFrame, read_sql
+import polars
+from pandas import read_sql
 import sqlalchemy
 from sqlalchemy import text
 from sqlalchemy.connectors import pyodbc
@@ -29,6 +30,7 @@ from sqlalchemy.exc import SQLAlchemyError, OperationalError
 
 from adapta.logs import SemanticLogger
 from adapta.storage.database.models import DatabaseType, SqlAlchemyDialect
+from adapta.utils.metaframe import MetaFrame
 
 
 class OdbcClient(ABC):
@@ -126,9 +128,9 @@ class OdbcClient(ABC):
 
         return self._connection
 
-    def query(self, query: str, chunksize: Optional[int] = None) -> Optional[Union[DataFrame, Iterator[DataFrame]]]:
+    def query(self, query: str, chunksize: Optional[int] = None) -> Optional[Union[MetaFrame, Iterable[MetaFrame]]]:
         """
-          Read result of SQL query into a pandas dataframe.
+          Read result of SQL query into a MetaFrame. The latent representation of the MetaFrame is a Pandas dataframe.
 
         :param query: Query to execute on the connection.
         :param chunksize: Size of an individual data chunk. If not provided, query result will be a single dataframe.
@@ -136,9 +138,12 @@ class OdbcClient(ABC):
         """
         try:
             if chunksize:
-                return read_sql(query, con=self._get_connection(), chunksize=chunksize)
+                return [
+                    MetaFrame.from_pandas(chunk)
+                    for chunk in read_sql(query, con=self._get_connection(), chunksize=chunksize)
+                ]
 
-            return read_sql(query, con=self._get_connection())
+            return MetaFrame.from_pandas(read_sql(query, con=self._get_connection()))
         except SQLAlchemyError as ex:
             self._logger.error("Engine error while executing query {query}", query=query, exception=ex)
             return None
@@ -152,16 +157,17 @@ class OdbcClient(ABC):
 
     def materialize(
         self,
-        data: DataFrame,
+        data: MetaFrame,
         schema: str,
         name: str,
         overwrite: bool = False,
         chunksize: Optional[int] = None,
     ) -> Optional[int]:
         """
-          Materialize dataframe as a table in a database.
+          Materialize MetaFrame as a table in a database.
+          The table is converted to a Pandas dataframe before materialization.
 
-        :param data: Dataframe to materialize as a table.
+        :param data: MetaFrame to materialize as a table.
         :param schema: Schema of a table.
         :param name: Name of a table.
         :param overwrite: Whether to overwrite or append the data.
@@ -184,7 +190,7 @@ class OdbcClient(ABC):
                         exception=ex,
                     )
 
-            return data.to_sql(
+            return data.to_pandas().to_sql(
                 name=name,
                 schema=schema,
                 con=self._get_connection(),

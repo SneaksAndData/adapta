@@ -34,3 +34,17 @@ def test_concat():
     metaframe = concat([metaframe1, metaframe2], options=[PandasOptions(ignore_index=True)])
     assert metaframe.to_pandas().equals(pandas.DataFrame({"A": [1, 2, 3, 4, 5, 6]}))
     assert metaframe.to_polars().equals(polars.DataFrame({"A": [1, 2, 3, 4, 5, 6]}))
+
+
+def test_from_df():
+    """
+    Test the from_pandas and from_polars methods.
+    """
+    pandas_df = pandas.DataFrame({"A": [1, 2, 3]})
+    polars_df = polars.DataFrame({"A": [1, 2, 3]})
+    metaframe_pandas = MetaFrame.from_pandas(pandas_df)
+    metaframe_polars = MetaFrame.from_polars(polars_df)
+    assert metaframe_pandas.to_pandas().equals(pandas_df)
+    assert metaframe_polars.to_polars().equals(polars_df)
+    assert metaframe_pandas.to_polars().equals(polars_df)
+    assert metaframe_polars.to_pandas().equals(pandas_df)
