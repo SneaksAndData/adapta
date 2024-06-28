@@ -80,6 +80,14 @@ class AzureStorageClient(StorageClient):
             )
 
     @classmethod
+    def create(cls, auth: AzureClient, endpoint_url: Optional[str] = None):
+        """
+         Not used in Azure.
+        :return:
+        """
+        raise NotImplementedError("Not implemented in AzClient")
+
+    @classmethod
     def for_storage_path(cls, path: str) -> "AzureStorageClient":
         """
         Generate client instance that can operate on the provided path
@@ -296,3 +304,10 @@ class AzureStorageClient(StorageClient):
                 )
 
             doze(doze_period_ms)
+
+    def upload_blob(self, source_file_path: str, target_file_path: DataPath, doze_period_ms: int) -> None:
+        """
+         Not used in Azure.
+        :return:
+        """
+        raise NotImplementedError("Not implemented in AzClient")

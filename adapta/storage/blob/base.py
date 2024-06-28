@@ -35,6 +35,17 @@ class StorageClient(ABC):
     def __init__(self, *, base_client: AuthenticationClient):
         self._base_client = base_client
 
+    @classmethod
+    def create(cls, auth: AuthenticationClient, endpoint_url: Optional[str] = None):
+        """
+         Creates a Storage client using the AuthenticationClient to set up its session.
+
+        :param auth: The AuthenticationClient instance used for setting up the storage client.
+        :param endpoint_url: Optional parameter to specify the endpoint URL for the storage client.
+
+        :return: An instance of the StorageClient.
+        """
+
     @abstractmethod
     def get_blob_uri(self, blob_path: DataPath, **kwargs) -> str:
         """
@@ -149,6 +160,17 @@ class StorageClient(ABC):
         :param blob_path: Path to source blob.
         :param target_blob_path: Path to target blob.
         :param doze_period_ms: number of ms to doze between polling the status of the copy.
+        """
+
+    @abstractmethod
+    def upload_blob(self, source_file_path: str, target_file_path: DataPath, doze_period_ms: int) -> None:
+        """
+        Uploads a target file or folder at `source_file_path` to `file_path`
+
+        :param source_file_path: Source file or folder path.
+        :param target_file_path: Target file path in DataPath notation.
+        :param doze_period_ms: number of ms to doze between polling the status of the copy.
+        :return:
         """
 
     @classmethod

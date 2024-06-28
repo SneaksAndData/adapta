@@ -30,22 +30,33 @@ class S3Path(DataPath):
 
     def to_uri(self) -> str:
         """
-        Not yet implemented in S3Path
+        Converts the S3Path to a URI.
+         :return: URI path
         """
-        raise NotImplementedError
+        if not self.bucket or not self.path:
+            raise ValueError("Bucket and path must be defined")
+
+        return f"s3://{self.bucket}/{self.path}"
 
     def base_uri(self) -> str:
         """
-        Not yet implemented in S3Path
+        Returns the base URI of the S3Path.
+        :return: URI path
         """
-        raise NotImplementedError
+        if not self.bucket:
+            raise ValueError("Bucket must be defined")
+
+        return f"https://{self.bucket}.s3.amazonaws.com"
 
     @classmethod
-    def from_uri(cls, url: str) -> "DataPath":
+    def from_uri(cls, url: str) -> "S3Path":
         """
-        Not yet implemented in S3Path
+        Creates an S3Path from a URI.
+        :return: S3Path path
         """
-        raise NotImplementedError
+        assert url.startswith(("http://", "https://"))
+        uri = urlparse(url)
+        return cls(bucket=uri.netloc, path=uri.path.lstrip("/"))
 
     bucket: str
     path: str
@@ -54,7 +65,8 @@ class S3Path(DataPath):
     @classmethod
     def from_hdfs_path(cls, hdfs_path: str) -> "S3Path":
         """
-        Not yet implemented in S3Path
+        Converts the HDFS path to S3Path compatible path.
+        :return: S3Path path
         """
         assert hdfs_path.startswith("s3a://"), "HDFS S3 path should start with s3a://"
         uri = urlparse(hdfs_path)
@@ -63,15 +75,20 @@ class S3Path(DataPath):
 
     def to_hdfs_path(self) -> str:
         """
-        Not yet implemented in S3Path
+        Converts the S3Path to an HDFS compatible path.
+        :return: HDFS path
         """
+        if not self.bucket or not self.path:
+            raise ValueError("Bucket and path must be defined")
+
         return f"s3a://{self.bucket}/{self.path}"
 
     def to_delta_rs_path(self) -> str:
         """
-        Not yet implemented in S3Path
+        Converts the S3Path to a Delta Lake compatible path.
+        :return: Delta Lake path
         """
-        raise NotImplementedError
+        return f"s3a://{self.bucket}/{self.path}"
 
 
 def cast_path(blob_path: DataPath) -> S3Path:

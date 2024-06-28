@@ -40,5 +40,6 @@ Currently, only the two types of credentials are supported now:
   - PROTEUS__AWS_SECRET_ACCESS_KEY: Secret access key.
   - PROTEUS__AWS_ACCESS_KEY_ID: Access key id.
   - PROTEUS__AWS_REGION: AWS region.
+  - PROTEUS__AWS_ENDPOINT: AWS S3 Storage Endpoint.
 
 - `ExplicitAwsCredentials`: This credential provider accepts the credentials as a constructor arguments.

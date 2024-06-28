@@ -17,6 +17,7 @@ Contains credentials provider for AWS clients
 #
 import os
 from abc import ABC, abstractmethod
+from typing import Optional
 
 
 class AccessKeyCredentials(ABC):
@@ -39,6 +40,16 @@ class AccessKeyCredentials(ABC):
     def region(self) -> str:
         """AWS region"""
 
+    @property
+    @abstractmethod
+    def session_token(self) -> Optional[str]:
+        """AWS session token"""
+
+    @property
+    @abstractmethod
+    def endpoint(self) -> Optional[str]:
+        """AWS custom endpoint"""
+
 
 class EnvironmentAwsCredentials(AccessKeyCredentials):
     """
@@ -46,6 +57,9 @@ class EnvironmentAwsCredentials(AccessKeyCredentials):
     """
 
     def __init__(self):
+        self._session_token = None
+        self._endpoint = None
+
         if "PROTEUS__AWS_SECRET_ACCESS_KEY" not in os.environ:
             raise ValueError("PROTEUS__AWS_SECRET_ACCESS_KEY must be set")
         self._access_key = os.environ["PROTEUS__AWS_SECRET_ACCESS_KEY"]
@@ -58,28 +72,11 @@ class EnvironmentAwsCredentials(AccessKeyCredentials):
             raise ValueError("PROTEUS__AWS_REGION must be set")
         self._region = os.environ["PROTEUS__AWS_REGION"]
 
-    @property
-    def access_key(self) -> str:
-        return self._access_key
+        if "PROTEUS__AWS_SESSION_TOKEN" in os.environ:
+            self._session_token = os.environ["PROTEUS__AWS_SESSION_TOKEN"]
 
-    @property
-    def access_key_id(self) -> str:
-        return self._access_key_id
-
-    @property
-    def region(self) -> str:
-        return self.region
-
-
-class ExplicitAwsCredentials(AccessKeyCredentials):
-    """
-    Explicitly passed AWS credentials
-    """
-
-    def __init__(self, access_key, access_key_id, region):
-        self._access_key = access_key
-        self._access_key_id = access_key_id
-        self._region = region
+        if "PROTEUS__AWS_ENDPOINT" in os.environ:
+            self._endpoint = os.environ["PROTEUS__AWS_ENDPOINT"]
 
     @property
     def access_key(self) -> str:
@@ -92,3 +89,44 @@ class ExplicitAwsCredentials(AccessKeyCredentials):
     @property
     def region(self) -> str:
         return self._region
+
+    @property
+    def session_token(self) -> Optional[str]:
+        return self._session_token
+
+    @property
+    def endpoint(self) -> Optional[str]:
+        return self._endpoint
+
+
+class ExplicitAwsCredentials(AccessKeyCredentials):
+    """
+    Explicitly passed AWS credentials
+    """
+
+    def __init__(self, access_key, access_key_id, region, session_token=None, endpoint=None):
+        self._access_key = access_key
+        self._access_key_id = access_key_id
+        self._region = region
+        self._session_token = session_token
+        self._endpoint = endpoint
+
+    @property
+    def access_key(self) -> str:
+        return self._access_key
+
+    @property
+    def access_key_id(self) -> str:
+        return self._access_key_id
+
+    @property
+    def region(self) -> str:
+        return self._region
+
+    @property
+    def session_token(self) -> Optional[str]:
+        return self._session_token
+
+    @property
+    def endpoint(self) -> Optional[str]:
+        return self._endpoint

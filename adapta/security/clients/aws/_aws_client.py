@@ -16,9 +16,10 @@
 #  limitations under the License.
 #
 
-from typing import Optional, Dict, final
+from typing import Optional, Dict, final, Callable
 
 import boto3
+from boto3.session import Session
 from pyarrow.fs import FileSystem
 
 from adapta.security.clients._base import AuthenticationClient
@@ -34,7 +35,7 @@ class AwsClient(AuthenticationClient):
 
     def __init__(self, aws_credentials: Optional[AccessKeyCredentials] = None):
         self._session = None
-        self._credentials = aws_credentials or EnvironmentAwsCredentials()
+        self._credentials = aws_credentials
 
     @property
     def session(self):
@@ -55,23 +56,26 @@ class AwsClient(AuthenticationClient):
 
     def get_credentials(self):
         """
-         Not used in AWS.
-        :return:
+        Returns configured credentials (if any)
         """
-        raise NotImplementedError("Not implemented in AwsClient")
+        return self._credentials
 
     def get_access_token(self, scope: Optional[str] = None) -> str:
         """
-         Not used in AWS.
-        :return:
+        Not used in AWS.
         """
-        raise NotImplementedError("Authentication with temporary credentials is not supported yet in AwsClient")
 
     def connect_storage(self, path: DataPath, set_env: bool = False) -> Optional[Dict]:
         """
-         Not used in AWS.
-        :return:
+        Configures the necessary storage options to be used to connect the AWS client for Delta Lake operations.
+        :return: All need storage options to set up Delta Lake storage client.
         """
+        return {
+            "AWS_ACCESS_KEY_ID": self._credentials.access_key_id,
+            "AWS_SECRET_ACCESS_KEY": self._credentials.access_key,
+            "AWS_REGION": self._credentials.region,
+            "AWS_ENDPOINT_URL": "" if self._credentials.endpoint is None else self._credentials.endpoint,
+        }
 
     def connect_account(self):
         """
@@ -80,15 +84,36 @@ class AwsClient(AuthenticationClient):
         """
 
     def get_pyarrow_filesystem(self, path: DataPath, connection_options: Optional[Dict[str, str]] = None) -> FileSystem:
-        raise ValueError("Not supported  in AwsClient")
+        """
+        Not supported in AwsClient.
+        :return:
+        """
 
-    def initialize_session(self) -> "AwsClient":
+    def initialize_session(self, session_callable: Optional[Callable[[], None]] = None) -> "AwsClient":
         """
-        Initializes session. Should be called before any operations with client
+        Initializes the session by custom session function or a default one if no function is provided."
+        :return: AwsClient with established session.
         """
-        self._session = boto3.Session(
+        if self._session is not None:
+            return self
+
+        if session_callable is None:
+            session_callable = self._default_aws_session
+
+        self._session = session_callable()
+
+        return self
+
+    def _default_aws_session(self) -> Session:
+        """
+        Initializes the session using stored AWS credentials. If not, retrieves them from environment variables."
+        """
+        if self._credentials is None:
+            self._credentials = EnvironmentAwsCredentials()
+
+        return boto3.Session(
             aws_access_key_id=self._credentials.access_key_id,
             aws_secret_access_key=self._credentials.access_key,
             region_name=self._credentials.region,
+            aws_session_token=self._credentials.session_token,
         )
-        return self

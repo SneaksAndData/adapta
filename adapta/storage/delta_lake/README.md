@@ -6,8 +6,9 @@ Supported API:
 - read a subset of columns from delta table
 - read and filter a delta table without loading all rows in memory
 
-## Example usage for Azure Datalake Gen2
+## Examples usage
 Prepare connection and load
+### For Azure Datalake Gen2
 
 ```python
 import os
@@ -21,6 +22,70 @@ adls_path = AdlsGen2Path.from_hdfs_path('abfss://container@account.dfs.core.wind
 
 # get Iterable[pandas.DataFrame]
 batches = load(azure_client, adls_path, batch_size=1000)
+```
+
+### For AWS Simple Storage Service (S3) or S3-Compatible Storage
+
+```python
+import os
+from adapta.security.clients import AwsClient
+from adapta.security.clients.aws._aws_credentials import EnvironmentAwsCredentials
+from adapta.storage.delta_lake import load
+import pandas as pd
+import pyarrow as pa
+
+# Set up environment variables
+os.environ["PROTEUS__AWS_ACCESS_KEY_ID"] = minio_access_key_id
+os.environ["PROTEUS__AWS_SECRET_ACCESS_KEY"] = minio_secret_key
+os.environ["PROTEUS__AWS_REGION"] = "eu-central-1"
+os.environ["PROTEUS__AWS_ENDPOINT"] = "http://example.com"
+
+# Create client
+credentials = EnvironmentAwsCredentials()
+aws_client = AwsClient(credentials)
+
+# Initialize session
+aws_client.initialize_session()
+
+# Creating a delta lake table with sample data
+data = {
+    'Character': ['Boromir', 'Harry Potter', 'Sherlock Holmes', 'Tony Stark', 'Darth Vader'],
+    'Occupation': ['Professional succumber to temptation', 'Wizard', 'Detective', 'Iron Man', 'Sith Lord'],
+    'Catchphrase': [
+        'One does not simply walk into Mordor.',
+        'Expecto Patronum!',
+        'Elementary, my dear Watson.',
+        'I am Iron Man.',
+        'I find your lack of faith disturbing.'
+    ]
+}
+
+df = pd.DataFrame(data)  # Create a pandas DataFrame from the data
+table = pa.Table.from_pandas(df)  # Convert the DataFrame to a PyArrow Table
+path_test = '/path/to/store/locally/delta/lake/table'  
+deltalake.write_deltalake(path_test, table)  # Write the PyArrow Table to a Delta Lake table
+
+# Save the Delta Lake table to S3 blob storage
+s3_client.save_data(path_test, s3_path) 
+
+# Get Iterable[pandas.DataFrame]
+batches = load(aws_client, s3_path, batch_size=1000))
+
+# Print each loaded batch
+for batch in batches:
+    print(batch)
+    print("\n---\n")
+
+# The content of the Delta Lake table should be printed in the screen
+#         Character  ...                            Catchphrase
+# 0          Boromir  ...  One does not simply walk into Mordor.
+# 1     Harry Potter  ...                      Expecto Patronum!
+# 2  Sherlock Holmes  ...            Elementary, my dear Watson.
+# 3       Tony Stark  ...                         I am Iron Man.
+# 4      Darth Vader  ...  I find your lack of faith disturbing.
+# 
+# [5 rows x 3 columns]
+# ---
 ```
 ## Using the Filtering API.
 1. Create generic filter expressions
