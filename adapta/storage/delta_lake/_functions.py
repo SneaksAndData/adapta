@@ -84,18 +84,21 @@ def load(  # pylint: disable=R0913
             filter=row_filter, columns=columns, batch_size=batch_size
         )
 
-        return map(lambda batch: MetaFrame(
-            data=batch,
-            convert_to_pandas=lambda data: data.to_pandas(timestamp_as_object=True),
-            convert_to_polars=lambda data: polars.from_arrow(data),
-        ), batches)
+        return map(
+            lambda batch: MetaFrame(
+                data=batch,
+                convert_to_pandas=lambda data: data.to_pandas(timestamp_as_object=True),
+                convert_to_polars=polars.from_arrow,
+            ),
+            batches,
+        )
 
     pyarrow_table: Table = pyarrow_ds.to_table(filter=row_filter, columns=columns)
 
     return MetaFrame(
         data=pyarrow_table,
         convert_to_pandas=lambda data: data.to_pandas(timestamp_as_object=True),
-        convert_to_polars=lambda data: polars.from_arrow(data),
+        convert_to_polars=polars.from_arrow,
     )
 
 
@@ -272,7 +275,7 @@ def load_cached(  # pylint: disable=R0913
                 ignore_index=True,
                 copy=False,
             )
-        ]
+        ],
     )
 
     # we add a 'completion' indicator to this cached key so clients that now safely read the value

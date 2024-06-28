@@ -19,6 +19,7 @@ from unittest.mock import patch, MagicMock, ANY, call
 
 import pandas
 import pytest
+import polars
 
 from adapta.security.clients import LocalClient
 from adapta.storage.models.local import LocalPath
@@ -51,7 +52,7 @@ def get_client_and_path_partitioned():
 
 def test_delta_load(get_client_and_path):
     client, data_path = get_client_and_path
-    table: pandas.DataFrame = load(client, data_path)
+    table: pandas.DataFrame = load(client, data_path).to_pandas()
 
     assert len(table) == 17
 
@@ -62,26 +63,29 @@ def test_delta_batch_load(get_client_and_path):
     client, data_path = get_client_and_path
     table = list(load(client, data_path, batch_size=10))
 
-    assert isinstance(table[0], pandas.DataFrame)
+    assert isinstance(table[0].to_pandas(), pandas.DataFrame)
+    assert isinstance(table[0].to_polars(), polars.DataFrame)
 
 
 def test_delta_filter(get_client_and_path):
     client, data_path = get_client_and_path
     table = load(client, data_path, row_filter=(pyarrow_field("A") == "b"))
 
-    assert len(table) == 0
+    assert len(table.to_pandas()) == 0
+    assert len(table.to_polars()) == 0
 
 
 def test_column_project(get_client_and_path):
     client, data_path = get_client_and_path
     table = load(client, data_path, columns=["B"])
 
-    assert len(table.columns.to_list()) == 1
+    assert len(table.to_pandas().columns.to_list()) == 1
+    assert len(table.to_polars().columns) == 1
 
 
 def test_delta_load_with_partitions(get_client_and_path_partitioned):
     client, data_path = get_client_and_path_partitioned
-    table = load(client, data_path, partition_filter_expressions=[("colP", "=", "yes")])
+    table = load(client, data_path, partition_filter_expressions=[("colP", "=", "yes")]).to_pandas()
 
     assert table["colA"].to_list() == [1, 3]
 
