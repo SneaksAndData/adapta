@@ -34,6 +34,10 @@ class LocalStorageClient(StorageClient):
     Local Storage Client, primarily for unit tests.
     """
 
+    @classmethod
+    def create(cls, auth: StorageClient, endpoint_url: Optional[str] = None):
+        raise NotImplementedError("Not supported by this client")
+
     def get_blob_uri(self, blob_path: DataPath, **kwargs) -> str:
         return cast_path(blob_path).path
 
@@ -87,6 +91,9 @@ class LocalStorageClient(StorageClient):
 
     def copy_blob(self, blob_path: DataPath, target_blob_path: DataPath, doze_period_ms: int = 0) -> None:
         shutil.copyfile(cast_path(blob_path).path, cast_path(target_blob_path).path)
+
+    def upload_blob(self, source_file_path: str, target_file_path: DataPath, doze_period_ms: int) -> None:
+        raise NotImplementedError("Not supported by this client")
 
     @classmethod
     def for_storage_path(cls, path: str) -> "StorageClient":

@@ -17,7 +17,7 @@
 #
 
 from abc import ABC, abstractmethod
-from typing import Optional, Dict
+from typing import Optional, Dict, Callable
 
 from pyarrow.fs import FileSystem
 from adapta.storage.models.base import DataPath
@@ -70,4 +70,10 @@ class AuthenticationClient(ABC):
         :param path: Data path to authenticate.
         :param connection_options: Optional connection options to use instead of auto-discovery.
         :return:
+        """
+
+    @abstractmethod
+    def initialize_session(self, session_callable: Optional[Callable[[], None]] = None) -> "AuthenticationClient":
+        """
+        Initializes the session by custom session function or a default one if no function is provided.
         """

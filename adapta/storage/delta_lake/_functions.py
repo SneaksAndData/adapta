@@ -47,7 +47,7 @@ def load(  # pylint: disable=R0913
     partition_filter_expressions: Optional[List[Tuple]] = None,
 ) -> Union[MetaFrame, Iterable[MetaFrame]]:
     """
-     Loads Delta Lake table from Azure storage and converts it to a pandas dataframe.
+     Loads Delta Lake table from Azure or AWS storage and converts it to a pandas dataframe.
 
     :param auth_client: AuthenticationClient for target storage.
     :param path: Path to delta table, in HDFS format: abfss://container@account.dfs.core.windows.net/my/path
