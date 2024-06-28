@@ -25,6 +25,8 @@ from typing import Generic, TypeVar
 import pandas
 import polars
 
+from adapta.utils.metaframe import MetaFrame
+
 T = TypeVar("T")  # pylint: disable=C0103
 
 
@@ -48,6 +50,34 @@ class SerializationFormat(ABC, Generic[T]):
         :param data: Data to deserialize.
         :return: Deserialized data.
         """
+
+
+class MetaFrameParquetSerializationFormat(SerializationFormat[MetaFrame]):
+    """
+    Serializes MetaFrames as parquet format. The MetaFrame is converted to Polars DataFrame before serialization.
+    """
+
+    def serialize(self, data: MetaFrame) -> bytes:
+        """
+        Serializes MetaFrame to bytes using parquet format.
+        :param data: MetaFrame to serialize.
+        :return: Parquet serialized MetaFrame as byte array.
+        """
+        bytes_object = io.BytesIO()
+        data.to_polars().write_parquet(bytes_object)
+        return bytes_object.getvalue()
+
+    def deserialize(self, data: bytes) -> MetaFrame:
+        """
+        Deserializes MetaFrame from bytes using parquet format.
+        :param data: MetaFrame to deserialize in parquet format as bytes.
+        :return: Deserialized MetaFrame.
+        """
+        return MetaFrame(
+            data=io.BytesIO(data),
+            convert_to_polars=polars.read_parquet,
+            convert_to_pandas=pandas.read_parquet,
+        )
 
 
 class DataFrameParquetSerializationFormat(SerializationFormat[pandas.DataFrame]):

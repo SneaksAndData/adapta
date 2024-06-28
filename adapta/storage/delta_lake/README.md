@@ -1,8 +1,8 @@
 # Delta Lake Operations
 
 Supported API:
-- read delta table as `pandas.DataFrame`
-- read delta table in batches of a provided size, each batch being `pandas.DataFrame`
+- read delta table as `MetaFrame` which can easily be converted to `pandas.DataFrame` or `polars.DataFrame`
+- read delta table in batches of a provided size, each batch being `MetaFrame`
 - read a subset of columns from delta table
 - read and filter a delta table without loading all rows in memory
 
@@ -20,7 +20,7 @@ os.environ["PROTEUS__USE_AZURE_CREDENTIAL"] = "1"
 azure_client = AzureClient()
 adls_path = AdlsGen2Path.from_hdfs_path('abfss://container@account.dfs.core.windows.net/path/to/my/table')
 
-# get Iterable[pandas.DataFrame]
+# get Iterable[MetaFrame]
 batches = load(azure_client, adls_path, batch_size=1000)
 ```
 
@@ -100,21 +100,21 @@ complex_filter = (FilterField("my_column") == "something1") | (FilterField("my_o
 2. Load and apply the expression
 ```python
 # simple_filtered is of type pandas.DataFrame
-simple_filtered = load(azure_client, adls_path, row_filter=simple_expression_pyarrow, columns=["my_column", "my_other_column"])
+simple_filtered = load(azure_client, adls_path, row_filter=simple_expression_pyarrow, columns=["my_column", "my_other_column"]).to_pandas()
 #     my_column my_other_column
 # 0  some-value             123
 # 1  some-value   another-value
 
-print(load(azure_client, adls_path, row_filter=combined_filter, columns=["my_column", "my_other_column"]))
+print(load(azure_client, adls_path, row_filter=combined_filter, columns=["my_column", "my_other_column"]).to_pandas())
 #     my_column my_other_column
 # 0  some-value   another-value
 
-print(load(azure_client, adls_path, row_filter=combined_filter_with_collection, columns=["my_column", "my_other_column"]))
+print(load(azure_client, adls_path, row_filter=combined_filter_with_collection, columns=["my_column", "my_other_column"]).to_pandas())
 #     my_column my_other_column
 # 0  something1            else
 # 1  something1     nonexistent
 
-print(load(azure_client, adls_path, row_filter=complex_filter, columns=["my_column", "my_other_column", "another_column"]))
+print(load(azure_client, adls_path, row_filter=complex_filter, columns=["my_column", "my_other_column", "another_column"]).to_pandas())
 #     my_column my_other_column  another_column
 # 0  something1            else               1
 # 1  something1     nonexistent               2
@@ -131,7 +131,7 @@ hive_path = HivePath.from_hdfs_path(
 
 adls_path2 = AdlsGen2Path.from_hdfs_path(hive_path.get_physical_path(logger=logger))
 
-# get Iterable[pandas.DataFrame]
+# get Iterable[MetaFrame]
 batches2 = load(azure_client, adls_path2, batch_size=1000)
 
 # read data using Redis Cache, improves read time by a factor of >10 on single-node Redis.
