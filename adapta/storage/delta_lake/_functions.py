@@ -21,7 +21,7 @@ import hashlib
 import zlib
 from typing import Optional, Union, Iterator, List, Iterable, Tuple
 
-from pandas import DataFrame, concat
+import polars
 import pyarrow
 from deltalake import DeltaTable
 from pyarrow import RecordBatch, Table
@@ -32,8 +32,9 @@ from adapta.security.clients._base import AuthenticationClient
 from adapta.storage.models.base import DataPath
 from adapta.storage.delta_lake._models import DeltaTransaction
 from adapta.storage.cache import KeyValueCache
-from adapta.storage.models.format import DataFrameParquetSerializationFormat
+from adapta.storage.models.format import MetaFrameParquetSerializationFormat
 from adapta.storage.models.filter_expression import Expression, ArrowFilterExpression, compile_expression
+from adapta.utils.metaframe import MetaFrame, concat, PandasOptions
 
 
 def load(  # pylint: disable=R0913
@@ -44,7 +45,7 @@ def load(  # pylint: disable=R0913
     columns: Optional[List[str]] = None,
     batch_size: Optional[int] = None,
     partition_filter_expressions: Optional[List[Tuple]] = None,
-) -> Union[DeltaTable, DataFrame, Iterator[DataFrame]]:
+) -> Union[MetaFrame, Iterable[MetaFrame]]:
     """
      Loads Delta Lake table from Azure storage and converts it to a pandas dataframe.
 
@@ -83,11 +84,19 @@ def load(  # pylint: disable=R0913
             filter=row_filter, columns=columns, batch_size=batch_size
         )
 
-        return map(lambda batch: batch.to_pandas(timestamp_as_object=True), batches)
+        return map(lambda batch: MetaFrame(
+            data=batch,
+            convert_to_pandas=lambda data: data.to_pandas(timestamp_as_object=True),
+            convert_to_polars=lambda data: polars.from_arrow(data),
+        ), batches)
 
     pyarrow_table: Table = pyarrow_ds.to_table(filter=row_filter, columns=columns)
 
-    return pyarrow_table.to_pandas(timestamp_as_object=True)
+    return MetaFrame(
+        data=pyarrow_table,
+        convert_to_pandas=lambda data: data.to_pandas(timestamp_as_object=True),
+        convert_to_polars=lambda data: polars.from_arrow(data),
+    )
 
 
 def history(auth_client: AuthenticationClient, path: DataPath, limit: Optional[int] = 1) -> Iterable[DeltaTransaction]:
@@ -163,7 +172,7 @@ def load_cached(  # pylint: disable=R0913
     columns: Optional[List[str]] = None,
     partition_filter_expressions: Optional[List[Tuple]] = None,
     logger: Optional[SemanticLogger] = None,
-) -> DataFrame:
+) -> MetaFrame:
     """
      Loads Delta Lake table from an external cache and converts it to a single pandas dataframe (after applying column projections and row filters).
      If a cache entry is missing, falls back to reading data from storage path.
@@ -186,9 +195,8 @@ def load_cached(  # pylint: disable=R0913
     :param batch_size: Batch size used to read table in batches.
     :param cache: Optional cache store to read the version from. If not supplied, data will be read from the path. If supplied and cached entry is not present, data will be read from storage and saved in cache.
     :param cache_expires_after: Optional time to live for a cached table entry. Defaults to 1 hour.
-    :param cache_exceptions: Optional additional exceptions on cache level to ignore.
     :param logger: Optional logger for debugging purposes.
-    :return: A DeltaTable wrapped Rust class, pandas Dataframe or an iterator of pandas Dataframes, for batched reads.
+    :return: A MetaFrame or an iterator of MetaFrames, for batched reads.
     """
 
     cache_key = get_cache_key(
@@ -217,7 +225,7 @@ def load_cached(  # pylint: disable=R0913
         try:
             return concat(
                 [
-                    DataFrameParquetSerializationFormat().deserialize(zlib.decompress(cached_batch))
+                    MetaFrameParquetSerializationFormat().deserialize(zlib.decompress(cached_batch))
                     for batch_key, cached_batch in cache.get(cache_key, is_map=True).items()
                     if batch_key != b"completed"
                 ]
@@ -255,12 +263,16 @@ def load_cached(  # pylint: disable=R0913
             cache.include(
                 key=cache_key,
                 attribute=str(batch_index),
-                value=zlib.compress(DataFrameParquetSerializationFormat().serialize(batch)),
+                value=zlib.compress(MetaFrameParquetSerializationFormat().serialize(batch)),
             )
             for batch_index, batch in enumerate(data)
         ],
-        ignore_index=True,
-        copy=False,
+        options=[
+            PandasOptions(
+                ignore_index=True,
+                copy=False,
+            )
+        ]
     )
 
     # we add a 'completion' indicator to this cached key so clients that now safely read the value
