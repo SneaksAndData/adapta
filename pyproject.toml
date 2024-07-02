@@ -17,7 +17,7 @@ pandas = { version = ">=2.0.0,<3.0", extras = ["performance"] }
 pyarrow = ">=7.0"
 dataclasses-json = "~0.6"
 limits = "~3.7"
-polars = "~0.20"
+polars = "~1.0"
 
 cassandra-driver = { version = "~3.29.1", optional = true }
 
