@@ -45,7 +45,9 @@ class S3StorageClient(StorageClient):
         self._s3_resource = s3_resource if s3_resource is not None else base_client.session.resource("s3")
 
     @classmethod
-    def create(cls, auth: AwsClient, endpoint_url: Optional[str] = None, session_callable: Optional[Callable[[], None]] = None):
+    def create(
+        cls, auth: AwsClient, endpoint_url: Optional[str] = None, session_callable: Optional[Callable[[], None]] = None
+    ):
         auth.initialize_session(session_callable)
 
         s3_resource = auth.session.resource(
