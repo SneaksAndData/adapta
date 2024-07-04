@@ -50,15 +50,14 @@ class S3StorageClient(StorageClient):
     ):
         auth.initialize_session(session_callable)
 
-        credentials = auth.get_credentials()
-        if credentials is None or not hasattr(credentials, 'endpoint'):
-            raise ValueError("Authentication credentials are not properly initialized or missing endpoint.")
+        endpoint_url_session = endpoint_url or auth.get_credentials()
 
-        final_endpoint_url = endpoint_url if endpoint_url is not None else credentials.endpoint
-
-        s3_resource = auth.session.resource(
-            "s3", endpoint_url=final_endpoint_url
-        )
+        if endpoint_url is not None:
+            s3_resource = auth.session.resource("s3", endpoint_url=endpoint_url)
+        elif endpoint_url_session is not None:
+            s3_resource = auth.session.resource("s3", endpoint_url=endpoint_url_session)
+        else:
+            s3_resource = auth.session.resource("s3")
 
         return cls(base_client=auth, s3_resource=s3_resource)
 
