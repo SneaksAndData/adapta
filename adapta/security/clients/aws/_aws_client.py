@@ -54,7 +54,7 @@ class AwsClient(AuthenticationClient):
         """
         return client if isinstance(client, AwsClient) else None
 
-    def get_credentials(self):
+    def get_credentials(self) -> Optional[AccessKeyCredentials]:
         """
         Returns configured credentials (if any)
         """
@@ -89,7 +89,7 @@ class AwsClient(AuthenticationClient):
         :return:
         """
 
-    def initialize_session(self, session_callable: Optional[Callable[[], None]] = None) -> "AwsClient":
+    def initialize_session(self, session_callable: Optional[Callable[[], Session]] = None) -> "AwsClient":
         """
         Initializes the session by custom session function or a default one if no function is provided."
         :return: AwsClient with established session.
