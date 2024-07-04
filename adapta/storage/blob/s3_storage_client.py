@@ -46,20 +46,22 @@ class S3StorageClient(StorageClient):
 
     @classmethod
     def create(
-        cls, auth: AwsClient, endpoint_url: Optional[str] = None, session_callable: Optional[Callable[[], None]] = None
+        cls,
+        auth: AwsClient,
+        endpoint_url: Optional[str] = None,
+        session_callable: Optional[Callable[[], Session]] = None,
     ):
+        def _get_endpoint_url() -> Optional[str]:
+            if endpoint_url:
+                return endpoint_url
+            if auth.get_credentials():
+                return auth.get_credentials().endpoint
+
+            return None
+
         auth.initialize_session(session_callable)
 
-        endpoint_url_session = endpoint_url or auth.get_credentials()
-
-        if endpoint_url is not None:
-            s3_resource = auth.session.resource("s3", endpoint_url=endpoint_url)
-        elif endpoint_url_session is not None:
-            s3_resource = auth.session.resource("s3", endpoint_url=endpoint_url_session)
-        else:
-            s3_resource = auth.session.resource("s3")
-
-        return cls(base_client=auth, s3_resource=s3_resource)
+        return cls(base_client=auth, s3_resource=auth.session.resource("s3", endpoint_url=_get_endpoint_url()))
 
     def get_blob_uri(self, blob_path: DataPath, **kwargs) -> str:
         """Returns a signed URL for a blob in S3 storage.
