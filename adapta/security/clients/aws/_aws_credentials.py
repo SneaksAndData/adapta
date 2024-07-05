@@ -21,6 +21,10 @@ from typing import Optional
 
 
 class IConnectionDetails(ABC):
+    """
+    Abstract marker interface class that represents the connection details for AWS
+    """
+
     @property
     @abstractmethod
     def region(self) -> str:
