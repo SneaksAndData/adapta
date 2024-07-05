@@ -20,7 +20,19 @@ from abc import ABC, abstractmethod
 from typing import Optional
 
 
-class AccessKeyCredentials(ABC):
+class IConnectionDetails(ABC):
+    @property
+    @abstractmethod
+    def region(self) -> str:
+        """AWS region"""
+
+    @property
+    @abstractmethod
+    def endpoint(self) -> Optional[str]:
+        """AWS custom endpoint"""
+
+
+class AccessKeyCredentials(IConnectionDetails, ABC):
     """
     Abstract class that represents credentials for AWS connections
     """
@@ -37,18 +49,8 @@ class AccessKeyCredentials(ABC):
 
     @property
     @abstractmethod
-    def region(self) -> str:
-        """AWS region"""
-
-    @property
-    @abstractmethod
     def session_token(self) -> Optional[str]:
         """AWS session token"""
-
-    @property
-    @abstractmethod
-    def endpoint(self) -> Optional[str]:
-        """AWS custom endpoint"""
 
 
 class EnvironmentAwsCredentials(AccessKeyCredentials):

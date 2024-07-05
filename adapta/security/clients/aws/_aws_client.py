@@ -33,16 +33,28 @@ class AwsClient(AuthenticationClient):
     AWS Credentials provider for various AWS resources.
     """
 
-    def __init__(self, aws_credentials: Optional[AccessKeyCredentials] = None):
-        self._session = None
+    def __init__(
+        self,
+        aws_credentials: Optional[AccessKeyCredentials] = None,
+        session_callable: Optional[Callable[[], Session]] = None,
+    ):
         self._credentials = aws_credentials
+        self._session = None
+        self._session_callable = session_callable if session_callable is not None else None
 
     @property
-    def session(self):
+    def session(self) -> Optional[Session]:
         """
         Returns configured session (if any)
         """
         return self._session
+
+    @property
+    def session_callable(self) -> Optional[Callable[[], Session]]:
+        """
+        Returns configured callable session (if any)
+        """
+        return self._session_callable
 
     @classmethod
     def from_base_client(cls, client: AuthenticationClient) -> Optional["AwsClient"]:
@@ -97,10 +109,8 @@ class AwsClient(AuthenticationClient):
         if self._session is not None:
             return self
 
-        if session_callable is None:
-            session_callable = self._default_aws_session
-
-        self._session = session_callable()
+        self._session_callable = session_callable or self._session_callable or self._default_aws_session
+        self._session = self._session_callable()
 
         return self
 
