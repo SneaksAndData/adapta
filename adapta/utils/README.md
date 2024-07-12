@@ -246,7 +246,7 @@ they prefer natively. I.e. you can instruct the MetaFrame to convert the data to
 most efficient way possible using dataframe library-native conversion in the `convert_to_pandas` and `convert_to_polars` 
 functions.
 
-Example:
+Example of converting arbitrary data to multiple dataframe formats:
 ```python 
 from adapta.utils.metaframe import MetaFrame
 import pandas
@@ -273,7 +273,8 @@ print(pandas_df)
 # 2  3  6
 ```
 
-The MetaFrame also allows even easier conversion between different dataframe formats (e.g. from Pandas, Polars and Arrow):
+The MetaFrame also allows even easier conversion between the different dataframe formats 
+(e.g. from Pandas, Polars and Arrow):
 ```python
 from adapta.utils.metaframe import MetaFrame
 import pandas
@@ -294,7 +295,9 @@ print(mf.to_polars())
 # 2  3  6
 ```
 
-If you have multiple MetaFrames, you can also concatenate them agnostically of the underlying dataframe library:
+If you have multiple MetaFrames, you can also concatenate them agnostically of the underlying dataframe library.
+Use the `PandasOptions` or `PolarsOptions` to specify the library-specific options for the concatenation. Leaving 
+the options empty will use the default options for the library.
 ```python
 from adapta.utils.metaframe import MetaFrame, concat, PandasOptions
 import pandas
@@ -310,7 +313,9 @@ metaframe2 = MetaFrame(
     convert_to_pandas=lambda x: pandas.DataFrame.from_dict(x),
     convert_to_polars=lambda x: polars.from_dict(x),
 )
+
 metaframe = concat([metaframe1, metaframe2], options=[PandasOptions(ignore_index=True)])
+# alternatively without options: metaframe = concat([metaframe1, metaframe2])
 
 print(metaframe.to_pandas())
 
