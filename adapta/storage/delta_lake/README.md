@@ -73,7 +73,7 @@ batches = load(aws_client, s3_path, batch_size=1000))
 
 # Print each loaded batch
 for batch in batches:
-    print(batch)
+    print(batch.to_pandas())
     print("\n---\n")
 
 # The content of the Delta Lake table should be printed in the screen

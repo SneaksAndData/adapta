@@ -41,16 +41,16 @@ with AstraClient(
   print(single_entity)
   # {'col_a': 'something', 'col_b': 'else'}
 
-  multiple_entities = ac.get_entities_raw("select * from tmp.test_entity where col_a = 'something3'")
+  multiple_entities = ac.get_entities_raw("select * from tmp.test_entity where col_a = 'something3'").to_pandas()
   print(multiple_entities)
   #         col_a     col_b
   # 0  something  ordinal
 
-  print(ac.filter_entities(TestEntity, key_column_filter_values=[{"col_a": 'something1'}]))
+  print(ac.filter_entities(TestEntity, key_column_filter_values=[{"col_a": 'something1'}]).to_pandas())
   #     col_a col_b     col_c
   # 0  something1  else  entirely
 
-  print(ac.filter_entities(TestEntity, key_column_filter_values=[{"col_a": 'something1'}], select_columns=['col_c']))
+  print(ac.filter_entities(TestEntity, key_column_filter_values=[{"col_a": 'something1'}], select_columns=['col_c']).to_pandas())
   #       col_c
   # 0  entirely
 ```
@@ -108,24 +108,24 @@ with AstraClient(
         client_secret='client secret'
 ) as ac:
     # Filter expressions are compiled into specific target, in this case Astra filters, in filter_entities method
-    print(ac.filter_entities(TestEntityNew, simple_filter))
+    print(ac.filter_entities(TestEntityNew, simple_filter).to_pandas())
     
     # simple filter field == value    
     #         col_a      col_b  col_c      col_d
     # 0  something1  different    456  [1, 2, 3]
     # 1  something1       else    123     [1, 2]    
     
-    print(ac.filter_entities(TestEntityNew, combined_filter))
+    print(ac.filter_entities(TestEntityNew, combined_filter).to_pandas())
 
     #         col_a col_b  col_c   col_d
     # 0  something1  else    123  [1, 2]
 
-    print(ac.filter_entities(TestEntityNew, combined_filter_with_collection))
+    print(ac.filter_entities(TestEntityNew, combined_filter_with_collection).to_pandas())
 
     #         col_a col_b  col_c
     # 0  something1  else    123
 
-   print(ac.filter_entities(TestEntityNew, complex_filter_with_collection))
+   print(ac.filter_entities(TestEntityNew, complex_filter_with_collection).to_pandas())
     #         col_a col_b  col_c
     # 0  something1  else    123
   ```
@@ -161,7 +161,7 @@ with AstraClient(
         client_secret='client secret'
 ) as ac:
     # Filter expressions are compiled into specific target, in this case Astra filters, in filter_entities method
-    print(ac.ann_search(entity_type=TestEntityWithEmbeddings, vector_to_match=[0.1, 0.2, 0.3], similarity_function=SimilarityFunction.DOT_PRODUCT, num_results=2))
+    print(ac.ann_search(entity_type=TestEntityWithEmbeddings, vector_to_match=[0.1, 0.2, 0.3], similarity_function=SimilarityFunction.DOT_PRODUCT, num_results=2).to_pandas())
        
     #         col_a      col_b  col_c              sim_value
     # 0  something1  different    [0.3, 0.4, 0.5]  123.123
