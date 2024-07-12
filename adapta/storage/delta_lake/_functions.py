@@ -44,7 +44,7 @@ def load(  # pylint: disable=R0913
     columns: Optional[List[str]] = None,
     batch_size: Optional[int] = None,
     partition_filter_expressions: Optional[List[Tuple]] = None,
-) -> Union[MetaFrame, Iterable[MetaFrame]]:
+) -> Union[MetaFrame, Iterator[MetaFrame]]:
     """
      Loads Delta Lake table from Azure or AWS storage and converts it to a pandas dataframe.
 
