@@ -182,7 +182,7 @@ class PolarsDataFrameJsonSerializationFormat(SerializationFormat[polars.DataFram
         :param data: Dataframe to serialize.
         :return: JSON serialized dataframe as byte array.
         """
-        return data.write_json(row_oriented=True).encode(encoding="utf-8")
+        return data.write_json().encode(encoding="utf-8")
 
     def deserialize(self, data: bytes) -> polars.DataFrame:
         """

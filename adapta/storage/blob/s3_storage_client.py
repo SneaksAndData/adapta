@@ -21,6 +21,7 @@ import os
 from typing import Optional, Callable, Type, Iterator, Dict, TypeVar, final
 from datetime import timedelta
 from boto3 import Session
+from botocore.exceptions import ClientError
 
 from adapta.security.clients import AwsClient
 from adapta.storage.blob.base import StorageClient
@@ -45,14 +46,23 @@ class S3StorageClient(StorageClient):
         self._s3_resource = s3_resource if s3_resource is not None else base_client.session.resource("s3")
 
     @classmethod
-    def create(cls, auth: AwsClient, endpoint_url: Optional[str] = None):
-        auth.initialize_session()
+    def create(
+        cls,
+        auth: AwsClient,
+        endpoint_url: Optional[str] = None,
+        session_callable: Optional[Callable[[], Session]] = None,
+    ):
+        def _get_endpoint_url() -> Optional[str]:
+            if endpoint_url:
+                return endpoint_url
+            if auth.get_credentials():
+                return auth.get_credentials().endpoint
 
-        s3_resource = auth.session.resource(
-            "s3", endpoint_url=endpoint_url if endpoint_url is not None else auth.get_credentials().endpoint
-        )
+            return None
 
-        return cls(base_client=auth, s3_resource=s3_resource)
+        auth.initialize_session(session_callable)
+
+        return cls(base_client=auth, s3_resource=auth.session.resource("s3", endpoint_url=_get_endpoint_url()))
 
     def get_blob_uri(self, blob_path: DataPath, **kwargs) -> str:
         """Returns a signed URL for a blob in S3 storage.
@@ -81,7 +91,7 @@ class S3StorageClient(StorageClient):
         try:
             self._s3_resource.meta.client.head_object(Bucket=s3_path.bucket, Key=s3_path.path)
             return True
-        except StorageClientError:
+        except ClientError:
             return False
 
     def save_data_as_blob(
@@ -137,10 +147,10 @@ class S3StorageClient(StorageClient):
         response = self._s3_resource.meta.client.list_objects(Bucket=s3_path.bucket, Prefix=s3_path.path)
         if "Contents" not in response:
             yield from iter([])
-
-        for blob in response["Contents"]:
-            if filter_predicate is None or filter_predicate(blob):
-                yield blob
+        else:
+            for blob in response["Contents"]:
+                if filter_predicate is None or filter_predicate(blob):
+                    yield blob
 
     def read_blobs(
         self,
@@ -186,8 +196,8 @@ class S3StorageClient(StorageClient):
                 os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
                 try:
                     self._s3_resource.meta.client.download_file(s3_path.bucket, blob.key, local_file_path)
-                except StorageClientError as error:
-                    raise RuntimeError(f"Error downloading blob: {error}") from error
+                except ClientError as error:
+                    raise StorageClientError(f"Error downloading blob: {error}") from error
 
     def copy_blob(self, blob_path: DataPath, target_blob_path: DataPath, doze_period_ms: int = 0) -> None:
         """
