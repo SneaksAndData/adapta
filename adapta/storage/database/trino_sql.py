@@ -18,9 +18,8 @@
 #
 
 import os
-from typing import Optional, Iterator, Tuple
-
-from pandas import DataFrame, read_sql_query
+from typing import Optional, Tuple, Iterable
+from pandas import read_sql_query
 import sqlalchemy.engine
 from sqlalchemy import create_engine
 from sqlalchemy.exc import SQLAlchemyError
@@ -29,6 +28,7 @@ from trino.auth import OAuth2Authentication
 from adapta.logs.models import LogLevel
 from adapta.logs import SemanticLogger
 from adapta.storage.secrets import SecretStorageClient
+from adapta.utils.metaframe import MetaFrame
 
 
 class TrinoClient:
@@ -106,7 +106,7 @@ class TrinoClient:
         self._connection.close()
         self._engine.dispose()
 
-    def query(self, query: str, batch_size: int = 1000) -> Iterator[DataFrame]:
+    def query(self, query: str, batch_size: int = 1000) -> Iterable[MetaFrame]:
         """
         Executes a Trino DML query and converts the result into a Pandas dataframe.
 
@@ -116,4 +116,7 @@ class TrinoClient:
         :param batch_size: Optional batch size to return rows iteratively.
         """
 
-        return read_sql_query(sql=query, con=self._connection, chunksize=batch_size)
+        return [
+            MetaFrame.from_pandas(chunk)
+            for chunk in read_sql_query(sql=query, con=self._connection, chunksize=batch_size)
+        ]

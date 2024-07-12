@@ -56,6 +56,7 @@ with AzureSqlClient(
 Note that each context invocation with OAuth2 will open a browser tab, but all queries performed inside the `with` block will reuse the fetched token.
 
 ```python
+from adapta.utils.metaframe import concat
 import os
 import pandas
 from adapta.storage.database.trino_sql import TrinoClient
@@ -76,7 +77,7 @@ with tc_basic_auth as tc:
 
 # query a table using OAuth2 aggregate results into a single dataframe
 with tc_oauth2 as tc:
-    result = pandas.concat(tc.query('select * from bronze.tcurr limit 1'))
+    result = concat(tc.query('select * from bronze.tcurr limit 1')).to_pandas()
     print(result)
 ```
 
@@ -91,9 +92,10 @@ query = "SELECT * FROM datalake.tt limit 10"
 
 with snowflake_client as sc:
     result = sc.query(query)
-    print(result)
+    print(result.to_pandas())
 ```
-If you want to run non-SELECT query, let `pandas_fetch=False` will only execute query to avoid `NotSupportedError`
+If you want to run non-SELECT query, let `fetch_dataframe=False` will only execute query to avoid `NotSupportedError`
+
 ```python
 from adapta.storage.database.snowflake_sql import SnowflakeClient
 
@@ -102,5 +104,5 @@ snowflake_client = SnowflakeClient(user="email@email.com", account="ACCOUNT", wa
 query = "create schema if not exists schema_name.table_name"
 
 with snowflake_client as sc:
-    sc.query(query=query, fetch_pandas=False) # return nothing
+    sc.query(query=query, fetch_dataframe=False)  # return nothing
 ```

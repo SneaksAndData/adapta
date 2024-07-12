@@ -21,12 +21,11 @@ import re
 from abc import ABC, abstractmethod
 from enum import Enum
 from pydoc import locate
-from typing import TypeVar, Generic, Type, Iterator, Union, final, Optional
-
-from pandas import DataFrame
+from typing import TypeVar, Generic, Type, Iterator, Union, final, Optional, Iterable
 
 from adapta.storage.models.base import DataPath
 from adapta.storage.models.filter_expression import Expression
+from adapta.utils.metaframe import MetaFrame
 
 TCredential = TypeVar("TCredential")  # pylint: disable=C0103
 TSettings = TypeVar("TSettings")  # pylint: disable=C0103
@@ -85,13 +84,13 @@ class QueryEnabledStore(Generic[TCredential, TSettings], ABC):
     @abstractmethod
     def _apply_filter(
         self, path: DataPath, filter_expression: Expression, columns: list[str]
-    ) -> Union[DataFrame, Iterator[DataFrame]]:
+    ) -> Union[MetaFrame, Iterable[MetaFrame]]:
         """
         Applies the provided filter expression to this Store and returns the result in a pandas DataFrame
         """
 
     @abstractmethod
-    def _apply_query(self, query: str) -> Union[DataFrame, Iterator[DataFrame]]:
+    def _apply_query(self, query: str) -> Union[MetaFrame, Iterable[MetaFrame]]:
         """
         Applies a plaintext query to this Store and returns the result in a pandas DataFrame
         """
@@ -157,7 +156,7 @@ class QueryConfigurationBuilder:
         self._columns = list(columns)
         return self
 
-    def read(self) -> Union[DataFrame, Iterator[DataFrame]]:
+    def read(self) -> Union[MetaFrame, Iterator[MetaFrame]]:
         """
         Execute the query on the underlying store.
         """

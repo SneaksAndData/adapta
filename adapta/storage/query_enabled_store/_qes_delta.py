@@ -4,15 +4,15 @@
 import re
 from dataclasses import dataclass
 from pydoc import locate
-from typing import final, Union, Iterator
+from typing import final, Union, Iterable
 
-from pandas import DataFrame
 from dataclasses_json import DataClassJsonMixin
 
 from adapta.storage.delta_lake import load
 from adapta.storage.models.base import DataPath
 from adapta.storage.models.filter_expression import Expression
 from adapta.storage.query_enabled_store._models import QueryEnabledStore, CONNECTION_STRING_REGEX
+from adapta.utils.metaframe import MetaFrame
 
 
 @dataclass
@@ -58,7 +58,7 @@ class DeltaQueryEnabledStore(QueryEnabledStore[DeltaCredential, DeltaSettings]):
 
     def _apply_filter(
         self, path: DataPath, filter_expression: Expression, columns: list[str]
-    ) -> Union[DataFrame, Iterator[DataFrame]]:
+    ) -> Union[MetaFrame, Iterable[MetaFrame]]:
         return load(
             auth_client=locate(self.credentials.auth_client_class)(),
             path=path,
@@ -66,5 +66,5 @@ class DeltaQueryEnabledStore(QueryEnabledStore[DeltaCredential, DeltaSettings]):
             columns=columns,
         )
 
-    def _apply_query(self, query: str) -> Union[DataFrame, Iterator[DataFrame]]:
+    def _apply_query(self, query: str) -> Union[MetaFrame, Iterable[MetaFrame]]:
         raise NotImplementedError("Text queries are not supported by Delta QES")

@@ -7,8 +7,8 @@ import re
 from types import TracebackType
 from typing import List, Optional, Dict
 
-from pandas import DataFrame
 import snowflake.connector
+from polars import polars
 
 from snowflake.connector.errors import DatabaseError, ProgrammingError
 
@@ -16,6 +16,7 @@ from adapta.logs.models import LogLevel
 from adapta.logs import SemanticLogger
 
 from adapta.storage.models.azure import AdlsGen2Path
+from adapta.utils.metaframe import MetaFrame
 
 
 class SnowflakeClient:
@@ -93,20 +94,24 @@ class SnowflakeClient:
         if exc_val is not None:
             self._logger.error(f"An error occurred while closing the database connection: {exc_val}")
 
-    def query(self, query: str, fetch_pandas: bool = True) -> Optional[DataFrame]:
+    def query(self, query: str, fetch_dataframe: bool = True) -> Optional[MetaFrame]:
         """
         Executes the given SQL query and returns the result as a Pandas DataFrame.
 
         :param query: The SQL query to execute.
-        :param fetch_pandas: Fetch Pandas dataframes in batches, otherwise only execute the query
+        :param fetch_dataframe: Fetch dataframes in batches, otherwise only execute the query
         :return: An iterator of Pandas DataFrames, one for each result set returned by the query, or None if there was
             an error executing the query.
         """
         try:
             with self._conn.cursor() as cursor:
                 result = cursor.execute(query)
-                if fetch_pandas:
-                    return result.fetch_pandas_all()
+                if fetch_dataframe:
+                    return MetaFrame(
+                        result.fetch_arrow_all(force_return_table=True),
+                        convert_to_polars=polars.from_arrow,
+                        convert_to_pandas=lambda x: x.to_pandas(),
+                    )
                 return None
 
         except ProgrammingError as ex:
@@ -170,13 +175,13 @@ class SnowflakeClient:
             assert path, "Path to the delta table needed! Please check!"
             assert table_schema, "Table schema needed! Please check!"
 
-            self.query(query=f"create schema if not exists {database}.{schema}", fetch_pandas=False)
+            self.query(query=f"create schema if not exists {database}.{schema}", fetch_dataframe=False)
 
             self.query(
                 query=f"""create stage if not exists {database}.{schema}.stage_{table}
                 storage_integration = {storage_integration if storage_integration is not None else path.account}
                 url = 'azure://{path.account}.blob.core.windows.net/{path.container}/{path.path}';""",
-                fetch_pandas=False,
+                fetch_dataframe=False,
             )
 
             if partition_columns is not None:
@@ -214,7 +219,7 @@ class SnowflakeClient:
                 refresh_on_create=false   
                 file_format = (type = parquet)    
                 table_format = delta;""",
-                fetch_pandas=False,
+                fetch_dataframe=False,
             )
 
-        self.query(query=f'alter external table "{database}"."{schema}"."{table}" refresh;', fetch_pandas=False)
+        self.query(query=f'alter external table "{database}"."{schema}"."{table}" refresh;', fetch_dataframe=False)
