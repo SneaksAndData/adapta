@@ -7,6 +7,7 @@ from typing import Callable, Iterable, Optional
 
 import pandas
 import polars
+import pyarrow
 
 
 class MetaFrameOptions(ABC):
@@ -33,6 +34,7 @@ class PolarsOptions(MetaFrameOptions):
 class MetaFrame:
     """
     MetaFrame class which contains structured data for a dataframe.
+    The MetaFrame can be used to convert the latent representation to other formats.
     """
 
     def __init__(
@@ -46,25 +48,58 @@ class MetaFrame:
         self._convert_to_pandas = convert_to_pandas
 
     @classmethod
-    def from_pandas(cls, data: pandas.DataFrame) -> "MetaFrame":
+    def from_pandas(
+        cls, data: pandas.DataFrame, convert_to_polars: Optional[Callable[[any], polars.DataFrame]] = None
+    ) -> "MetaFrame":
         """
         Create a MetaFrame from a pandas DataFrame.
+
+        :param data: Pandas DataFrame
+        :param convert_to_polars: Override default function to convert to polars DataFrame
+        :return: MetaFrame
         """
         return cls(
             data=data,
-            convert_to_polars=polars.DataFrame,
+            convert_to_polars=convert_to_polars or polars.DataFrame,
             convert_to_pandas=lambda x: x,
         )
 
     @classmethod
-    def from_polars(cls, data: polars.DataFrame) -> "MetaFrame":
+    def from_polars(
+        cls, data: polars.DataFrame, convert_to_pandas: Optional[Callable[[any], pandas.DataFrame]] = None
+    ) -> "MetaFrame":
         """
         Create a MetaFrame from a Polars DataFrame.
+
+        :param data: Polars DataFrame
+        :param convert_to_pandas: Override default function to convert to pandas DataFrame
+        :return: MetaFrame
         """
         return cls(
             data=data,
             convert_to_polars=lambda x: x,
-            convert_to_pandas=lambda x: x.to_pandas(),
+            convert_to_pandas=convert_to_pandas or (lambda x: x.to_pandas()),
+        )
+
+    @classmethod
+    def from_arrow(
+        cls,
+        data: pyarrow.Table,
+        convert_to_polars: Optional[Callable[[any], polars.DataFrame]] = None,
+        convert_to_pandas: Optional[Callable[[any], pandas.DataFrame]] = None,
+    ) -> "MetaFrame":
+        """
+        Create a MetaFrame from an Arrow Table.
+
+        :param data: Arrow Table
+        :param convert_to_polars: Override default function to convert to polars DataFrame
+        :param convert_to_pandas: Override default function to convert to pandas DataFrame
+        :return: MetaFrame
+        """
+        return cls(
+            data=data,
+            convert_to_polars=convert_to_polars or polars.from_arrow,
+            convert_to_pandas=convert_to_pandas or (lambda x: x.to_pandas()),
         )
 
     def to_pandas(self) -> pandas.DataFrame:

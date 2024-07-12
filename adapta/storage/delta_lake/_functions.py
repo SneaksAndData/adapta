@@ -21,7 +21,6 @@ import hashlib
 import zlib
 from typing import Optional, Union, Iterator, List, Iterable, Tuple
 
-import polars
 import pyarrow
 from deltalake import DeltaTable
 from pyarrow import RecordBatch, Table
@@ -85,20 +84,18 @@ def load(  # pylint: disable=R0913
         )
 
         return map(
-            lambda batch: MetaFrame(
+            lambda batch: MetaFrame.from_arrow(
                 data=batch,
                 convert_to_pandas=lambda data: data.to_pandas(timestamp_as_object=True),
-                convert_to_polars=polars.from_arrow,
             ),
             batches,
         )
 
     pyarrow_table: Table = pyarrow_ds.to_table(filter=row_filter, columns=columns)
 
-    return MetaFrame(
+    return MetaFrame.from_arrow(
         data=pyarrow_table,
         convert_to_pandas=lambda data: data.to_pandas(timestamp_as_object=True),
-        convert_to_polars=polars.from_arrow,
     )
 
 

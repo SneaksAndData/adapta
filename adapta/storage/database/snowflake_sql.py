@@ -8,7 +8,6 @@ from types import TracebackType
 from typing import List, Optional, Dict
 
 import snowflake.connector
-from polars import polars
 
 from snowflake.connector.errors import DatabaseError, ProgrammingError
 
@@ -107,11 +106,7 @@ class SnowflakeClient:
             with self._conn.cursor() as cursor:
                 result = cursor.execute(query)
                 if fetch_dataframe:
-                    return MetaFrame(
-                        result.fetch_arrow_all(force_return_table=True),
-                        convert_to_polars=polars.from_arrow,
-                        convert_to_pandas=lambda x: x.to_pandas(),
-                    )
+                    return MetaFrame.from_arrow(result.fetch_arrow_all(force_return_table=True))
                 return None
 
         except ProgrammingError as ex:
