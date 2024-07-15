@@ -21,6 +21,7 @@ import os
 from typing import Optional, Callable, Type, Iterator, Dict, TypeVar, final
 from datetime import timedelta
 from boto3 import Session
+from botocore.config import Config
 from botocore.exceptions import ClientError
 
 from adapta.security.clients import AwsClient
@@ -76,9 +77,15 @@ class S3StorageClient(StorageClient):
             "Bucket": s3_path.bucket,
             "Key": s3_path.path,
         }
-        expiry_time = kwargs.get("expiry", timedelta(hours=1).total_seconds())
+        expiry_time = int(kwargs.get("expiry", timedelta(hours=1).total_seconds()))
+        signature_version = kwargs.get("signature_version", "s3v4")
+        signing_client = self._base_client.session.client(
+            "s3",
+            endpoint_url=self._base_client.get_credentials().endpoint,
+            config=Config(signature_version=signature_version),
+        )
 
-        return self._s3_resource.meta.client.generate_presigned_url("get_object", Params=params, ExpiresIn=expiry_time)
+        return signing_client.generate_presigned_url(ClientMethod="get_object", Params=params, ExpiresIn=expiry_time)
 
     def blob_exists(self, blob_path: DataPath) -> bool:
         """Checks if blob located at blob_path exists
