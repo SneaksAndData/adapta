@@ -40,7 +40,8 @@ from adapta.utils import (
     map_column_names,
     run_time_metrics,
     downcast_dataframe,
-    xmltree_to_dict_collection, map_column_names_polars,
+    xmltree_to_dict_collection,
+    map_column_names_polars,
 )
 from adapta.utils.concurrent_task_runner import Executable, ConcurrentTaskRunner
 from adapta.utils.decorators._logging import run_time_metrics_async
