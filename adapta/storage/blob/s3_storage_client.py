@@ -212,8 +212,8 @@ class S3StorageClient(StorageClient):
                 os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
                 try:
                     self._s3_resource.meta.client.download_file(s3_path.bucket, blob.key, local_file_path)
-                except ClientError:
-                    raise StorageClientError("Error downloading blob")
+                except ClientError as exception:
+                    raise StorageClientError("Error downloading blob") from exception
 
     def copy_blob(self, blob_path: DataPath, target_blob_path: DataPath, doze_period_ms: int = 0) -> None:
         """
