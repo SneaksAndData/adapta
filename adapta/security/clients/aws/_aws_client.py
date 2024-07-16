@@ -33,13 +33,10 @@ class AwsClient(AuthenticationClient):
     AWS Credentials provider for various AWS resources.
     """
 
-    def __init__(
-        self,
-        aws_credentials: Optional[AccessKeyCredentials] = None,
-        session_callable: Optional[Callable[[], Session]] = None,
-    ):
-        self._credentials = aws_credentials
+    def __init__(self, aws_credentials: Optional[AccessKeyCredentials] = None, allow_http: bool = False, session_callable: Optional[Callable[[], Session]] = None,):
         self._session = None
+        self._credentials = aws_credentials
+        self._allow_http = allow_http
         self._session_callable = session_callable if session_callable is not None else None
 
     @property
@@ -87,6 +84,7 @@ class AwsClient(AuthenticationClient):
             "AWS_SECRET_ACCESS_KEY": self._credentials.access_key,
             "AWS_REGION": self._credentials.region,
             "AWS_ENDPOINT_URL": "" if self._credentials.endpoint is None else self._credentials.endpoint,
+            "AWS_ALLOW_HTTP": "1" if self._allow_http else "0",
         }
 
     def connect_account(self):
