@@ -183,7 +183,7 @@ def map_column_names(
     default_values = default_values or {}
     # Only columns in the map are mapped
     kept_columns = list(set(column_map.keys()) & set(dataframe.columns)) if drop_missing else dataframe.columns
-    dataframe = dataframe[kept_columns].rename(column_map)
+    dataframe = dataframe[kept_columns].rename(columns=column_map, errors="ignore")
     # Only use default values for columns not present in the dataframe
     default_values = {k: v for (k, v) in default_values.items() if k not in dataframe.columns}
     dataframe[list(default_values.keys())] = list(default_values.values())
