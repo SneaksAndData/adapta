@@ -150,14 +150,25 @@ class S3StorageClient(StorageClient):
 
         :return: An iterator over a list of the blobs in the S3 storage
         """
+
+        def _list_from_marker(marker: str = "") -> Iterator[DataPath]:
+            next_page = self._s3_resource.meta.client.list_objects(
+                Bucket=s3_path.bucket, Prefix=s3_path.path, Marker=marker
+            )
+            if "Contents" not in next_page:
+                yield from iter([])
+            for blob in next_page["Contents"]:
+                if filter_predicate is None or filter_predicate(blob):
+                    yield S3Path(bucket=s3_path.bucket, path=blob["Key"])
+            if next_page["IsTruncated"]:
+                yield from _list_from_marker(next_page["NextMarker"])
+
         s3_path = cast_path(blob_path)
         response = self._s3_resource.meta.client.list_objects(Bucket=s3_path.bucket, Prefix=s3_path.path)
         if "Contents" not in response:
             yield from iter([])
         else:
-            for blob in response["Contents"]:
-                if filter_predicate is None or filter_predicate(blob):
-                    yield blob
+            yield from _list_from_marker()
 
     def read_blobs(
         self,
