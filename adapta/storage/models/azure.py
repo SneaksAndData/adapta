@@ -34,7 +34,7 @@ class AdlsGen2Path(DataPath):
     @classmethod
     def from_uri(cls, url: str) -> "DataPath":
         assert url.startswith("https://") and (
-            "dfs.core.windows.net" in url
+            "dfs.core.windows.net" in url or "blob.core.windows.net" in url
         ), "Invalid URL supplied. Please use the following format: https://<accountname>.dfs.core.windows.net or https://<accountname>.blob.core.windows.net"
 
         return cls(
