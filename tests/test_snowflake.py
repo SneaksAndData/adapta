@@ -23,7 +23,7 @@ from adapta.storage.database.v3.snowflake_sql import SnowflakeClient
 from adapta.storage.models.azure import AdlsGen2Path
 
 
-@patch("adapta.storage.database.snowflake_sql.SnowflakeClient.query")
+@patch("adapta.storage.database.v3.snowflake_sql.SnowflakeClient.query")
 def test_publish_external_delta_table(
     mock_query: MagicMock,
 ):
@@ -77,7 +77,7 @@ def test_publish_external_delta_table(
     )
 
 
-@patch("adapta.storage.database.snowflake_sql.SnowflakeClient.query")
+@patch("adapta.storage.database.v3.snowflake_sql.SnowflakeClient.query")
 def test_publish_external_delta_table_partitioned(
     mock_query: MagicMock,
 ):
@@ -124,7 +124,7 @@ def test_publish_external_delta_table_partitioned(
     )
 
 
-@patch("adapta.storage.database.snowflake_sql.SnowflakeClient.query")
+@patch("adapta.storage.database.v3.snowflake_sql.SnowflakeClient.query")
 def test_publish_external_delta_table_skip_initialize(
     mock_query: MagicMock,
 ):
