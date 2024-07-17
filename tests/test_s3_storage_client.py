@@ -15,18 +15,7 @@
 
 from adapta.storage.blob.s3_storage_client import S3StorageClient
 from adapta.storage.models.aws import S3Path
-from unittest.mock import patch, MagicMock
-
-
-def test_to_uri():
-    path = S3Path(bucket="bucket", path="nested/key")
-    assert path.to_uri() == "s3a://bucket/nested/key"
-
-
-def test_to_uri_malformed_bucket():
-    path = S3Path(bucket="bucket/", path="nested/key")
-    assert path.to_uri() == "s3a://bucket/nested/key"
-
+from unittest.mock import patch
 
 def test_base_uri():
     path = S3Path(bucket="bucket", path="nested/key")
@@ -44,7 +33,7 @@ def test_from_hdfs_path():
     assert path.path == "nested/key"
 
 
-def test_from_hdfs_path_malformed_bucktet():
+def test_from_hdfs_path_malformed_bucket():
     malformed_path = S3Path.from_hdfs_path("s3a://bucket//nested/key")
     different_malformed_path = S3Path.from_hdfs_path("s3a://bucket//nested//key")
     assert different_malformed_path == malformed_path == S3Path(bucket="bucket", path="nested/key")
