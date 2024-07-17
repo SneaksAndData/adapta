@@ -64,7 +64,7 @@ from cassandra.protocol import OverloadedErrorMessage, IsBootstrappingErrorMessa
 from cassandra.query import dict_factory, BatchType  # pylint: disable=E0611
 
 from adapta import __version__
-from adapta.storage.distributed_object_store.datastax_astra._models import SimilarityFunction, VectorSearchQuery
+from adapta.storage.distributed_object_store.v3.datastax_astra._models import SimilarityFunction, VectorSearchQuery
 from adapta.storage.models.filter_expression import Expression, AstraFilterExpression, compile_expression
 from adapta.utils import chunk_list, rate_limit
 from adapta.utils.metaframe import MetaFrame, concat

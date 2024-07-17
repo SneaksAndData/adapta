@@ -18,7 +18,7 @@
 #
 
 from abc import ABC
-from typing import Optional, Union, Iterable
+from typing import Optional, Union, Iterator
 
 from pandas import read_sql
 import sqlalchemy
@@ -28,7 +28,7 @@ from sqlalchemy.engine import URL
 from sqlalchemy.exc import SQLAlchemyError, OperationalError
 
 from adapta.logs import SemanticLogger
-from adapta.storage.database.models import DatabaseType, SqlAlchemyDialect
+from adapta.storage.database.v3.models import DatabaseType, SqlAlchemyDialect
 from adapta.utils.metaframe import MetaFrame
 
 
@@ -127,7 +127,7 @@ class OdbcClient(ABC):
 
         return self._connection
 
-    def query(self, query: str, chunksize: Optional[int] = None) -> Optional[Union[MetaFrame, Iterable[MetaFrame]]]:
+    def query(self, query: str, chunksize: Optional[int] = None) -> Optional[Union[MetaFrame, Iterator[MetaFrame]]]:
         """
           Read result of SQL query into a MetaFrame. The latent representation of the MetaFrame is a Pandas dataframe.
 
@@ -137,10 +137,10 @@ class OdbcClient(ABC):
         """
         try:
             if chunksize:
-                return [
+                return (
                     MetaFrame.from_pandas(chunk)
                     for chunk in read_sql(query, con=self._get_connection(), chunksize=chunksize)
-                ]
+                )
 
             return MetaFrame.from_pandas(read_sql(query, con=self._get_connection()))
         except SQLAlchemyError as ex:

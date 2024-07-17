@@ -22,8 +22,8 @@ from typing import Optional
 from sqlalchemy import text
 
 from adapta.logs import SemanticLogger
-from adapta.storage.database.odbc import OdbcClient
-from adapta.storage.database.models import DatabaseType
+from adapta.storage.database.v3.odbc import OdbcClient
+from adapta.storage.database.v3.models import DatabaseType
 from adapta.utils import doze
 
 

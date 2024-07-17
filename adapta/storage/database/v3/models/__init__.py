@@ -15,3 +15,5 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+
+from adapta.storage.database.v3.models._models import *

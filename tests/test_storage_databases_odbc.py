@@ -14,7 +14,7 @@
 #
 
 import pandas
-from adapta.storage.database.odbc import OdbcClient
+from adapta.storage.database.v3.odbc import OdbcClient
 from adapta.utils.metaframe import MetaFrame, concat
 
 

@@ -21,7 +21,7 @@ import re
 from abc import ABC, abstractmethod
 from enum import Enum
 from pydoc import locate
-from typing import TypeVar, Generic, Type, Iterator, Union, final, Optional, Iterable
+from typing import TypeVar, Generic, Type, Iterator, Union, final, Optional
 
 from adapta.storage.models.base import DataPath
 from adapta.storage.models.filter_expression import Expression
@@ -84,13 +84,13 @@ class QueryEnabledStore(Generic[TCredential, TSettings], ABC):
     @abstractmethod
     def _apply_filter(
         self, path: DataPath, filter_expression: Expression, columns: list[str]
-    ) -> Union[MetaFrame, Iterable[MetaFrame]]:
+    ) -> Union[MetaFrame, Iterator[MetaFrame]]:
         """
         Applies the provided filter expression to this Store and returns the result in a pandas DataFrame
         """
 
     @abstractmethod
-    def _apply_query(self, query: str) -> Union[MetaFrame, Iterable[MetaFrame]]:
+    def _apply_query(self, query: str) -> Union[MetaFrame, Iterator[MetaFrame]]:
         """
         Applies a plaintext query to this Store and returns the result in a pandas DataFrame
         """

@@ -210,11 +210,9 @@ def map_column_names_polars(
     # Only columns in the map are mapped
     kept_columns = list(set(column_map.keys()) & set(dataframe.columns)) if drop_missing else dataframe.columns
     column_map = {k: v for k, v in column_map.items() if k in kept_columns}
-    dataframe = dataframe.select(kept_columns).rename(column_map)
     # Only use default values for columns not present in the dataframe
     default_values = {k: v for (k, v) in default_values.items() if k not in dataframe.columns}
-    dataframe = dataframe.with_columns(*[lit(value).alias(col) for col, value in default_values.items()])
-    return dataframe
+    return dataframe.select(kept_columns).rename(column_map).with_columns(*[lit(value).alias(col) for col, value in default_values.items()])
 
 
 def downcast_dataframe(dataframe: pandas.DataFrame, columns: Optional[List[str]] = None) -> pandas.DataFrame:

@@ -14,7 +14,7 @@ Instantiate a new client, query, write data out and scale database:
 ```python
 import pandas
 
-from adapta.storage.database.azure_sql import AzureSqlClient
+from adapta.storage.database.v3.azure_sql import AzureSqlClient
 from adapta.logs import SemanticLogger
 from adapta.logs.models import LogLevel
 from adapta.utils.metaframe import MetaFrame
@@ -59,7 +59,7 @@ Note that each context invocation with OAuth2 will open a browser tab, but all q
 from adapta.utils.metaframe import concat
 import os
 import pandas
-from adapta.storage.database.trino_sql import TrinoClient
+from adapta.storage.database.v3.trino_sql import TrinoClient
 
 # use Basic Auth
 os.environ['PROTEUS__TRINO_USERNAME'] = 'foo'
@@ -83,8 +83,9 @@ with tc_oauth2 as tc:
 
 ## Snowflake
 Initialize a Snowflake client and run queries. Each context invocation will open a browser tab, but all queries performed inside the `with` block will reuse the fetched token.
+
 ```python
-from adapta.storage.database.snowflake_sql import SnowflakeClient
+from adapta.storage.database.v3.snowflake_sql import SnowflakeClient
 
 snowflake_client = SnowflakeClient(user="email@email.com", account="ACCOUNT", warehouse="WAREHOUSE")
 
@@ -97,7 +98,7 @@ with snowflake_client as sc:
 If you want to run non-SELECT query, let `fetch_dataframe=False` will only execute query to avoid `NotSupportedError`
 
 ```python
-from adapta.storage.database.snowflake_sql import SnowflakeClient
+from adapta.storage.database.v3.snowflake_sql import SnowflakeClient
 
 snowflake_client = SnowflakeClient(user="email@email.com", account="ACCOUNT", warehouse="WAREHOUSE")
 

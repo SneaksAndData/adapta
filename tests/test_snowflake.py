@@ -18,7 +18,7 @@ from unittest.mock import patch, MagicMock
 import pytest
 from deltalake import DeltaTable
 
-from adapta.storage.database.snowflake_sql import SnowflakeClient
+from adapta.storage.database.v3.snowflake_sql import SnowflakeClient
 
 from adapta.storage.models.azure import AdlsGen2Path
 

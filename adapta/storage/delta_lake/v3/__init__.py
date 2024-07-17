@@ -13,7 +13,5 @@
 #  limitations under the License.
 #
 
-"""
- Import index.
-"""
-from adapta.storage.distributed_object_store.datastax_astra._models import *
+from adapta.storage.delta_lake.v3._functions import *
+from adapta.storage.delta_lake.v3._models import *

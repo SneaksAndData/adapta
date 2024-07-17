@@ -18,7 +18,7 @@
 #
 
 import os
-from typing import Optional, Tuple, Iterable
+from typing import Optional, Tuple, Iterator
 from pandas import read_sql_query
 import sqlalchemy.engine
 from sqlalchemy import create_engine
@@ -106,7 +106,7 @@ class TrinoClient:
         self._connection.close()
         self._engine.dispose()
 
-    def query(self, query: str, batch_size: int = 1000) -> Iterable[MetaFrame]:
+    def query(self, query: str, batch_size: int = 1000) -> Iterator[MetaFrame]:
         """
         Executes a Trino DML query and converts the result into a Pandas dataframe.
 
@@ -116,7 +116,7 @@ class TrinoClient:
         :param batch_size: Optional batch size to return rows iteratively.
         """
 
-        return [
+        return (
             MetaFrame.from_pandas(chunk)
             for chunk in read_sql_query(sql=query, con=self._connection, chunksize=batch_size)
-        ]
+        )
