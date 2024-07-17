@@ -95,15 +95,6 @@ class S3StorageClient(StorageClient):
         :return: Boolean indicator of blob existence
         """
         s3_path = cast_path(blob_path)
-
-        if not (hasattr(s3_path, "bucket") and s3_path.bucket) or not (hasattr(s3_path, "path") and s3_path.path):
-            missing_attributes = [
-                attr for attr in ["bucket", "path"] if not (hasattr(s3_path, attr) and getattr(s3_path, attr))
-            ]
-            raise StorageClientError(
-                f"Blob path provided does not have the needed parameters: {', '.join(missing_attributes)}"
-            )
-
         try:
             self._s3_resource.meta.client.head_object(Bucket=s3_path.bucket, Key=s3_path.path)
             return True
@@ -223,8 +214,8 @@ class S3StorageClient(StorageClient):
                 os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
                 try:
                     self._s3_resource.meta.client.download_file(s3_path.bucket, blob.key, local_file_path)
-                except ClientError as exception:
-                    raise StorageClientError("Error downloading blob") from exception
+                except ClientError as error:
+                    raise StorageClientError(f"Error downloading blob: {error}") from error
 
     def copy_blob(self, blob_path: DataPath, target_blob_path: DataPath, doze_period_ms: int = 0) -> None:
         """
@@ -236,9 +227,6 @@ class S3StorageClient(StorageClient):
         """
         source_s3_path = cast_path(blob_path)
         target_s3_path = cast_path(target_blob_path)
-
-        source_s3_path.path = source_s3_path.path.rstrip("/")
-        target_s3_path.path = target_s3_path.path.rstrip("/")
 
         source_objects = self._s3_resource.Bucket(source_s3_path.bucket).objects.filter(Prefix=source_s3_path.path)
 
