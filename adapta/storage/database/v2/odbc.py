@@ -58,9 +58,12 @@ class OdbcClient(ABC):
         :param password: SQL user password.
         :param port: Connection port.
         """
-        warn("You are using version 2 of the OdbcClient class. "
-             "This is deprecated and will be removed in adapta version 4. "
-             "Please upgrade to version 3: adapta.storage.database.v3", DeprecationWarning)
+        warn(
+            "You are using version 2 of the OdbcClient class. "
+            "This is deprecated and will be removed in adapta version 4. "
+            "Please upgrade to version 3: adapta.storage.database.v3",
+            DeprecationWarning,
+        )
         self._db_type = database_type
         self._dialect: SqlAlchemyDialect = database_type.value
         self._host = host_name

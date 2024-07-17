@@ -67,9 +67,12 @@ def load(  # pylint: disable=R0913
 
     :return: A DeltaTable wrapped Rust class, pandas Dataframe or an iterator of pandas Dataframes, for batched reads.
     """
-    warn("You are using version 2 of the load function. "
-         "This is deprecated and will be removed in adapta version 4. "
-         "Please upgrade to version 3: adapta.storage.delta_lake.v3", DeprecationWarning)
+    warn(
+        "You are using version 2 of the load function. "
+        "This is deprecated and will be removed in adapta version 4. "
+        "Please upgrade to version 3: adapta.storage.delta_lake.v3",
+        DeprecationWarning,
+    )
 
     pyarrow_ds = DeltaTable(
         path.to_delta_rs_path(), version=version, storage_options=auth_client.connect_storage(path)

@@ -47,9 +47,12 @@ class SnowflakeClient:
         password: Optional[str] = None,
         role: Optional[str] = None,
     ):
-        warn("You are using version 2 of the SnowflakeClient class. "
-             "This is deprecated and will be removed in adapta version 4. "
-             "Please upgrade to version 3: adapta.storage.database.v3", DeprecationWarning)
+        warn(
+            "You are using version 2 of the SnowflakeClient class. "
+            "This is deprecated and will be removed in adapta version 4. "
+            "Please upgrade to version 3: adapta.storage.database.v3",
+            DeprecationWarning,
+        )
         self._user = user
         self._account = account
         self._warehouse = warehouse

@@ -62,9 +62,12 @@ class AzureSqlClient(OdbcClient):
             password=password,
             port=port,
         )
-        warn("You are using version 2 of the AzureSqlClient class. "
-             "This is deprecated and will be removed in adapta version 4. "
-             "Please upgrade to version 3: adapta.storage.database.v3", DeprecationWarning)
+        warn(
+            "You are using version 2 of the AzureSqlClient class. "
+            "This is deprecated and will be removed in adapta version 4. "
+            "Please upgrade to version 3: adapta.storage.database.v3",
+            DeprecationWarning,
+        )
 
     @property
     def size(self) -> str:

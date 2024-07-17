@@ -109,9 +109,12 @@ class AstraClient:
         log_transient_errors=True,
         metadata_fetch_timeout_s=30,
     ):
-        warn("You are using version 2 of the AstraClient class. "
-             "This is deprecated and will be removed in adapta version 4. "
-             "Please upgrade to version 3: adapta.storage.database.v3", DeprecationWarning)
+        warn(
+            "You are using version 2 of the AstraClient class. "
+            "This is deprecated and will be removed in adapta version 4. "
+            "Please upgrade to version 3: adapta.storage.database.v3",
+            DeprecationWarning,
+        )
         self._secure_connect_bundle_bytes = secure_connect_bundle_bytes or os.getenv("PROTEUS__ASTRA_BUNDLE_BYTES")
         self._client_id = client_id or os.getenv("PROTEUS__ASTRA_CLIENT_ID")
         self._client_secret = client_secret or os.getenv("PROTEUS__ASTRA_CLIENT_SECRET")
