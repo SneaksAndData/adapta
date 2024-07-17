@@ -237,8 +237,8 @@ class S3StorageClient(StorageClient):
         source_s3_path = cast_path(blob_path)
         target_s3_path = cast_path(target_blob_path)
 
-        source_s3_path.path = source_s3_path.path.rstrip('/')
-        target_s3_path.path = target_s3_path.path.rstrip('/')
+        source_s3_path.path = source_s3_path.path.rstrip("/")
+        target_s3_path.path = target_s3_path.path.rstrip("/")
 
         source_objects = self._s3_resource.Bucket(source_s3_path.bucket).objects.filter(Prefix=source_s3_path.path)
 
