@@ -198,7 +198,7 @@ blob_list = s3_client.list_blobs(blob_path=s3_target_blob_path)
 for blob_details in blob_list:
     print(blob_details)
 
-# The list of blobs and its details will be printed out like in the original blob location:
+#  The list of blobs and their details will be printed out, mirroring the attributes of the original files::
 # {'Key': 'data/0-c309720b-3577-4211-b403-bbb55083e5c3-0.parquet', 'LastModified': datetime.datetime(2024, 6, 27, 14, 10, 28, 29000, tzinfo=tzutc()), 'ETag': '"29097d7d2d11d49fed28745a674af776"', 'Size': 2067, 'StorageClass': 'STANDARD', 'Owner': {'DisplayName': 'minio', 'ID': '02d61764'}}
 # {'Key': 'data/_delta_log/00000000000000000000.json', 'LastModified': datetime.datetime(2024, 6, 27, 13, 49, 2, 942000, tzinfo=tzutc()), 'ETag': '"29097d7d2d11d49fed28745a674af776"', 'Size': 2074, 'StorageClass': 'STANDARD', 'Owner': {'DisplayName': 'minio', 'ID': '02d61764'}}
 ```
