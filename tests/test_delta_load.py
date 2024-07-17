@@ -23,7 +23,7 @@ import polars
 
 from adapta.security.clients import LocalClient
 from adapta.storage.models.local import LocalPath
-from adapta.storage.delta_lake import load, load_cached, get_cache_key
+from adapta.storage.delta_lake.v3 import load, load_cached, get_cache_key
 from adapta.storage.cache import KeyValueCache
 from adapta.storage.models.format import DataFrameParquetSerializationFormat
 

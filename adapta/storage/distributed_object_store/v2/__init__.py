@@ -12,9 +12,4 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
-
-"""
- Import index.
-"""
-from adapta.storage.distributed_object_store.v3.datastax_astra._models import *
-from adapta.storage.distributed_object_store.v3.datastax_astra.astra_client import *
+from adapta.storage.distributed_object_store.v2.datastax_astra import *

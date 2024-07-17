@@ -4,7 +4,7 @@
 import os
 import re
 from dataclasses import dataclass
-from typing import final, Optional, Union, Iterable, Iterator
+from typing import final, Optional, Union, Iterator
 
 from dataclasses_json import DataClassJsonMixin
 
