@@ -18,10 +18,68 @@ from adapta.storage.models.aws import S3Path
 from unittest.mock import patch, MagicMock
 
 
+def test_to_uri():
+    path = S3Path(bucket="bucket", path="nested/key")
+    assert path.to_uri() == "s3a://bucket/nested/key"
+
+
+def test_to_uri_malformed_bucket():
+    path = S3Path(bucket="bucket/", path="nested/key")
+    assert path.to_uri() == "s3a://bucket/nested/key"
+
+
+def test_base_uri():
+    path = S3Path(bucket="bucket", path="nested/key")
+    assert path.base_uri() == "https://bucket.s3.amazonaws.com"
+
+
+def test_base_uri_malformed_bucket():
+    path = S3Path(bucket="bucket/", path="nested/key")
+    assert path.base_uri() == "https://bucket.s3.amazonaws.com"
+
+
 def test_from_hdfs_path():
     path = S3Path.from_hdfs_path("s3a://bucket/nested/key")
     assert path.bucket == "bucket"
     assert path.path == "nested/key"
+
+
+def test_from_hdfs_path_malformed_bucktet():
+    malformed_path = S3Path.from_hdfs_path("s3a://bucket//nested/key")
+    different_malformed_path = S3Path.from_hdfs_path("s3a://bucket//nested//key")
+    assert different_malformed_path == malformed_path == S3Path(bucket="bucket", path="nested/key")
+
+
+def test_to_uri():
+    bucket_name = "bucket"
+    path = "nested/key"
+    path_instance = S3Path(bucket=bucket_name, path=path)
+    assert path_instance.to_uri() == f"s3a://{bucket_name}/{path}"
+
+
+def test_to_uri_malformed_bucket():
+    bucket_name = "bucket/"
+    path = "nested/key"
+    path_instance = S3Path(bucket=bucket_name, path=path)
+    assert path_instance.to_uri() == f"s3a://bucket/nested/key"
+
+
+def test_to_delta_rs_path():
+    bucket_name = "bucket"
+    path = "nested/key"
+    path_instance = S3Path(bucket=bucket_name, path=path)
+    assert path_instance.to_delta_rs_path() == f"s3a://bucket/nested/key"
+
+
+def test_to_delta_rs_bucket_malformed():
+    bucket_name = "bucket/"
+    path = "nested/key"
+    path_instance = S3Path(bucket=bucket_name, path=path)
+    assert path_instance.to_delta_rs_path() == f"s3a://bucket/nested/key"
+
+
+def test_to_uri_malformed_url():
+    path = S3Path.from_hdfs_path("s3a://bucket//nested/key")
 
 
 def test_to_hdfs_path():

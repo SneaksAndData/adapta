@@ -36,7 +36,7 @@ class S3Path(DataPath):
         if not self.bucket or not self.path:
             raise ValueError("Bucket and path must be defined")
 
-        return f"s3://{self.bucket.rstrip('/')}/{self.path}"
+        return f"s3a://{self.bucket.rstrip('/')}/{self.path}"
 
     def base_uri(self) -> str:
         """
