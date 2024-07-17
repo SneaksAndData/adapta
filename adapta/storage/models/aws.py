@@ -73,11 +73,15 @@ class S3Path(DataPath):
         parsed_path = uri.path.split("/")
         return cls(bucket=uri.netloc, path="/".join(parsed_path[1:]))
 
+    def _check_path(self):
+        assert not self.path.startswith("/"), "Path should not start with /"
+
     def to_hdfs_path(self) -> str:
         """
         Converts the S3Path to an HDFS compatible path.
         :return: HDFS path
         """
+        self._check_path()
         if not self.bucket or not self.path:
             raise ValueError("Bucket and path must be defined")
 
@@ -88,6 +92,7 @@ class S3Path(DataPath):
         Converts the S3Path to a Delta Lake compatible path.
         :return: Delta Lake path
         """
+        self._check_path()
         return f"s3a://{self.bucket}/{self.path}"
 
 
