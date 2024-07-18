@@ -23,7 +23,7 @@ def test_base_uri():
     assert path.base_uri() == "https://bucket.s3.amazonaws.com"
 
 
-def test_base_uri_malformed_bucket():
+def test_base_uri_with_malformed_bucket_path():
     path = S3Path(bucket="bucket/", path="nested/key")
     assert path.base_uri() == "https://bucket.s3.amazonaws.com"
 
@@ -34,7 +34,7 @@ def test_from_hdfs_path():
     assert path.path == "nested/key"
 
 
-def test_from_hdfs_path_malformed_bucket():
+def test_from_hdfs_path_with_empty_path_segments():
     malformed_path = S3Path.from_hdfs_path("s3a://bucket//nested/key")
     different_malformed_path = S3Path.from_hdfs_path("s3a://bucket//nested//key")
     assert different_malformed_path == malformed_path == S3Path(bucket="bucket", path="nested/key")
@@ -47,7 +47,7 @@ def test_to_uri():
     assert path_instance.to_uri() == f"s3a://{bucket_name}/{path}"
 
 
-def test_to_uri_malformed_bucket():
+def test_to_uri_malformed_bucket_path():
     bucket_name = "bucket/"
     path = "nested/key"
     path_instance = S3Path(bucket=bucket_name, path=path)
@@ -61,14 +61,14 @@ def test_to_delta_rs_path():
     assert path_instance.to_delta_rs_path() == f"s3a://bucket/nested/key"
 
 
-def test_to_delta_rs_bucket_malformed():
+def test_to_delta_rs_malformed_bucket_path():
     bucket_name = "bucket/"
     path = "nested/key"
     path_instance = S3Path(bucket=bucket_name, path=path)
     assert path_instance.to_delta_rs_path() == f"s3a://bucket/nested/key"
 
 
-def test_to_uri_malformed_url():
+def test_to_uri_with_empty_path_segment():
     path = S3Path.from_hdfs_path("s3a://bucket//nested/key")
 
 
