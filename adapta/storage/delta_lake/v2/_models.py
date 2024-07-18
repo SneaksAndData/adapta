@@ -1,3 +1,4 @@
+# pylint: disable=duplicate-code
 """
  Models used by delta lake functions.
 """

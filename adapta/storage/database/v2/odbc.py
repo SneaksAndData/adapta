@@ -1,3 +1,4 @@
+# pylint: disable=duplicate-code
 """
  Database client that uses an ODBC driver.
 """

@@ -1,3 +1,4 @@
+# pylint: disable=duplicate-code
 """
  Operations on Delta Lake tables.
 """

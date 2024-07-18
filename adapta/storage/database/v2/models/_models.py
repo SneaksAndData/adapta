@@ -1,3 +1,4 @@
+# pylint: disable=duplicate-code
 """
   Models for relational database clients.
 """

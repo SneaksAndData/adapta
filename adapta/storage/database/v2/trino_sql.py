@@ -1,3 +1,4 @@
+# pylint: disable=duplicate-code
 """
   SqlAlchemy-based Trino Client Wrapper
 """

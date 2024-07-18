@@ -1,3 +1,4 @@
+# pylint: disable=duplicate-code
 """
  ODBC client extension for Azure SQL.
 """
