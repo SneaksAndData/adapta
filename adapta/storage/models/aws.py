@@ -36,7 +36,7 @@ class S3Path(DataPath):
         if not self.bucket or not self.path:
             raise ValueError("Bucket and path must be defined")
 
-        return f"s3://{self.bucket.rstrip('/')}/{self.path}"
+        return f"s3://{self.bucket}/{self.path}"
 
     def base_uri(self) -> str:
         """
@@ -46,7 +46,7 @@ class S3Path(DataPath):
         if not self.bucket:
             raise ValueError("Bucket must be defined")
 
-        return f"https://{self.bucket.rstrip('/')}.s3.amazonaws.com"
+        return f"https://{self.bucket}.s3.amazonaws.com"
 
     @classmethod
     def from_uri(cls, url: str) -> "S3Path":
@@ -70,30 +70,25 @@ class S3Path(DataPath):
         """
         assert hdfs_path.startswith("s3a://"), "HDFS S3 path should start with s3a://"
         uri = urlparse(hdfs_path)
-        parsed_path = uri.path.replace("//", "/").split("/")
+        parsed_path = uri.path.split("/")
         return cls(bucket=uri.netloc, path="/".join(parsed_path[1:]))
-
-    def _check_path(self):
-        assert not self.path.startswith("/"), "Path should not start with /"
 
     def to_hdfs_path(self) -> str:
         """
         Converts the S3Path to an HDFS compatible path.
         :return: HDFS path
         """
-        self._check_path()
         if not self.bucket or not self.path:
             raise ValueError("Bucket and path must be defined")
 
-        return f"s3a://{self.bucket.rstrip('/')}/{self.path}"
+        return f"s3a://{self.bucket}/{self.path}"
 
     def to_delta_rs_path(self) -> str:
         """
         Converts the S3Path to a Delta Lake compatible path.
         :return: Delta Lake path
         """
-        self._check_path()
-        return f"s3a://{self.bucket.rstrip('/')}/{self.path}"
+        return f"s3a://{self.bucket}/{self.path}"
 
 
 def cast_path(blob_path: DataPath) -> S3Path:
