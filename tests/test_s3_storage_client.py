@@ -17,6 +17,7 @@ from adapta.storage.blob.s3_storage_client import S3StorageClient
 from adapta.storage.models.aws import S3Path
 from unittest.mock import patch
 
+
 def test_base_uri():
     path = S3Path(bucket="bucket", path="nested/key")
     assert path.base_uri() == "https://bucket.s3.amazonaws.com"
