@@ -1,3 +1,4 @@
+# pylint: disable=duplicate-code
 """
   SqlAlchemy-based Trino Client Wrapper
 """
@@ -19,6 +20,7 @@
 
 import os
 from typing import Optional, Iterator, Tuple
+from warnings import warn
 
 from pandas import DataFrame, read_sql_query
 import sqlalchemy.engine
@@ -61,6 +63,12 @@ class TrinoClient:
         :param logger: CompositeLogger instance.
         """
 
+        warn(
+            "You are using version 2 of the TrinoClient class. "
+            "This is deprecated and will be removed in adapta version 4. "
+            "Please upgrade to version 3: adapta.storage.database.v3",
+            DeprecationWarning,
+        )
         self._host = host
         self._catalog = catalog
         self._port = port

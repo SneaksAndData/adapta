@@ -236,3 +236,95 @@ http_session = session_with_retries(retry_count=4)
 for _ in range(10):
     call_api("https://example.com", http_session)
 ```
+
+### MetaFrame:
+
+A class that allows to easily convert any data to any dataframe format natively supported by the dataframe library.
+This is useful when you want to support multiple dataframe libraries in your codebase that are loaded from
+arbitrary sources (e.g. from a database, from a file, etc.) and you want to allow users to use any dataframe library
+they prefer natively. I.e. you can instruct the MetaFrame to convert the data to a specific dataframe format in the
+most efficient way possible using dataframe library-native conversion in the `convert_to_pandas` and `convert_to_polars` 
+functions.
+
+Example of converting arbitrary data to multiple dataframe formats:
+```python 
+from adapta.utils.metaframe import MetaFrame
+import pandas
+import polars
+
+data = {
+    'a': [1, 2, 3],
+    'b': [4, 5, 6]
+}
+mf = MetaFrame(
+    data=data,
+    convert_to_pandas=lambda x: pandas.DataFrame.from_dict(x),
+    convert_to_polars=lambda x: polars.from_dict(x),
+)
+
+polars_df = mf.to_polars()
+pandas_df = mf.to_pandas()
+
+print(pandas_df)
+# Output:
+#    a  b
+# 0  1  4
+# 1  2  5
+# 2  3  6
+```
+
+The MetaFrame also allows even easier conversion between the different dataframe formats 
+(e.g. from Pandas, Polars and Arrow):
+```python
+from adapta.utils.metaframe import MetaFrame
+import pandas
+
+data = pandas.DataFrame({
+    'a': [1, 2, 3],
+    'b': [4, 5, 6]
+})
+mf = MetaFrame.from_pandas(data=data)
+
+print(mf.to_polars())
+
+# Output:
+# Output:
+#    a  b
+# 0  1  4
+# 1  2  5
+# 2  3  6
+```
+
+If you have multiple MetaFrames, you can also concatenate them agnostically of the underlying dataframe library.
+Use the `PandasOptions` or `PolarsOptions` to specify the library-specific options for the concatenation. Leaving 
+the options empty will use the default options for the library.
+```python
+from adapta.utils.metaframe import MetaFrame, concat, PandasOptions
+import pandas
+import polars
+
+metaframe1 = MetaFrame(
+    data={"A": [1, 2, 3]},
+    convert_to_pandas=lambda x: pandas.DataFrame.from_dict(x),
+    convert_to_polars=lambda x: polars.from_dict(x),
+)
+metaframe2 = MetaFrame(
+    data={"A": [4, 5, 6]},
+    convert_to_pandas=lambda x: pandas.DataFrame.from_dict(x),
+    convert_to_polars=lambda x: polars.from_dict(x),
+)
+
+metaframe = concat([metaframe1, metaframe2], options=[PandasOptions(ignore_index=True)])
+# alternatively without options: metaframe = concat([metaframe1, metaframe2])
+
+print(metaframe.to_pandas())
+
+# Output:
+#    A
+# 0  1
+# 1  2
+# 2  3
+# 3  4
+# 4  5
+# 5  6
+```

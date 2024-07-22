@@ -16,3 +16,7 @@
 """
  Import index.
 """
+
+from adapta.storage.distributed_object_store.v2 import *
+from adapta.storage.database.v2 import *
+from adapta.storage.delta_lake.v2 import *

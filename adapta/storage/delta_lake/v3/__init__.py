@@ -16,4 +16,5 @@ Import index
 #  limitations under the License.
 #
 
-from adapta.storage.database.v2 import *
+from adapta.storage.delta_lake.v3._functions import *
+from adapta.storage.delta_lake.v3._models import *

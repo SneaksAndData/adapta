@@ -1,5 +1,5 @@
 """
-Import index
+ Import index.
 """
 #  Copyright (c) 2023-2024. ECCO Sneaks & Data
 #
@@ -16,4 +16,4 @@ Import index
 #  limitations under the License.
 #
 
-from adapta.storage.database.v2 import *
+from adapta.storage.database.v3.models._models import *

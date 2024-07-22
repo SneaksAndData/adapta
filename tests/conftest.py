@@ -21,8 +21,8 @@ import pytest
 from adapta.logs.handlers.datadog_api_handler import DataDogApiHandler
 from adapta.logs.models import LogLevel
 from adapta.logs import SemanticLogger
-from adapta.storage.database.odbc import OdbcClient
-from adapta.storage.database.models import DatabaseType
+from adapta.storage.database.v3.odbc import OdbcClient
+from adapta.storage.database.v3.models import DatabaseType
 
 
 @pytest.fixture

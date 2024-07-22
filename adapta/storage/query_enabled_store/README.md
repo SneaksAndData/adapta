@@ -33,7 +33,7 @@ adls_path = AdlsGen2Path.from_hdfs_path('abfss://container@account.dfs.core.wind
 
 conn = "qes://engine=DELTA;plaintext_credentials={\"auth_client_class\":\"adapta.security.clients.AzureClient\"};settings={}"
 store = QueryEnabledStore.from_string(conn)
-data = store.open(adls_path).filter(FilterField("date_key") == "20230101").select("date_key", "year").read()
+data = store.open(adls_path).filter(FilterField("date_key") == "20230101").select("date_key", "year").read().to_pandas()
 
 print(data)
 

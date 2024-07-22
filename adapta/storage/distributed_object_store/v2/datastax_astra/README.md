@@ -1,5 +1,7 @@
 ## Astra DB Client
 
+**This is a deprecated module. Please use the new module `adapta.storage.distributed_object_store.v3` instead.**
+
 Create a table in Astra and insert some rows:
 ```cassandraql
 create table tmp.test_entity(
