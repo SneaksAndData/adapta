@@ -1,5 +1,7 @@
 # Database Clients
 
+**This is a deprecated module. Please use the new module `adapta.storage.database.v3` instead.**
+
 Supported clients:
 
 - Generic ODBC

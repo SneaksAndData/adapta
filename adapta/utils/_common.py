@@ -24,8 +24,10 @@ from collections import namedtuple
 from functools import partial
 from typing import List, Optional, Dict, Any, Tuple, Union
 
-from pandas import DataFrame, Series, to_numeric
+import pandas
+import polars
 import requests
+from polars import lit
 from requests.adapters import HTTPAdapter
 from urllib3 import Retry
 
@@ -163,11 +165,11 @@ def memory_limit(*, memory_limit_percentage: Optional[float] = None, memory_limi
 
 
 def map_column_names(
-    dataframe: DataFrame,
+    dataframe: pandas.DataFrame,
     column_map: Dict[str, str],
     default_values: Optional[Dict[str, Union[str, int, float]]] = None,
     drop_missing: bool = True,
-) -> DataFrame:
+) -> pandas.DataFrame:
     """
     Maps a dataframe from one nomenclature to another. Original dataframe is not mutated.
 
@@ -188,7 +190,33 @@ def map_column_names(
     return dataframe
 
 
-def downcast_dataframe(dataframe: DataFrame, columns: Optional[List[str]] = None) -> DataFrame:
+def map_column_names_polars(
+    dataframe: polars.DataFrame,
+    column_map: Dict[str, str],
+    default_values: Optional[Dict[str, Union[str, int, float]]] = None,
+    drop_missing: bool = True,
+) -> polars.DataFrame:
+    """
+    Maps a dataframe from one nomenclature to another. Original dataframe is not mutated.
+
+    :param dataframe: Dataframe to be mapped.
+    :param column_map: A dictionary mapping old column names to new.
+    :param default_values: If a column is not present in the dataframe
+    a default value mapping can be given, by mapping a column name it a value.
+    :param drop_missing: A boolean value to control if columns should be
+    dropped if the columns are present in the dataframe but not the column_map.
+    """
+    default_values = default_values or {}
+    # Only columns in the map are mapped
+    kept_columns = list(set(column_map.keys()) & set(dataframe.columns)) if drop_missing else dataframe.columns
+    column_map = {k: v for k, v in column_map.items() if k in kept_columns}
+    dataframe = dataframe.select(kept_columns).rename(column_map)
+    # Only use default values for columns not present in the dataframe
+    default_values = {k: v for (k, v) in default_values.items() if k not in dataframe.columns}
+    return dataframe.with_columns(*[lit(value).alias(col) for col, value in default_values.items()])
+
+
+def downcast_dataframe(dataframe: pandas.DataFrame, columns: Optional[List[str]] = None) -> pandas.DataFrame:
     """
     Downcasts a Pandas dataframe to the smallest possible data type for each column. Only interger and float
     columns are downcasted. Other columns are left as is.
@@ -201,7 +229,7 @@ def downcast_dataframe(dataframe: DataFrame, columns: Optional[List[str]] = None
 
     columns = list(dataframe.columns) if columns is None else columns
 
-    def get_downcast_type(column: Series) -> Optional[str]:
+    def get_downcast_type(column: pandas.Series) -> Optional[str]:
         """
         Returns the downcast type for a Pandas column.
 
@@ -216,7 +244,7 @@ def downcast_dataframe(dataframe: DataFrame, columns: Optional[List[str]] = None
             return "unsigned"
         raise ValueError(f"Unsupported dtype: {column.dtype}")
 
-    def downcast_supported(column: Series) -> bool:
+    def downcast_supported(column: pandas.Series) -> bool:
         """
         Checks if a Pandas column can be downcasted.
 
@@ -227,7 +255,7 @@ def downcast_dataframe(dataframe: DataFrame, columns: Optional[List[str]] = None
 
     return dataframe.assign(
         **{
-            column: lambda x, c=column: to_numeric(x[c], downcast=get_downcast_type(x[c]))
+            column: lambda x, c=column: pandas.to_numeric(x[c], downcast=get_downcast_type(x[c]))
             if downcast_supported(x[c])
             else x[c]
             for column in dataframe.columns

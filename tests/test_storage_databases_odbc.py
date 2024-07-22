@@ -14,26 +14,31 @@
 #
 
 import pandas
-from adapta.storage.database.odbc import OdbcClient
+from adapta.storage.database.v3.odbc import OdbcClient
+from adapta.utils.metaframe import MetaFrame, concat
 
 
 def sku_data():
-    return pandas.DataFrame(
-        data={
-            "sku_id": ["1", "2", "3"],
-            "sku_name": ["Exostrike", "BIOM", "Collin"],
-            "location_id": ["1", "1", "2"],
-            "cost": [100.0, 50.2, 40.6],
-        }
+    return MetaFrame.from_pandas(
+        pandas.DataFrame(
+            data={
+                "sku_id": ["1", "2", "3"],
+                "sku_name": ["Exostrike", "BIOM", "Collin"],
+                "location_id": ["1", "1", "2"],
+                "cost": [100.0, 50.2, 40.6],
+            }
+        )
     )
 
 
 def location_data():
-    return pandas.DataFrame(
-        data={
-            "location_id": ["1", "2", "3"],
-            "location_name": ["Østergade", "Bredebro", "Købmagergade"],
-        }
+    return MetaFrame.from_pandas(
+        pandas.DataFrame(
+            data={
+                "location_id": ["1", "2", "3"],
+                "location_name": ["Østergade", "Bredebro", "Købmagergade"],
+            }
+        )
     )
 
 
@@ -51,7 +56,7 @@ def test_materialize(sqlite: OdbcClient):
 
         result = sqlite.query("SELECT * FROM main.sku")
 
-    assert result.equals(sku_data())
+    assert result.to_pandas().equals(sku_data().to_pandas())
 
 
 def test_read_non_existing_table(sqlite: OdbcClient):
@@ -70,7 +75,7 @@ def test_write_empty_schema(sqlite: OdbcClient):
     """
     with sqlite:
         result = sqlite.materialize(
-            data=pandas.DataFrame(data={}),
+            data=MetaFrame.from_pandas(pandas.DataFrame(data={})),
             schema="main",
             name="product",
             overwrite=True,
@@ -99,8 +104,10 @@ def test_joined_write_read_frame(sqlite: OdbcClient):
              INNER JOIN main.location ON sku.location_id = location.location_id"""
         )
 
-    assert result.equals(
-        sku_data().merge(location_data(), how="inner", on="location_id")[["sku_name", "location_name", "cost"]]
+    assert result.to_pandas().equals(
+        sku_data()
+        .to_pandas()
+        .merge(location_data().to_pandas(), how="inner", on="location_id")[["sku_name", "location_name", "cost"]]
     )
 
 
@@ -115,7 +122,7 @@ def test_write_append(sqlite: OdbcClient):
 
         result = sqlite.query("SELECT * FROM main.sku")
 
-    assert result.equals(pandas.concat([sku_data(), sku_data()]).reset_index(drop=True))
+    assert result.to_pandas().equals(concat([sku_data(), sku_data()]).to_pandas().reset_index(drop=True))
 
 
 def test_write_replace(sqlite: OdbcClient):
@@ -124,10 +131,10 @@ def test_write_replace(sqlite: OdbcClient):
     """
     with sqlite:
         sqlite.materialize(data=sku_data(), schema="main", name="sku", overwrite=True)
-        sku_df2 = sku_data()
+        sku_df2 = sku_data().to_pandas()
         sku_df2["location_id"] = "4"
-        sqlite.materialize(data=sku_df2, schema="main", name="sku", overwrite=True)
+        sqlite.materialize(data=MetaFrame.from_pandas(sku_df2), schema="main", name="sku", overwrite=True)
 
         result = sqlite.query("SELECT * FROM main.sku")
 
-    assert result.equals(sku_df2)
+    assert result.to_pandas().equals(sku_df2)

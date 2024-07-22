@@ -1,6 +1,3 @@
-"""
-Import index
-"""
 #  Copyright (c) 2023-2024. ECCO Sneaks & Data
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,5 +12,3 @@ Import index
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
-
-from adapta.storage.database.v2 import *

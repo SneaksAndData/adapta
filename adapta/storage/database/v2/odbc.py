@@ -1,3 +1,4 @@
+# pylint: disable=duplicate-code
 """
  Database client that uses an ODBC driver.
 """
@@ -19,6 +20,7 @@
 
 from abc import ABC
 from typing import Optional, Union, Iterator
+from warnings import warn
 
 from pandas import DataFrame, read_sql
 import sqlalchemy
@@ -28,7 +30,7 @@ from sqlalchemy.engine import URL
 from sqlalchemy.exc import SQLAlchemyError, OperationalError
 
 from adapta.logs import SemanticLogger
-from adapta.storage.database.models import DatabaseType, SqlAlchemyDialect
+from adapta.storage.database.v2.models import DatabaseType, SqlAlchemyDialect
 
 
 class OdbcClient(ABC):
@@ -57,6 +59,12 @@ class OdbcClient(ABC):
         :param password: SQL user password.
         :param port: Connection port.
         """
+        warn(
+            "You are using version 2 of the OdbcClient class. "
+            "This is deprecated and will be removed in adapta version 4. "
+            "Please upgrade to version 3: adapta.storage.database.v3",
+            DeprecationWarning,
+        )
         self._db_type = database_type
         self._dialect: SqlAlchemyDialect = database_type.value
         self._host = host_name

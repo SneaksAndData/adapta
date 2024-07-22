@@ -1,6 +1,3 @@
-"""
-Import index
-"""
 #  Copyright (c) 2023-2024. ECCO Sneaks & Data
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,4 +13,8 @@ Import index
 #  limitations under the License.
 #
 
-from adapta.storage.database.v2 import *
+"""
+ Import index.
+"""
+from adapta.storage.distributed_object_store.v2.datastax_astra._models import *
+from adapta.storage.distributed_object_store.v2.datastax_astra.astra_client import *

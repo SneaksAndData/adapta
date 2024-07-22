@@ -41,7 +41,8 @@ except ImportError:
     from socket import IPPROTO_TCP, TCP_NODELAY
 
 from backoff import on_exception, expo
-from pandas import DataFrame, concat
+import pandas
+import polars
 from cassandra import ConsistencyLevel, WriteTimeout
 from cassandra.auth import PlainTextAuthProvider
 from cassandra.cluster import (  # pylint: disable=E0611
@@ -63,9 +64,10 @@ from cassandra.protocol import OverloadedErrorMessage, IsBootstrappingErrorMessa
 from cassandra.query import dict_factory, BatchType  # pylint: disable=E0611
 
 from adapta import __version__
-from adapta.storage.distributed_object_store.datastax_astra._models import SimilarityFunction, VectorSearchQuery
+from adapta.storage.distributed_object_store.v3.datastax_astra._models import SimilarityFunction, VectorSearchQuery
 from adapta.storage.models.filter_expression import Expression, AstraFilterExpression, compile_expression
 from adapta.utils import chunk_list, rate_limit
+from adapta.utils.metaframe import MetaFrame, concat
 
 TModel = TypeVar("TModel")  # pylint: disable=C0103
 
@@ -215,14 +217,18 @@ class AstraClient:
         named_table = NamedTable(self._keyspace, table_name)
         return named_table.objects[0]
 
-    def get_entities_from_query(self, query: str, mapper: Callable[[Dict], TModel]) -> DataFrame:
+    def get_entities_from_query(self, query: str, mapper: Callable[[Dict], TModel]) -> MetaFrame:
         """
-        Maps query result to a pandas Dataframe using custom mapper
+        Maps query result to a MetaFrame using custom mapper
 
         :param: query: A CQL query to execute.
         :param: mapper: A mapping function from a Dictionary to the desired model type.
         """
-        return DataFrame([mapper(entity) for entity in self._session.execute(query)])
+        return MetaFrame(
+            [mapper(entity) for entity in self._session.execute(query)],
+            convert_to_polars=polars.DataFrame,
+            convert_to_pandas=pandas.DataFrame,
+        )
 
     def filter_entities(
         self,
@@ -236,7 +242,7 @@ class AstraClient:
         custom_indexes: Optional[List[str]] = None,
         deduplicate=False,
         num_threads: Optional[int] = None,
-    ) -> DataFrame:
+    ) -> MetaFrame:
         """
         Run a filter query on the entity of type TModel backed by table `table_name`.
 
@@ -285,12 +291,13 @@ class AstraClient:
 
             return column_name.replace(filter_suffix[0], "")
 
-        def to_pandas(
+        def to_frame(
             model: Type[Model], key_column_filter: Dict[str, Any], columns_to_select: Optional[List[str]]
-        ) -> DataFrame:
-            return DataFrame(
-                data=[dict(v.items()) for v in list(apply(model, key_column_filter, columns_to_select))],
-                columns=select_columns,
+        ) -> MetaFrame:
+            return MetaFrame(
+                [dict(v.items()) for v in list(apply(model, key_column_filter, columns_to_select))],
+                convert_to_polars=lambda x: polars.DataFrame(x, schema=select_columns),
+                convert_to_pandas=lambda x: pandas.DataFrame(x, columns=select_columns),
             )
 
         assert (
@@ -328,7 +335,7 @@ class AstraClient:
             with ThreadPoolExecutor(max_workers=max_threads) as tpe:
                 result = concat(
                     tpe.map(
-                        lambda args: to_pandas(*args),
+                        lambda args: to_frame(*args),
                         [
                             (model_class, key_column_filter, select_columns)
                             for key_column_filter in compiled_filter_values
@@ -339,26 +346,30 @@ class AstraClient:
         else:
             result = concat(
                 [
-                    DataFrame(
-                        data=[dict(v.items()) for v in list(apply(model_class, key_column_filter, select_columns))],
-                        columns=select_columns,
+                    MetaFrame(
+                        [dict(v.items()) for v in list(apply(model_class, key_column_filter, select_columns))],
+                        convert_to_polars=(lambda x: polars.DataFrame(x, schema=select_columns))
+                        if not deduplicate
+                        else (lambda x: polars.DataFrame(x, schema=select_columns).unique()),
+                        convert_to_pandas=(lambda x: pandas.DataFrame(x, columns=select_columns))
+                        if not deduplicate
+                        else (lambda x: pandas.DataFrame(x, columns=select_columns).drop_duplicates()),
                     )
                     for key_column_filter in compiled_filter_values
                 ]
             )
 
-        if deduplicate:
-            return result.drop_duplicates()
-
         return result
 
-    def get_entities_raw(self, query: str) -> DataFrame:
+    def get_entities_raw(self, query: str) -> MetaFrame:
         """
-         Maps query result to a pandas Dataframe
+         Maps query result to a MetaFrame
 
         :param: query: A CQL query to run.
         """
-        return DataFrame(self._session.execute(query))
+        return MetaFrame(
+            self._session.execute(query), convert_to_polars=polars.DataFrame, convert_to_pandas=pandas.DataFrame
+        )
 
     def _model_dataclass(
         self,
@@ -635,7 +646,7 @@ class AstraClient:
         similarity_function: SimilarityFunction = SimilarityFunction.COSINE,
         table_name: Optional[str] = None,
         num_results=1,
-    ) -> DataFrame:
+    ) -> MetaFrame:
         """
         Performs a simple ANN-based search for vectors most similar to the provided one in the specified entity. Results are ordered based on similarity metric value.
 
@@ -662,4 +673,6 @@ class AstraClient:
             num_results=num_results,
         )
 
-        return DataFrame(self._session.execute(str(query)))
+        return MetaFrame(
+            self._session.execute(str(query)), convert_to_polars=polars.DataFrame, convert_to_pandas=pandas.DataFrame
+        )

@@ -16,5 +16,4 @@
 #  limitations under the License.
 #
 
-from adapta.storage.delta_lake._functions import *
-from adapta.storage.delta_lake._models import *
+from adapta.storage.delta_lake.v2 import *
