@@ -48,6 +48,14 @@ class S3StorageClient(StorageClient):
 
     @classmethod
     def create(cls, auth: AwsClient, endpoint_url: Optional[str] = None):
+        """Creates an S3StorageClient from a given AwsClient and endpoint_url.
+
+        :param auth: An Aws Client to manage the connection
+        :param endpoint_url: The URL of the service endpoint for establishing a connection
+
+        :return: The S3 Storage Client.
+        """
+
         def _get_endpoint_url() -> Optional[str]:
             if endpoint_url:
                 return endpoint_url
