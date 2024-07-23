@@ -50,8 +50,7 @@ class S3StorageClient(StorageClient):
     def create(
         cls,
         auth: AwsClient,
-        endpoint_url: Optional[str] = None,
-        session_callable: Optional[Callable[[], Session]] = None,
+        endpoint_url: Optional[str] = None
     ):
         def _get_endpoint_url() -> Optional[str]:
             if endpoint_url:
@@ -61,7 +60,7 @@ class S3StorageClient(StorageClient):
 
             return None
 
-        auth.initialize_session(session_callable)
+        auth.initialize_session()
 
         return cls(base_client=auth, s3_resource=auth.session.resource("s3", endpoint_url=_get_endpoint_url()))
 
@@ -95,14 +94,6 @@ class S3StorageClient(StorageClient):
         :return: Boolean indicator of blob existence
         """
         s3_path = cast_path(blob_path)
-
-        if not (hasattr(s3_path, "bucket") and s3_path.bucket) or not (hasattr(s3_path, "path") and s3_path.path):
-            missing_attributes = [
-                attr for attr in ["bucket", "path"] if not (hasattr(s3_path, attr) and getattr(s3_path, attr))
-            ]
-            raise StorageClientError(
-                f"Blob path provided does not have the needed parameters: {', '.join(missing_attributes)}"
-            )
 
         try:
             self._s3_resource.meta.client.head_object(Bucket=s3_path.bucket, Key=s3_path.path)

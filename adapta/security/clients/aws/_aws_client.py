@@ -37,8 +37,9 @@ class AwsClient(AuthenticationClient):
         self,
         aws_credentials: Optional[AccessKeyCredentials] = None,
         allow_http: bool = False,
+        session_callable: Optional[Callable[[], Session]] = None,
     ):
-        self._session = None
+        self._session = session_callable()
         self._credentials = aws_credentials
         self._allow_http = allow_http
 
