@@ -10,7 +10,7 @@ This project aim at providing tools needed for everyday activities of data scien
 
 This module provides basic Delta Lake operations without Spark session, based on [delta-rs](https://github.com/delta-io/delta-rs) project.
 
-Please refer to the [module](adapta/storage/delta_lake/README.md) documentation for examples.
+Please refer to the [module](adapta/storage/delta_lake/v3/README.md) documentation for examples.
 
 ## Secret Storages
 
@@ -18,4 +18,4 @@ Please refer to the [module](adapta/storage/secrets/README.md) documentation for
 
 ## NoSql (Astra DB)
 
-Please refer to the [module](adapta/storage/distributed_object_store/datastax_astra/README.md) documentation for examples.
+Please refer to the [module](adapta/storage/distributed_object_store/v3/datastax_astra/README.md) documentation for examples.

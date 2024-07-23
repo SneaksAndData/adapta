@@ -18,12 +18,12 @@ from unittest.mock import patch, MagicMock
 import pytest
 from deltalake import DeltaTable
 
-from adapta.storage.database.snowflake_sql import SnowflakeClient
+from adapta.storage.database.v3.snowflake_sql import SnowflakeClient
 
 from adapta.storage.models.azure import AdlsGen2Path
 
 
-@patch("adapta.storage.database.snowflake_sql.SnowflakeClient.query")
+@patch("adapta.storage.database.v3.snowflake_sql.SnowflakeClient.query")
 def test_publish_external_delta_table(
     mock_query: MagicMock,
 ):
@@ -41,12 +41,12 @@ def test_publish_external_delta_table(
         table_schema={column.name: column.type.type for column in delta_table.schema().fields},
     )
 
-    mock_query.assert_any_call(query="create schema if not exists test_database.test_schema", fetch_pandas=False)
+    mock_query.assert_any_call(query="create schema if not exists test_database.test_schema", fetch_dataframe=False)
     mock_query.assert_any_call(
         query="""create stage if not exists test_database.test_schema.stage_test_table
                 storage_integration = account
                 url = 'azure://account.blob.core.windows.net/container/test_schema/test_table';""",
-        fetch_pandas=False,
+        fetch_dataframe=False,
     )
     mock_query.assert_any_call(
         query="""
@@ -70,14 +70,14 @@ def test_publish_external_delta_table(
                 refresh_on_create=false   
                 file_format = (type = parquet)    
                 table_format = delta;""",
-        fetch_pandas=False,
+        fetch_dataframe=False,
     )
     mock_query.assert_any_call(
-        query='alter external table "test_database"."test_schema"."test_table" refresh;', fetch_pandas=False
+        query='alter external table "test_database"."test_schema"."test_table" refresh;', fetch_dataframe=False
     )
 
 
-@patch("adapta.storage.database.snowflake_sql.SnowflakeClient.query")
+@patch("adapta.storage.database.v3.snowflake_sql.SnowflakeClient.query")
 def test_publish_external_delta_table_partitioned(
     mock_query: MagicMock,
 ):
@@ -96,12 +96,12 @@ def test_publish_external_delta_table_partitioned(
         partition_columns=["colP"],
     )
 
-    mock_query.assert_any_call(query="create schema if not exists test_database.test_schema", fetch_pandas=False)
+    mock_query.assert_any_call(query="create schema if not exists test_database.test_schema", fetch_dataframe=False)
     mock_query.assert_any_call(
         query="""create stage if not exists test_database.test_schema.stage_test_table
                 storage_integration = account
                 url = 'azure://account.blob.core.windows.net/container/test_schema/test_table';""",
-        fetch_pandas=False,
+        fetch_dataframe=False,
     )
     mock_query.assert_any_call(
         query="""
@@ -117,14 +117,14 @@ def test_publish_external_delta_table_partitioned(
                 refresh_on_create=false   
                 file_format = (type = parquet)    
                 table_format = delta;""",
-        fetch_pandas=False,
+        fetch_dataframe=False,
     )
     mock_query.assert_any_call(
-        query='alter external table "test_database"."test_schema"."test_table" refresh;', fetch_pandas=False
+        query='alter external table "test_database"."test_schema"."test_table" refresh;', fetch_dataframe=False
     )
 
 
-@patch("adapta.storage.database.snowflake_sql.SnowflakeClient.query")
+@patch("adapta.storage.database.v3.snowflake_sql.SnowflakeClient.query")
 def test_publish_external_delta_table_skip_initialize(
     mock_query: MagicMock,
 ):
@@ -135,8 +135,8 @@ def test_publish_external_delta_table_skip_initialize(
     )
 
     with pytest.raises(AssertionError):
-        mock_query.assert_any_call(query="create schema if not exists test_database.test_schema", fetch_pandas=False)
+        mock_query.assert_any_call(query="create schema if not exists test_database.test_schema", fetch_dataframe=False)
 
     mock_query.assert_any_call(
-        query='alter external table "test_database"."test_schema"."test_table" refresh;', fetch_pandas=False
+        query='alter external table "test_database"."test_schema"."test_table" refresh;', fetch_dataframe=False
     )

@@ -1,3 +1,4 @@
+# pylint: disable=duplicate-code
 """
  Operations on Delta Lake tables.
 """
@@ -20,6 +21,7 @@ import datetime
 import hashlib
 import zlib
 from typing import Optional, Union, Iterator, List, Iterable, Tuple
+from warnings import warn
 
 from pandas import DataFrame, concat
 import pyarrow
@@ -30,7 +32,7 @@ from pyarrow._dataset_parquet import ParquetReadOptions  # pylint: disable=E0611
 from adapta.logs import SemanticLogger
 from adapta.security.clients._base import AuthenticationClient
 from adapta.storage.models.base import DataPath
-from adapta.storage.delta_lake._models import DeltaTransaction
+from adapta.storage.delta_lake.v2._models import DeltaTransaction
 from adapta.storage.cache import KeyValueCache
 from adapta.storage.models.format import DataFrameParquetSerializationFormat
 from adapta.storage.models.filter_expression import Expression, ArrowFilterExpression, compile_expression
@@ -66,6 +68,13 @@ def load(  # pylint: disable=R0913
 
     :return: A DeltaTable wrapped Rust class, pandas Dataframe or an iterator of pandas Dataframes, for batched reads.
     """
+    warn(
+        "You are using version 2 of the load function. "
+        "This is deprecated and will be removed in adapta version 4. "
+        "Please upgrade to version 3: adapta.storage.delta_lake.v3",
+        DeprecationWarning,
+    )
+
     pyarrow_ds = DeltaTable(
         path.to_delta_rs_path(), version=version, storage_options=auth_client.connect_storage(path)
     ).to_pyarrow_dataset(

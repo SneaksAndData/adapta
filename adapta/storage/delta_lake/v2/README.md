@@ -1,5 +1,7 @@
 # Delta Lake Operations
 
+**This is a deprecated module. Please use the new module `adapta.storage.delta_lake.v3` instead.**
+
 Supported API:
 - read delta table as `pandas.DataFrame`
 - read delta table in batches of a provided size, each batch being `pandas.DataFrame`

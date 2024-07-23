@@ -6,17 +6,16 @@ import re
 from dataclasses import dataclass
 from typing import final, Optional, Union, Iterator
 
-from pandas import DataFrame
-
 from dataclasses_json import DataClassJsonMixin
 
 from adapta._version import __version__
-from adapta.storage.distributed_object_store.datastax_astra.astra_client import AstraClient
+from adapta.storage.distributed_object_store.v3.datastax_astra import AstraClient
 from adapta.storage.models.astra import AstraPath
 from adapta.storage.models.base import DataPath
 from adapta.storage.models.filter_expression import Expression
 
 from adapta.storage.query_enabled_store._models import QueryEnabledStore, CONNECTION_STRING_REGEX
+from adapta.utils.metaframe import MetaFrame
 
 
 @dataclass
@@ -80,7 +79,7 @@ class AstraQueryEnabledStore(QueryEnabledStore[AstraCredential, AstraSettings]):
 
     def _apply_filter(
         self, path: DataPath, filter_expression: Expression, columns: list[str]
-    ) -> Union[DataFrame, Iterator[DataFrame]]:
+    ) -> Union[MetaFrame, Iterator[MetaFrame]]:
         assert isinstance(path, AstraPath)
         astra_path: AstraPath = path
         if self._lazy:
@@ -103,7 +102,7 @@ class AstraQueryEnabledStore(QueryEnabledStore[AstraCredential, AstraSettings]):
             num_threads=-1,  # auto-infer, see method documentation
         )
 
-    def _apply_query(self, query: str) -> Union[DataFrame, Iterator[DataFrame]]:
+    def _apply_query(self, query: str) -> Union[MetaFrame, Iterator[MetaFrame]]:
         if self._lazy:
             with self._astra_client as astra_client:
                 return astra_client.get_entities_raw(query)

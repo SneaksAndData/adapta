@@ -28,7 +28,9 @@ from adapta.storage.models.format import (
     PandasDataFrameParquetSerializationFormat,
     PandasDataFrameJsonSerializationFormat,
     PandasDataFrameCsvSerializationFormat,
+    MetaFrameParquetSerializationFormat,
 )
+from adapta.utils.metaframe import MetaFrame
 
 
 @pytest.mark.parametrize(
@@ -59,13 +61,17 @@ from adapta.storage.models.format import (
         (PickleSerializationFormat, "Hello, World!"),
         (PickleSerializationFormat, b"Test string"),
         (UnitSerializationFormat, b"Test string"),
+        (MetaFrameParquetSerializationFormat, MetaFrame.from_pandas(pandas.DataFrame(data={"test": [1, 2, 3]}))),
+        (MetaFrameParquetSerializationFormat, MetaFrame.from_polars(polars.DataFrame(data={"test": [1, 2, 3]}))),
     ],
 )
 def test_unit_serialization(serializer: Type[SerializationFormat], data: any):
     """
     Tests that serializing and then immediately deserializing any data equals the original data.
     """
-    if isinstance(data, pandas.DataFrame) | isinstance(data, polars.DataFrame):
+    if isinstance(data, MetaFrame):
+        assert data.to_pandas().equals(serializer().deserialize(serializer().serialize(data)).to_pandas())
+    elif isinstance(data, pandas.DataFrame) | isinstance(data, polars.DataFrame):
         assert data.equals(serializer().deserialize(serializer().serialize(data)))
     else:
         assert data == serializer().deserialize(serializer().serialize(data))
