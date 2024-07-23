@@ -101,6 +101,9 @@ class AwsClient(AuthenticationClient):
         Initializes the session by custom session function or a default one if no function is provided."
         :return: AwsClient with established session.
         """
+        if self._session is not None:
+            return self
+
         if session_callable is None:
             session_callable = self._default_aws_session
 
