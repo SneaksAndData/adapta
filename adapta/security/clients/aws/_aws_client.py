@@ -37,12 +37,10 @@ class AwsClient(AuthenticationClient):
         self,
         aws_credentials: Optional[AccessKeyCredentials] = None,
         allow_http: bool = False,
-        session_callable: Optional[Callable[[], Session]] = None,
     ):
         self._session = None
         self._credentials = aws_credentials
         self._allow_http = allow_http
-        self._session_callable = session_callable if session_callable is not None else None
 
     @property
     def session(self) -> Optional[Session]:
@@ -50,13 +48,6 @@ class AwsClient(AuthenticationClient):
         Returns configured session (if any)
         """
         return self._session
-
-    @property
-    def session_callable(self) -> Optional[Callable[[], Session]]:
-        """
-        Returns configured callable session (if any)
-        """
-        return self._session_callable
 
     @classmethod
     def from_base_client(cls, client: AuthenticationClient) -> Optional["AwsClient"]:
@@ -109,11 +100,10 @@ class AwsClient(AuthenticationClient):
         Initializes the session by custom session function or a default one if no function is provided."
         :return: AwsClient with established session.
         """
-        if self._session is not None:
-            return self
+        if session_callable is None:
+            session_callable = self._default_aws_session
 
-        self._session_callable = session_callable or self._session_callable or self._default_aws_session
-        self._session = self._session_callable()
+        self._session = session_callable()
 
         return self
 
