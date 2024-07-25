@@ -66,7 +66,7 @@ def test_delta_history_full(get_client_and_path):
     ]
 
 
-@pytest.mark.parametrize("timestamp", [datetime(year=1900, month=1, day=1), "1900-01-01 00:00:00"])
+@pytest.mark.parametrize("timestamp", [datetime(year=1900, month=1, day=1)])
 def test_delta_time_travel(get_client_and_path, timestamp):
     client, data_path = get_client_and_path
     current_table: pandas.DataFrame = load(client, data_path).to_pandas()

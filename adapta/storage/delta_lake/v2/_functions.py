@@ -42,7 +42,7 @@ def load(  # pylint: disable=R0913
     auth_client: AuthenticationClient,
     path: DataPath,
     version: Optional[int] = None,
-    timestamp: Optional[Union[str, datetime.datetime]] = None,
+    timestamp: Optional[datetime.datetime] = None,
     row_filter: Optional[Union[Expression, pyarrow.compute.Expression]] = None,
     columns: Optional[List[str]] = None,
     batch_size: Optional[int] = None,
@@ -54,7 +54,7 @@ def load(  # pylint: disable=R0913
     :param auth_client: AuthenticationClient for target storage.
     :param path: Path to delta table, in HDFS format: abfss://container@account.dfs.core.windows.net/my/path
     :param version: Optional version to read. Defaults to latest. If set, timestamp will be ignored.
-    :param timestamp: Optional timestamp to read. If string, must be in format: "2021-01-01 00:00:00" ("%Y-%m-%d %H:%M:%S").
+    :param timestamp: Optional timestamp to read.
     :param row_filter: Optional filter to apply, as pyarrow expression. Example:
       from pyarrow.dataset import field as pyarrow_field
 
@@ -82,8 +82,6 @@ def load(  # pylint: disable=R0913
     pyarrow_ds = DeltaTable(path.to_delta_rs_path(), version=version, storage_options=auth_client.connect_storage(path))
 
     if timestamp:
-        if not isinstance(timestamp, str):
-            timestamp = datetime.datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
         pyarrow_ds.load_as_version(timestamp)
 
     pyarrow_ds = pyarrow_ds.to_pyarrow_dataset(
