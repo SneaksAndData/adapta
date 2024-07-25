@@ -40,7 +40,7 @@ def load(  # pylint: disable=R0913
     auth_client: AuthenticationClient,
     path: DataPath,
     version: Optional[int] = None,
-    timestamp: Optional[Union[str, datetime]] = None,
+    timestamp: Optional[Union[str, datetime.datetime]] = None,
     row_filter: Optional[Union[Expression, pyarrow.compute.Expression]] = None,
     columns: Optional[List[str]] = None,
     batch_size: Optional[int] = None,
