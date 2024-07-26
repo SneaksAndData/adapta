@@ -42,6 +42,7 @@ def load(  # pylint: disable=R0913
     auth_client: AuthenticationClient,
     path: DataPath,
     version: Optional[int] = None,
+    timestamp: Optional[datetime.datetime] = None,
     row_filter: Optional[Union[Expression, pyarrow.compute.Expression]] = None,
     columns: Optional[List[str]] = None,
     batch_size: Optional[int] = None,
@@ -52,7 +53,8 @@ def load(  # pylint: disable=R0913
 
     :param auth_client: AuthenticationClient for target storage.
     :param path: Path to delta table, in HDFS format: abfss://container@account.dfs.core.windows.net/my/path
-    :param version: Optional version to read. Defaults to latest.
+    :param version: Optional version to read. Defaults to latest. If set, timestamp will be ignored.
+    :param timestamp: Optional time travel timestamp. Allows to read data as of a specific time. Ignored if version is set.
     :param row_filter: Optional filter to apply, as pyarrow expression. Example:
       from pyarrow.dataset import field as pyarrow_field
 
@@ -74,10 +76,15 @@ def load(  # pylint: disable=R0913
         "Please upgrade to version 3: adapta.storage.delta_lake.v3",
         DeprecationWarning,
     )
+    if version:
+        timestamp = None
 
-    pyarrow_ds = DeltaTable(
-        path.to_delta_rs_path(), version=version, storage_options=auth_client.connect_storage(path)
-    ).to_pyarrow_dataset(
+    pyarrow_ds = DeltaTable(path.to_delta_rs_path(), version=version, storage_options=auth_client.connect_storage(path))
+
+    if timestamp:
+        pyarrow_ds.load_as_version(timestamp)
+
+    pyarrow_ds = pyarrow_ds.to_pyarrow_dataset(
         partitions=partition_filter_expressions,
         parquet_read_options=ParquetReadOptions(coerce_int96_timestamp_unit="ms"),
         filesystem=auth_client.get_pyarrow_filesystem(path),
