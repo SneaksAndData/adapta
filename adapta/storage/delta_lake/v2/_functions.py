@@ -54,7 +54,7 @@ def load(  # pylint: disable=R0913
     :param auth_client: AuthenticationClient for target storage.
     :param path: Path to delta table, in HDFS format: abfss://container@account.dfs.core.windows.net/my/path
     :param version: Optional version to read. Defaults to latest. If set, timestamp will be ignored.
-    :param timestamp: Optional timestamp to read.
+    :param timestamp: Optional time travel timestamp. Allows to read data as of a specific time. Ignored if version is set.
     :param row_filter: Optional filter to apply, as pyarrow expression. Example:
       from pyarrow.dataset import field as pyarrow_field
 
