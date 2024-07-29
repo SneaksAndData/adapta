@@ -12,19 +12,42 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+import pytest
 
 from adapta.storage.blob.s3_storage_client import S3StorageClient
 from adapta.storage.models.aws import S3Path
 from unittest.mock import patch
 
 
+def test_valid_s3_datapath():
+    malformed_s3_datapaths = [
+        lambda: S3Path(bucket="bucket", path=""),
+        lambda: S3Path(bucket="bucket", path="path"),
+        lambda: S3Path(bucket="bucket", path="path/"),
+        lambda: S3Path(bucket="bucket", path="path/path_segment"),
+        lambda: S3Path(bucket="bucket", path="path/path_segment/path_segment"),
+    ]
+
+    for new_s3_data_path in malformed_s3_datapaths:
+        new_s3_data_path()
+
+
+def test_invalid_s3_datapath():
+    malformed_s3_datapaths = [
+        lambda: S3Path(bucket="/bucket/", path="path"),
+        lambda: S3Path(bucket="/bucket", path="path"),
+        lambda: S3Path(bucket="bucket", path="/path"),
+        lambda: S3Path(bucket="bucket", path="/path//path"),
+        lambda: S3Path(bucket="bucket", path="/path/path//path"),
+    ]
+
+    for new_s3_data_path in malformed_s3_datapaths:
+        with pytest.raises(ValueError, match=r"Invalid S3Path provided, must comply with : .*"):
+            new_s3_data_path()
+
+
 def test_base_uri():
     path = S3Path(bucket="bucket", path="nested/key")
-    assert path.base_uri() == "https://bucket.s3.amazonaws.com"
-
-
-def test_base_uri_with_malformed_bucket_path():
-    path = S3Path(bucket="bucket/", path="nested/key")
     assert path.base_uri() == "https://bucket.s3.amazonaws.com"
 
 
@@ -34,12 +57,6 @@ def test_from_hdfs_path():
     assert path.path == "nested/key"
 
 
-def test_from_hdfs_path_with_empty_path_segments():
-    malformed_path = S3Path.from_hdfs_path("s3a://bucket//nested/key")
-    different_malformed_path = S3Path.from_hdfs_path("s3a://bucket//nested//key")
-    assert different_malformed_path == malformed_path == S3Path(bucket="bucket", path="nested/key")
-
-
 def test_to_uri():
     bucket_name = "bucket"
     path = "nested/key"
@@ -47,29 +64,11 @@ def test_to_uri():
     assert path_instance.to_uri() == f"s3a://{bucket_name}/{path}"
 
 
-def test_to_uri_malformed_bucket_path():
-    bucket_name = "bucket/"
-    path = "nested/key"
-    path_instance = S3Path(bucket=bucket_name, path=path)
-    assert path_instance.to_uri() == f"s3a://bucket/nested/key"
-
-
 def test_to_delta_rs_path():
     bucket_name = "bucket"
     path = "nested/key"
     path_instance = S3Path(bucket=bucket_name, path=path)
     assert path_instance.to_delta_rs_path() == f"s3a://bucket/nested/key"
-
-
-def test_to_delta_rs_malformed_bucket_path():
-    bucket_name = "bucket/"
-    path = "nested/key"
-    path_instance = S3Path(bucket=bucket_name, path=path)
-    assert path_instance.to_delta_rs_path() == f"s3a://bucket/nested/key"
-
-
-def test_to_uri_with_empty_path_segment():
-    path = S3Path.from_hdfs_path("s3a://bucket//nested/key")
 
 
 def test_to_hdfs_path():
