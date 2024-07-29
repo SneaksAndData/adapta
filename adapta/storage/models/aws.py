@@ -35,7 +35,7 @@ class S3Path(DataPath):
         Converts the S3Path to a URI.
          :return: URI path
         """
-        return f"s3a://{self.bucket}/{self.path}"
+        return f"s3://{self.bucket}/{self.path}"
 
     def base_uri(self) -> str:
         """
