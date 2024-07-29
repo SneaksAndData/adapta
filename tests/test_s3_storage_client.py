@@ -64,7 +64,7 @@ def test_to_uri():
     bucket_name = "bucket"
     path = "nested/key"
     path_instance = S3Path(bucket=bucket_name, path=path)
-    assert path_instance.to_uri() == f"s3a://{bucket_name}/{path}"
+    assert path_instance.to_uri() == f"s3://{bucket_name}/{path}"
 
 
 def test_to_delta_rs_path():
