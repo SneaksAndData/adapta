@@ -35,9 +35,6 @@ class S3Path(DataPath):
         Converts the S3Path to a URI.
          :return: URI path
         """
-        if not self.bucket:
-            raise ValueError("Bucket must be defined")
-
         return f"s3a://{self.bucket}/{self.path}"
 
     def base_uri(self) -> str:
@@ -45,9 +42,6 @@ class S3Path(DataPath):
         Returns the base URI of the S3Path.
         :return: URI path
         """
-        if not self.bucket:
-            raise ValueError("Bucket must be defined")
-
         return f"https://{self.bucket}.s3.amazonaws.com"
 
     @classmethod
