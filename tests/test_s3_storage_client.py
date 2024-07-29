@@ -20,7 +20,7 @@ from unittest.mock import patch
 
 
 def test_valid_s3_datapath():
-    malformed_s3_datapaths = [
+    valid_s3_datapaths = [
         lambda: S3Path(bucket="bucket", path=""),
         lambda: S3Path(bucket="bucket", path="path"),
         lambda: S3Path(bucket="bucket", path="path/"),
@@ -28,8 +28,11 @@ def test_valid_s3_datapath():
         lambda: S3Path(bucket="bucket", path="path/path_segment/path_segment"),
     ]
 
-    for new_s3_data_path in malformed_s3_datapaths:
-        new_s3_data_path()
+    for s3_data_path in valid_s3_datapaths:
+        try:
+            s3_data_path()
+        except Exception as e:
+            pytest.fail(f"S3Path creation raised an exception: {e}")
 
 
 def test_invalid_s3_datapath():
@@ -41,9 +44,9 @@ def test_invalid_s3_datapath():
         lambda: S3Path(bucket="bucket", path="path/path_segment//path_segment"),
     ]
 
-    for new_s3_data_path in malformed_s3_datapaths:
+    for s3_data_path in malformed_s3_datapaths:
         with pytest.raises(ValueError, match=r"Invalid S3Path provided, must comply with : .*"):
-            new_s3_data_path()
+            s3_data_path()
 
 
 def test_base_uri():
