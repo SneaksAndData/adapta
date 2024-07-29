@@ -37,8 +37,8 @@ def test_invalid_s3_datapath():
         lambda: S3Path(bucket="/bucket/", path="path"),
         lambda: S3Path(bucket="/bucket", path="path"),
         lambda: S3Path(bucket="bucket", path="/path"),
-        lambda: S3Path(bucket="bucket", path="/path//path"),
-        lambda: S3Path(bucket="bucket", path="/path/path//path"),
+        lambda: S3Path(bucket="bucket", path="path//path_segment"),
+        lambda: S3Path(bucket="bucket", path="path/path_segment//path_segment"),
     ]
 
     for new_s3_data_path in malformed_s3_datapaths:
