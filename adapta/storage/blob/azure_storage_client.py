@@ -137,7 +137,7 @@ class AzureStorageClient(StorageClient):
             container_name=azure_path.container,
             account_name=azure_path.account,
             permission=kwargs.get("permission", BlobSasPermissions(read=True)),
-            expiry=kwargs.get("expiry", datetime.utcnow() + timedelta(hours=1)),
+            expiry=datetime.utcnow() + timedelta(seconds=kwargs.get("expiry", 3600.0)),
         )
 
         sas_token = (
@@ -148,13 +148,12 @@ class AzureStorageClient(StorageClient):
             else base_call(
                 user_delegation_key=self._blob_service_client.get_user_delegation_key(
                     key_start_time=datetime.utcnow() - timedelta(minutes=1),
-                    key_expiry_time=kwargs.get("expiry", datetime.utcnow() + timedelta(hours=1)),
+                    key_expiry_time=datetime.utcnow() + timedelta(seconds=kwargs.get("expiry", 3600.0)),
                 ),
             )
         )
 
-        sas_uri = f"{blob_client.url}?{sas_token}"
-        return sas_uri
+        return f"{blob_client.url}?{sas_token}"
 
     def blob_exists(self, blob_path: DataPath) -> bool:
         return self._get_blob_client(blob_path).exists()
