@@ -47,12 +47,13 @@ class StorageClient(ABC):
         """
 
     @abstractmethod
-    def get_blob_uri(self, blob_path: DataPath, **kwargs) -> str:
+    def get_blob_uri(self, blob_path: DataPath, expires_in_seconds: float = 3600.0, **kwargs) -> str:
         """
          Generates a URL which can be used to download this blob.
 
-        :param blob_path:
-        :param kwargs:
+        :param blob_path: Path to the blob.
+        :param expires_in_seconds: Expiration time in seconds.
+        :param kwargs: Optional parameters to pass to the signing client.
         :return:
         """
 
