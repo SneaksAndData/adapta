@@ -19,7 +19,6 @@
 import os
 
 from typing import Optional, Callable, Type, Iterator, Dict, TypeVar, final
-from datetime import timedelta
 from boto3 import Session
 from botocore.config import Config
 from botocore.exceptions import ClientError
