@@ -127,7 +127,7 @@ class AzureStorageClient(StorageClient):
         bytes_ = serialization_format().serialize(data)
         self._get_blob_client(blob_path).upload_blob(bytes_, metadata=metadata, overwrite=overwrite)
 
-    def get_blob_uri(self, blob_path: DataPath, **kwargs) -> str:
+    def get_blob_uri(self, blob_path: DataPath, expires_in_seconds: float = 3600.0, **kwargs) -> str:
         blob_client = self._get_blob_client(blob_path)
         azure_path = cast_path(blob_path)
 
@@ -137,7 +137,7 @@ class AzureStorageClient(StorageClient):
             container_name=azure_path.container,
             account_name=azure_path.account,
             permission=kwargs.get("permission", BlobSasPermissions(read=True)),
-            expiry=datetime.utcnow() + timedelta(seconds=kwargs.get("expiry", 3600.0)),
+            expiry=datetime.utcnow() + timedelta(seconds=expires_in_seconds),
         )
 
         sas_token = (
@@ -148,7 +148,7 @@ class AzureStorageClient(StorageClient):
             else base_call(
                 user_delegation_key=self._blob_service_client.get_user_delegation_key(
                     key_start_time=datetime.utcnow() - timedelta(minutes=1),
-                    key_expiry_time=datetime.utcnow() + timedelta(seconds=kwargs.get("expiry", 3600.0)),
+                    key_expiry_time=datetime.utcnow() + timedelta(seconds=expires_in_seconds),
                 ),
             )
         )

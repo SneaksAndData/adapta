@@ -47,7 +47,7 @@ class StorageClient(ABC):
         """
 
     @abstractmethod
-    def get_blob_uri(self, blob_path: DataPath, expires_in_seconds: int, **kwargs) -> str:
+    def get_blob_uri(self, blob_path: DataPath, expires_in_seconds: float = 3600.0, **kwargs) -> str:
         """
          Generates a URL which can be used to download this blob.
 
