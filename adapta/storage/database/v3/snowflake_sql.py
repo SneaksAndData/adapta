@@ -170,16 +170,16 @@ class SnowflakeClient:
         def _get_azure_query(resolved_path: AdlsGen2Path):
             return (
                 f"create stage if not exists {database}.{schema}.stage_{table}"
-                + f"storage_integration = {storage_integration if storage_integration is not None else resolved_path.account}"
-                + f"url = 'azure://{resolved_path.account}.blob.core.windows.net/{resolved_path.container}/{path.path}';"
+                + f" storage_integration = {storage_integration if storage_integration is not None else resolved_path.account}"
+                + f" url = 'azure://{resolved_path.account}.blob.core.windows.net/{resolved_path.container}/{path.path}';"
             )
 
         def _get_s3_query(resolved_path: S3Path):
             return (
                 f"create stage if not exists {database}.{schema}.stage_{table}"
-                + f"endpoint = 'data-bolt-s3.awsp.sneaksanddata.com'"
-                + f"url = 's3compat://{resolved_path.bucket}/{resolved_path.path}'"
-                + f"credentials = (AWS_KEY_ID = '{os.environ['DATA_BOLT__ACCESS_KEY_ID']}' AWS_SECRET_KEY = '{os.environ['DATA_BOLT__ACCESS_KEY']}');"
+                + f" endpoint = 'data-bolt-s3.awsp.sneaksanddata.com'"
+                + f" url = 's3compat://{resolved_path.bucket}/{resolved_path.path}'"
+                + f" credentials = (AWS_KEY_ID = '{os.environ['DATA_BOLT__ACCESS_KEY_ID']}' AWS_SECRET_KEY = '{os.environ['DATA_BOLT__ACCESS_KEY']}');"
             )
 
         if not refresh_metadata_only:
