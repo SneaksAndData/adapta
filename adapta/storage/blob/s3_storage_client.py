@@ -19,7 +19,6 @@
 import os
 
 from typing import Optional, Callable, Type, Iterator, Dict, TypeVar, final
-from datetime import timedelta
 from boto3 import Session
 from botocore.config import Config
 from botocore.exceptions import ClientError
@@ -65,19 +64,12 @@ class S3StorageClient(StorageClient):
 
         return cls(base_client=auth, s3_resource=auth.session.resource("s3", endpoint_url=_get_endpoint_url()))
 
-    def get_blob_uri(self, blob_path: DataPath, **kwargs) -> str:
-        """Returns a signed URL for a blob in S3 storage.
-
-        :param blob_path: Path to blob
-
-        :return: The signed URL for the given blob path
-        """
+    def get_blob_uri(self, blob_path: DataPath, expires_in_seconds: float = 3600.0, **kwargs) -> str:
         s3_path = cast_path(blob_path)
         params = {
             "Bucket": s3_path.bucket,
             "Key": s3_path.path,
         }
-        expiry_time = int(kwargs.get("expiry", timedelta(hours=1).total_seconds()))
         signature_version = kwargs.get("signature_version", "s3v4")
         signing_client = self._base_client.session.client(
             "s3",
@@ -85,7 +77,9 @@ class S3StorageClient(StorageClient):
             config=Config(signature_version=signature_version),
         )
 
-        return signing_client.generate_presigned_url(ClientMethod="get_object", Params=params, ExpiresIn=expiry_time)
+        return signing_client.generate_presigned_url(
+            ClientMethod="get_object", Params=params, ExpiresIn=int(expires_in_seconds)
+        )
 
     def blob_exists(self, blob_path: DataPath) -> bool:
         """Checks if blob located at blob_path exists
