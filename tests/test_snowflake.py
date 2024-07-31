@@ -43,9 +43,11 @@ def test_publish_external_delta_table(
 
     mock_query.assert_any_call(query="create schema if not exists test_database.test_schema", fetch_dataframe=False)
     mock_query.assert_any_call(
-        query="""create stage if not exists test_database.test_schema.stage_test_table
-                storage_integration = account
-                url = 'azure://account.blob.core.windows.net/container/test_schema/test_table';""",
+        query=(
+            "create stage if not exists test_database.test_schema.stage_test_table"
+            + "storage_integration = account"
+            + "url = 'azure://account.blob.core.windows.net/container/test_schema/test_table';"
+        ),
         fetch_dataframe=False,
     )
     mock_query.assert_any_call(
@@ -98,9 +100,11 @@ def test_publish_external_delta_table_partitioned(
 
     mock_query.assert_any_call(query="create schema if not exists test_database.test_schema", fetch_dataframe=False)
     mock_query.assert_any_call(
-        query="""create stage if not exists test_database.test_schema.stage_test_table
-                storage_integration = account
-                url = 'azure://account.blob.core.windows.net/container/test_schema/test_table';""",
+        query=(
+            "create stage if not exists test_database.test_schema.stage_test_table"
+            + "storage_integration = account"
+            + "url = 'azure://account.blob.core.windows.net/container/test_schema/test_table';"
+        ),
         fetch_dataframe=False,
     )
     mock_query.assert_any_call(
