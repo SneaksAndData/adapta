@@ -13,6 +13,7 @@ from snowflake.connector.errors import DatabaseError, ProgrammingError
 
 from adapta.logs.models import LogLevel
 from adapta.logs import SemanticLogger
+from adapta.storage.models import S3Path, DataPath
 
 from adapta.storage.models.azure import AdlsGen2Path
 from adapta.utils.metaframe import MetaFrame
@@ -146,7 +147,7 @@ class SnowflakeClient:
         schema: str,
         table: str,
         refresh_metadata_only: bool = False,
-        path: Optional[AdlsGen2Path] = None,
+        path: Optional[DataPath] = None,
         table_schema: Optional[Dict[str, str]] = None,
         partition_columns: Optional[List[str]] = None,
         storage_integration: Optional[str] = None,
@@ -166,16 +167,32 @@ class SnowflakeClient:
         :param storage_integration: name of the storage integration to use in Snowflake. Default to the name of the storage account
         """
 
+        def _get_azure_query(resolved_path: AdlsGen2Path):
+            return f"""create stage if not exists {database}.{schema}.stage_{table}
+                    storage_integration = {storage_integration if storage_integration is not None else resolved_path.account}
+                    url = 'azure://{resolved_path.account}.blob.core.windows.net/{resolved_path.container}/{path.path}';"""
+
+        def _get_s3_query(resolved_path: S3Path):
+            return f"""create stage if not exists {database}.{schema}.stage_{table}
+                endpoint = 'data-bolt-s3.awsp.sneaksanddata.com'
+                url = 's3compat://{resolved_path.bucket}/{resolved_path.path}'
+                credentials = (AWS_KEY_ID = '{os.environ['DATA_BOLT__ACCESS_KEY_ID']}' AWS_SECRET_KEY = '{os.environ['DATA_BOLT__ACCESS_KEY']}');"""
+
         if not refresh_metadata_only:
             assert path, "Path to the delta table needed! Please check!"
             assert table_schema, "Table schema needed! Please check!"
 
             self.query(query=f"create schema if not exists {database}.{schema}", fetch_dataframe=False)
 
+            if isinstance(path, AdlsGen2Path):
+                query = _get_azure_query(path)
+            elif isinstance(path, S3Path):
+                query = _get_s3_query(path)
+            else:
+                raise ValueError(f"Path type {type(path)} is not supported!")
+
             self.query(
-                query=f"""create stage if not exists {database}.{schema}.stage_{table}
-                storage_integration = {storage_integration if storage_integration is not None else path.account}
-                url = 'azure://{path.account}.blob.core.windows.net/{path.container}/{path.path}';""",
+                query=query,
                 fetch_dataframe=False,
             )
 
