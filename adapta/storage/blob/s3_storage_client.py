@@ -43,7 +43,9 @@ class S3StorageClient(StorageClient):
     def __init__(self, *, base_client: AwsClient, s3_resource: Optional[Session] = None):
         super().__init__(base_client=base_client)
         self._base_client = base_client
-        self._s3_resource = s3_resource if s3_resource is not None else base_client.session.resource("s3")
+        self._s3_resource = s3_resource if s3_resource is not None else base_client\
+            .initialize_session()\
+            .session.resource("s3")
 
     @classmethod
     def create(

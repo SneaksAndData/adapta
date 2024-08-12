@@ -23,7 +23,9 @@ class AstraCredential(DataClassJsonMixin):
     """
     Astra DB credential helper for QES.
     """
+    auth_client_class: Optional[str] = None
 
+    # Astra Related Credentials
     secret_connection_bundle_bytes: Optional[str] = None
     client_id: Optional[str] = None
     client_secret: Optional[str] = None

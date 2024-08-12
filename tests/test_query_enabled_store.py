@@ -1,3 +1,4 @@
+from pydoc import locate
 from typing import Optional, Type, Union
 
 import pytest
@@ -18,6 +19,14 @@ from adapta.storage.query_enabled_store import QueryEnabledStore, DeltaQueryEnab
         ),
         (
             'qes://engine=DELTA;plaintext_credentials={"auth_client_class":"adapta.security.clients.aws.AwsClient"};settings={}',
+            DeltaQueryEnabledStore,
+        ),
+        (
+            'qes://engine=DELTA;plaintext_credentials={"auth_client_class":"adapta.security.clients.aws.AwsClient", "auth_client_credentials_class": "adapta.security.clients.aws._aws_credentials.ExplicitAwsCredentials", "access_key": "test", "access_key_id": "test", "region": "test", "endpoint": "https://test"};settings={}',
+            DeltaQueryEnabledStore,
+        ),
+        (
+            'qes://engine=DELTA;plaintext_credentials={"auth_client_class":"adapta.security.clients.aws.AwsClient", "auth_client_credentials_class": "adapta.security.clients.aws._aws_credentials.EnvironmentAwsCredentials"};settings={}',
             DeltaQueryEnabledStore,
         ),
         (
@@ -51,7 +60,9 @@ def test_query_store_instantiation(
 ):
     try:
         store = QueryEnabledStore.from_string(connection_string, lazy_init=True)
-
         assert isinstance(store, expected_store_type)
+        if expected_store_type == DeltaQueryEnabledStore:
+            credentials_client = locate(store.credentials.auth_client_class)(**store.credentials.to_dict())
+            assert credentials_client is not None, "Credentials client could not be loaded"
     except Exception as load_error:
         assert isinstance(load_error, expected_store_type)

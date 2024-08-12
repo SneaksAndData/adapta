@@ -51,7 +51,7 @@ class AzureClient(AuthenticationClient):
     Azure Credentials provider for various Azure resources.
     """
 
-    def __init__(self, *, subscription_id: Optional[str] = None, default_log_level=logging.ERROR):
+    def __init__(self, *, subscription_id: Optional[str] = None, default_log_level=logging.ERROR, **_):
         self.subscription_id = subscription_id
 
         # disable Azure CLI telemetry collection as it is not thread-safe

@@ -4,7 +4,7 @@
 import re
 from dataclasses import dataclass
 from pydoc import locate
-from typing import final, Union, Iterator
+from typing import final, Union, Iterator, Optional
 
 from dataclasses_json import DataClassJsonMixin
 
@@ -22,6 +22,14 @@ class DeltaCredential(DataClassJsonMixin):
     """
 
     auth_client_class: str
+
+    # AWS Related Credentials (Optional)
+    auth_client_credentials_class: Optional[str] = None
+    access_key: Optional[str] = None
+    access_key_id: Optional[str] = None
+    region: Optional[str] = None
+    endpoint: Optional[str] = None
+    session_token: Optional[str] = None
 
     def __post_init__(self):
         if not self.auth_client_class:
@@ -60,7 +68,7 @@ class DeltaQueryEnabledStore(QueryEnabledStore[DeltaCredential, DeltaSettings]):
         self, path: DataPath, filter_expression: Expression, columns: list[str]
     ) -> Union[MetaFrame, Iterator[MetaFrame]]:
         return load(
-            auth_client=locate(self.credentials.auth_client_class)(),
+            auth_client=locate(self.credentials.auth_client_class)(**self.credentials.to_dict()),
             path=path,
             row_filter=filter_expression,
             columns=columns,
