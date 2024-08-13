@@ -43,9 +43,7 @@ class S3StorageClient(StorageClient):
     def __init__(self, *, base_client: AwsClient, s3_resource: Optional[Session] = None):
         super().__init__(base_client=base_client)
         self._base_client = base_client
-        self._s3_resource = s3_resource if s3_resource is not None else base_client\
-            .initialize_session()\
-            .session.resource("s3")
+        self._s3_resource = s3_resource if s3_resource is not None else base_client.session.resource("s3")
 
     @classmethod
     def create(
@@ -282,4 +280,4 @@ class S3StorageClient(StorageClient):
         Generate client instance that can operate on the provided path. Always uses EnvironmentCredentials/
         """
         _ = cast_path(parse_data_path(path))
-        return cls(base_client=AwsClient())
+        return cls.create(AwsClient())

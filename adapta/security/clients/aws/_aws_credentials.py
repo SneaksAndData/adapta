@@ -104,7 +104,7 @@ class ExplicitAwsCredentials(AccessKeyCredentials):
     Explicitly passed AWS credentials
     """
 
-    def __init__(self, access_key, access_key_id, region, session_token=None, endpoint=None, *_, **__):
+    def __init__(self, access_key, access_key_id, region, session_token=None, endpoint=None):
         self._access_key = access_key
         self._access_key_id = access_key_id
         self._region = region

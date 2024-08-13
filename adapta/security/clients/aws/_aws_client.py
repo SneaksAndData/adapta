@@ -1,7 +1,6 @@
 """
  Amazon Web Services implementation of AuthenticationClient.
 """
-from pydoc import locate
 #  Copyright (c) 2023-2024. ECCO Sneaks & Data
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,12 +33,9 @@ class AwsClient(AuthenticationClient):
     AWS Credentials provider for various AWS resources.
     """
 
-    def __init__(self, aws_credentials: Optional[AccessKeyCredentials] = None, allow_http: bool = False, *,
-                 auth_client_credentials_class: Optional[str] = None, **client_kwargs):
+    def __init__(self, credentials: Optional[AccessKeyCredentials] = None, allow_http: bool = False):
         self._session = None
-        self._credentials = aws_credentials
-        if self._credentials is None and auth_client_credentials_class is not None:
-            self._credentials = locate(auth_client_credentials_class)(**client_kwargs)
+        self._credentials = credentials
         self._allow_http = allow_http
 
     @property

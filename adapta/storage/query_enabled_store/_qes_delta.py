@@ -22,14 +22,8 @@ class DeltaCredential(DataClassJsonMixin):
     """
 
     auth_client_class: str
-
-    # AWS Related Credentials (Optional)
     auth_client_credentials_class: Optional[str] = None
-    access_key: Optional[str] = None
-    access_key_id: Optional[str] = None
-    region: Optional[str] = None
-    endpoint: Optional[str] = None
-    session_token: Optional[str] = None
+    auth_client_credentials = Optional[object]
 
     def __post_init__(self):
         if not self.auth_client_class:
@@ -39,6 +33,9 @@ class DeltaCredential(DataClassJsonMixin):
             raise ModuleNotFoundError(
                 "Authentication plugin class name cannot be loaded. Please check the spelling and make sure your application can resolve the import"
             )
+
+        if self.auth_client_credentials_class:
+            self.auth_client_credentials = locate(self.auth_client_credentials_class)
 
 
 @dataclass
@@ -68,7 +65,9 @@ class DeltaQueryEnabledStore(QueryEnabledStore[DeltaCredential, DeltaSettings]):
         self, path: DataPath, filter_expression: Expression, columns: list[str]
     ) -> Union[MetaFrame, Iterator[MetaFrame]]:
         return load(
-            auth_client=locate(self.credentials.auth_client_class)(**self.credentials.to_dict()),
+            auth_client=locate(self.credentials.auth_client_class)(
+                credentials=self.credentials.auth_client_credentials
+            ),
             path=path,
             row_filter=filter_expression,
             columns=columns,
