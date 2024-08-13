@@ -33,7 +33,7 @@ class LocalStorageClient(StorageClient):
     """
     Local Storage Client, primarily for unit tests.
     """
-    
+
     def __init__(self, **_):
         super().__init__(base_client=LocalClient())
 
