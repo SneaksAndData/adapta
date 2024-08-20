@@ -4,10 +4,11 @@
 import re
 from dataclasses import dataclass
 from pydoc import locate
-from typing import final, Union, Iterator, Optional
+from typing import final, Union, Iterator, Optional, Type
 
 from dataclasses_json import DataClassJsonMixin
 
+from adapta.security.clients import AuthenticationClient
 from adapta.storage.delta_lake.v3 import load
 from adapta.storage.models.base import DataPath
 from adapta.storage.models.filter_expression import Expression
@@ -23,13 +24,17 @@ class DeltaCredential(DataClassJsonMixin):
 
     auth_client_class: str
     auth_client_credentials_class: Optional[str] = None
-    auth_client_credentials = Optional[object]
+
+    auth_client: Optional[AuthenticationClient] = None
+    auth_client_credentials: Optional[Type] = None
 
     def __post_init__(self):
         if not self.auth_client_class:
             raise ValueError("Authentication plugin class name not provided but is required")
 
-        if locate(self.auth_client_class) is None:
+        self.auth_client = locate(self.auth_client_class)
+
+        if self.auth_client is None:
             raise ModuleNotFoundError(
                 "Authentication plugin class name cannot be loaded. Please check the spelling and make sure your application can resolve the import"
             )
@@ -65,9 +70,7 @@ class DeltaQueryEnabledStore(QueryEnabledStore[DeltaCredential, DeltaSettings]):
         self, path: DataPath, filter_expression: Expression, columns: list[str]
     ) -> Union[MetaFrame, Iterator[MetaFrame]]:
         return load(
-            auth_client=locate(self.credentials.auth_client_class)(
-                credentials=self.credentials.auth_client_credentials
-            ),
+            auth_client=self.credentials.auth_client(credentials=self.credentials.auth_client_credentials()),
             path=path,
             row_filter=filter_expression,
             columns=columns,

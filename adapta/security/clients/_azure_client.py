@@ -52,6 +52,7 @@ class AzureClient(AuthenticationClient):
     """
 
     def __init__(self, *, subscription_id: Optional[str] = None, default_log_level=logging.ERROR, **_):
+        super().__init__(**_)
         self.subscription_id = subscription_id
 
         # disable Azure CLI telemetry collection as it is not thread-safe

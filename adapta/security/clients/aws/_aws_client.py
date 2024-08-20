@@ -33,7 +33,8 @@ class AwsClient(AuthenticationClient):
     AWS Credentials provider for various AWS resources.
     """
 
-    def __init__(self, credentials: Optional[AccessKeyCredentials] = None, allow_http: bool = False):
+    def __init__(self, credentials: Optional[AccessKeyCredentials] = None, allow_http: bool = False, **_):
+        super().__init__(**_)
         self._session = None
         self._credentials = credentials
         self._allow_http = allow_http

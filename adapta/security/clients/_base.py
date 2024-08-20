@@ -28,6 +28,12 @@ class AuthenticationClient(ABC):
     Base functionality all infrastructure providers must implement.
     """
 
+    def __init__(self, **_):
+        """
+        Initializes the client with the provided settings.
+        """
+        pass
+
     @abstractmethod
     def get_credentials(self):
         """

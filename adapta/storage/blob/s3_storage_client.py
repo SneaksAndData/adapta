@@ -280,4 +280,4 @@ class S3StorageClient(StorageClient):
         Generate client instance that can operate on the provided path. Always uses EnvironmentCredentials/
         """
         _ = cast_path(parse_data_path(path))
-        return cls.create(AwsClient())
+        return cls.create(auth=AwsClient())
