@@ -56,7 +56,7 @@ class EnvironmentAwsCredentials(AccessKeyCredentials):
     Reads credentials from environment variables
     """
 
-    def __init__(self, *_, **__):
+    def __init__(self):
         self._session_token = None
         self._endpoint = None
 

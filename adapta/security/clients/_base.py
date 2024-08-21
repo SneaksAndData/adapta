@@ -32,7 +32,6 @@ class AuthenticationClient(ABC):
         """
         Initializes the client with the provided settings.
         """
-        pass
 
     @abstractmethod
     def get_credentials(self):
