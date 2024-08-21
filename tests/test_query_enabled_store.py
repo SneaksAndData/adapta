@@ -1,4 +1,4 @@
-from typing import Optional, Type, Union
+from typing import Type, Union
 
 import pytest
 
@@ -18,6 +18,10 @@ from adapta.storage.query_enabled_store import QueryEnabledStore, DeltaQueryEnab
         ),
         (
             'qes://engine=DELTA;plaintext_credentials={"auth_client_class":"adapta.security.clients.aws.AwsClient"};settings={}',
+            DeltaQueryEnabledStore,
+        ),
+        (
+            'qes://engine=DELTA;plaintext_credentials={"auth_client_class":"adapta.security.clients.aws.AwsClient", "auth_client_credentials_class": "adapta.security.clients.aws._aws_credentials.EnvironmentAwsCredentials"};settings={}',
             DeltaQueryEnabledStore,
         ),
         (
@@ -51,7 +55,6 @@ def test_query_store_instantiation(
 ):
     try:
         store = QueryEnabledStore.from_string(connection_string, lazy_init=True)
-
         assert isinstance(store, expected_store_type)
     except Exception as load_error:
         assert isinstance(load_error, expected_store_type)

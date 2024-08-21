@@ -49,6 +49,9 @@ def set_env():
         "PROTEUS__DD_APP_KEY": "some-app-key",
         "PROTEUS__DD_SITE": "some-site.dog",
         "PYTHONUNBUFFERED": "1",
+        "PROTEUS__AWS_SECRET_ACCESS_KEY": "test",
+        "PROTEUS__AWS_ACCESS_KEY_ID": "test",
+        "PROTEUS__AWS_REGION": "test",
     }
 
 
