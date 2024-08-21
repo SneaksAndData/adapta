@@ -21,7 +21,8 @@ class CassandraModel(Model):
     last_name = columns.Text()
     age = columns.Integer()
     skills = columns.Map(key_type=columns.Text, value_type=columns.Text)
-
+    likes_cake = columns.Boolean()
+    nicknames = columns.List(value_type=columns.Text)
 
 @dataclass
 class DataclassModel:
@@ -30,6 +31,8 @@ class DataclassModel:
     last_name: str
     age: int
     skills: dict[str, str]
+    likes_cake: bool
+    nicknames: list[str]
 
 
 @dataclass
