@@ -204,7 +204,7 @@ class CassandraModelMapper(ABC):
 
         raise TypeError(f"Unsupported type mapping: {cassandra_types}")
 
-
+@typing.final
 class DataclassMapper(CassandraModelMapper):
     """Maps dataclasses to Cassandra models."""
 
@@ -277,6 +277,7 @@ class DataclassMapper(CassandraModelMapper):
         return {field.name: field.type for field in fields(self._data_model) if not subset or field.name in subset}
 
 
+@typing.final
 class PanderaPolarsMapper(CassandraModelMapper):
     """Maps Pandera Polars data models to Cassandra models."""
 
