@@ -204,6 +204,7 @@ class CassandraModelMapper(ABC):
 
         raise TypeError(f"Unsupported type mapping: {cassandra_types}")
 
+
 @typing.final
 class DataclassMapper(CassandraModelMapper):
     """Maps dataclasses to Cassandra models."""
