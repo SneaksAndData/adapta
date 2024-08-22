@@ -63,7 +63,7 @@ from adapta.storage.distributed_object_store.v3.datastax_astra._models import Si
 from adapta.storage.models.filter_expression import Expression, AstraFilterExpression, compile_expression
 from adapta.utils import chunk_list, rate_limit
 from adapta.utils.metaframe import MetaFrame, concat
-from adapta.storage.distributed_object_store.v3.datastax_astra._model_mappers import model_mapper_factory
+from adapta.storage.distributed_object_store.v3.datastax_astra._model_mappers import get_mapper
 
 TModel = TypeVar("TModel")  # pylint: disable=C0103
 
@@ -302,16 +302,14 @@ class AstraClient:
 
         select_columns = list(map(normalize_column_name, select_columns)) if select_columns else None
 
-        # pylint: disable=too-many-function-args
-        model_class = model_mapper_factory(
+        cassandra_model = get_mapper(
             data_model=model_class,
             keyspace=keyspace,
             table_name=table_name,
             primary_keys=primary_keys,
             partition_keys=partition_keys,
             custom_indexes=custom_indexes,
-            select_columns=select_columns,
-        ).map(model_class)
+        ).map()
 
         compiled_filter_values = (
             compile_expression(key_column_filter_values, AstraFilterExpression)
@@ -330,7 +328,7 @@ class AstraClient:
                     tpe.map(
                         lambda args: to_frame(*args),
                         [
-                            (model_class, key_column_filter, select_columns)
+                            (cassandra_model, key_column_filter, select_columns)
                             for key_column_filter in compiled_filter_values
                         ],
                         chunksize=max(int(len(compiled_filter_values) / num_threads), 1),
@@ -340,7 +338,7 @@ class AstraClient:
             result = concat(
                 [
                     MetaFrame(
-                        [dict(v.items()) for v in list(apply(model_class, key_column_filter, select_columns))],
+                        [dict(v.items()) for v in list(apply(cassandra_model, key_column_filter, select_columns))],
                         convert_to_polars=(lambda x: polars.DataFrame(x, schema=select_columns))
                         if not deduplicate
                         else (lambda x: polars.DataFrame(x, schema=select_columns).unique()),
@@ -396,15 +394,15 @@ class AstraClient:
         def _delete_entity(model_class: Type[Model], key_filter: Dict):
             model_class.filter(**key_filter).delete()
 
-        model_class = model_mapper_factory(
+        cassandra_model = get_mapper(
             data_model=Type[entity],
             table_name=table_name,
             keyspace=keyspace,
         ).map()
 
         _delete_entity(
-            model_class=model_class,
-            key_filter={key: getattr(entity, key) for key in model_class.primary_keys},
+            model_class=cassandra_model,
+            key_filter={key: getattr(entity, key) for key in cassandra_model.primary_keys},
         )
 
     def upsert_entity(
@@ -434,12 +432,12 @@ class AstraClient:
         def _save_entity(model_object: Model):
             model_object.save()
 
-        model_class = model_mapper_factory(
+        cassandra_model = get_mapper(
             data_model=type(entity),
             table_name=table_name,
             keyspace=keyspace,
         ).map()
-        _save_entity(model_class(**asdict(entity)))
+        _save_entity(cassandra_model(**asdict(entity)))
 
     def upsert_batch(
         self,
@@ -474,7 +472,7 @@ class AstraClient:
                 for value in values:
                     model_class.batch(upsert_batch).create(**value)
 
-        model_class = model_mapper_factory(
+        cassandra_model = get_mapper(
             data_model=entity_type,
             table_name=table_name,
             keyspace=keyspace,
@@ -482,7 +480,7 @@ class AstraClient:
 
         for chunk in chunk_list(entities, batch_size):
             _save_entities(
-                model_class=model_class,
+                model_class=cassandra_model,
                 values=chunk,
             )
 
@@ -504,11 +502,11 @@ class AstraClient:
            https://github.com/langchain-ai/langchain/blob/93ae589f1bd11f992eff5018660b667b2e15e585/libs/langchain/langchain/vectorstores/cassandra.py
         """
 
-        model_mapper = model_mapper_factory(data_model=entity_type, table_name=table_name)
+        model_mapper = get_mapper(data_model=entity_type, table_name=table_name)
 
         query = VectorSearchQuery(
             table_fqn=f"{self._keyspace}.{model_mapper.table_name}",
-            data_fields=[f for f in model_mapper.get_column_types().keys() if f != model_mapper.vector_column],
+            data_fields=[f for f in model_mapper.column_names if f != model_mapper.vector_column],
             sim_func=similarity_function,
             vector=vector_to_match,
             field_name=model_mapper.vector_column,

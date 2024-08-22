@@ -8,7 +8,7 @@ from cassandra.cqlengine.models import Model
 from adapta.storage.distributed_object_store.v3.datastax_astra._model_mappers import (
     DataclassMapper,
     CassandraModelMapper,
-    model_mapper_factory,
+    get_mapper,
 )
 
 cols = {"text_column": columns.Text(primary_key=True)}
@@ -23,6 +23,7 @@ class CassandraModel(Model):
     skills = columns.Map(key_type=columns.Text, value_type=columns.Text)
     likes_cake = columns.Boolean()
     nicknames = columns.List(value_type=columns.Text)
+
 
 @dataclass
 class DataclassModel:
@@ -42,22 +43,24 @@ class DataclassModelWithoutMetadata:
     last_name: str
     age: int
     skills: dict[str, str]
+    likes_cake: bool
+    nicknames: list[str]
 
 
 @pytest.mark.parametrize(
     "data_model, Mapper, mapper_kwargs",
     [
-        (DataclassModel, DataclassMapper, {"table_name": "test_table"}),
-        (DataclassModel, DataclassMapper, {}),
         (
             DataclassModelWithoutMetadata,
             DataclassMapper,
             {"table_name": "test_table", "primary_keys": ["first_name", "country"], "partition_keys": ["country"]},
         ),
+        (DataclassModel, DataclassMapper, {"table_name": "test_table"}),
+        (DataclassModel, DataclassMapper, {}),
     ],
 )
 def test_cassandra_model_mapper(data_model, Mapper: Type[CassandraModelMapper], mapper_kwargs: dict):
-    mapper = Mapper(data_model=DataclassModel, **mapper_kwargs)
+    mapper = Mapper(data_model=data_model, **mapper_kwargs)
     mapped_model = mapper.map()
     assert (
         sorted(mapper.primary_keys) == sorted(CassandraModel._primary_keys.keys()) == sorted(mapped_model._primary_keys)
@@ -69,11 +72,7 @@ def test_cassandra_model_mapper(data_model, Mapper: Type[CassandraModelMapper], 
         == sorted(mapped_model._partition_keys)
     )
 
-    assert (
-        sorted(CassandraModel._columns.keys())
-        == sorted(mapper.get_column_types().keys())
-        == sorted(mapped_model._columns.keys())
-    )
+    assert sorted(CassandraModel._columns.keys()) == sorted(mapper.column_names) == sorted(mapped_model._columns.keys())
     assert {c: type(i) for c, i in CassandraModel._columns.items()} == {
         c: type(i) for c, i in mapped_model._columns.items()
     }
@@ -87,6 +86,6 @@ def test_cassandra_model_mapper(data_model, Mapper: Type[CassandraModelMapper], 
     ],
 )
 def test_model_mapper_factory(data_model, expected_mapper: Type[CassandraModelMapper]):
-    mapper = model_mapper_factory(data_model)
+    mapper = get_mapper(data_model)
 
     assert isinstance(mapper, expected_mapper)
