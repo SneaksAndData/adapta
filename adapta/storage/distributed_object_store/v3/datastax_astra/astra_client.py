@@ -490,6 +490,7 @@ class AstraClient:
         vector_to_match: list[float],
         similarity_function: SimilarityFunction = SimilarityFunction.COSINE,
         table_name: Optional[str] = None,
+        return_vector: bool = False,
         num_results=1,
     ) -> MetaFrame:
         """
@@ -506,7 +507,7 @@ class AstraClient:
 
         query = VectorSearchQuery(
             table_fqn=f"{self._keyspace}.{model_mapper.table_name}",
-            data_fields=[f for f in model_mapper.column_names if f != model_mapper.vector_column],
+            data_fields=[f for f in model_mapper.column_names if f != model_mapper.vector_column or return_vector],
             sim_func=similarity_function,
             vector=vector_to_match,
             field_name=model_mapper.vector_column,

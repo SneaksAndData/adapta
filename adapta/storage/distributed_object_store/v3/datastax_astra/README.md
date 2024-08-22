@@ -40,16 +40,16 @@ with AstraClient(
 ) as ac:
     single_entity = ac.get_entity('test_entity')
     print(single_entity)
-    # {'col_a': 'something', 'col_b': 'else'}
+    # {'col_a': 'something3', 'col_b': 'ordinal', 'col_c': 'today'}
 
     multiple_entities = ac.get_entities_raw("select * from tmp.test_entity where col_a = 'something3'").to_pandas()
     print(multiple_entities)
-    #         col_a     col_b
-    # 0  something  ordinal
+    #    col_a    col_b  col_c
+    # 0  something3  ordinal  today
 
     print(ac.filter_entities(TestEntity, key_column_filter_values=[{"col_a": 'something1'}]).to_pandas())
-    #     col_a col_b     col_c
-    # 0  something1  else  entirely
+    #        col_a col_b     col_c
+    #0  something1  else  entirely
 
     print(ac.filter_entities(TestEntity, key_column_filter_values=[{"col_a": 'something1'}],
                              select_columns=['col_c']).to_pandas())
@@ -102,9 +102,6 @@ simple_filter = FilterField(SCHEMA.col_a) == "something1"
 combined_filter = (FilterField(SCHEMA.col_a) == "something1") & (FilterField(SCHEMA.col_b) == "else")
 combined_filter_with_collection = (FilterField(SCHEMA.col_a) == "something1") & (
     FilterField(SCHEMA.col_b).isin(['else', 'nonexistent']))
-complex_filter_with_collection = (
-            (FilterField(SCHEMA.col_a) == "something1") & (FilterField(SCHEMA.col_b).isin(["else", "special"])) & (
-                FilterField(SCHEMA.col_c) == 123))
 
 # Apply the filters for Astra
 with AstraClient(
@@ -118,26 +115,38 @@ with AstraClient(
     print(ac.filter_entities(TestEntityNew, simple_filter).to_pandas())
 
     # simple filter field == value    
-    #         col_a      col_b  col_c      col_d
-    # 0  something1  different    456  [1, 2, 3]
-    # 1  something1       else    123     [1, 2]    
+    #         col_a      col_b  col_c
+    # 0  something1  different    456
+    # 1  something1       else    123
 
     print(ac.filter_entities(TestEntityNew, combined_filter).to_pandas())
-
-    #         col_a col_b  col_c   col_d
-    # 0  something1  else    123  [1, 2]
-
-    print(ac.filter_entities(TestEntityNew, combined_filter_with_collection).to_pandas())
-
     #         col_a col_b  col_c
     # 0  something1  else    123
-
-print(ac.filter_entities(TestEntityNew, complex_filter_with_collection).to_pandas())
-#         col_a col_b  col_c
-# 0  something1  else    123
+    
+    print(ac.filter_entities(TestEntityNew, combined_filter_with_collection).to_pandas())
+    #         col_a col_b  col_c
+    # 0  something1  else    123
   ```
 
 ## Using the Vector Search
+Create a table in Astra and insert some rows:
+```cassandraql
+CREATE TABLE IF NOT EXISTS tmp.test_entity_with_embeddings (
+    col_a TEXT PRIMARY KEY,
+    col_b TEXT,
+    col_c VECTOR<FLOAT, 3>
+);
+
+CREATE INDEX IF NOT EXISTS ann_index
+  ON tmp.test_entity_with_embeddings(col_c)
+  WITH OPTIONS = {'source_model': 'other'};
+
+INSERT INTO tmp.test_entity_with_embeddings (col_a, col_b, col_c)
+VALUES ('something1', 'different', [0.3, 0.4, 0.5]);
+
+INSERT INTO tmp.test_entity_with_embeddings (col_a, col_b, col_c)
+VALUES ('something2', 'different1', [0.1, 0.24, 0.25]);
+```
 
 ```python
 from adapta.storage.distributed_object_store.v3.datastax_astra import AstraClient
@@ -173,7 +182,7 @@ with AstraClient(
     print(ac.ann_search(entity_type=TestEntityWithEmbeddings, vector_to_match=[0.1, 0.2, 0.3],
                         similarity_function=SimilarityFunction.DOT_PRODUCT, num_results=2).to_pandas())
 
-    #         col_a      col_b  col_c              sim_value
-    # 0  something1  different    [0.3, 0.4, 0.5]  123.123
-    # 1  something2  different1   [0.1, 0.24, 0.25] 456.789
+    #         col_a       col_b  sim_value
+    # 0  something2  different1     0.5665
+    # 1  something1   different     0.6300
   ```
