@@ -49,7 +49,7 @@ class CassandraModelMapper(ABC):
         """Maps a datamodel to a Cassandra model."""
         models_attributes: typing.Dict[str, typing.Union[Column, str]] = {
             name: self._map_to_cassandra(
-                python_type=dtype,
+                type_to_map=dtype,
                 db_field=name,
                 is_primary_key=name in self.primary_keys,
                 is_partition_key=name in self.partition_keys,
@@ -110,7 +110,7 @@ class CassandraModelMapper(ABC):
 
     def _map_to_column(  # pylint: disable=R0911
         self,
-        python_type: Type,
+        type_to_map: Type,
     ) -> typing.Union[
         typing.Tuple[Type[columns.List],],
         typing.Tuple[Type[columns.Map],],
@@ -119,33 +119,33 @@ class CassandraModelMapper(ABC):
         typing.Tuple[Type[Column], Type[Column], Type[Column]],
         typing.Tuple[Type[columns.List], columns.Map],
     ]:
-        """Map Python type to Cassandra column type.
+        """Map Type to Cassandra column type.
 
-        :param python_type: Python type to map.
+        :param type_to_map: Type to map.
         :return: Cassandra column type.
         """
-        if python_type is type(None):
+        if type_to_map is type(None):
             raise TypeError("NoneType cannot be mapped to any existing table column types")
-        if python_type is bool:
+        if type_to_map is bool:
             return (columns.Boolean,)
-        if python_type is str:
+        if type_to_map is str:
             return (columns.Text,)
-        if python_type is bytes:
+        if type_to_map is bytes:
             return (columns.Blob,)
-        if python_type is datetime.datetime:
+        if type_to_map is datetime.datetime:
             return (columns.DateTime,)
-        if python_type is int:
+        if type_to_map is int:
             return (columns.Integer,)
-        if python_type is float:
+        if type_to_map is float:
             return (columns.Double,)
         if (
-            sys.version_info.minor > 9 and type(python_type) is enum.EnumType  # pylint: disable=unidiomatic-typecheck
+            sys.version_info.minor > 9 and type(type_to_map) is enum.EnumType  # pylint: disable=unidiomatic-typecheck
         ) or (
-            sys.version_info.minor <= 9 and type(python_type) is enum.EnumMeta  # pylint: disable=unidiomatic-typecheck
+            sys.version_info.minor <= 9 and type(type_to_map) is enum.EnumMeta  # pylint: disable=unidiomatic-typecheck
         ):  # assume all enums are strings - for now
             return (columns.Text,)
-        if typing.get_origin(python_type) == list:
-            args = typing.get_args(python_type)
+        if typing.get_origin(type_to_map) == list:
+            args = typing.get_args(type_to_map)
             if typing.get_origin(args[0]) == dict:
                 dict_args = typing.get_args(args[0])
                 return (
@@ -157,24 +157,24 @@ class CassandraModelMapper(ABC):
                 )
             return (
                 columns.List,
-                self._map_to_column(typing.get_args(python_type)[0])[0],
+                self._map_to_column(typing.get_args(type_to_map)[0])[0],
             )
-        if typing.get_origin(python_type) == dict:
+        if typing.get_origin(type_to_map) == dict:
             return (
                 columns.Map,
-                self._map_to_column(typing.get_args(python_type)[0])[0],
-                self._map_to_column(typing.get_args(python_type)[1])[0],
+                self._map_to_column(typing.get_args(type_to_map)[0])[0],
+                self._map_to_column(typing.get_args(type_to_map)[1])[0],
             )
 
-        if typing.get_origin(python_type) == typing.Union:
-            return self._map_to_column(typing.get_args(python_type)[0])
+        if typing.get_origin(type_to_map) == typing.Union:
+            return self._map_to_column(typing.get_args(type_to_map)[0])
 
-        raise TypeError(f"Unsupported type: {python_type}")
+        raise TypeError(f"Unsupported type: {type_to_map}")
 
     def _map_to_cassandra(
-        self, python_type: Type, db_field: str, is_primary_key: bool, is_partition_key: bool, is_custom_index: bool
+        self, type_to_map: Type, db_field: str, is_primary_key: bool, is_partition_key: bool, is_custom_index: bool
     ) -> Column:
-        cassandra_types = self._map_to_column(python_type)
+        cassandra_types = self._map_to_column(type_to_map)
         if len(cassandra_types) == 1:  # simple type
             return cassandra_types[0](
                 primary_key=is_primary_key,
