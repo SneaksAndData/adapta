@@ -8,6 +8,8 @@ from dataclasses import is_dataclass, fields
 from typing import Type, Optional, List
 import re
 
+import polars
+import pandera.polars
 from cassandra.cqlengine.models import Model
 from cassandra.cqlengine.columns import Column
 from cassandra.cqlengine import columns
@@ -203,6 +205,7 @@ class CassandraModelMapper(ABC):
         raise TypeError(f"Unsupported type mapping: {cassandra_types}")
 
 
+@typing.final
 class DataclassMapper(CassandraModelMapper):
     """Maps dataclasses to Cassandra models."""
 
@@ -275,6 +278,138 @@ class DataclassMapper(CassandraModelMapper):
         return {field.name: field.type for field in fields(self._data_model) if not subset or field.name in subset}
 
 
+@typing.final
+class PanderaPolarsMapper(CassandraModelMapper):
+    """Maps Pandera Polars data models to Cassandra models."""
+
+    def __init__(
+        self,
+        data_model: Type[pandera.polars.DataFrameModel],
+        keyspace: Optional[str] = None,
+        table_name: Optional[str] = None,
+        primary_keys: Optional[List[str]] = None,
+        partition_keys: Optional[List[str]] = None,
+        custom_indexes: Optional[List[str]] = None,
+    ):
+        super().__init__(
+            data_model=data_model,
+            keyspace=keyspace,
+            table_name=table_name,
+            primary_keys=primary_keys,
+            partition_keys=partition_keys,
+            custom_indexes=custom_indexes,
+        )
+        self._data_model_schema = data_model.to_schema()
+
+    def _map_to_column(
+        self,
+        type_to_map: Type,
+    ) -> typing.Union[
+        typing.Tuple[Type[columns.List],],
+        typing.Tuple[Type[columns.Map],],
+        typing.Tuple[Type[Column],],
+        typing.Tuple[Type[Column], Type[Column]],
+        typing.Tuple[Type[Column], Type[Column], Type[Column]],
+        typing.Tuple[Type[columns.List], columns.Map],
+    ]:
+        mapping = {
+            polars.Int8: (columns.TinyInt,),
+            polars.Int16: (columns.SmallInt,),
+            polars.Int32: (columns.Integer,),
+            polars.Int64: (columns.BigInt,),
+            polars.UInt64: (columns.VarInt,),
+            polars.UInt32: (columns.VarInt,),
+            polars.UInt16: (columns.VarInt,),
+            polars.UInt8: (columns.VarInt,),
+            polars.Float64: (columns.Double,),
+            polars.Float32: (columns.Float,),
+            polars.Boolean: (columns.Boolean,),
+            polars.String: (columns.Text,),
+            polars.Utf8: (columns.Text,),
+            polars.List: (columns.List,),
+            polars.List(str): (columns.List, columns.Text),
+            polars.List(int): (columns.List, columns.Integer),
+            polars.List(float): (columns.List, columns.Float),
+            polars.List(bool): (columns.List, columns.Boolean),
+            polars.Date: (columns.Date,),
+            polars.Datetime: (columns.DateTime,),
+            polars.Datetime(time_unit="us"): (columns.DateTime,),
+            polars.Datetime(time_unit="ns"): (columns.DateTime,),
+            polars.Datetime(time_unit="ms"): (columns.DateTime,),
+        }
+
+        column_type = mapping.get(type_to_map, None)
+
+        if column_type is None:
+            return super()._map_to_column(type_to_map)
+
+        return column_type
+
+    def _get_original_types(
+        self,
+        subset: Optional[List[str]] = None,
+    ) -> typing.Dict[str, Type]:
+        cols = [col for name, col in self._data_model_schema.columns.items() if not subset or name in subset]
+        map_ = {}
+        for col in cols:
+            column_type = (col.metadata or {}).get("python_type", None) or col.dtype.type
+            if column_type is polars.Object:
+                raise ValueError(
+                    f"Column '{col.name}' is of type polars.Object, which is not supported. Please specify the python type in the metadata."
+                )
+            map_[col.name] = column_type
+
+        return map_
+
+    @property
+    def column_names(self) -> List[str]:
+        return list(self._data_model_schema.columns.keys())
+
+    @property
+    def table_name(self) -> str:
+        return self._table_name or self._data_model.Config.name
+
+    @property
+    def primary_keys(self) -> List[str]:
+        return self._primary_keys or [
+            name
+            for name, col in self._data_model_schema.columns.items()
+            if col.metadata is not None and col.metadata.get("is_primary_key", False)
+        ]
+
+    @property
+    def partition_keys(self) -> List[str]:
+        return self._partition_keys or [
+            name
+            for name, col in self._data_model_schema.columns.items()
+            if col.metadata is not None and col.metadata.get("is_partition_key", False)
+        ]
+
+    @property
+    def custom_indices(self) -> List[str]:
+        return self._custom_indexes or [
+            name
+            for name, col in self._data_model_schema.columns.items()
+            if col.metadata is not None and col.metadata.get("is_custom_index", False)
+        ]
+
+    @property
+    def vector_column(self) -> str:
+        vector_columns = [
+            name
+            for name, col in self._data_model_schema.columns.items()
+            if col.metadata is not None and col.metadata.get("is_vector_enabled", False)
+        ]
+
+        assert not len(vector_columns) > 1, (
+            f"Only a single vector column is allowed in data models. This model"
+            f" contains {len(vector_columns)} vector columns: {vector_columns}."
+        )
+        assert not len(vector_columns) < 1, "No vector column found in the data model"
+
+        return vector_columns[0]
+
+
 def get_mapper(
     data_model: Type[TModel],
     keyspace: Optional[str] = None,
@@ -293,4 +428,15 @@ def get_mapper(
             partition_keys=partition_keys,
             custom_indexes=custom_indexes,
         )
+
+    if issubclass(data_model, pandera.polars.DataFrameModel):
+        return PanderaPolarsMapper(
+            data_model=data_model,
+            keyspace=keyspace,
+            table_name=table_name,
+            primary_keys=primary_keys,
+            partition_keys=partition_keys,
+            custom_indexes=custom_indexes,
+        )
+
     raise TypeError(f"Unsupported data model type: {data_model}")
