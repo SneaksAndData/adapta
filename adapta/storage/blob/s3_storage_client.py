@@ -20,6 +20,7 @@ import os
 
 from typing import Optional, Callable, Type, Iterator, Dict, TypeVar, final
 from boto3 import Session
+from boto3.resources.base import ServiceResource
 from botocore.config import Config
 from botocore.exceptions import ClientError
 
@@ -40,7 +41,7 @@ class S3StorageClient(StorageClient):
     S3 Storage Client.
     """
 
-    def __init__(self, *, base_client: AwsClient, s3_resource: Optional[Session] = None):
+    def __init__(self, *, base_client: AwsClient, s3_resource: Optional[ServiceResource] = None):
         super().__init__(base_client=base_client)
         self._base_client = base_client
         self._s3_resource = s3_resource if s3_resource is not None else base_client.session.resource("s3")
@@ -49,20 +50,13 @@ class S3StorageClient(StorageClient):
     def create(
         cls,
         auth: AwsClient,
-        endpoint_url: Optional[str] = None,
         session_callable: Optional[Callable[[], Session]] = None,
     ):
-        def _get_endpoint_url() -> Optional[str]:
-            if endpoint_url:
-                return endpoint_url
-            if auth.get_credentials():
-                return auth.get_credentials().endpoint
-
-            return None
-
         auth.initialize_session(session_callable)
 
-        return cls(base_client=auth, s3_resource=auth.session.resource("s3", endpoint_url=_get_endpoint_url()))
+        return cls(
+            base_client=auth, s3_resource=auth.session.resource("s3", endpoint_url=auth.get_credentials().endpoint)
+        )
 
     def get_blob_uri(self, blob_path: DataPath, expires_in_seconds: float = 3600.0, **kwargs) -> str:
         s3_path = cast_path(blob_path)
