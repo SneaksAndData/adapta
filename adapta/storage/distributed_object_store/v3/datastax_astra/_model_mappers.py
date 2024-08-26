@@ -312,12 +312,6 @@ class PanderaPolarsMapper(CassandraModelMapper):
         typing.Tuple[Type[Column], Type[Column], Type[Column]],
         typing.Tuple[Type[columns.List], columns.Map],
     ]:
-        try:
-            # Attempt to map with native python types
-            return super()._map_to_column(type_to_map)
-        except TypeError:
-            pass
-
         mapping = {
             polars.Int8: (columns.TinyInt,),
             polars.Int16: (columns.SmallInt,),
@@ -347,7 +341,7 @@ class PanderaPolarsMapper(CassandraModelMapper):
         column_type = mapping.get(type_to_map, None)
 
         if column_type is None:
-            raise TypeError(f"Unsupported type: {type_to_map}")
+            return super()._map_to_column(type_to_map)
 
         return column_type
 
