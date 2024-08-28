@@ -300,16 +300,17 @@ class AstraClient:
             self._session is not None
         ), "Please instantiate an AstraClient using with AstraClient(...) before calling this method"
 
-        select_columns = list(map(normalize_column_name, select_columns)) if select_columns else None
-
-        cassandra_model = get_mapper(
+        mapper = get_mapper(
             data_model=model_class,
             keyspace=keyspace,
             table_name=table_name,
             primary_keys=primary_keys,
             partition_keys=partition_keys,
             custom_indexes=custom_indexes,
-        ).map()
+        )
+        cassandra_model = mapper.map()
+
+        select_columns = list(map(normalize_column_name, select_columns)) if select_columns else mapper.column_names
 
         compiled_filter_values = (
             compile_expression(key_column_filter_values, AstraFilterExpression)
