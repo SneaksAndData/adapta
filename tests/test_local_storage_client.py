@@ -16,8 +16,10 @@
 import pathlib
 import uuid
 
+import pandas as pd
+
 from adapta.storage.blob.local_storage_client import LocalStorageClient
-from adapta.storage.models.format import DictJsonSerializationFormat
+from adapta.storage.models.format import DictJsonSerializationFormat, DataFrameParquetSerializationFormat
 from adapta.storage.models.local import LocalPath
 
 
@@ -62,20 +64,44 @@ def test_read_blobs():
 
     local_storage.save_data_as_blob(
         data={"key1": "value1"},
-        blob_path=LocalPath(f"/tmp/{test_base}/1"),
+        blob_path=LocalPath(f"/tmp/{test_base}/dirs/1"),
         serialization_format=DictJsonSerializationFormat,
     )
 
     local_storage.save_data_as_blob(
         data={"key2": "value2"},
-        blob_path=LocalPath(f"/tmp/{test_base}/2"),
+        blob_path=LocalPath(f"/tmp/{test_base}/dirs/2"),
         serialization_format=DictJsonSerializationFormat,
+    )
+
+    dataframe = pd.DataFrame({"key3": ["value3"], "key4": ["value4"]})
+    local_storage.save_data_as_blob(
+        data=dataframe,
+        blob_path=LocalPath(f"/tmp/{test_base}/files/3_4.parquet"),
+        serialization_format=DataFrameParquetSerializationFormat,
     )
 
     files = list(
         local_storage.read_blobs(
-            blob_path=LocalPath(f"/tmp/{test_base}"), serialization_format=DictJsonSerializationFormat
+            blob_path=LocalPath(f"/tmp/{test_base}/dirs/"), serialization_format=DictJsonSerializationFormat
         )
     )
 
     assert len(files) == 2
+
+    parquet_from_file = pd.concat(
+        local_storage.read_blobs(
+            blob_path=LocalPath(f"/tmp/{test_base}/files/3_4.parquet"),
+            serialization_format=DataFrameParquetSerializationFormat,
+        )
+    )
+
+    assert dataframe.equals(parquet_from_file)
+
+    parquet_from_dir = pd.concat(
+        local_storage.read_blobs(
+            blob_path=LocalPath(f"/tmp/{test_base}/files/"), serialization_format=DataFrameParquetSerializationFormat
+        )
+    )
+
+    assert dataframe.equals(parquet_from_dir)

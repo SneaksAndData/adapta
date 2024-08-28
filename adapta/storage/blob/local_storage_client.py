@@ -70,6 +70,8 @@ class LocalStorageClient(StorageClient):
         self, blob_path: DataPath, filter_predicate: Optional[Callable[[...], bool]] = None
     ) -> Iterator[DataPath]:
         for blob in os.listdir(cast_path(blob_path).path):
+            if filter_predicate is not None and not filter_predicate(blob):
+                continue
             yield LocalPath(path=blob)
 
     def read_blobs(
@@ -79,8 +81,14 @@ class LocalStorageClient(StorageClient):
         filter_predicate: Optional[Callable[[...], bool]] = None,
     ) -> Iterator[T]:
         dir_path = cast_path(blob_path).path
-        for blob in os.listdir(dir_path):
-            with open(os.path.join(dir_path, blob), "rb") as blob_file:
+        if os.path.isdir(dir_path):
+            for blob in os.listdir(dir_path):
+                if filter_predicate is not None and not filter_predicate(blob):
+                    continue
+                with open(os.path.join(dir_path, blob), "rb") as blob_file:
+                    yield serialization_format().deserialize(blob_file.read())
+        else:
+            with open(dir_path, "rb") as blob_file:
                 yield serialization_format().deserialize(blob_file.read())
 
     def download_blobs(
