@@ -48,9 +48,7 @@ class S3StorageClient(StorageClient):
 
     @classmethod
     def create(
-        cls,
-        auth: AwsClient,
-        session_callable: Optional[Callable[[], Session]] = None,
+        cls, auth: AwsClient, session_callable: Optional[Callable[[], Session]] = None, **_
     ) -> "S3StorageClient":
         auth.initialize_session(session_callable)
 

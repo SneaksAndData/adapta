@@ -34,12 +34,12 @@ class LocalStorageClient(StorageClient):
     Local Storage Client, primarily for unit tests.
     """
 
-    def __init__(self):
-        super().__init__(base_client=LocalClient())
+    def __init__(self, auth: Optional[AuthenticationClient] = None):
+        super().__init__(base_client=auth or LocalClient())
 
     @classmethod
-    def create(cls, **_):
-        return cls()
+    def create(cls, auth: AuthenticationClient, **_):
+        return cls(auth=auth)
 
     def get_blob_uri(self, blob_path: DataPath, expires_in_seconds: float = 3600.0, **kwargs) -> str:
         return cast_path(blob_path).path
