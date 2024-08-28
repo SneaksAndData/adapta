@@ -38,7 +38,7 @@ class LocalStorageClient(StorageClient):
         super().__init__(base_client=LocalClient())
 
     @classmethod
-    def create(cls, auth: AuthenticationClient, endpoint_url: Optional[str] = None):
+    def create(cls, **_):
         return cls()
 
     def get_blob_uri(self, blob_path: DataPath, expires_in_seconds: float = 3600.0, **kwargs) -> str:

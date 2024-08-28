@@ -36,12 +36,11 @@ class StorageClient(ABC):
         self._base_client = base_client
 
     @classmethod
-    def create(cls, auth: AuthenticationClient, endpoint_url: Optional[str] = None):
+    def create(cls, auth: AuthenticationClient, **_) -> "StorageClient":
         """
          Creates a Storage client using the AuthenticationClient to set up its session.
 
         :param auth: The AuthenticationClient instance used for setting up the storage client.
-        :param endpoint_url: Optional parameter to specify the endpoint URL for the storage client.
 
         :return: An instance of the StorageClient.
         """

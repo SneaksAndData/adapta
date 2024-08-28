@@ -51,7 +51,7 @@ class S3StorageClient(StorageClient):
         cls,
         auth: AwsClient,
         session_callable: Optional[Callable[[], Session]] = None,
-    ):
+    ) -> "S3StorageClient":
         auth.initialize_session(session_callable)
 
         return cls(
