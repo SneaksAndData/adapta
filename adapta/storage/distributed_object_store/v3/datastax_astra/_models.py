@@ -17,6 +17,9 @@
 #
 
 from enum import Enum
+from typing import Optional, Union, List, Dict, Any
+
+from adapta.storage.models.filter_expression import Expression, compile_expression, AstraFilterExpression
 
 
 class SimilarityFunction(Enum):
@@ -49,6 +52,7 @@ class VectorSearchQuery:
         vector: list[float],
         field_name: str,
         num_results=1,
+        key_column_filter_values: Optional[Union[Expression, List[Dict[str, Any]]]] = None,
     ):
         self._sim_func = sim_func
         self._vector = vector
@@ -56,12 +60,29 @@ class VectorSearchQuery:
         self._num_results = num_results
         self._table_fqn = table_fqn
         self._data_fields = data_fields
+        self._key_column_filter_values = key_column_filter_values
 
     def _get_similarity_colum(self) -> str:
         return f"{self._sim_func.value}({self._field_name}, {self._vector})"
 
     def _get_order_by(self) -> str:
         return f"order by {self._field_name} ann of {self._vector} limit {self._num_results};"
+
+    def _get_filter(self) -> str:
+        if self._key_column_filter_values is None:
+            return ""
+
+        compiled_filter_values = (
+            compile_expression(self._key_column_filter_values, AstraFilterExpression)
+            if isinstance(self._key_column_filter_values, Expression)
+            else self._key_column_filter_values
+        )
+        if len(compiled_filter_values) > 1:
+            raise ValueError("Restriction on key columns must not be nested under OR operator")
+
+        compiled_filter_values = {k: f"'{v}'" if isinstance(v, str) else v for k, v in compiled_filter_values[0].items()}
+        return f"where {' and '.join([f'{col} = {val}' for col, val in compiled_filter_values.items()])}"
+
 
     def __str__(self):
         return " ".join(
@@ -70,6 +91,7 @@ class VectorSearchQuery:
                 ", ".join(self._data_fields),
                 ", " f"{self._get_similarity_colum()} as sim_value",
                 f"from {self._table_fqn}",
+                self._get_filter(),
                 self._get_order_by(),
             ]
         )
