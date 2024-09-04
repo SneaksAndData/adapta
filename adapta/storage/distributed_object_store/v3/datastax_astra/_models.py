@@ -105,7 +105,6 @@ class VectorSearchQuery:
             Removes the double underscore and the subsequent operator suffix from a column expression.
             Returns only the column name.
             """
-            # Use regex to remove '__' followed by letters
             return re.sub(r"__\w+$", "", col)
 
         compiled_filter_values = (
