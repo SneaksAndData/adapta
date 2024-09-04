@@ -80,9 +80,10 @@ class VectorSearchQuery:
         if len(compiled_filter_values) > 1:
             raise ValueError("Restriction on key columns must not be nested under OR operator")
 
-        compiled_filter_values = {k: f"'{v}'" if isinstance(v, str) else v for k, v in compiled_filter_values[0].items()}
+        compiled_filter_values = {
+            col: f"'{val}'" if isinstance(val, str) else val for col, val in compiled_filter_values[0].items()
+        }
         return f"where {' and '.join([f'{col} = {val}' for col, val in compiled_filter_values.items()])}"
-
 
     def __str__(self):
         return " ".join(
