@@ -132,16 +132,18 @@ with AstraClient(
 1. Create a table in Astra and insert some rows:
 ```cassandraql
 CREATE TABLE IF NOT EXISTS tmp.test_entity_with_embeddings (
-    col_a TEXT,
+    col_a TEXT PRIMARY KEY,
     col_b TEXT,
     col_c VECTOR<FLOAT, 3>,
     col_d TEXT,
-    PRIMARY KEY ((col_a, col_b))
 );
 
 CREATE INDEX IF NOT EXISTS ann_index
   ON tmp.test_entity_with_embeddings(col_c)
   WITH OPTIONS = {'source_model': 'other'};
+
+CREATE INDEX IF NOT EXISTS col_b_index
+  ON tmp.test_entity_with_embeddings(col_b);
 
 INSERT INTO tmp.test_entity_with_embeddings (col_a, col_b, col_c, col_d)
 VALUES ('something1', 'different', [0.3, 0.4, 0.5], 'extra1');
@@ -164,10 +166,7 @@ class TestEntityWithEmbeddings:
         "is_primary_key": True,
         "is_partition_key": True
     })
-    col_b: str = field(metadata={
-        "is_primary_key": True,
-        "is_partition_key": True
-    })
+    col_b: str
     col_c: list[float] = field(metadata={
         "is_vector_enabled": True
     })
@@ -212,7 +211,7 @@ with astra_client:
 
 
 # Search with primary key filter in Astra (with Expression)
-filter_expression = (FilterField('col_a') == 'something2') & (FilterField('col_b') == 'different1')
+filter_expression = (FilterField('col_a') == 'something2') & (FilterField('col_b').isin(['different1', 'doesnt_exist']))
 with astra_client:
     print(astra_client.ann_search(
         entity_type=TestEntityWithEmbeddings,
