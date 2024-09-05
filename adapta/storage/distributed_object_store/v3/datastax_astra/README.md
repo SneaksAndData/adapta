@@ -129,28 +129,33 @@ with AstraClient(
   ```
 
 ## Using the Vector Search
-Create a table in Astra and insert some rows:
+1. Create a table in Astra and insert some rows:
 ```cassandraql
 CREATE TABLE IF NOT EXISTS tmp.test_entity_with_embeddings (
     col_a TEXT PRIMARY KEY,
     col_b TEXT,
-    col_c VECTOR<FLOAT, 3>
+    col_c VECTOR<FLOAT, 3>,
+    col_d TEXT,
 );
 
 CREATE INDEX IF NOT EXISTS ann_index
   ON tmp.test_entity_with_embeddings(col_c)
   WITH OPTIONS = {'source_model': 'other'};
 
-INSERT INTO tmp.test_entity_with_embeddings (col_a, col_b, col_c)
-VALUES ('something1', 'different', [0.3, 0.4, 0.5]);
+CREATE INDEX IF NOT EXISTS col_b_index
+  ON tmp.test_entity_with_embeddings(col_b);
 
-INSERT INTO tmp.test_entity_with_embeddings (col_a, col_b, col_c)
-VALUES ('something2', 'different1', [0.1, 0.24, 0.25]);
+INSERT INTO tmp.test_entity_with_embeddings (col_a, col_b, col_c, col_d)
+VALUES ('something1', 'different', [0.3, 0.4, 0.5], 'extra1');
+
+INSERT INTO tmp.test_entity_with_embeddings (col_a, col_b, col_c, col_d)
+VALUES ('something2', 'different1', [0.1, 0.24, 0.25], 'extra2');
 ```
-
+2. Test out functionality in Python
 ```python
 from adapta.storage.distributed_object_store.v3.datastax_astra import AstraClient
 from adapta.storage.distributed_object_store.v3.datastax_astra import SimilarityFunction
+from adapta.storage.models.filter_expression import FilterField
 
 from dataclasses import dataclass, field
 
@@ -161,28 +166,61 @@ class TestEntityWithEmbeddings:
         "is_primary_key": True,
         "is_partition_key": True
     })
-    col_b: str = field(metadata={
-        "is_primary_key": True,
-        "is_partition_key": False
-    })
+    col_b: str
     col_c: list[float] = field(metadata={
         "is_vector_enabled": True
     })
+    col_d: str
 
 
-# Apply the filters for Astra
-with AstraClient(
-        client_name='test',
-        keyspace='tmp',
-        secure_connect_bundle_bytes="base64 bundle string",
-        client_id='client id',
-        client_secret='client secret'
-) as ac:
-    # Filter expressions are compiled into specific target, in this case Astra filters, in filter_entities method
-    print(ac.ann_search(entity_type=TestEntityWithEmbeddings, vector_to_match=[0.1, 0.2, 0.3],
-                        similarity_function=SimilarityFunction.DOT_PRODUCT, num_results=2).to_pandas())
+astra_client = AstraClient(
+    client_name='test',
+    keyspace='tmp',
+    secure_connect_bundle_bytes='base64string',
+    client_id='Astra Token client_id',
+    client_secret='Astra Token client_secret'
+)
 
-    #         col_a       col_b  sim_value
-    # 0  something2  different1     0.5665
-    # 1  something1   different     0.6300
+# Search in Astra
+with astra_client:
+    print(astra_client.ann_search(
+        entity_type=TestEntityWithEmbeddings,
+        vector_to_match=[0.1, 0.2, 0.3],
+        similarity_function=SimilarityFunction.DOT_PRODUCT
+        , num_results=2
+    ).to_pandas())
+
+    #         col_a       col_b   col_d  sim_value
+    # 0  something2  different1  extra2     0.5665
+    # 1  something1   different  extra1     0.6300
+
+    
+# Search with primary key filter in Astra (with dictionary)
+filter_expression = [{'col_a': 'something2', 'col_b': 'different1'}]
+with astra_client:
+    print(astra_client.ann_search(
+        entity_type=TestEntityWithEmbeddings,
+        vector_to_match=[0.1, 0.2, 0.3],
+        similarity_function=SimilarityFunction.DOT_PRODUCT,
+        num_results=2,
+        key_column_filter_values=filter_expression
+    ).to_pandas())
+    
+    #         col_a       col_b   col_d  sim_value
+    # 0  something2  different1  extra2     0.5665
+
+
+# Search with primary key filter in Astra (with Expression)
+filter_expression = (FilterField('col_a') == 'something2') & (FilterField('col_b').isin(['different1', 'doesnt_exist']))
+with astra_client:
+    print(astra_client.ann_search(
+        entity_type=TestEntityWithEmbeddings,
+        vector_to_match=[0.1, 0.2, 0.3],
+        similarity_function=SimilarityFunction.DOT_PRODUCT,
+        num_results=2,
+        key_column_filter_values=filter_expression,
+    ).to_pandas())
+
+    #         col_a       col_b   col_d  sim_value
+    # 0  something2  different1  extra2     0.5665
   ```

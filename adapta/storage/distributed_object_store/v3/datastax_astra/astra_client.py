@@ -489,6 +489,7 @@ class AstraClient:
         entity_type: Type[TModel],
         vector_to_match: list[float],
         similarity_function: SimilarityFunction = SimilarityFunction.COSINE,
+        key_column_filter_values: Optional[Union[Expression, List[Dict[str, Any]]]] = None,
         table_name: Optional[str] = None,
         return_vector: bool = False,
         num_results=1,
@@ -508,6 +509,7 @@ class AstraClient:
         query = VectorSearchQuery(
             table_fqn=f"{self._keyspace}.{model_mapper.table_name}",
             data_fields=[f for f in model_mapper.column_names if f != model_mapper.vector_column or return_vector],
+            key_column_filter_values=key_column_filter_values,
             sim_func=similarity_function,
             vector=vector_to_match,
             field_name=model_mapper.vector_column,
