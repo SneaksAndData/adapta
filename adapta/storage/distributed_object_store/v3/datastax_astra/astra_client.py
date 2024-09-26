@@ -348,176 +348,170 @@ class AstraClient:
 
         return result
 
+    def get_entities_raw(self, query: str) -> MetaFrame:
+        """
+         Maps query result to a MetaFrame
 
-def get_entities_raw(self, query: str) -> MetaFrame:
-    """
-     Maps query result to a MetaFrame
-
-    :param: query: A CQL query to run.
-    """
-    return MetaFrame(
-        self._session.execute(query), convert_to_polars=polars.DataFrame, convert_to_pandas=pandas.DataFrame
-    )
-
-
-def set_table_option(self, table_name: str, option_name: str, option_value: str) -> None:
-    """
-    Sets a table property: https://docs.datastax.com/en/cql-oss/3.1/cql/cql_reference/tabProp.html
-
-    :param: table_name: Table to set property for.
-    :param: option_name: Table option to set value for.
-    :param: option_value: Table option value to set.
-    """
-    self._session.execute(f"ALTER TABLE {self._keyspace}.{table_name} with {option_name}={option_value};")
-
-
-def delete_entity(self, entity: TModel, table_name: Optional[str] = None, keyspace: Optional[str] = None) -> None:
-    """
-     Delete an entity from Astra table
-
-    :param: entity: entity to delete
-    :param: table_name: Table to delete entity from.
-    :param: keyspace: Optional keyspace name, if not provided in the client constructor.
-    """
-
-    @on_exception(
-        wait_gen=expo,
-        exception=(
-            OverloadedErrorMessage,
-            IsBootstrappingErrorMessage,
-        ),
-        max_tries=self._transient_error_max_retries,
-        max_time=self._transient_error_max_wait_s,
-        raise_on_giveup=True,
-    )
-    def _delete_entity(model_class: Type[Model], key_filter: Dict):
-        model_class.filter(**key_filter).delete()
-
-    cassandra_model = get_mapper(
-        data_model=Type[entity],
-        table_name=table_name,
-        keyspace=keyspace,
-    ).map()
-
-    _delete_entity(
-        model_class=cassandra_model,
-        key_filter={key: getattr(entity, key) for key in cassandra_model.primary_keys},
-    )
-
-
-def upsert_entity(
-    self,
-    entity: TModel,
-    keyspace: Optional[str] = None,
-    table_name: Optional[str] = None,
-    client_rate_limit: str = "1000 per second",
-) -> None:
-    """
-     Inserts a record into existing table.
-
-    :param: entity: an object to insert
-    :param: table_name: Table to insert entity into.
-    :param: keyspace: Optional keyspace name, if not provided in the client constructor.
-    :param: client_rate_limit: the limit string to parse (eg: "1 per hour"), default: "1000 per second"
-    """
-
-    @on_exception(
-        wait_gen=expo,
-        exception=(OverloadedErrorMessage, IsBootstrappingErrorMessage, WriteTimeout),
-        max_tries=self._transient_error_max_retries,
-        max_time=self._transient_error_max_wait_s,
-        raise_on_giveup=True,
-    )
-    @rate_limit(limit=client_rate_limit)
-    def _save_entity(model_object: Model):
-        model_object.save()
-
-    cassandra_model = get_mapper(
-        data_model=type(entity),
-        table_name=table_name,
-        keyspace=keyspace,
-    ).map()
-    _save_entity(cassandra_model(**asdict(entity)))
-
-
-def upsert_batch(
-    self,
-    entities: List[dict],
-    entity_type: Type[TModel],
-    keyspace: Optional[str] = None,
-    table_name: Optional[str] = None,
-    batch_size=1000,
-    client_rate_limit: str = "1000 per second",
-) -> None:
-    """
-     Inserts a batch into existing table.
-
-    :param: entities: entity batch to insert.
-    :param: entity_type: type of entity in a batch.
-    :param: keyspace: Optional keyspace name, if not provided in the client constructor.
-    :param: table_name: Table to insert entity into.
-    :param: batch_size: elements per batch to upsert.
-    :param: client_rate_limit: the limit string to parse (eg: "1 per hour"), default: "1000 per second"
-    """
-
-    @on_exception(
-        wait_gen=expo,
-        exception=(OverloadedErrorMessage, IsBootstrappingErrorMessage, WriteTimeout),
-        max_tries=self._transient_error_max_retries,
-        max_time=self._transient_error_max_wait_s,
-        raise_on_giveup=True,
-    )
-    @rate_limit(limit=client_rate_limit)
-    def _save_entities(model_class: Type[Model], values: List[dict]):
-        with BatchQuery(batch_type=BatchType.UNLOGGED) as upsert_batch:
-            for value in values:
-                model_class.batch(upsert_batch).create(**value)
-
-    cassandra_model = get_mapper(
-        data_model=entity_type,
-        table_name=table_name,
-        keyspace=keyspace,
-    ).map()
-
-    for chunk in chunk_list(entities, batch_size):
-        _save_entities(
-            model_class=cassandra_model,
-            values=chunk,
+        :param: query: A CQL query to run.
+        """
+        return MetaFrame(
+            self._session.execute(query), convert_to_polars=polars.DataFrame, convert_to_pandas=pandas.DataFrame
         )
 
+    def set_table_option(self, table_name: str, option_name: str, option_value: str) -> None:
+        """
+        Sets a table property: https://docs.datastax.com/en/cql-oss/3.1/cql/cql_reference/tabProp.html
 
-def ann_search(
-    self,
-    entity_type: Type[TModel],
-    vector_to_match: list[float],
-    similarity_function: SimilarityFunction = SimilarityFunction.COSINE,
-    key_column_filter_values: Optional[Union[Expression, List[Dict[str, Any]]]] = None,
-    table_name: Optional[str] = None,
-    return_vector: bool = False,
-    num_results=1,
-) -> MetaFrame:
-    """
-    Performs a simple ANN-based search for vectors most similar to the provided one in the specified entity. Results are ordered based on similarity metric value.
+        :param: table_name: Table to set property for.
+        :param: option_name: Table option to set value for.
+        :param: option_value: Table option value to set.
+        """
+        self._session.execute(f"ALTER TABLE {self._keyspace}.{table_name} with {option_name}={option_value};")
 
-    Reference CQL code: https://docs.datastax.com/en/astra-serverless/docs/vector-search/cql.html
+    def delete_entity(self, entity: TModel, table_name: Optional[str] = None, keyspace: Optional[str] = None) -> None:
+        """
+         Delete an entity from Astra table
 
-    References for potential future changes:
-       https://github.com/CassioML/cassio/blob/main/src/cassio/utils/vector/distance_metrics.py#L76-L99
-       https://github.com/langchain-ai/langchain/blob/93ae589f1bd11f992eff5018660b667b2e15e585/libs/langchain/langchain/vectorstores/cassandra.py
-    """
+        :param: entity: entity to delete
+        :param: table_name: Table to delete entity from.
+        :param: keyspace: Optional keyspace name, if not provided in the client constructor.
+        """
 
-    model_mapper = get_mapper(data_model=entity_type, table_name=table_name)
+        @on_exception(
+            wait_gen=expo,
+            exception=(
+                OverloadedErrorMessage,
+                IsBootstrappingErrorMessage,
+            ),
+            max_tries=self._transient_error_max_retries,
+            max_time=self._transient_error_max_wait_s,
+            raise_on_giveup=True,
+        )
+        def _delete_entity(model_class: Type[Model], key_filter: Dict):
+            model_class.filter(**key_filter).delete()
 
-    query = VectorSearchQuery(
-        table_fqn=f"{self._keyspace}.{model_mapper.table_name}",
-        data_fields=[f for f in model_mapper.column_names if f != model_mapper.vector_column or return_vector],
-        key_column_filter_values=key_column_filter_values,
-        sim_func=similarity_function,
-        vector=vector_to_match,
-        field_name=model_mapper.vector_column,
-        num_results=num_results,
-    )
+        cassandra_model = get_mapper(
+            data_model=Type[entity],
+            table_name=table_name,
+            keyspace=keyspace,
+        ).map()
 
-    return MetaFrame(
-        self._session.execute(str(query)), convert_to_polars=polars.DataFrame, convert_to_pandas=pandas.DataFrame
-    )
+        _delete_entity(
+            model_class=cassandra_model,
+            key_filter={key: getattr(entity, key) for key in cassandra_model.primary_keys},
+        )
+
+    def upsert_entity(
+        self,
+        entity: TModel,
+        keyspace: Optional[str] = None,
+        table_name: Optional[str] = None,
+        client_rate_limit: str = "1000 per second",
+    ) -> None:
+        """
+         Inserts a record into existing table.
+
+        :param: entity: an object to insert
+        :param: table_name: Table to insert entity into.
+        :param: keyspace: Optional keyspace name, if not provided in the client constructor.
+        :param: client_rate_limit: the limit string to parse (eg: "1 per hour"), default: "1000 per second"
+        """
+
+        @on_exception(
+            wait_gen=expo,
+            exception=(OverloadedErrorMessage, IsBootstrappingErrorMessage, WriteTimeout),
+            max_tries=self._transient_error_max_retries,
+            max_time=self._transient_error_max_wait_s,
+            raise_on_giveup=True,
+        )
+        @rate_limit(limit=client_rate_limit)
+        def _save_entity(model_object: Model):
+            model_object.save()
+
+        cassandra_model = get_mapper(
+            data_model=type(entity),
+            table_name=table_name,
+            keyspace=keyspace,
+        ).map()
+        _save_entity(cassandra_model(**asdict(entity)))
+
+    def upsert_batch(
+        self,
+        entities: List[dict],
+        entity_type: Type[TModel],
+        keyspace: Optional[str] = None,
+        table_name: Optional[str] = None,
+        batch_size=1000,
+        client_rate_limit: str = "1000 per second",
+    ) -> None:
+        """
+         Inserts a batch into existing table.
+
+        :param: entities: entity batch to insert.
+        :param: entity_type: type of entity in a batch.
+        :param: keyspace: Optional keyspace name, if not provided in the client constructor.
+        :param: table_name: Table to insert entity into.
+        :param: batch_size: elements per batch to upsert.
+        :param: client_rate_limit: the limit string to parse (eg: "1 per hour"), default: "1000 per second"
+        """
+
+        @on_exception(
+            wait_gen=expo,
+            exception=(OverloadedErrorMessage, IsBootstrappingErrorMessage, WriteTimeout),
+            max_tries=self._transient_error_max_retries,
+            max_time=self._transient_error_max_wait_s,
+            raise_on_giveup=True,
+        )
+        @rate_limit(limit=client_rate_limit)
+        def _save_entities(model_class: Type[Model], values: List[dict]):
+            with BatchQuery(batch_type=BatchType.UNLOGGED) as upsert_batch:
+                for value in values:
+                    model_class.batch(upsert_batch).create(**value)
+
+        cassandra_model = get_mapper(
+            data_model=entity_type,
+            table_name=table_name,
+            keyspace=keyspace,
+        ).map()
+
+        for chunk in chunk_list(entities, batch_size):
+            _save_entities(
+                model_class=cassandra_model,
+                values=chunk,
+            )
+
+    def ann_search(
+        self,
+        entity_type: Type[TModel],
+        vector_to_match: list[float],
+        similarity_function: SimilarityFunction = SimilarityFunction.COSINE,
+        key_column_filter_values: Optional[Union[Expression, List[Dict[str, Any]]]] = None,
+        table_name: Optional[str] = None,
+        return_vector: bool = False,
+        num_results=1,
+    ) -> MetaFrame:
+        """
+        Performs a simple ANN-based search for vectors most similar to the provided one in the specified entity. Results are ordered based on similarity metric value.
+
+        Reference CQL code: https://docs.datastax.com/en/astra-serverless/docs/vector-search/cql.html
+
+        References for potential future changes:
+           https://github.com/CassioML/cassio/blob/main/src/cassio/utils/vector/distance_metrics.py#L76-L99
+           https://github.com/langchain-ai/langchain/blob/93ae589f1bd11f992eff5018660b667b2e15e585/libs/langchain/langchain/vectorstores/cassandra.py
+        """
+
+        model_mapper = get_mapper(data_model=entity_type, table_name=table_name)
+
+        query = VectorSearchQuery(
+            table_fqn=f"{self._keyspace}.{model_mapper.table_name}",
+            data_fields=[f for f in model_mapper.column_names if f != model_mapper.vector_column or return_vector],
+            key_column_filter_values=key_column_filter_values,
+            sim_func=similarity_function,
+            vector=vector_to_match,
+            field_name=model_mapper.vector_column,
+            num_results=num_results,
+        )
+
+        return MetaFrame(
+            self._session.execute(str(query)), convert_to_polars=polars.DataFrame, convert_to_pandas=pandas.DataFrame
+        )
