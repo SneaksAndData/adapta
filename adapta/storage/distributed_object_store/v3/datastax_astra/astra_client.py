@@ -275,10 +275,11 @@ class AstraClient:
             raise_on_giveup=True,
         )
         def apply(model: Type[Model], key_column_filter: Dict[str, Any], columns_to_select: Optional[List[str]]):
+            model = model.filter(**key_column_filter).limit(None)
             if columns_to_select:
-                return model.filter(**key_column_filter).only(select_columns)
+                return model.only(select_columns)
 
-            return model.filter(**key_column_filter)
+            return model
 
         def normalize_column_name(column_name: str) -> str:
             filter_suffix = re.findall(self._filter_pattern, column_name)
