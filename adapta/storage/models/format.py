@@ -200,7 +200,7 @@ class PolarsLazyFrameParquetSerializationFormat(SerializationFormat[polars.LazyF
 
     def serialize(self, data: polars.LazyFrame) -> bytes:
         """
-        Serializes dataframe to bytes using parquet format.
+        Serializes lazyframe to bytes using parquet format.
         :param data: Lazyframe to serialize.
         :return: Parquet serialized lazyframe as byte array.
         """
@@ -224,7 +224,7 @@ class PolarsLazyFrameCsvSerializationFormat(SerializationFormat[polars.LazyFrame
 
     def serialize(self, data: polars.LazyFrame) -> bytes:
         """
-        Serializes dataframe to bytes using CSV format.
+        Serializes lazyframe to bytes using CSV format.
         :param data: Lazyframe to serialize.
         :return: CSV serialized Lazyframe as byte array.
         """

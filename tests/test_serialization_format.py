@@ -60,15 +60,15 @@ from adapta.utils.metaframe import MetaFrame
         ),
         (
             PolarsLazyFrameParquetSerializationFormat,
-            polars.DataFrame(data={"test": [1, 2, 3]}).lazy(),
+            polars.LazyFrame(data={"test": [1, 2, 3]}),
         ),
         (
             PolarsLazyFrameCsvSerializationFormat,
-            polars.DataFrame(data={"test": [1, 2, 3]}).lazy(),
+            polars.LazyFrame(data={"test": [1, 2, 3]}),
         ),
         (
             PolarsLazyFrameJsonSerializationFormat,
-            polars.DataFrame(data={"test": [1, 2, 3]}).lazy(),
+            polars.LazyFrame(data={"test": [1, 2, 3]}),
         ),
         (PickleSerializationFormat, pandas.DataFrame(data={"test": [1, 2, 3]})),
         (PickleSerializationFormat, [1, 2, 3]),
