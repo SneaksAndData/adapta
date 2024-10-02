@@ -193,6 +193,75 @@ class PolarsDataFrameJsonSerializationFormat(SerializationFormat[polars.DataFram
         return polars.read_json(io.BytesIO(data))
 
 
+class PolarsLazyFrameParquetSerializationFormat(SerializationFormat[polars.LazyFrame]):
+    """
+    Serializes lazyframes as parquet format.
+    """
+
+    def serialize(self, data: polars.LazyFrame) -> bytes:
+        """
+        Serializes dataframe to bytes using parquet format.
+        :param data: Lazyframe to serialize.
+        :return: Parquet serialized lazyframe as byte array.
+        """
+        buffer = io.BytesIO()
+        data.collect().write_parquet(buffer)
+        return buffer.getvalue()
+
+    def deserialize(self, data: bytes) -> polars.LazyFrame:
+        """
+        Deserializes lazyframe from bytes using parquet format.
+        :param data: Lazyframe to deserialize in parquet format as bytes.
+        :return: Deserialized lazyframe.
+        """
+        return polars.scan_parquet(io.BytesIO(data))
+
+
+class PolarsLazyFrameCsvSerializationFormat(SerializationFormat[polars.LazyFrame]):
+    """
+    Serializes lazyframes as CSV format.
+    """
+
+    def serialize(self, data: polars.LazyFrame) -> bytes:
+        """
+        Serializes dataframe to bytes using CSV format.
+        :param data: Lazyframe to serialize.
+        :return: CSV serialized Lazyframe as byte array.
+        """
+
+        return data.collect().write_csv().encode(encoding="utf-8")
+
+    def deserialize(self, data: bytes) -> polars.LazyFrame:
+        """
+        Deserializes lazyframe from bytes using CSV format.
+        :param data: LazyFrame to deserialize in CSV format as bytes.
+        :return: Deserialized lazyframe.
+        """
+        return polars.scan_csv(io.BytesIO(data))
+
+
+class PolarsLazyFrameJsonSerializationFormat(SerializationFormat[polars.LazyFrame]):
+    """
+    Serializes lazyframes as JSON format.
+    """
+
+    def serialize(self, data: polars.LazyFrame) -> bytes:
+        """
+        Serializes lazyframes to bytes using JSON format.
+        :param data: LazyFrame to serialize.
+        :return: JSON serialized lazyframe as byte array.
+        """
+        return data.collect().write_ndjson().encode(encoding="utf-8")
+
+    def deserialize(self, data: bytes) -> polars.LazyFrame:
+        """
+        Deserializes lazyframes from bytes using JSON format.
+        :param data: LazyFrame to deserialize in JSON format as bytes.
+        :return: Deserialized lazyframe.
+        """
+        return polars.scan_ndjson(io.BytesIO(data))
+
+
 class DictJsonSerializationFormat(SerializationFormat[dict]):
     """
     Serializes dictionaries as JSON format.
