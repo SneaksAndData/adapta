@@ -29,6 +29,9 @@ from adapta.storage.models.format import (
     PandasDataFrameJsonSerializationFormat,
     PandasDataFrameCsvSerializationFormat,
     MetaFrameParquetSerializationFormat,
+    PolarsLazyFrameJsonSerializationFormat,
+    PolarsLazyFrameParquetSerializationFormat,
+    PolarsLazyFrameCsvSerializationFormat,
 )
 from adapta.utils.metaframe import MetaFrame
 
@@ -55,6 +58,18 @@ from adapta.utils.metaframe import MetaFrame
             PolarsDataFrameJsonSerializationFormat,
             polars.DataFrame(data={"test": [1, 2, 3]}),
         ),
+        (
+            PolarsLazyFrameParquetSerializationFormat,
+            polars.LazyFrame(data={"test": [1, 2, 3]}),
+        ),
+        (
+            PolarsLazyFrameCsvSerializationFormat,
+            polars.LazyFrame(data={"test": [1, 2, 3]}),
+        ),
+        (
+            PolarsLazyFrameJsonSerializationFormat,
+            polars.LazyFrame(data={"test": [1, 2, 3]}),
+        ),
         (PickleSerializationFormat, pandas.DataFrame(data={"test": [1, 2, 3]})),
         (PickleSerializationFormat, [1, 2, 3]),
         (PickleSerializationFormat, {"foo": "bar"}),
@@ -71,7 +86,9 @@ def test_unit_serialization(serializer: Type[SerializationFormat], data: any):
     """
     if isinstance(data, MetaFrame):
         assert data.to_pandas().equals(serializer().deserialize(serializer().serialize(data)).to_pandas())
-    elif isinstance(data, pandas.DataFrame) | isinstance(data, polars.DataFrame):
+    elif isinstance(data, pandas.DataFrame):
         assert data.equals(serializer().deserialize(serializer().serialize(data)))
+    elif isinstance(data, polars.LazyFrame) | isinstance(data, polars.DataFrame):
+        assert data.lazy().collect().equals(serializer().deserialize(serializer().serialize(data)).lazy().collect())
     else:
         assert data == serializer().deserialize(serializer().serialize(data))
