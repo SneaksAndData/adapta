@@ -363,6 +363,7 @@ class PanderaPolarsMapper(CassandraModelMapper):
             polars.Datetime(time_unit="ns"): (columns.DateTime,),
             polars.Datetime(time_unit="ms"): (columns.DateTime,),
             polars.Datetime(time_unit="ms", time_zone='UTC'): (columns.DateTime,),
+            polars.Datetime(time_unit="us", time_zone='UTC'): (columns.DateTime,),
         }
 
         column_type = mapping.get(type_to_map, None)
