@@ -83,16 +83,16 @@ class QueryEnabledStore(Generic[TCredential, TSettings], ABC):
 
     @abstractmethod
     def _apply_filter(
-        self, path: DataPath, filter_expression: Expression, columns: list[str]
+        self, path: DataPath, filter_expression: Expression, columns: list[str], limit: Optional[int] = 10000
     ) -> Union[MetaFrame, Iterator[MetaFrame]]:
         """
-        Applies the provided filter expression to this Store and returns the result in a pandas DataFrame
+        Applies the provided filter expression to this Store and returns the result in a MetaFrame
         """
 
     @abstractmethod
     def _apply_query(self, query: str) -> Union[MetaFrame, Iterator[MetaFrame]]:
         """
-        Applies a plaintext query to this Store and returns the result in a pandas DataFrame
+        Applies a plaintext query to this Store and returns the result in a MetaFrame
         """
 
     @classmethod
@@ -156,10 +156,13 @@ class QueryConfigurationBuilder:
         self._columns = list(columns)
         return self
 
-    def read(self) -> Union[MetaFrame, Iterator[MetaFrame]]:
+    def read(self, limit: Optional[int] = 10000) -> Union[MetaFrame, Iterator[MetaFrame]]:
         """
         Execute the query on the underlying store.
         """
         return self._store._apply_filter(
-            path=self._path, filter_expression=self._filter_expression, columns=self._columns
+            path=self._path,
+            filter_expression=self._filter_expression,
+            columns=self._columns,
+            limit=limit,
         )

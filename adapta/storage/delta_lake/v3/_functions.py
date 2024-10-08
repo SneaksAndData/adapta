@@ -45,6 +45,7 @@ def load(  # pylint: disable=R0913
     columns: Optional[List[str]] = None,
     batch_size: Optional[int] = None,
     partition_filter_expressions: Optional[List[Tuple]] = None,
+    limit: Optional[int] = None,
 ) -> Union[MetaFrame, Iterator[MetaFrame]]:
     """
      Loads Delta Lake table from Azure or AWS storage and converts it to a pandas dataframe.
@@ -60,6 +61,7 @@ def load(  # pylint: disable=R0913
 
     :param columns: Optional list of columns to select when reading. Defaults to all columns of not provided.
     :param batch_size: Optional batch size when reading in batches. If not set, whole table will be loaded into memory.
+    :param limit: Optional limit on number of rows to read.
     :param partition_filter_expressions: Optional partitions filters. Examples:
 
        partition_filter_expressions = [("day", "=", "3")]
@@ -80,7 +82,7 @@ def load(  # pylint: disable=R0913
         partitions=partition_filter_expressions,
         parquet_read_options=ParquetReadOptions(coerce_int96_timestamp_unit="ms"),
         filesystem=auth_client.get_pyarrow_filesystem(path),
-    )
+    ).head(limit)
 
     row_filter = (
         compile_expression(row_filter, ArrowFilterExpression) if isinstance(row_filter, Expression) else row_filter

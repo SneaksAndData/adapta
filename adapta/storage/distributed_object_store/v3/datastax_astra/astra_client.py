@@ -238,6 +238,7 @@ class AstraClient:
         custom_indexes: Optional[List[str]] = None,
         deduplicate=False,
         num_threads: Optional[int] = None,
+        limit: Optional[int] = None,
     ) -> MetaFrame:
         """
         Run a filter query on the entity of type TModel backed by table `table_name`.
@@ -262,6 +263,7 @@ class AstraClient:
         :param: custom_indexes: An optional list of custom indexes, if it cannot be inferred, if it cannot be inferred from the data model.
         :param: deduplicate: Optionally deduplicate query result, for example when only the partition key part of a primary key is used to fetch results.
         :param: num_threads: Optionally run filtering using multiple threads. Setting this to -1 will cause this method to automatically evaluate number of threads based on filter expression size.
+        :param: limit: Optionally limit the number of results returned.
         """
 
         @on_exception(
@@ -275,10 +277,11 @@ class AstraClient:
             raise_on_giveup=True,
         )
         def apply(model: Type[Model], key_column_filter: Dict[str, Any], columns_to_select: Optional[List[str]]):
+            model = model.filter(**key_column_filter).limit(limit)
             if columns_to_select:
-                return model.filter(**key_column_filter).only(select_columns)
+                return model.only(select_columns)
 
-            return model.filter(**key_column_filter)
+            return model
 
         def normalize_column_name(column_name: str) -> str:
             filter_suffix = re.findall(self._filter_pattern, column_name)
