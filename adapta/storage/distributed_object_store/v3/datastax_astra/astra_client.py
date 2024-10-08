@@ -18,6 +18,7 @@
 #
 
 import base64
+import itertools
 import logging
 import math
 import os
@@ -276,12 +277,14 @@ class AstraClient:
             max_time=self._transient_error_max_wait_s,
             raise_on_giveup=True,
         )
-        def apply(model: Type[Model], key_column_filter: Dict[str, Any], columns_to_select: Optional[List[str]]):
+        def apply(
+            model: Type[Model], key_column_filter: Dict[str, Any], columns_to_select: Optional[List[str]]
+        ) -> typing.Iterable[dict]:
             model = model.filter(**key_column_filter).limit(limit)
             if columns_to_select:
-                return model.only(select_columns)
+                model = model.only(select_columns)
 
-            return model
+            return (dict(v.items()) for v in list(model))
 
         def normalize_column_name(column_name: str) -> str:
             filter_suffix = re.findall(self._filter_pattern, column_name)
@@ -289,15 +292,6 @@ class AstraClient:
                 return column_name
 
             return column_name.replace(filter_suffix[0], "")
-
-        def to_frame(
-            model: Type[Model], key_column_filter: Dict[str, Any], columns_to_select: Optional[List[str]]
-        ) -> MetaFrame:
-            return MetaFrame(
-                [dict(v.items()) for v in list(apply(model, key_column_filter, columns_to_select))],
-                convert_to_polars=lambda x: polars.DataFrame(x, schema=select_columns),
-                convert_to_pandas=lambda x: pandas.DataFrame(x, columns=select_columns),
-            )
 
         assert (
             self._session is not None
@@ -327,33 +321,33 @@ class AstraClient:
                 else num_threads
             )
             with ThreadPoolExecutor(max_workers=max_threads) as tpe:
-                result = concat(
-                    tpe.map(
-                        lambda args: to_frame(*args),
-                        [
-                            (cassandra_model, key_column_filter, select_columns)
-                            for key_column_filter in compiled_filter_values
-                        ],
-                        chunksize=max(int(len(compiled_filter_values) / num_threads), 1),
-                    )
+                data = tpe.map(
+                    lambda args: apply(*args),
+                    [
+                        (cassandra_model, key_column_filter, select_columns)
+                        for key_column_filter in compiled_filter_values
+                    ],
+                    chunksize=max(int(len(compiled_filter_values) / num_threads), 1),
                 )
         else:
-            result = concat(
-                [
-                    MetaFrame(
-                        [dict(v.items()) for v in list(apply(cassandra_model, key_column_filter, select_columns))],
-                        convert_to_polars=(lambda x: polars.DataFrame(x, schema=select_columns))
-                        if not deduplicate
-                        else (lambda x: polars.DataFrame(x, schema=select_columns).unique()),
-                        convert_to_pandas=(lambda x: pandas.DataFrame(x, columns=select_columns))
-                        if not deduplicate
-                        else (lambda x: pandas.DataFrame(x, columns=select_columns).drop_duplicates()),
-                    )
-                    for key_column_filter in compiled_filter_values
-                ]
+            data = (
+                apply(cassandra_model, key_column_filter, select_columns)
+                for key_column_filter in compiled_filter_values
             )
 
-        return result
+        data = itertools.chain.from_iterable(data)
+        if limit:
+            data = itertools.islice(data, limit)
+
+        return MetaFrame(
+            data,
+            convert_to_polars=(lambda x: polars.DataFrame(x, schema=select_columns))
+            if not deduplicate
+            else (lambda x: polars.DataFrame(x, schema=select_columns).unique()),
+            convert_to_pandas=(lambda x: pandas.DataFrame(x, columns=select_columns))
+            if not deduplicate
+            else (lambda x: pandas.DataFrame(x, columns=select_columns).drop_duplicates()),
+        )
 
     def get_entities_raw(self, query: str) -> MetaFrame:
         """
