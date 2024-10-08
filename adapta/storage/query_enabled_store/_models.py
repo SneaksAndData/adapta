@@ -139,6 +139,7 @@ class QueryConfigurationBuilder:
         self._path = path
         self._filter_expression: Optional[Expression] = None
         self._columns: list[str] = []
+        self._limit = 10000
 
     def filter(self, filter_expression: Expression) -> "QueryConfigurationBuilder":
         """
@@ -156,7 +157,14 @@ class QueryConfigurationBuilder:
         self._columns = list(columns)
         return self
 
-    def read(self, limit: Optional[int] = 10000) -> Union[MetaFrame, Iterator[MetaFrame]]:
+    def limit(self, limit: int) -> "QueryConfigurationBuilder":
+        """
+        Limit the number of results returned by the underlying store.
+        """
+        self._limit = limit
+        return self
+
+    def read(self) -> Union[MetaFrame, Iterator[MetaFrame]]:
         """
         Execute the query on the underlying store.
         """
@@ -164,5 +172,5 @@ class QueryConfigurationBuilder:
             path=self._path,
             filter_expression=self._filter_expression,
             columns=self._columns,
-            limit=limit,
+            limit=self._limit,
         )
