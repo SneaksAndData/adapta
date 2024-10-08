@@ -63,7 +63,7 @@ from adapta import __version__
 from adapta.storage.distributed_object_store.v3.datastax_astra._models import SimilarityFunction, VectorSearchQuery
 from adapta.storage.models.filter_expression import Expression, AstraFilterExpression, compile_expression
 from adapta.utils import chunk_list, rate_limit
-from adapta.utils.metaframe import MetaFrame, concat
+from adapta.utils.metaframe import MetaFrame
 from adapta.storage.distributed_object_store.v3.datastax_astra._model_mappers import get_mapper
 
 TModel = TypeVar("TModel")  # pylint: disable=C0103
