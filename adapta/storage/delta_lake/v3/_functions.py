@@ -82,7 +82,10 @@ def load(  # pylint: disable=R0913
         partitions=partition_filter_expressions,
         parquet_read_options=ParquetReadOptions(coerce_int96_timestamp_unit="ms"),
         filesystem=auth_client.get_pyarrow_filesystem(path),
-    ).head(limit)
+    )
+
+    if limit:
+        pyarrow_ds = pyarrow_ds.head(limit)
 
     row_filter = (
         compile_expression(row_filter, ArrowFilterExpression) if isinstance(row_filter, Expression) else row_filter
