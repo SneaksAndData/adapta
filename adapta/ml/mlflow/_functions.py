@@ -50,6 +50,7 @@ def register_mlflow_model(
     experiment: str,
     run_name: str = None,
     transition_to_stage: str = None,
+    transition_to_alias: str = None,
     metrics: Optional[Dict[str, float]] = None,
     model_params: Optional[Dict[str, Any]] = None,
     artifacts_to_log: Dict[str, str] = None,
@@ -107,9 +108,18 @@ def register_mlflow_model(
         if model_params is not None:
             mlflow.log_params(model_params)
 
+        version = mlflow_client.get_latest_model_version(model_name).version
+
+        if transition_to_alias is not None:
+            mlflow_client.set_model_alias(
+                model_name=model_name,
+                alias=transition_to_alias,
+                model_version=version
+            )
+
         if transition_to_stage is not None:
             mlflow_client.set_model_stage(
                 model_name=model_name,
-                model_version=mlflow_client.get_latest_model_version(model_name).version,
                 stage=transition_to_stage,
+                model_version=version,
             )
