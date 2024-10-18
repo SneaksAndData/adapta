@@ -119,7 +119,7 @@ class CassandraModelMapper(ABC):
         typing.Tuple[Type[Column],],
         typing.Tuple[Type[Column], Type[Column]],
         typing.Tuple[Type[Column], Type[Column], Type[Column]],
-        typing.Tuple[Type[columns.List], columns.Map],
+        typing.Tuple[Type[columns.List], typing.Tuple[Type[columns.Map]]],
     ]:
         """Map Type to Cassandra column type.
 
@@ -147,19 +147,15 @@ class CassandraModelMapper(ABC):
         ):  # assume all enums are strings - for now
             return (columns.Text,)
         if typing.get_origin(type_to_map) == list:
-            args = typing.get_args(type_to_map)
-            if typing.get_origin(args[0]) == dict:
-                dict_args = typing.get_args(args[0])
+            list_element_type = typing.get_args(type_to_map)[0]
+            if typing.get_origin(list_element_type) == dict:
                 return (
                     columns.List,
-                    columns.Map(
-                        self._map_to_column(dict_args[0])[0],
-                        self._map_to_column(dict_args[1])[0],
-                    ),
+                    self._map_to_column(list_element_type),
                 )
             return (
                 columns.List,
-                self._map_to_column(typing.get_args(type_to_map)[0])[0],
+                self._map_to_column(list_element_type)[0],
             )
         if typing.get_origin(type_to_map) == dict:
             return (
@@ -185,6 +181,23 @@ class CassandraModelMapper(ABC):
                 custom_index=is_custom_index,
             )
         if len(cassandra_types) == 2:  # list
+            # if it is a tuple, we are trying to map a dict
+            if isinstance(cassandra_types[1], tuple):
+                cassandra_map = cassandra_types[1]
+                return cassandra_types[0](
+                    primary_key=is_primary_key,
+                    partition_key=is_partition_key,
+                    db_field=db_field,
+                    value_type=cassandra_map[0](
+                        primary_key=is_primary_key,
+                        partition_key=is_partition_key,
+                        db_field=db_field,
+                        key_type=cassandra_map[1],
+                        value_type=cassandra_map[2],
+                    ),
+                    custom_index=is_custom_index,
+                )
+            # else it is simple types
             return cassandra_types[0](
                 primary_key=is_primary_key,
                 partition_key=is_partition_key,

@@ -224,3 +224,54 @@ with astra_client:
     #         col_a       col_b   col_d  sim_value
     # 0  something2  different1  extra2     0.5665
   ```
+
+
+2. Test complex types in python and insert into astra
+Create a table in Astra and insert some rows:
+```cassandraql
+CREATE TABLE tmp.test_entity
+(
+    column_a                         text PRIMARY KEY,
+    column_b                         list<text>,
+    column_c                         list<frozen<map<text, double>>>,
+)
+```
+
+Instantiate a new client, map dataclass (model) to Cassandra model and add rows it:
+
+```python
+from adapta.storage.distributed_object_store.v3.datastax_astra import AstraClient
+
+from dataclasses import dataclass, field
+
+@dataclass
+class TestEntity:
+
+    column_a: str = field(
+        metadata={
+            "is_primary_key": True,
+            "is_partition_key": True,
+        }
+    )
+    column_b: list[str]
+    column_c: list[dict[str, float]]
+
+rows_to_insert = [
+    {'column_a': '1', 'column_b': [], 'column_c': [{'key_a': 1, 'key_b': 2}]},
+    {'column_a': '2', 'column_b': ['1', '3', '4'], 'column_c': [{'key_a': 1, 'key_b': 2}, {'key_a': 3, 'key_b': 4}]}
+]
+
+with AstraClient(
+        client_name='test',
+        keyspace='tmp',
+        secure_connect_bundle_bytes='base64string',
+        client_id='Astra Token client_id',
+        client_secret='Astra Token client_secret'
+) as ac:
+    ac.upsert_batch(
+    entities=rows_to_insert,
+    entity_type=TestEntity,
+    keyspace="tmp",
+    table_name="test_entity",
+    )
+```
