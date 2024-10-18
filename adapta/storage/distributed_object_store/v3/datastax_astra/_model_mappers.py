@@ -119,7 +119,7 @@ class CassandraModelMapper(ABC):
         typing.Tuple[Type[Column],],
         typing.Tuple[Type[Column], Type[Column]],
         typing.Tuple[Type[Column], Type[Column], Type[Column]],
-        typing.Tuple[Type[columns.List], columns.Map],
+        typing.Tuple[Type[columns.List], typing.Tuple[Type[columns.Map]]],
     ]:
         """Map Type to Cassandra column type.
 
