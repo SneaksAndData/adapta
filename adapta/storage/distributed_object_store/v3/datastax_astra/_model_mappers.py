@@ -182,7 +182,7 @@ class CassandraModelMapper(ABC):
             )
         if len(cassandra_types) == 2:  # list
             # if it is a tuple, we are trying to map a dict
-            if isinstance(cassandra_types, tuple):
+            if isinstance(cassandra_types[1], tuple):
                 cassandra_map = cassandra_types[1]
                 return cassandra_types[0](
                     primary_key=is_primary_key,
