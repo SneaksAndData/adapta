@@ -37,15 +37,12 @@ def test_valid_s3_datapath():
 
 def test_invalid_s3_datapath():
     malformed_s3_datapaths = [
-        lambda: S3Path(bucket="/bucket/", path="path"),
-        lambda: S3Path(bucket="/bucket", path="path"),
-        lambda: S3Path(bucket="bucket", path="/path"),
         lambda: S3Path(bucket="bucket", path="path//path_segment"),
         lambda: S3Path(bucket="bucket", path="path/path_segment//path_segment"),
     ]
 
     for s3_data_path in malformed_s3_datapaths:
-        with pytest.raises(ValueError, match=r"Invalid S3Path provided, must comply with : .*"):
+        with pytest.raises(ValueError, match=r"Invalid S3Path provided: .*"):
             s3_data_path()
 
 

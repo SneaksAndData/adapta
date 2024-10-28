@@ -62,13 +62,10 @@ class S3Path(DataPath):
         if not self.bucket:
             raise ValueError("Bucket must be defined")
 
-        path_regex = r"^(?![0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$)[a-z0-9]([a-z0-9\-]{1,61}[a-z0-9])?(\/(?!.*(\/\/|\\))([^\/].{0,1022}\/?)?)?$"
+        path_regex = r"//"
 
-        s3_path_without_prefix = f"{self.bucket}/{self.path}"
-        match = re.match(path_regex, s3_path_without_prefix)
-
-        if not match:
-            raise ValueError(f"Invalid S3Path provided, must comply with : {path_regex}")
+        if re.search(path_regex, self.path):
+            raise ValueError(f"Invalid S3Path provided: path should not contain consecutive slashes (//)")
 
     @classmethod
     def from_hdfs_path(cls, hdfs_path: str) -> "S3Path":
