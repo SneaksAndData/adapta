@@ -65,7 +65,7 @@ class S3Path(DataPath):
         path_regex = r"//"
 
         if re.search(path_regex, self.path):
-            raise ValueError(f"Invalid S3Path provided: path should not contain consecutive slashes (//)")
+            raise ValueError("Invalid S3Path provided: path should not contain consecutive slashes (//)")
 
     @classmethod
     def from_hdfs_path(cls, hdfs_path: str) -> "S3Path":
