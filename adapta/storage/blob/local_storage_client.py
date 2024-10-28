@@ -22,7 +22,7 @@ import shutil
 
 from typing import final, Optional, Callable, Type, Iterator, Dict
 
-from adapta.security.clients import LocalClient
+from adapta.security.clients import LocalClient, AuthenticationClient
 from adapta.storage.blob.base import StorageClient, T
 from adapta.storage.models import DataPath, LocalPath, parse_data_path
 from adapta.storage.models.format import SerializationFormat
@@ -34,9 +34,12 @@ class LocalStorageClient(StorageClient):
     Local Storage Client, primarily for unit tests.
     """
 
+    def __init__(self):
+        super().__init__(base_client=LocalClient())
+
     @classmethod
-    def create(cls, auth: StorageClient, endpoint_url: Optional[str] = None):
-        raise NotImplementedError("Not supported by this client")
+    def create(cls, auth: AuthenticationClient, endpoint_url: Optional[str] = None):
+        return cls()
 
     def get_blob_uri(self, blob_path: DataPath, expires_in_seconds: float = 3600.0, **kwargs) -> str:
         return cast_path(blob_path).path
@@ -67,6 +70,8 @@ class LocalStorageClient(StorageClient):
         self, blob_path: DataPath, filter_predicate: Optional[Callable[[...], bool]] = None
     ) -> Iterator[DataPath]:
         for blob in os.listdir(cast_path(blob_path).path):
+            if filter_predicate is not None and not filter_predicate(blob):
+                continue
             yield LocalPath(path=blob)
 
     def read_blobs(
@@ -76,8 +81,14 @@ class LocalStorageClient(StorageClient):
         filter_predicate: Optional[Callable[[...], bool]] = None,
     ) -> Iterator[T]:
         dir_path = cast_path(blob_path).path
-        for blob in os.listdir(dir_path):
-            with open(os.path.join(dir_path, blob), "rb") as blob_file:
+        if os.path.isdir(dir_path):
+            for blob in os.listdir(dir_path):
+                if filter_predicate is not None and not filter_predicate(blob):
+                    continue
+                with open(os.path.join(dir_path, blob), "rb") as blob_file:
+                    yield serialization_format().deserialize(blob_file.read())
+        else:
+            with open(dir_path, "rb") as blob_file:
                 yield serialization_format().deserialize(blob_file.read())
 
     def download_blobs(
@@ -98,7 +109,7 @@ class LocalStorageClient(StorageClient):
     @classmethod
     def for_storage_path(cls, path: str) -> "StorageClient":
         _ = cast_path(parse_data_path(path))
-        return cls(base_client=LocalClient())
+        return cls()
 
 
 def cast_path(blob_path: DataPath) -> LocalPath:

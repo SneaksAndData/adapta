@@ -39,8 +39,11 @@ class _MlflowMachineLearningModel(PythonModel):
         class_ = getattr(module, config["model"]["class_name"])
         self.model = class_.load_model(context.artifacts["model"])  # pylint: disable=W0201
 
-    def predict(self, context, model_input):
+    def predict(self, context, model_input, params: Optional[Dict[str, Any]] = None):
         return self.model.predict(**model_input)
+
+    def predict_stream(self, context, model_input, params: Optional[Dict[str, Any]] = None):
+        raise NotImplementedError("Predict stream is not currently supported")
 
 
 def register_mlflow_model(
@@ -50,6 +53,7 @@ def register_mlflow_model(
     experiment: str,
     run_name: str = None,
     transition_to_stage: str = None,
+    version_alias: str = None,
     metrics: Optional[Dict[str, float]] = None,
     model_params: Optional[Dict[str, Any]] = None,
     artifacts_to_log: Dict[str, str] = None,
@@ -62,6 +66,7 @@ def register_mlflow_model(
     :param experiment: Name of Mlflow experiment
     :param run_name: Name of Mlflow run
     :param transition_to_stage: Whether to transition to stage
+    :param version_alias: Alias to assign to model
     :param metrics: Metrics to log
     :param model_params: Model hyperparameters to log
     :param artifacts_to_log: Additional artifacts to log
@@ -107,9 +112,14 @@ def register_mlflow_model(
         if model_params is not None:
             mlflow.log_params(model_params)
 
+        version = mlflow_client.get_latest_model_version(model_name).version
+
+        if version_alias is not None:
+            mlflow_client.set_model_alias(model_name=model_name, alias=version_alias, model_version=version)
+
         if transition_to_stage is not None:
             mlflow_client.set_model_stage(
                 model_name=model_name,
-                model_version=mlflow_client.get_latest_model_version(model_name).version,
                 stage=transition_to_stage,
+                model_version=version,
             )

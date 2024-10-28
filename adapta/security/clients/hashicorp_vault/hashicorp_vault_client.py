@@ -45,11 +45,12 @@ class HashicorpVaultClient(AuthenticationClient):
 
         return None
 
-    def __init__(self, vault_address: str):
+    def __init__(self, vault_address: str, **_):
         """
         Common initialization logic for hashicorp vault clients
         :param vault_address: Address of hashicorp vault instance
         """
+        super().__init__(**_)
         self._vault_address = vault_address
 
     @property

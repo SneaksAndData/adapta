@@ -71,6 +71,15 @@ class MlflowBasicClient:
             reverse=True,
         )[0]
 
+    def get_model_version_by_alias(self, model_name: str, alias: str) -> ModelVersion:
+        """
+          Get model version by alias using mlflow client
+
+        :param model_name: Name of a model.
+        :param alias: Alias of a model.
+        """
+        return self._client.get_model_version_by_alias(model_name, alias)
+
     def _get_artifact_repo_backported(self, run_id) -> mlflow.store.artifact_repo.ArtifactRepository:
         run = self._client.get_run(run_id)
 
@@ -113,6 +122,19 @@ class MlflowBasicClient:
             name=model_name,
             version=model_version,
             stage=stage,
+        )
+
+    def set_model_alias(self, model_name: str, alias: str, model_version: Optional[str]) -> None:
+        """
+        inherited the setting model version alias in Mlflow
+        :param model_name: model name
+        :param alias: alias name
+        :param model_version: version of model
+        """
+        self._client.set_registered_model_alias(
+            name=model_name,
+            alias=alias,
+            version=model_version,
         )
 
     @staticmethod

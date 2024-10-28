@@ -18,20 +18,17 @@
 #
 
 import base64
-import datetime
-import enum
 import logging
 import math
 import os
 import platform
 import re
-import sys
 import tempfile
 import typing
 from uuid import uuid4
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import fields, is_dataclass, asdict
-from typing import Optional, Dict, TypeVar, Callable, Type, List, Any, get_origin, Union
+from dataclasses import asdict
+from typing import Optional, Dict, TypeVar, Callable, Type, List, Any, Union
 
 try:
     from _socket import IPPROTO_TCP, TCP_NODELAY, TCP_USER_TIMEOUT
@@ -52,8 +49,6 @@ from cassandra.cluster import (  # pylint: disable=E0611
     ExecutionProfile,
     EXEC_PROFILE_DEFAULT,
 )
-from cassandra.cqlengine import columns
-from cassandra.cqlengine.columns import Column
 from cassandra.cqlengine.connection import set_session
 from cassandra.cqlengine.models import Model
 from cassandra.cqlengine.named import NamedTable
@@ -68,6 +63,7 @@ from adapta.storage.distributed_object_store.v3.datastax_astra._models import Si
 from adapta.storage.models.filter_expression import Expression, AstraFilterExpression, compile_expression
 from adapta.utils import chunk_list, rate_limit
 from adapta.utils.metaframe import MetaFrame, concat
+from adapta.storage.distributed_object_store.v3.datastax_astra._model_mappers import get_mapper
 
 TModel = TypeVar("TModel")  # pylint: disable=C0103
 
@@ -261,9 +257,9 @@ class AstraClient:
         :param: keyspace: Optional keyspace name, if not provided in the client constructor
         :param: table_name: Optional Astra table name, if it cannot be inferred from class name by converting it to snake_case.
         :param: select_columns: An optional list of columns to return with the query.
-        :param: primary_keys: An optional list of columns that constitute a primary key, if it cannot be inferred from is_primary_key metadata on a dataclass field.
-        :param: partition_keys: An optional list of columns that constitute a partition key, if it cannot be inferred from is_partition_key metadata on a dataclass field.
-        :param: custom_indexes: An optional list of custom indexes, if it cannot be inferred from is_custom_index on a dataclass field.
+        :param: primary_keys: An optional list of columns that constitute a primary key, if it cannot be inferred from the data model.
+        :param: partition_keys: An optional list of columns that constitute a partition key, if it cannot be inferred from the data model.
+        :param: custom_indexes: An optional list of custom indexes, if it cannot be inferred, if it cannot be inferred from the data model.
         :param: deduplicate: Optionally deduplicate query result, for example when only the partition key part of a primary key is used to fetch results.
         :param: num_threads: Optionally run filtering using multiple threads. Setting this to -1 will cause this method to automatically evaluate number of threads based on filter expression size.
         """
@@ -304,21 +300,16 @@ class AstraClient:
             self._session is not None
         ), "Please instantiate an AstraClient using with AstraClient(...) before calling this method"
 
-        select_columns = (
-            list(map(normalize_column_name, select_columns))
-            if select_columns
-            else [f.name for f in fields(model_class)]
-        )
+        select_columns = list(map(normalize_column_name, select_columns)) if select_columns else None
 
-        model_class: Type[Model] = self._model_dataclass(
-            value=model_class,
+        cassandra_model = get_mapper(
+            data_model=model_class,
             keyspace=keyspace,
             table_name=table_name,
             primary_keys=primary_keys,
             partition_keys=partition_keys,
             custom_indexes=custom_indexes,
-            select_columns=select_columns,
-        )
+        ).map()
 
         compiled_filter_values = (
             compile_expression(key_column_filter_values, AstraFilterExpression)
@@ -337,7 +328,7 @@ class AstraClient:
                     tpe.map(
                         lambda args: to_frame(*args),
                         [
-                            (model_class, key_column_filter, select_columns)
+                            (cassandra_model, key_column_filter, select_columns)
                             for key_column_filter in compiled_filter_values
                         ],
                         chunksize=max(int(len(compiled_filter_values) / num_threads), 1),
@@ -347,7 +338,7 @@ class AstraClient:
             result = concat(
                 [
                     MetaFrame(
-                        [dict(v.items()) for v in list(apply(model_class, key_column_filter, select_columns))],
+                        [dict(v.items()) for v in list(apply(cassandra_model, key_column_filter, select_columns))],
                         convert_to_polars=(lambda x: polars.DataFrame(x, schema=select_columns))
                         if not deduplicate
                         else (lambda x: polars.DataFrame(x, schema=select_columns).unique()),
@@ -370,157 +361,6 @@ class AstraClient:
         return MetaFrame(
             self._session.execute(query), convert_to_polars=polars.DataFrame, convert_to_pandas=pandas.DataFrame
         )
-
-    def _model_dataclass(
-        self,
-        value: Type[TModel],
-        keyspace: Optional[str] = None,
-        table_name: Optional[str] = None,
-        primary_keys: Optional[List[str]] = None,
-        partition_keys: Optional[List[str]] = None,
-        custom_indexes: Optional[List[str]] = None,
-        select_columns: Optional[List[str]] = None,
-    ) -> Type[Model]:
-        """
-        Maps a Python dataclass to Cassandra model.
-
-        :param: value: A dataclass type that should be mapped to Astra Model.
-        :param: keyspace: Optional keyspace name, if not provided in the client constructor.
-        :param: table_name: Astra table name, if it cannot be inferred from class name by converting it to snake_case.
-        :param: primary_keys: An optional list of columns that constitute a primary key, if it cannot be inferred from is_primary_key metadata on a dataclass field.
-        :param: partition_keys: An optional list of columns that constitute a partition key, if it cannot be inferred from is_partition_key metadata on a dataclass field.
-        :param: custom_indexes: An optional list of columns that have a custom index on them, if it cannot be inferred from is_custom_index metadata on a dataclass field.
-        :param: select_columns: An optional list of columns to select from the entity. If omitted, all columns will be selected.
-        """
-
-        def map_to_column(  # pylint: disable=R0911
-            python_type: Type,
-        ) -> typing.Union[
-            typing.Tuple[Type[columns.List],],
-            typing.Tuple[Type[columns.Map],],
-            typing.Tuple[Type[Column],],
-            typing.Tuple[Type[Column], Type[Column]],
-            typing.Tuple[Type[Column], Type[Column], Type[Column]],
-            typing.Tuple[Type[columns.List], columns.Map],
-        ]:
-            if python_type is type(None):
-                raise TypeError("NoneType cannot be mapped to any existing table column types")
-            if python_type is bool:
-                return (columns.Boolean,)
-            if python_type is str:
-                return (columns.Text,)
-            if python_type is bytes:
-                return (columns.Blob,)
-            if python_type is datetime.datetime:
-                return (columns.DateTime,)
-            if python_type is int:
-                return (columns.Integer,)
-            if python_type is float:
-                return (columns.Double,)
-            if (
-                sys.version_info.minor > 9
-                and type(python_type) is enum.EnumType  # pylint: disable=unidiomatic-typecheck
-            ) or (
-                sys.version_info.minor <= 9
-                and type(python_type) is enum.EnumMeta  # pylint: disable=unidiomatic-typecheck
-            ):  # assume all enums are strings - for now
-                return (columns.Text,)
-            if get_origin(python_type) == list:
-                args = typing.get_args(python_type)
-                if get_origin(args[0]) == dict:
-                    dict_args = typing.get_args(args[0])
-                    return (
-                        columns.List,
-                        columns.Map(
-                            map_to_column(dict_args[0])[0],
-                            map_to_column(dict_args[1])[0],
-                        ),
-                    )
-                return (
-                    columns.List,
-                    map_to_column(typing.get_args(python_type)[0])[0],
-                )
-            if get_origin(python_type) == dict:
-                return (
-                    columns.Map,
-                    map_to_column(typing.get_args(python_type)[0])[0],
-                    map_to_column(typing.get_args(python_type)[1])[0],
-                )
-
-            if get_origin(python_type) == typing.Union:
-                return map_to_column(typing.get_args(python_type)[0])
-
-            raise TypeError(f"Unsupported type: {python_type}")
-
-        def map_to_cassandra(
-            python_type: Type, db_field: str, is_primary_key: bool, is_partition_key: bool, is_custom_index: bool
-        ) -> Column:
-            cassandra_types = map_to_column(python_type)
-            if len(cassandra_types) == 1:  # simple type
-                return cassandra_types[0](
-                    primary_key=is_primary_key,
-                    partition_key=is_partition_key,
-                    db_field=db_field,
-                    custom_index=is_custom_index,
-                )
-            if len(cassandra_types) == 2:  # list
-                return cassandra_types[0](
-                    primary_key=is_primary_key,
-                    partition_key=is_partition_key,
-                    db_field=db_field,
-                    value_type=cassandra_types[1],
-                    custom_index=is_custom_index,
-                )
-            if len(cassandra_types) == 3:  # dict
-                return cassandra_types[0](
-                    primary_key=is_primary_key,
-                    partition_key=is_partition_key,
-                    db_field=db_field,
-                    key_type=cassandra_types[1],
-                    value_type=cassandra_types[2],
-                    custom_index=is_custom_index,
-                )
-
-            raise TypeError(f"Unsupported type mapping: {cassandra_types}")
-
-        assert is_dataclass(value)
-
-        primary_keys = primary_keys or [
-            field.name for field in fields(value) if field.metadata.get("is_primary_key", False)
-        ]
-        partition_keys = partition_keys or [
-            field.name for field in fields(value) if field.metadata.get("is_partition_key", False)
-        ]
-        custom_indexes = custom_indexes or [
-            field.name for field in fields(value) if field.metadata.get("is_custom_index", False)
-        ]
-        selected_fields = (
-            [
-                field
-                for field in fields(value)
-                if field.name in select_columns or field.name in primary_keys or field.name in partition_keys
-            ]
-            if select_columns
-            else fields(value)
-        )
-
-        table_name = table_name or self._snake_pattern.sub("_", value.__name__).lower()
-
-        models_attributes: Dict[str, Union[Column, str]] = {
-            field.name: map_to_cassandra(
-                field.type,
-                field.name,
-                field.name in primary_keys,
-                field.name in partition_keys,
-                field.name in custom_indexes,
-            )
-            for field in selected_fields
-        }
-
-        if keyspace:
-            models_attributes |= {"__keyspace__": keyspace}
-
-        return type(table_name, (Model,), models_attributes)
 
     def set_table_option(self, table_name: str, option_name: str, option_value: str) -> None:
         """
@@ -554,13 +394,15 @@ class AstraClient:
         def _delete_entity(model_class: Type[Model], key_filter: Dict):
             model_class.filter(**key_filter).delete()
 
-        primary_keys = [field.name for field in fields(type(entity)) if field.metadata.get("is_primary_key", False)]
+        cassandra_model = get_mapper(
+            data_model=Type[entity],
+            table_name=table_name,
+            keyspace=keyspace,
+        ).map()
 
         _delete_entity(
-            model_class=self._model_dataclass(
-                value=type(entity), table_name=table_name, primary_keys=primary_keys, keyspace=keyspace
-            ),
-            key_filter={key: getattr(entity, key) for key in primary_keys},
+            model_class=cassandra_model,
+            key_filter={key: getattr(entity, key) for key in cassandra_model.primary_keys},
         )
 
     def upsert_entity(
@@ -590,11 +432,12 @@ class AstraClient:
         def _save_entity(model_object: Model):
             model_object.save()
 
-        primary_keys = [field.name for field in fields(type(entity)) if field.metadata.get("is_primary_key", False)]
-        model_class = self._model_dataclass(
-            value=type(entity), table_name=table_name, primary_keys=primary_keys, keyspace=keyspace
-        )
-        _save_entity(model_class(**asdict(entity)))
+        cassandra_model = get_mapper(
+            data_model=type(entity),
+            table_name=table_name,
+            keyspace=keyspace,
+        ).map()
+        _save_entity(cassandra_model(**asdict(entity)))
 
     def upsert_batch(
         self,
@@ -629,13 +472,15 @@ class AstraClient:
                 for value in values:
                     model_class.batch(upsert_batch).create(**value)
 
-        primary_keys = [field.name for field in fields(entity_type) if field.metadata.get("is_primary_key", False)]
+        cassandra_model = get_mapper(
+            data_model=entity_type,
+            table_name=table_name,
+            keyspace=keyspace,
+        ).map()
 
         for chunk in chunk_list(entities, batch_size):
             _save_entities(
-                model_class=self._model_dataclass(
-                    value=entity_type, table_name=table_name, primary_keys=primary_keys, keyspace=keyspace
-                ),
+                model_class=cassandra_model,
                 values=chunk,
             )
 
@@ -644,7 +489,9 @@ class AstraClient:
         entity_type: Type[TModel],
         vector_to_match: list[float],
         similarity_function: SimilarityFunction = SimilarityFunction.COSINE,
+        key_column_filter_values: Optional[Union[Expression, List[Dict[str, Any]]]] = None,
         table_name: Optional[str] = None,
+        return_vector: bool = False,
         num_results=1,
     ) -> MetaFrame:
         """
@@ -656,20 +503,16 @@ class AstraClient:
            https://github.com/CassioML/cassio/blob/main/src/cassio/utils/vector/distance_metrics.py#L76-L99
            https://github.com/langchain-ai/langchain/blob/93ae589f1bd11f992eff5018660b667b2e15e585/libs/langchain/langchain/vectorstores/cassandra.py
         """
-        vector_columns = [field.name for field in fields(entity_type) if field.metadata.get("is_vector_enabled", False)]
 
-        assert len(vector_columns) == 1, "Only a single column in a model is allowed to store AI embeddings"
-
-        table_name = table_name or self._snake_pattern.sub("_", entity_type.__name__).lower()
+        model_mapper = get_mapper(data_model=entity_type, table_name=table_name)
 
         query = VectorSearchQuery(
-            table_fqn=f"{self._keyspace}.{table_name}",
-            data_fields=[
-                field.name for field in fields(entity_type) if not field.metadata.get("is_vector_enabled", False)
-            ],
+            table_fqn=f"{self._keyspace}.{model_mapper.table_name}",
+            data_fields=[f for f in model_mapper.column_names if f != model_mapper.vector_column or return_vector],
+            key_column_filter_values=key_column_filter_values,
             sim_func=similarity_function,
             vector=vector_to_match,
-            field_name=vector_columns[0],
+            field_name=model_mapper.vector_column,
             num_results=num_results,
         )
 

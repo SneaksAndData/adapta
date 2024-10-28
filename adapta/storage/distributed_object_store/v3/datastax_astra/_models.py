@@ -15,8 +15,17 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+import re
 
 from enum import Enum
+from typing import Optional, Union, List, Dict, Any
+
+from adapta.storage.models.filter_expression import (
+    Expression,
+    compile_expression,
+    AstraFilterExpression,
+    FilterExpressionOperation,
+)
 
 
 class SimilarityFunction(Enum):
@@ -49,6 +58,7 @@ class VectorSearchQuery:
         vector: list[float],
         field_name: str,
         num_results=1,
+        key_column_filter_values: Optional[Union[Expression, List[Dict[str, Any]]]] = None,
     ):
         self._sim_func = sim_func
         self._vector = vector
@@ -56,12 +66,60 @@ class VectorSearchQuery:
         self._num_results = num_results
         self._table_fqn = table_fqn
         self._data_fields = data_fields
+        self._key_column_filter_values = key_column_filter_values
 
     def _get_similarity_colum(self) -> str:
         return f"{self._sim_func.value}({self._field_name}, {self._vector})"
 
     def _get_order_by(self) -> str:
         return f"order by {self._field_name} ann of {self._vector} limit {self._num_results};"
+
+    def _get_filter(self) -> str:
+        if self._key_column_filter_values is None:
+            return ""
+
+        def format_value_for_cql(val: Any) -> str:
+            if isinstance(val, (tuple, list, set)):
+                return f"({', '.join(format_value_for_cql(v) for v in val)})"
+            if isinstance(val, str):
+                return f"'{val}'"
+            return str(val)
+
+        def get_astra_operator(column_expression: str) -> str:
+            operator_map = {
+                FilterExpressionOperation.GT.value["astra"]: ">",
+                FilterExpressionOperation.GE.value["astra"]: ">=",
+                FilterExpressionOperation.LT.value["astra"]: "<",
+                FilterExpressionOperation.LE.value["astra"]: "<=",
+                FilterExpressionOperation.IN.value["astra"]: "IN",
+            }
+
+            for suffix, operator in operator_map.items():
+                if column_expression.endswith(suffix):
+                    return operator
+
+            return "="
+
+        def remove_operator_suffix(col: str) -> str:
+            """
+            Removes the double underscore and the subsequent operator suffix from a column expression.
+            Returns only the column name.
+            """
+            return re.sub(r"__\w+$", "", col)
+
+        compiled_filter_values = (
+            compile_expression(self._key_column_filter_values, AstraFilterExpression)
+            if isinstance(self._key_column_filter_values, Expression)
+            else self._key_column_filter_values
+        )
+        if len(compiled_filter_values) > 1:
+            raise ValueError("Restriction on key columns must not be nested under OR operator")
+
+        cql_filter_expressions = [
+            f"{remove_operator_suffix(col)} {get_astra_operator(col)} {format_value_for_cql(val)}"
+            for col, val in compiled_filter_values[0].items()
+        ]
+        return f"where {' and '.join(cql_filter_expressions)}"
 
     def __str__(self):
         return " ".join(
@@ -70,6 +128,7 @@ class VectorSearchQuery:
                 ", ".join(self._data_fields),
                 ", " f"{self._get_similarity_colum()} as sim_value",
                 f"from {self._table_fqn}",
+                self._get_filter(),
                 self._get_order_by(),
             ]
         )

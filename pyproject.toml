@@ -9,15 +9,16 @@ readme = "README.md"
 repository = 'https://github.com/SneaksAndData/adapta'
 
 [tool.poetry.dependencies]
-python = ">=3.9, <3.12"
+python = ">=3.9, <3.13"
 requests = "^2.26"
 backoff = "^2.2"
-cryptography = "~36.0"
+cryptography = "^36"
 pandas = { version = ">=2.0.0,<3.0", extras = ["performance"] }
 pyarrow = ">=7.0"
 dataclasses-json = "~0.6"
 limits = "~3.7"
-polars = ">=0.20,<2.0"
+polars = ">=1.7 <2.0"
+pandera = ">=0.20.3 <1.0"
 
 cassandra-driver = { version = "~3.29.1", optional = true }
 
@@ -39,7 +40,7 @@ datadog-api-client = { version = "~2.18.0", optional = true }
 SQLAlchemy = { version = "~2.0", optional = true }
 pyodbc = { version = "~4.0", optional = true }
 
-mlflow-skinny = { version = "~2.4.1", optional = true }
+mlflow-skinny = { version = "~2.17.0", optional = true }
 
 redis = { version = "~4.4.0", optional = true, extras = ['hiredis'] }
 

@@ -35,7 +35,7 @@ class AstraCredential(DataClassJsonMixin):
         self.client_id = self.client_id or os.getenv("PROTEUS__ASTRA_CLIENT_ID")
         self.client_secret = self.client_secret or os.getenv("PROTEUS__ASTRA_CLIENT_SECRET")
 
-        if not all([self.secret_connection_bundle_bytes, self.client_secret, self.client_secret]):
+        if not all([self.secret_connection_bundle_bytes, self.client_id, self.client_secret]):
             raise RuntimeError(
                 "Authentication information provided is insufficient. Please verify you are supplying bundle bytes, client id and secret either via connection string or via environment variables."
             )
