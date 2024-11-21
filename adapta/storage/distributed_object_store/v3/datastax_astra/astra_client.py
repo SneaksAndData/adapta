@@ -238,7 +238,7 @@ class AstraClient:
         custom_indexes: Optional[List[str]] = None,
         deduplicate=False,
         num_threads: Optional[int] = None,
-    ) -> MetaFrame:
+    ) -> List[MetaFrame]:
         """
         Run a filter query on the entity of type TModel backed by table `table_name`.
 
@@ -324,31 +324,27 @@ class AstraClient:
                 else num_threads
             )
             with ThreadPoolExecutor(max_workers=max_threads) as tpe:
-                result = concat(
-                    tpe.map(
-                        lambda args: to_frame(*args),
-                        [
-                            (cassandra_model, key_column_filter, select_columns)
-                            for key_column_filter in compiled_filter_values
-                        ],
-                        chunksize=max(int(len(compiled_filter_values) / num_threads), 1),
-                    )
+                result = tpe.map(
+                    lambda args: to_frame(*args),
+                    [
+                        (cassandra_model, key_column_filter, select_columns)
+                        for key_column_filter in compiled_filter_values
+                    ],
+                    chunksize=max(int(len(compiled_filter_values) / num_threads), 1),
                 )
         else:
-            result = concat(
-                [
-                    MetaFrame(
-                        [dict(v.items()) for v in list(apply(cassandra_model, key_column_filter, select_columns))],
-                        convert_to_polars=(lambda x: polars.DataFrame(x, schema=select_columns))
-                        if not deduplicate
-                        else (lambda x: polars.DataFrame(x, schema=select_columns).unique()),
-                        convert_to_pandas=(lambda x: pandas.DataFrame(x, columns=select_columns))
-                        if not deduplicate
-                        else (lambda x: pandas.DataFrame(x, columns=select_columns).drop_duplicates()),
-                    )
-                    for key_column_filter in compiled_filter_values
-                ]
-            )
+            result = [
+                MetaFrame(
+                    [dict(v.items()) for v in list(apply(cassandra_model, key_column_filter, select_columns))],
+                    convert_to_polars=(lambda x: polars.DataFrame(x, schema=select_columns))
+                    if not deduplicate
+                    else (lambda x: polars.DataFrame(x, schema=select_columns).unique()),
+                    convert_to_pandas=(lambda x: pandas.DataFrame(x, columns=select_columns))
+                    if not deduplicate
+                    else (lambda x: pandas.DataFrame(x, columns=select_columns).drop_duplicates()),
+                )
+                for key_column_filter in compiled_filter_values
+            ]
 
         return result
 
