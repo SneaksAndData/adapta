@@ -22,6 +22,7 @@ from dataclasses import dataclass
 from typing import final, Optional, Iterator
 from urllib.parse import quote
 
+import sqlalchemy
 from pandas import read_sql_query
 from sqlalchemy import create_engine
 from sqlalchemy.exc import SQLAlchemyError
@@ -102,9 +103,11 @@ class TrinoClient:
             )
         elif credentials_provider:
             credentials_secret = credentials_provider[1].read_secret("", credentials_provider[0].secret_name)
-            self._engine = create_engine(
-                f"trino://{encoded_username_pass(credentials_provider[0].username_secret_key, credentials_provider[0].password_secret_key)}@{self._host}:{self._port}/{self._catalog}"
+            auth_string = encoded_username_pass(
+                credentials_secret[credentials_provider[0].username_secret_key],
+                credentials_secret[credentials_provider[0].password_secret_key],
             )
+            self._engine = create_engine(f"trino://{auth_string}@{self._host}:{self._port}/{self._catalog}")
         else:
             raise ConnectionError(
                 "Neither ADAPTA__TRINO_USERNAME or ADAPTA__TRINO_OAUTH2_USERNAME is specified. Cannot authenticate to the provided host."
