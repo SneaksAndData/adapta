@@ -18,9 +18,11 @@
 #
 
 import os
-from typing import Optional, Tuple, Iterator
+from dataclasses import dataclass
+from typing import final, Optional, Iterator
+from urllib.parse import quote
+
 from pandas import read_sql_query
-import sqlalchemy.engine
 from sqlalchemy import create_engine
 from sqlalchemy.exc import SQLAlchemyError
 from trino.auth import OAuth2Authentication
@@ -29,6 +31,18 @@ from adapta.logs.models import LogLevel
 from adapta.logs import SemanticLogger
 from adapta.storage.secrets import SecretStorageClient
 from adapta.utils.metaframe import MetaFrame
+
+
+@final
+@dataclass
+class TrinoConnectionSecret:
+    """
+    Connection secret structure for Trino
+    """
+
+    secret_name: str
+    username_secret_key: str
+    password_secret_key: str
 
 
 class TrinoClient:
@@ -40,9 +54,9 @@ class TrinoClient:
         self,
         host: str,
         catalog: str,
-        port: Optional[int] = 443,
-        oauth2_username: Optional[str] = None,
-        credentials_provider: Optional[Tuple[str, SecretStorageClient]] = None,
+        port: int | None = 443,
+        oauth2_username: str | None = None,
+        credentials_provider: tuple[TrinoConnectionSecret, SecretStorageClient] | None = None,
         logger: SemanticLogger = SemanticLogger().add_log_source(
             log_source_name="adapta-trino-client",
             min_log_level=LogLevel.INFO,
@@ -51,43 +65,53 @@ class TrinoClient:
     ):
         """
          Initializes a SqlAlchemy Engine that will facilitate connections to Trino.
+         Authentication options:
+          - via OAuth2 if oauth2_username or ADAPTA__TRINO_OAUTH2_USERNAME is provided
+          - via external secret provider (Vault, Azure KeyVault, AWS Secrets Manager, etc.) if credentials_provider is provided
+          - via plaintext username-password if ADAPTA__TRINO_USERNAME and ADAPTA__TRINO_PASSWORD are provided
 
         :param host: Trino Coordinator hostname, without protocol.
         :param catalog: Trino catalog.
         :param port: Trino connection port (443 default).
         :param oauth2_username: Optional username to use if authenticating with interactive OAuth2.
-               Can also be provided via PROTEUS__TRINO_OAUTH2_USERNAME.
-        :param credentials_provider: Optional secret provider to use to read Basic Auth credentials.
+               Can also be provided via ADAPTA__TRINO_OAUTH2_USERNAME.
+        :param credentials_provider: Optional secret provider and auth secret details to use to read Basic Auth credentials.
         :param logger: CompositeLogger instance.
         """
+
+        def encoded_username_pass(username: str, password: str | None = None) -> str:
+            if password:
+                return f"{quote(username)}:{quote(password)}"
+
+            return quote(username)
 
         self._host = host
         self._catalog = catalog
         self._port = port
-        if "PROTEUS__TRINO_USERNAME" in os.environ:
+        if "ADAPTA__TRINO_USERNAME" in os.environ:
             self._engine = create_engine(
-                f"trino://{os.getenv('PROTEUS__TRINO_USERNAME')}:{os.getenv('PROTEUS__TRINO_PASSWORD')}@{self._host}:{self._port}/{self._catalog}"
+                f"trino://{encoded_username_pass(os.getenv('ADAPTA__TRINO_USERNAME'), os.getenv('ADAPTA__TRINO_PASSWORD'))}@{self._host}:{self._port}/{self._catalog}"
             )
-        elif "PROTEUS__TRINO_OAUTH2_USERNAME" in os.environ or oauth2_username:
+        elif "ADAPTA__TRINO_OAUTH2_USERNAME" in os.environ or oauth2_username:
             self._engine = create_engine(
-                f"trino://{os.getenv('PROTEUS__TRINO_OAUTH2_USERNAME')}@{self._host}:{self._port}/{self._catalog}",
+                f"trino://{encoded_username_pass(os.getenv('ADAPTA__TRINO_OAUTH2_USERNAME'))}@{self._host}:{self._port}/{self._catalog}",
                 connect_args={
                     "auth": OAuth2Authentication(),
                     "http_scheme": "https",
                 },
             )
         elif credentials_provider:
-            credentials_secret = credentials_provider[1].read_secret("", credentials_provider[0])
+            credentials_secret = credentials_provider[1].read_secret("", credentials_provider[0].secret_name)
             self._engine = create_engine(
-                f"trino://{credentials_secret['username']}:{credentials_secret['password']}@{self._host}:{self._port}/{self._catalog}"
+                f"trino://{encoded_username_pass(credentials_provider[0].username_secret_key, credentials_provider[0].password_secret_key)}@{self._host}:{self._port}/{self._catalog}"
             )
         else:
             raise ConnectionError(
-                "Neither PROTEUS__TRINO_USERNAME or PROTEUS__TRINO_OAUTH2_USERNAME is specified. Cannot authenticate to the provided host."
+                "Neither ADAPTA__TRINO_USERNAME or ADAPTA__TRINO_OAUTH2_USERNAME is specified. Cannot authenticate to the provided host."
             )
 
         self._logger = logger
-        self._connection: Optional[sqlalchemy.engine.Connection] = None
+        self._connection: sqlalchemy.engine.Connection | None = None
 
     def __enter__(self) -> Optional["TrinoClient"]:
         try:
