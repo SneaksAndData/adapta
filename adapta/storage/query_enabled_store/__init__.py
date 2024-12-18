@@ -19,3 +19,4 @@
 from adapta.storage.query_enabled_store._models import *
 from adapta.storage.query_enabled_store._qes_astra import *
 from adapta.storage.query_enabled_store._qes_delta import *
+from adapta.storage.query_enabled_store._qes_local import *

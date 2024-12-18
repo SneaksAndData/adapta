@@ -3,7 +3,7 @@
 """
 import math
 from abc import ABC, abstractmethod
-from typing import final, List, Any, Union, TypeVar, Generic, Dict, Type
+from typing import final, Any, TypeVar, Generic, Type, Tuple, Union
 from enum import Enum
 import pyarrow.compute
 from pyarrow.dataset import field as pyarrow_field
@@ -13,6 +13,7 @@ from adapta.utils import chunk_list
 TCompileResult = TypeVar("TCompileResult")  # pylint: disable=invalid-name
 
 
+# pylint: disable=E1101
 class FilterExpressionOperation(Enum):
     """
     An enumeration of filter expression operations.
@@ -75,7 +76,7 @@ class FilterField:
         """
         return self._field_name
 
-    def isin(self, values: List) -> "Expression":
+    def isin(self, values: list) -> "Expression":
         """
         Generates a filter condition checking that field value is one of the values provided.
         """
@@ -139,7 +140,7 @@ class Expression:
     def __init__(
         self,
         left_operand: Union["Expression", FilterField],
-        right_operand: Union["Expression", Any, List],
+        right_operand: Union["Expression", Any, list],
         operation: FilterExpressionOperation,
     ):
         assert (isinstance(left_operand, Expression) and isinstance(right_operand, Expression)) or (
@@ -161,7 +162,7 @@ class Expression:
     def __or__(self, other: "Expression") -> "Expression":
         return Expression(left_operand=self, right_operand=other, operation=FilterExpressionOperation.OR)
 
-    def split_expression(self) -> List[_Subexpression]:
+    def split_expression(self) -> list[_Subexpression]:
         """
         Splits the expression into smaller parts and returns a list of Subexpression.
         Each Subexpression contains a expression and the operation to combine it with.
@@ -230,7 +231,7 @@ class FilterExpression(Generic[TCompileResult], ABC):
         Combines two compiled results of filter expressions.
         """
 
-    def compile(self, subexpressions: List[_Subexpression]) -> TCompileResult:
+    def compile(self, subexpressions: list[_Subexpression]) -> TCompileResult:
         """
         Compiles a subexpression, which includes a list of expressions and an operation.
         """
@@ -265,7 +266,7 @@ class FilterExpression(Generic[TCompileResult], ABC):
 
 
 @final
-class AstraFilterExpression(FilterExpression[List[Dict[str, Any]]]):
+class AstraFilterExpression(FilterExpression[list[dict[str, Any]]]):
     """
     A concrete implementation of the 'FilterExpression' abstract class for Astra.
     """
@@ -290,7 +291,7 @@ class AstraFilterExpression(FilterExpression[List[Dict[str, Any]]]):
         return operation.value["astra"](compiled_result_a, compiled_result_b)
 
     def _isin_large_list_result(
-        self, field_name: str, field_values: List[Any], operation: FilterExpressionOperation
+        self, field_name: str, field_values: list[Any], operation: FilterExpressionOperation
     ) -> TCompileResult:
         # Compile each chunk into an IN operation expression
         return [
@@ -310,7 +311,79 @@ class ArrowFilterExpression(FilterExpression[pyarrow.compute.Expression]):
     def _compile_base_case(
         self, field_name: str, field_values: Any, filter_operation: FilterExpressionOperation
     ) -> TCompileResult:
-        return filter_operation.value["arrow"](pyarrow_field(field_name), field_values)
+        field, field_values = self._handle_nested_types(
+            pyarrow_field(field_name),
+            field_values=field_values,
+            filter_operation=filter_operation,
+        )
+
+        return filter_operation.value["arrow"](field, field_values)
+
+    @staticmethod
+    def _handle_nested_types(
+        field: pyarrow.compute.Expression,
+        field_values: Any,
+        filter_operation: FilterExpressionOperation,
+        separator: str = ",",
+    ) -> Tuple[pyarrow.compute.Expression, Any]:
+        """
+        Handle nested types in PyArrow filter expressions.
+
+        Processes complex nested types, such as lists and dictionaries, by converting
+        the values to strings and joining them with a specified separator. If the
+        field values are not nested types, they are returned unchanged.
+
+        :param field: The PyArrow field expression to process.
+        :param field_values: The values to compare, which may be nested types
+            (e.g., lists, dictionaries) or plain values.
+        :param filter_operation: The filtering operation to apply.
+        :param separator: The separator used for joining nested values. Defaults to ",".
+        :returns: A tuple containing the processed field expression and transformed
+            field values.
+        """
+
+        def join_list_of_lists(values: list[list], sep: str) -> list[str]:
+            return [sep.join(map(str, inner_list)) for inner_list in values]
+
+        def join_dict_values(values: list[dict] | dict, sep: str) -> str | list[str]:
+            if isinstance(values, dict):
+                return sep.join(map(str, values.values()))
+            return [sep.join(map(str, d.values())) for d in values]
+
+        # Handle list of lists
+        if isinstance(field_values, list) and isinstance(field_values[0], list):
+            field_values = join_list_of_lists(field_values, separator)
+            field = pyarrow.compute.binary_join(
+                field.cast(pyarrow.list_(pyarrow.string())), pyarrow.scalar(separator, pyarrow.large_string())
+            )
+
+        # Handle list of dicts
+        elif isinstance(field_values, list) and isinstance(field_values[0], dict):
+            field = pyarrow.compute.binary_join_element_wise(
+                *[
+                    pyarrow.compute.struct_field(field, key).cast(pyarrow.large_string())
+                    for key in field_values[0].keys()
+                ],
+                pyarrow.scalar(separator, pyarrow.large_string()),
+            )
+            field_values = join_dict_values(field_values, separator)
+
+        # Handle list comparison with EQUALS
+        elif isinstance(field_values, list) and filter_operation == FilterExpressionOperation.EQ:
+            field_values = separator.join(map(str, field_values))
+            field = pyarrow.compute.binary_join(
+                field.cast(pyarrow.list_(pyarrow.string())), pyarrow.scalar(separator, pyarrow.large_string())
+            )
+
+        # Handle dict
+        elif isinstance(field_values, dict):
+            field = pyarrow.compute.binary_join_element_wise(
+                *[pyarrow.compute.struct_field(field, key).cast(pyarrow.large_string()) for key in field_values.keys()],
+                pyarrow.scalar(separator, pyarrow.large_string()),
+            )
+            field_values = join_dict_values(field_values, separator)
+
+        return field, field_values
 
     def _combine_results(
         self,
