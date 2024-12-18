@@ -3,7 +3,7 @@
 """
 import math
 from abc import ABC, abstractmethod
-from typing import final, List, Any, Union, TypeVar, Generic, Dict, Type, Tuple
+from typing import final, Any, TypeVar, Generic, Type, Tuple, Union
 from enum import Enum
 import pyarrow.compute
 from pyarrow.dataset import field as pyarrow_field
@@ -76,7 +76,7 @@ class FilterField:
         """
         return self._field_name
 
-    def isin(self, values: List) -> "Expression":
+    def isin(self, values: list) -> "Expression":
         """
         Generates a filter condition checking that field value is one of the values provided.
         """
@@ -140,7 +140,7 @@ class Expression:
     def __init__(
         self,
         left_operand: Union["Expression", FilterField],
-        right_operand: Union["Expression", Any, List],
+        right_operand: Union["Expression", Any, list],
         operation: FilterExpressionOperation,
     ):
         assert (isinstance(left_operand, Expression) and isinstance(right_operand, Expression)) or (
@@ -162,7 +162,7 @@ class Expression:
     def __or__(self, other: "Expression") -> "Expression":
         return Expression(left_operand=self, right_operand=other, operation=FilterExpressionOperation.OR)
 
-    def split_expression(self) -> List[_Subexpression]:
+    def split_expression(self) -> list[_Subexpression]:
         """
         Splits the expression into smaller parts and returns a list of Subexpression.
         Each Subexpression contains a expression and the operation to combine it with.
@@ -231,7 +231,7 @@ class FilterExpression(Generic[TCompileResult], ABC):
         Combines two compiled results of filter expressions.
         """
 
-    def compile(self, subexpressions: List[_Subexpression]) -> TCompileResult:
+    def compile(self, subexpressions: list[_Subexpression]) -> TCompileResult:
         """
         Compiles a subexpression, which includes a list of expressions and an operation.
         """
@@ -266,7 +266,7 @@ class FilterExpression(Generic[TCompileResult], ABC):
 
 
 @final
-class AstraFilterExpression(FilterExpression[List[Dict[str, Any]]]):
+class AstraFilterExpression(FilterExpression[list[dict[str, Any]]]):
     """
     A concrete implementation of the 'FilterExpression' abstract class for Astra.
     """
@@ -291,7 +291,7 @@ class AstraFilterExpression(FilterExpression[List[Dict[str, Any]]]):
         return operation.value["astra"](compiled_result_a, compiled_result_b)
 
     def _isin_large_list_result(
-        self, field_name: str, field_values: List[Any], operation: FilterExpressionOperation
+        self, field_name: str, field_values: list[Any], operation: FilterExpressionOperation
     ) -> TCompileResult:
         # Compile each chunk into an IN operation expression
         return [
@@ -342,10 +342,10 @@ class ArrowFilterExpression(FilterExpression[pyarrow.compute.Expression]):
             field values.
         """
 
-        def join_list_of_lists(values: list, sep: str) -> List[str]:
+        def join_list_of_lists(values: list[list], sep: str) -> list[str]:
             return [sep.join(map(str, inner_list)) for inner_list in values]
 
-        def join_dict_values(values: Union[List[dict], dict], sep: str) -> Union[str, List[str]]:
+        def join_dict_values(values: list[dict] | dict, sep: str) -> str | list[str]:
             if isinstance(values, dict):
                 return sep.join(map(str, values.values()))
             return [sep.join(map(str, d.values())) for d in values]

@@ -1,7 +1,7 @@
 """Local Query Enabled Store (QES) for reading local files."""
 import re
 from dataclasses import dataclass
-from typing import final, List, Union, Iterator
+from typing import final, Iterator
 
 from dataclasses_json import DataClassJsonMixin
 from pyarrow.parquet import read_table
@@ -50,8 +50,8 @@ class LocalQueryEnabledStore(QueryEnabledStore[LocalCredential, LocalSettings]):
         self,
         path: DataPath,
         filter_expression: Expression,
-        columns: List[str],
-    ) -> Union[MetaFrame, Iterator[MetaFrame]]:
+        columns: list[str],
+    ) -> MetaFrame | Iterator[MetaFrame]:
         """
         Applies a filter to a local file
         """
@@ -67,7 +67,7 @@ class LocalQueryEnabledStore(QueryEnabledStore[LocalCredential, LocalSettings]):
             data=pyarrow_table,
         )
 
-    def _apply_query(self, query: str) -> Union[MetaFrame, Iterator[MetaFrame]]:
+    def _apply_query(self, query: str) -> MetaFrame | Iterator[MetaFrame]:
         """
         Local QES does not natively support SQL-like queries.
         """
