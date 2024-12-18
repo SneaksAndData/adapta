@@ -2,7 +2,12 @@ from typing import Type, Union
 
 import pytest
 
-from adapta.storage.query_enabled_store import QueryEnabledStore, DeltaQueryEnabledStore, AstraQueryEnabledStore
+from adapta.storage.query_enabled_store import (
+    QueryEnabledStore,
+    DeltaQueryEnabledStore,
+    AstraQueryEnabledStore,
+    LocalQueryEnabledStore,
+)
 
 
 @pytest.mark.parametrize(
@@ -47,6 +52,14 @@ from adapta.storage.query_enabled_store import QueryEnabledStore, DeltaQueryEnab
         (
             'qes://engine=DELT;plaintext_credentials={"auth_client_class":"adapta.security.clients.AzureClient"};settings={}',
             ModuleNotFoundError,
+        ),
+        (
+            "qes://engine=adapta.storage.query_enabled_store.LocalQueryEnabledStore;plaintext_credentials={};settings={}",
+            LocalQueryEnabledStore,
+        ),
+        (
+            "qes://engine=LOCAL;plaintext_credentials={};settings={}",
+            LocalQueryEnabledStore,
         ),
     ],
 )
