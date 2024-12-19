@@ -59,7 +59,7 @@ class LocalQueryEnabledStore(QueryEnabledStore[LocalCredential, LocalSettings]):
 
         pyarrow_table = read_table(
             path.path,
-            columns=columns,
+            columns=columns if columns else None,
             filters=row_filter,
         )
 
