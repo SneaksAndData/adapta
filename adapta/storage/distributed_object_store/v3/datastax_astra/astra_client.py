@@ -30,6 +30,8 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict
 from typing import Optional, Dict, TypeVar, Callable, Type, List, Any, Union
 
+from polars.polars import ComputeError
+
 try:
     from _socket import IPPROTO_TCP, TCP_NODELAY, TCP_USER_TIMEOUT
 except ImportError:
@@ -294,9 +296,16 @@ class AstraClient:
         def to_frame(
             model: Type[Model], key_column_filter: Dict[str, Any], columns_to_select: Optional[List[str]]
         ) -> MetaFrame:
+            def convert_to_polars(x: list[dict]) -> polars.DataFrame:
+                try:
+                    return polars.DataFrame(x, schema=select_columns)
+                except ComputeError:
+                    # Catches errors related to incorrect schema inference and tries again with unlimited schema inference length
+                    return polars.DataFrame(x, schema=select_columns, infer_schema_length=None)
+
             return MetaFrame(
                 [dict(v.items()) for v in list(apply(model, key_column_filter, columns_to_select))],
-                convert_to_polars=lambda x: polars.DataFrame(x, schema=select_columns),
+                convert_to_polars=convert_to_polars,
                 convert_to_pandas=lambda x: pandas.DataFrame(x, columns=select_columns),
             )
 
