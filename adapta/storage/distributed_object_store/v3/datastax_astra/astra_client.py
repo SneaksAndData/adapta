@@ -431,8 +431,8 @@ class AstraClient:
             raise_on_giveup=True,
         )
         @rate_limit(limit=client_rate_limit)
-        def _save_entity(model_object: Model):
-            model_object.save()
+        def _save_entity(model_object: Model, ttl: int):
+            model_object.ttl(ttl).save()
 
         cassandra_model = get_mapper(
             data_model=type(entity),
@@ -440,10 +440,7 @@ class AstraClient:
             keyspace=keyspace,
         ).map()
 
-        if time_to_live:
-            cassandra_model.ttl(time_to_live)
-
-        _save_entity(cassandra_model(**asdict(entity)))
+        _save_entity(cassandra_model(**asdict(entity)), ttl=time_to_live)
 
     def upsert_batch(
         self,
@@ -475,10 +472,10 @@ class AstraClient:
             raise_on_giveup=True,
         )
         @rate_limit(limit=client_rate_limit)
-        def _save_entities(model_class: Type[Model], values: List[dict]):
+        def _save_entities(model_class: Type[Model], values: List[dict], ttl: int):
             with BatchQuery(batch_type=BatchType.UNLOGGED) as upsert_batch:
                 for value in values:
-                    model_class.batch(upsert_batch).create(**value)
+                    model_class.batch(upsert_batch).ttl(ttl).create(**value)
 
         cassandra_model = get_mapper(
             data_model=entity_type,
@@ -486,13 +483,11 @@ class AstraClient:
             keyspace=keyspace,
         ).map()
 
-        if time_to_live:
-            cassandra_model.ttl(time_to_live)
-
         for chunk in chunk_list(entities, batch_size):
             _save_entities(
                 model_class=cassandra_model,
                 values=chunk,
+                ttl=time_to_live,
             )
 
     def ann_search(
