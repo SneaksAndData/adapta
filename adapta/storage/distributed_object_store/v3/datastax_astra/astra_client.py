@@ -411,6 +411,7 @@ class AstraClient:
         keyspace: Optional[str] = None,
         table_name: Optional[str] = None,
         client_rate_limit: str = "1000 per second",
+        time_to_live: Optional[int] = None,
     ) -> None:
         """
          Inserts a record into existing table.
@@ -419,6 +420,7 @@ class AstraClient:
         :param: table_name: Table to insert entity into.
         :param: keyspace: Optional keyspace name, if not provided in the client constructor.
         :param: client_rate_limit: the limit string to parse (eg: "1 per hour"), default: "1000 per second"
+        :param: time_to_live: Time to live in seconds for the inserted entity.
         """
 
         @on_exception(
@@ -437,6 +439,10 @@ class AstraClient:
             table_name=table_name,
             keyspace=keyspace,
         ).map()
+
+        if time_to_live:
+            cassandra_model.ttl(time_to_live)
+
         _save_entity(cassandra_model(**asdict(entity)))
 
     def upsert_batch(
@@ -447,6 +453,7 @@ class AstraClient:
         table_name: Optional[str] = None,
         batch_size=1000,
         client_rate_limit: str = "1000 per second",
+        time_to_live: Optional[int] = None,
     ) -> None:
         """
          Inserts a batch into existing table.
@@ -457,6 +464,7 @@ class AstraClient:
         :param: table_name: Table to insert entity into.
         :param: batch_size: elements per batch to upsert.
         :param: client_rate_limit: the limit string to parse (eg: "1 per hour"), default: "1000 per second"
+        :param: time_to_live: Time to live in seconds for the inserted entities.
         """
 
         @on_exception(
@@ -477,6 +485,9 @@ class AstraClient:
             table_name=table_name,
             keyspace=keyspace,
         ).map()
+
+        if time_to_live:
+            cassandra_model.ttl(time_to_live)
 
         for chunk in chunk_list(entities, batch_size):
             _save_entities(
