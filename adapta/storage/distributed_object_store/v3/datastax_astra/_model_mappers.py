@@ -126,6 +126,7 @@ class CassandraModelMapper(ABC):
         :param type_to_map: Type to map.
         :return: Cassandra column type.
         """
+        # pylint: disable=too-many-branches
         if type_to_map is type(None):
             raise TypeError("NoneType cannot be mapped to any existing table column types")
         if type_to_map is bool:
@@ -157,6 +158,18 @@ class CassandraModelMapper(ABC):
                 columns.List,
                 self._map_to_column(list_element_type)[0],
             )
+        if typing.get_origin(type_to_map) == set:
+            list_element_type = typing.get_args(type_to_map)[0]
+            if typing.get_origin(list_element_type) == dict:
+                return (
+                    columns.Set,
+                    self._map_to_column(list_element_type),
+                )
+            return (
+                columns.Set,
+                self._map_to_column(list_element_type)[0],
+            )
+
         if typing.get_origin(type_to_map) == dict:
             return (
                 columns.Map,
