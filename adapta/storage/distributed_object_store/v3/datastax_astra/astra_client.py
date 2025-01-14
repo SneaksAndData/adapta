@@ -411,6 +411,7 @@ class AstraClient:
         keyspace: Optional[str] = None,
         table_name: Optional[str] = None,
         client_rate_limit: str = "1000 per second",
+        time_to_live: Optional[int] = None,
     ) -> None:
         """
          Inserts a record into existing table.
@@ -419,6 +420,7 @@ class AstraClient:
         :param: table_name: Table to insert entity into.
         :param: keyspace: Optional keyspace name, if not provided in the client constructor.
         :param: client_rate_limit: the limit string to parse (eg: "1 per hour"), default: "1000 per second"
+        :param: time_to_live: Time to live in seconds for the inserted entity.
         """
 
         @on_exception(
@@ -429,15 +431,16 @@ class AstraClient:
             raise_on_giveup=True,
         )
         @rate_limit(limit=client_rate_limit)
-        def _save_entity(model_object: Model):
-            model_object.save()
+        def _save_entity(model_object: Model, ttl: int):
+            model_object.ttl(ttl).save()
 
         cassandra_model = get_mapper(
             data_model=type(entity),
             table_name=table_name,
             keyspace=keyspace,
         ).map()
-        _save_entity(cassandra_model(**asdict(entity)))
+
+        _save_entity(cassandra_model(**asdict(entity)), ttl=time_to_live)
 
     def upsert_batch(
         self,
@@ -447,6 +450,7 @@ class AstraClient:
         table_name: Optional[str] = None,
         batch_size=1000,
         client_rate_limit: str = "1000 per second",
+        time_to_live: Optional[int] = None,
     ) -> None:
         """
          Inserts a batch into existing table.
@@ -457,6 +461,7 @@ class AstraClient:
         :param: table_name: Table to insert entity into.
         :param: batch_size: elements per batch to upsert.
         :param: client_rate_limit: the limit string to parse (eg: "1 per hour"), default: "1000 per second"
+        :param: time_to_live: Time to live in seconds for the inserted entities.
         """
 
         @on_exception(
@@ -467,10 +472,10 @@ class AstraClient:
             raise_on_giveup=True,
         )
         @rate_limit(limit=client_rate_limit)
-        def _save_entities(model_class: Type[Model], values: List[dict]):
+        def _save_entities(model_class: Type[Model], values: List[dict], ttl: int):
             with BatchQuery(batch_type=BatchType.UNLOGGED) as upsert_batch:
                 for value in values:
-                    model_class.batch(upsert_batch).create(**value)
+                    model_class.batch(upsert_batch).ttl(ttl).create(**value)
 
         cassandra_model = get_mapper(
             data_model=entity_type,
@@ -482,6 +487,7 @@ class AstraClient:
             _save_entities(
                 model_class=cassandra_model,
                 values=chunk,
+                ttl=time_to_live,
             )
 
     def ann_search(
