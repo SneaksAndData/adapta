@@ -62,7 +62,7 @@ from adapta import __version__
 from adapta.storage.distributed_object_store.v3.datastax_astra._models import SimilarityFunction, VectorSearchQuery
 from adapta.storage.models.filter_expression import Expression, AstraFilterExpression, compile_expression
 from adapta.utils import chunk_list, rate_limit
-from adapta.utils.metaframe import MetaFrame, concat
+from adapta.utils.metaframe import MetaFrame, concat, PolarsOptions
 from adapta.storage.distributed_object_store.v3.datastax_astra._model_mappers import get_mapper
 
 TModel = TypeVar("TModel")  # pylint: disable=C0103
@@ -332,7 +332,8 @@ class AstraClient:
                             for key_column_filter in compiled_filter_values
                         ],
                         chunksize=max(int(len(compiled_filter_values) / num_threads), 1),
-                    )
+                    ),
+                    options=[PolarsOptions(how="diagonal_relaxed")],
                 )
         else:
             result = concat(
@@ -347,7 +348,8 @@ class AstraClient:
                         else (lambda x: pandas.DataFrame(x, columns=select_columns).drop_duplicates()),
                     )
                     for key_column_filter in compiled_filter_values
-                ]
+                ],
+                options=[PolarsOptions(how="diagonal_relaxed")],
             )
 
         return result
