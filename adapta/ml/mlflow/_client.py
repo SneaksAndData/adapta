@@ -80,7 +80,7 @@ class MlflowBasicClient:
         """
         return self._client.get_model_version_by_alias(model_name, alias)
 
-    def _get_artifact_repo_backported(self, run_id) -> mlflow.store.artifact_repo.ArtifactRepository:
+    def _get_artifact_repo_backported(self, run_id: str) -> mlflow.store.artifact_repo.ArtifactRepository:
         run = self._client.get_run(run_id)
 
         artifact_uri = (
@@ -136,6 +136,26 @@ class MlflowBasicClient:
             alias=alias,
             version=model_version,
         )
+
+    def log_dict(self, artifact: dict, artifact_path: str, run_id: str):
+        """
+        inherited the logging dictionary in Mlflow
+
+        :param artifact: dictionary to log
+        :param artifact_path: artifact path
+        :param run_id: run id
+        """
+        self._client.log_dict(run_id=run_id, dictionary=artifact, artifact_file=artifact_path)
+
+    def log_metric(self, run_id: str, metric_name: str, metric_value: float):
+        """
+        inherited the logging metric in Mlflow
+
+        :param run_id: run id
+        :param metric_name: metric name
+        :param metric_value: metric value
+        """
+        self._client.log_metric(run_id=run_id, key=metric_name, value=metric_value)
 
     @staticmethod
     def load_model_by_name(model_name: str, stage_or_version: str) -> PyFuncModel:

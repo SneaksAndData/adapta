@@ -18,7 +18,7 @@ import configparser
 import importlib
 import pathlib
 import tempfile
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Literal
 
 import mlflow
 from mlflow.pyfunc import PythonModel
@@ -52,12 +52,13 @@ def register_mlflow_model(
     model_name: str,
     experiment: str,
     run_name: str = None,
-    transition_to_stage: str = None,
-    version_alias: str = None,
+    transition_to_stage: Optional[Literal["Staging", "Production"]] = None,
+    parent_run_id: Optional[str] = None,
+    version_alias: Optional[str] = None,
     metrics: Optional[Dict[str, float]] = None,
     model_params: Optional[Dict[str, Any]] = None,
     artifacts_to_log: Dict[str, str] = None,
-):
+) -> str:
     """Registers mlflow model
 
     :param model: Machine learning model to register
@@ -65,11 +66,14 @@ def register_mlflow_model(
     :param model_name: Name of Mlflow model
     :param experiment: Name of Mlflow experiment
     :param run_name: Name of Mlflow run
+    :param parent_run_id: Parent run id
     :param transition_to_stage: Whether to transition to stage
     :param version_alias: Alias to assign to model
     :param metrics: Metrics to log
     :param model_params: Model hyperparameters to log
     :param artifacts_to_log: Additional artifacts to log
+
+    :return: Run id of the newly created run for registering the model
     """
     assert transition_to_stage in [None, "Staging", "Production"]
 
@@ -98,7 +102,7 @@ def register_mlflow_model(
             raise ValueError('Artifact names "model" and "config" are reserved for internal usage')
         artifacts.update(artifacts_to_log)
 
-    with mlflow.start_run(nested=True, run_name=run_name):
+    with mlflow.start_run(nested=True, run_name=run_name, parent_run_id=parent_run_id) as run:
         mlflow.pyfunc.log_model(
             artifact_path="mlflow_model",
             python_model=_MlflowMachineLearningModel(),
@@ -123,3 +127,5 @@ def register_mlflow_model(
                 stage=transition_to_stage,
                 model_version=version,
             )
+
+        return run.info.run_id
