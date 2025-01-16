@@ -157,15 +157,24 @@ class MlflowBasicClient:
         """
         self._client.log_metric(run_id=run_id, key=metric_name, value=metric_value)
 
-    def create_run(self, experiment_id: str, run_name: str = None) -> str:
+    def create_run(self, experiment_name: str, run_name: str = None) -> str:
         """
         inherited the creating run in Mlflow
 
-        :param experiment_id: experiment id
+        :param experiment_name: experiment name
         :param run_name: run name
         :return: run id
         """
-        return self._client.create_run(experiment_id=experiment_id, run_name=run_name).info.run_id
+        experiment = self._client.get_experiment_by_name(experiment_name)
+        return self._client.create_run(experiment_id=experiment.experiment_id, run_name=run_name).info.run_id
+
+    def terminate_run(self, run_id: str):
+        """
+        inherited the stopping run in Mlflow
+
+        :param run_id: run id
+        """
+        self._client.set_terminated(run_id)
 
     def set_run_tag(self, key: str, value: any, run_id: str):
         """
