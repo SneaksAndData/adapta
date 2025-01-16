@@ -167,6 +167,16 @@ class MlflowBasicClient:
         """
         return self._client.create_run(experiment_id=experiment_id, run_name=run_name).info.run_id
 
+    def set_run_tag(self, key: str, value: any, run_id: str):
+        """
+        inherited the setting run tag in Mlflow
+
+        :param key: tag key
+        :param value: tag value
+        :param run_id: run id
+        """
+        self._client.set_tag(run_id=run_id, key=key, value=value)
+
     @staticmethod
     def load_model_by_name(model_name: str, stage_or_version: str) -> PyFuncModel:
         """
