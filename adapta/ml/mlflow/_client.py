@@ -157,7 +157,7 @@ class MlflowBasicClient:
         """
         self._client.log_metric(run_id=run_id, key=metric_name, value=metric_value)
 
-    def create_run(self, experiment_name: str, run_name: str = None) -> str:
+    def create_run(self, experiment_name: str, run_name: str) -> str:
         """
         inherited the creating run in Mlflow
 
