@@ -157,15 +157,15 @@ class MlflowBasicClient:
         """
         self._client.log_metric(run_id=run_id, key=metric_name, value=metric_value)
 
-    def create_run(self, experiment_name: str, run_name: str = None) -> str:
+    def create_run(self, experiment_id: str, run_name: str = None) -> str:
         """
         inherited the creating run in Mlflow
 
-        :param experiment_name: experiment name
+        :param experiment_id: experiment id
         :param run_name: run name
         :return: run id
         """
-        return self._client.create_run(experiment_id=experiment_name, run_name=run_name).info.run_id
+        return self._client.create_run(experiment_id=experiment_id, run_name=run_name).info.run_id
 
     @staticmethod
     def load_model_by_name(model_name: str, stage_or_version: str) -> PyFuncModel:
