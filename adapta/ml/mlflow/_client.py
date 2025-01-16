@@ -174,7 +174,6 @@ class MlflowBasicClient:
         """
         return mlflow.pyfunc.load_model(f"models:/{model_name}/{stage_or_version}")
 
-
     @staticmethod
     def load_model_by_uri(model_uri: str) -> PyFuncModel:
         """
