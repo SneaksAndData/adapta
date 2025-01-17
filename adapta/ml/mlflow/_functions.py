@@ -53,7 +53,7 @@ def register_mlflow_model(
     experiment: str,
     run_name: Optional[str] = None,
     run_id: Optional[str] = None,
-    transition_to_stage: Optional[Literal["Staging", "Production"]] = None,
+    transition_to_stage: Optional[Literal["staging", "production"]] = None,
     parent_run_id: Optional[str] = None,
     version_alias: Optional[str] = None,
     metrics: Optional[Dict[str, float]] = None,
@@ -78,7 +78,7 @@ def register_mlflow_model(
     :return: Run id of the newly created run for registering the model.
     If run_id is provided, it will be the same as run_id
     """
-    assert transition_to_stage in [None, "Staging", "Production"]
+    assert transition_to_stage in [None, "staging", "production"]
 
     mlflow.set_experiment(experiment)
 
