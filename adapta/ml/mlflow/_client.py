@@ -166,7 +166,8 @@ class MlflowBasicClient:
         :return: run id
         """
         experiment = self._client.get_experiment_by_name(experiment_name)
-        return self._client.create_run(experiment_id=experiment.experiment_id, run_name=run_name).info.run_id
+        experiment_id = experiment.experiment_id if experiment else self._client.create_experiment(experiment_name)
+        return self._client.create_run(experiment_id=experiment_id, run_name=run_name).info.run_id
 
     def terminate_run(self, run_id: str):
         """
