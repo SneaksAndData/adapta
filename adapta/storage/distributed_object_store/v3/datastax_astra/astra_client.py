@@ -30,6 +30,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict
 from typing import Optional, Dict, TypeVar, Callable, Type, List, Any, Union
 
+from adapta.schema_management.schema_entity import PythonSchemaEntity
 try:
     from _socket import IPPROTO_TCP, TCP_NODELAY, TCP_USER_TIMEOUT
 except ImportError:
@@ -293,7 +294,9 @@ class AstraClient:
             return MetaFrame(
                 [dict(v.items()) for v in list(apply(model, key_column_filter, columns_to_select))],
                 convert_to_polars=lambda x: polars.DataFrame(x, schema=select_columns),
-                convert_to_pandas=lambda x: pandas.DataFrame(x, columns=select_columns),
+                convert_to_pandas=lambda x: pandas.DataFrame(
+                    x, columns=select_columns or PythonSchemaEntity(model).get_field_names()
+                ),
             )
 
         assert (
