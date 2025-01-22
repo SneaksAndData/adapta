@@ -30,7 +30,6 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict
 from typing import Optional, Dict, TypeVar, Callable, Type, List, Any, Union
 
-from adapta.schema_management.schema_entity import PythonSchemaEntity
 try:
     from _socket import IPPROTO_TCP, TCP_NODELAY, TCP_USER_TIMEOUT
 except ImportError:
@@ -65,6 +64,7 @@ from adapta.storage.models.filter_expression import Expression, AstraFilterExpre
 from adapta.utils import chunk_list, rate_limit
 from adapta.utils.metaframe import MetaFrame, concat
 from adapta.storage.distributed_object_store.v3.datastax_astra._model_mappers import get_mapper
+from adapta.schema_management.schema_entity import PythonSchemaEntity
 
 TModel = TypeVar("TModel")  # pylint: disable=C0103
 
