@@ -64,6 +64,7 @@ from adapta.storage.models.filter_expression import Expression, AstraFilterExpre
 from adapta.utils import chunk_list, rate_limit
 from adapta.utils.metaframe import MetaFrame, concat
 from adapta.storage.distributed_object_store.v3.datastax_astra._model_mappers import get_mapper
+from adapta.schema_management.schema_entity import PythonSchemaEntity
 
 TModel = TypeVar("TModel")  # pylint: disable=C0103
 
@@ -293,7 +294,9 @@ class AstraClient:
             return MetaFrame(
                 [dict(v.items()) for v in list(apply(model, key_column_filter, columns_to_select))],
                 convert_to_polars=lambda x: polars.DataFrame(x, schema=select_columns),
-                convert_to_pandas=lambda x: pandas.DataFrame(x, columns=select_columns),
+                convert_to_pandas=lambda x: pandas.DataFrame(
+                    x, columns=select_columns or PythonSchemaEntity(model).get_field_names()
+                ),
             )
 
         assert (
