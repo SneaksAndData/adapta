@@ -294,16 +294,18 @@ class AstraClient:
             return MetaFrame(
                 [dict(v.items()) for v in list(apply(model, key_column_filter, columns_to_select))],
                 convert_to_polars=lambda x: polars.DataFrame(x, schema=select_columns),
-                convert_to_pandas=lambda x: pandas.DataFrame(
-                    x, columns=select_columns or PythonSchemaEntity(model).get_field_names()
-                ),
+                convert_to_pandas=lambda x: pandas.DataFrame(x, columns=select_columns),
             )
 
         assert (
             self._session is not None
         ), "Please instantiate an AstraClient using with AstraClient(...) before calling this method"
 
-        select_columns = list(map(normalize_column_name, select_columns)) if select_columns else None
+        select_columns = (
+            list(map(normalize_column_name, select_columns))
+            if select_columns
+            else PythonSchemaEntity(model_class).get_field_names()
+        )
 
         cassandra_model = get_mapper(
             data_model=model_class,
