@@ -17,7 +17,7 @@
 #
 
 import os
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 
 import mlflow
 from mlflow.entities.model_registry import ModelVersion
@@ -157,17 +157,23 @@ class MlflowBasicClient:
         """
         self._client.log_metric(run_id=run_id, key=metric_name, value=metric_value)
 
-    def create_run(self, experiment_name: str, run_name: str) -> str:
+    def create_run(
+        self,
+        experiment_name: str,
+        run_name: str,
+        tags: Optional[Dict[str, Any]] = None,
+    ) -> str:
         """
         inherited the creating run in Mlflow
 
         :param experiment_name: experiment name
         :param run_name: run name
+        :param tags: `mlflow.entities used while creating a run. (e.g. {"mlflow.parentRunId": run_id})
         :return: run id
         """
         experiment = self._client.get_experiment_by_name(experiment_name)
         experiment_id = experiment.experiment_id if experiment else self._client.create_experiment(experiment_name)
-        return self._client.create_run(experiment_id=experiment_id, run_name=run_name).info.run_id
+        return self._client.create_run(experiment_id=experiment_id, run_name=run_name, tags=tags).info.run_id
 
     def terminate_run(self, run_id: str):
         """
