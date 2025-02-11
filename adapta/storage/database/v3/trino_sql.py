@@ -20,13 +20,12 @@
 import os
 from dataclasses import dataclass
 from typing import final, Optional, Iterator
-from urllib.parse import quote
 
 import sqlalchemy
 from pandas import read_sql_query
 from sqlalchemy import create_engine
 from sqlalchemy.exc import SQLAlchemyError
-from trino.auth import OAuth2Authentication
+from trino.auth import OAuth2Authentication, BasicAuthentication
 
 from adapta.logs.models import LogLevel
 from adapta.logs import SemanticLogger
@@ -54,7 +53,7 @@ class TrinoClient:
     def __init__(
         self,
         host: str,
-        catalog: str,
+        catalog: str | None = None,
         port: int | None = 443,
         oauth2_username: str | None = None,
         credentials_provider: tuple[TrinoConnectionSecret, SecretStorageClient] | None = None,
@@ -80,22 +79,22 @@ class TrinoClient:
         :param logger: CompositeLogger instance.
         """
 
-        def encoded_username_pass(username: str, password: str | None = None) -> str:
-            if password:
-                return f"{quote(username)}:{quote(password)}"
-
-            return quote(username)
-
         self._host = host
         self._catalog = catalog
         self._port = port
         if "ADAPTA__TRINO_USERNAME" in os.environ:
             self._engine = create_engine(
-                f"trino://{encoded_username_pass(os.getenv('ADAPTA__TRINO_USERNAME'), os.getenv('ADAPTA__TRINO_PASSWORD'))}@{self._host}:{self._port}/{self._catalog}"
+                f"trino://{os.getenv('ADAPTA__TRINO_USERNAME')}@{self._host}:{self._port}/{self._catalog or ''}",
+                connect_args={
+                    "auth": BasicAuthentication(
+                        os.getenv("ADAPTA__TRINO_USERNAME"), os.getenv("ADAPTA__TRINO_PASSWORD")
+                    ),
+                    "http_scheme": "https",
+                },
             )
         elif "ADAPTA__TRINO_OAUTH2_USERNAME" in os.environ or oauth2_username:
             self._engine = create_engine(
-                f"trino://{encoded_username_pass(os.getenv('ADAPTA__TRINO_OAUTH2_USERNAME'))}@{self._host}:{self._port}/{self._catalog}",
+                f"trino://{os.getenv('ADAPTA__TRINO_OAUTH2_USERNAME')}@{self._host}:{self._port}/{self._catalog or ''}",
                 connect_args={
                     "auth": OAuth2Authentication(),
                     "http_scheme": "https",
@@ -103,11 +102,16 @@ class TrinoClient:
             )
         elif credentials_provider:
             credentials_secret = credentials_provider[1].read_secret("", credentials_provider[0].secret_name)
-            auth_string = encoded_username_pass(
-                credentials_secret[credentials_provider[0].username_secret_key],
-                credentials_secret[credentials_provider[0].password_secret_key],
+            username = credentials_secret[credentials_provider[0].username_secret_key]
+            self._engine = create_engine(
+                f"trino://{username}@{self._host}:{self._port}/{self._catalog or ''}",
+                connect_args={
+                    "auth": BasicAuthentication(
+                        username, credentials_secret[credentials_provider[0].password_secret_key]
+                    ),
+                    "http_scheme": "https",
+                },
             )
-            self._engine = create_engine(f"trino://{auth_string}@{self._host}:{self._port}/{self._catalog}")
         else:
             raise ConnectionError(
                 "Neither ADAPTA__TRINO_USERNAME or ADAPTA__TRINO_OAUTH2_USERNAME is specified. Cannot authenticate to the provided host."
