@@ -73,7 +73,7 @@ class DeltaQueryEnabledStore(QueryEnabledStore[DeltaCredential, DeltaSettings]):
             auth_client=self.credentials.auth_client(credentials=self.credentials.auth_client_credentials()),
             path=path,
             row_filter=filter_expression,
-            columns=columns,
+            columns=columns if columns else None,
         )
 
     def _apply_query(self, query: str) -> Union[MetaFrame, Iterator[MetaFrame]]:
