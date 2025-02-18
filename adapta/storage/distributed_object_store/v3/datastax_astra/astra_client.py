@@ -28,9 +28,7 @@ import typing
 from uuid import uuid4
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict
-from typing import Optional, Dict, TypeVar, Callable, Type, List, Any, Union, Iterable
-
-from adapta.storage.query_enabled_store import QueryEnabledStoresOption
+from typing import Optional, Dict, TypeVar, Callable, Type, List, Any, Union
 
 try:
     from _socket import IPPROTO_TCP, TCP_NODELAY, TCP_USER_TIMEOUT
@@ -64,9 +62,10 @@ from adapta import __version__
 from adapta.storage.distributed_object_store.v3.datastax_astra._models import SimilarityFunction, VectorSearchQuery
 from adapta.storage.models.filter_expression import Expression, AstraFilterExpression, compile_expression
 from adapta.utils import chunk_list, rate_limit
-from adapta.utils.metaframe import MetaFrame, concat, MetaFrameOptions
+from adapta.utils.metaframe import MetaFrame, concat
 from adapta.storage.distributed_object_store.v3.datastax_astra._model_mappers import get_mapper
 from adapta.schema_management.schema_entity import PythonSchemaEntity
+from adapta.storage.models.enum import QueryEnabledStoresOption
 
 TModel = TypeVar("TModel")  # pylint: disable=C0103
 

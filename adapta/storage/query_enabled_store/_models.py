@@ -25,6 +25,7 @@ from typing import TypeVar, Generic, Type, Iterator, Union, final, Optional, Ite
 
 from adapta.storage.models.base import DataPath
 from adapta.storage.models.filter_expression import Expression
+from adapta.storage.models.enum import QueryEnabledStoresOption
 from adapta.utils.metaframe import MetaFrame, MetaFrameOptions
 
 TCredential = TypeVar("TCredential")  # pylint: disable=C0103
@@ -42,14 +43,6 @@ class BundledQueryEnabledStores(Enum):
     DELTA = "adapta.storage.query_enabled_store.DeltaQueryEnabledStore"
     ASTRA = "adapta.storage.query_enabled_store.AstraQueryEnabledStore"
     LOCAL = "adapta.storage.query_enabled_store.LocalQueryEnabledStore"
-
-
-class QueryEnabledStoresOption(Enum):
-    """
-    QES options aliases in Adapta.
-    """
-
-    CONCAT_OPTIONS = "concat_options"
 
 
 BUNDLED_STORES = {store.name: store.value for store in BundledQueryEnabledStores}
@@ -96,7 +89,7 @@ class QueryEnabledStore(Generic[TCredential, TSettings], ABC):
         path: DataPath,
         filter_expression: Expression,
         columns: list[str],
-        options: dict[QueryEnabledStoresOption, any] = None,
+        options: dict[QueryEnabledStoresOption, any] | None = None,
     ) -> Union[MetaFrame, Iterator[MetaFrame]]:
         """
         Applies the provided filter expression to this Store and returns the result in a pandas DataFrame

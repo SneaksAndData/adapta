@@ -11,9 +11,9 @@ from adapta.storage.models.filter_expression import Expression, compile_expressi
 from adapta.storage.query_enabled_store._models import (
     QueryEnabledStore,
     CONNECTION_STRING_REGEX,
-    QueryEnabledStoresOption,
 )
-from adapta.utils.metaframe import MetaFrame, MetaFrameOptions
+from adapta.storage.models.enum import QueryEnabledStoresOption
+from adapta.utils.metaframe import MetaFrame
 
 
 @dataclass
@@ -55,7 +55,7 @@ class LocalQueryEnabledStore(QueryEnabledStore[LocalCredential, LocalSettings]):
         path: DataPath,
         filter_expression: Expression,
         columns: list[str],
-        options: dict[QueryEnabledStoresOption, any] | = None,
+        options: dict[QueryEnabledStoresOption, any] | None = None,
     ) -> MetaFrame | Iterator[MetaFrame]:
         """
         Applies a filter to a local file

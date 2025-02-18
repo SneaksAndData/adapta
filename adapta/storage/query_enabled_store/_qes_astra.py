@@ -4,7 +4,7 @@
 import os
 import re
 from dataclasses import dataclass
-from typing import final, Optional, Union, Iterator, Iterable
+from typing import final, Optional, Union, Iterator
 
 from dataclasses_json import DataClassJsonMixin
 
@@ -17,9 +17,9 @@ from adapta.storage.models.filter_expression import Expression
 from adapta.storage.query_enabled_store._models import (
     QueryEnabledStore,
     CONNECTION_STRING_REGEX,
-    QueryEnabledStoresOption,
 )
-from adapta.utils.metaframe import MetaFrame, MetaFrameOptions
+from adapta.storage.models.enum import QueryEnabledStoresOption
+from adapta.utils.metaframe import MetaFrame
 
 
 @dataclass
@@ -86,7 +86,7 @@ class AstraQueryEnabledStore(QueryEnabledStore[AstraCredential, AstraSettings]):
         path: DataPath,
         filter_expression: Expression,
         columns: list[str],
-        options: dict[QueryEnabledStoresOption, any] = None,
+        options: dict[QueryEnabledStoresOption, any] | None = None,
     ) -> Union[MetaFrame, Iterator[MetaFrame]]:
         assert isinstance(path, AstraPath)
         astra_path: AstraPath = path
