@@ -44,6 +44,14 @@ class BundledQueryEnabledStores(Enum):
     LOCAL = "adapta.storage.query_enabled_store.LocalQueryEnabledStore"
 
 
+class QueryEnabledStoresOption(Enum):
+    """
+    QES options aliases in Adapta.
+    """
+
+    CONCAT_OPTIONS = "concat_options"
+
+
 BUNDLED_STORES = {store.name: store.value for store in BundledQueryEnabledStores}
 
 
@@ -88,7 +96,7 @@ class QueryEnabledStore(Generic[TCredential, TSettings], ABC):
         path: DataPath,
         filter_expression: Expression,
         columns: list[str],
-        concat_options: Optional[Iterable[MetaFrameOptions]] = None,
+        options: dict[QueryEnabledStoresOption, any] = None,
     ) -> Union[MetaFrame, Iterator[MetaFrame]]:
         """
         Applies the provided filter expression to this Store and returns the result in a pandas DataFrame
@@ -144,7 +152,7 @@ class QueryConfigurationBuilder:
         self._path = path
         self._filter_expression: Optional[Expression] = None
         self._columns: list[str] = []
-        self._concat_options: Optional[Iterable[MetaFrameOptions]] = None
+        self._options: dict[QueryEnabledStoresOption, any] = None
 
     def filter(self, filter_expression: Expression) -> "QueryConfigurationBuilder":
         """
@@ -162,12 +170,15 @@ class QueryConfigurationBuilder:
         self._columns = list(columns)
         return self
 
-    def concat_options(self, concat_options: Iterable[MetaFrameOptions]) -> "QueryConfigurationBuilder":
+    def options(self, concat_options: Iterable[MetaFrameOptions] | None = None) -> "QueryConfigurationBuilder":
         """
         Use the provided options when querying the underlying storage.
         """
+        self._options = {}
 
-        self._concat_options = concat_options
+        if concat_options:
+            self._options[QueryEnabledStoresOption.CONCAT_OPTIONS] = concat_options
+
         return self
 
     def read(self) -> Union[MetaFrame, Iterator[MetaFrame]]:
@@ -178,5 +189,5 @@ class QueryConfigurationBuilder:
             path=self._path,
             filter_expression=self._filter_expression,
             columns=self._columns,
-            concat_options=self._concat_options,
+            options=self._options,
         )

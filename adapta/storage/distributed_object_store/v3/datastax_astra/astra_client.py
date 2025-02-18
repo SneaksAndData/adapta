@@ -30,6 +30,8 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict
 from typing import Optional, Dict, TypeVar, Callable, Type, List, Any, Union, Iterable
 
+from adapta.storage.query_enabled_store import QueryEnabledStoresOption
+
 try:
     from _socket import IPPROTO_TCP, TCP_NODELAY, TCP_USER_TIMEOUT
 except ImportError:
@@ -239,7 +241,7 @@ class AstraClient:
         custom_indexes: Optional[List[str]] = None,
         deduplicate=False,
         num_threads: Optional[int] = None,
-        concat_options: Optional[Iterable[MetaFrameOptions]] = None,
+        options: dict[QueryEnabledStoresOption, any] = None,
     ) -> MetaFrame:
         """
         Run a filter query on the entity of type TModel backed by table `table_name`.
@@ -339,7 +341,9 @@ class AstraClient:
                         ],
                         chunksize=max(int(len(compiled_filter_values) / num_threads), 1),
                     ),
-                    options=concat_options,
+                    options=options[QueryEnabledStoresOption.CONCAT_OPTIONS]
+                    if QueryEnabledStoresOption.CONCAT_OPTIONS in options
+                    else None,
                 )
         else:
             result = concat(
@@ -355,7 +359,9 @@ class AstraClient:
                     )
                     for key_column_filter in compiled_filter_values
                 ],
-                options=concat_options,
+                options=options[QueryEnabledStoresOption.CONCAT_OPTIONS]
+                if QueryEnabledStoresOption.CONCAT_OPTIONS in options
+                else None,
             )
 
         return result

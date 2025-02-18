@@ -14,7 +14,11 @@ from adapta.storage.models.astra import AstraPath
 from adapta.storage.models.base import DataPath
 from adapta.storage.models.filter_expression import Expression
 
-from adapta.storage.query_enabled_store._models import QueryEnabledStore, CONNECTION_STRING_REGEX
+from adapta.storage.query_enabled_store._models import (
+    QueryEnabledStore,
+    CONNECTION_STRING_REGEX,
+    QueryEnabledStoresOption,
+)
 from adapta.utils.metaframe import MetaFrame, MetaFrameOptions
 
 
@@ -82,7 +86,7 @@ class AstraQueryEnabledStore(QueryEnabledStore[AstraCredential, AstraSettings]):
         path: DataPath,
         filter_expression: Expression,
         columns: list[str],
-        concat_options: Optional[Iterable[MetaFrameOptions]] = None,
+        options: dict[QueryEnabledStoresOption, any] = None,
     ) -> Union[MetaFrame, Iterator[MetaFrame]]:
         assert isinstance(path, AstraPath)
         astra_path: AstraPath = path
@@ -95,7 +99,7 @@ class AstraQueryEnabledStore(QueryEnabledStore[AstraCredential, AstraSettings]):
                     table_name=astra_path.table,
                     select_columns=columns,
                     num_threads=-1,  # auto-infer, see method documentation
-                    concat_options=concat_options,
+                    options=options,
                 )
 
         return self._astra_client.filter_entities(
@@ -105,7 +109,7 @@ class AstraQueryEnabledStore(QueryEnabledStore[AstraCredential, AstraSettings]):
             table_name=astra_path.table,
             select_columns=columns,
             num_threads=-1,  # auto-infer, see method documentation
-            concat_options=concat_options,
+            options=options,
         )
 
     def _apply_query(self, query: str) -> Union[MetaFrame, Iterator[MetaFrame]]:
