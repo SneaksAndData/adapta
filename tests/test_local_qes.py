@@ -3,6 +3,7 @@ from io import BytesIO
 import polars as pl
 import pytest
 from adapta.storage.models import LocalPath
+from adapta.storage.models.enum import QueryEnabledStoreOptions
 from adapta.storage.models.filter_expression import FilterExpression, FilterField
 from adapta.storage.query_enabled_store import LocalQueryEnabledStore, LocalSettings, LocalCredential
 from adapta.utils.metaframe import MetaFrameOptions
@@ -85,7 +86,9 @@ def test_local_qes_read(polars_filters: pl.Expr, qes_filters: FilterExpression):
         store.open(LocalPath(path=bytes_io))
         .select(*data.columns)
         .filter(qes_filters)
-        .options(concat_options=[MetaFrameOptions(how="vertical")])
+        .add_options(
+            option_key=QueryEnabledStoreOptions.CONCAT_OPTIONS, option_value=[MetaFrameOptions(how="vertical")]
+        )
         .read()
         .to_polars()
     )

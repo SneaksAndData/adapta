@@ -21,12 +21,12 @@ import re
 from abc import ABC, abstractmethod
 from enum import Enum
 from pydoc import locate
-from typing import TypeVar, Generic, Type, Iterator, Union, final, Optional, Iterable
+from typing import TypeVar, Generic, Type, Iterator, Union, final, Optional
 
 from adapta.storage.models.base import DataPath
 from adapta.storage.models.filter_expression import Expression
 from adapta.storage.models.enum import QueryEnabledStoreOptions
-from adapta.utils.metaframe import MetaFrame, MetaFrameOptions
+from adapta.utils.metaframe import MetaFrame
 
 TCredential = TypeVar("TCredential")  # pylint: disable=C0103
 TSettings = TypeVar("TSettings")  # pylint: disable=C0103
@@ -145,7 +145,7 @@ class QueryConfigurationBuilder:
         self._path = path
         self._filter_expression: Optional[Expression] = None
         self._columns: list[str] = []
-        self._options: dict[QueryEnabledStoreOptions, any] = None
+        self._options: dict[QueryEnabledStoreOptions, any] = {}
 
     def filter(self, filter_expression: Expression) -> "QueryConfigurationBuilder":
         """
@@ -163,14 +163,12 @@ class QueryConfigurationBuilder:
         self._columns = list(columns)
         return self
 
-    def options(self, concat_options: Iterable[MetaFrameOptions] | None = None) -> "QueryConfigurationBuilder":
+    def add_options(self, option_key: QueryEnabledStoreOptions, option_value: any) -> "QueryConfigurationBuilder":
         """
         Use the provided options when querying the underlying storage.
         """
-        self._options = {}
 
-        if concat_options:
-            self._options[QueryEnabledStoreOptions.CONCAT_OPTIONS] = concat_options
+        self._options[option_key] = option_value
 
         return self
 
