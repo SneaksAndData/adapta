@@ -65,7 +65,7 @@ from adapta.utils import chunk_list, rate_limit
 from adapta.utils.metaframe import MetaFrame, concat
 from adapta.storage.distributed_object_store.v3.datastax_astra._model_mappers import get_mapper
 from adapta.schema_management.schema_entity import PythonSchemaEntity
-from adapta.storage.models.enum import QueryEnabledStoresOption
+from adapta.storage.models.enum import QueryEnabledStoresOptions
 
 TModel = TypeVar("TModel")  # pylint: disable=C0103
 
@@ -240,7 +240,7 @@ class AstraClient:
         custom_indexes: Optional[List[str]] = None,
         deduplicate=False,
         num_threads: Optional[int] = None,
-        options: dict[QueryEnabledStoresOption, any] = None,
+        options: dict[QueryEnabledStoresOptions, any] = None,
     ) -> MetaFrame:
         """
         Run a filter query on the entity of type TModel backed by table `table_name`.
@@ -340,8 +340,8 @@ class AstraClient:
                         ],
                         chunksize=max(int(len(compiled_filter_values) / num_threads), 1),
                     ),
-                    options=options[QueryEnabledStoresOption.CONCAT_OPTIONS]
-                    if QueryEnabledStoresOption.CONCAT_OPTIONS in options
+                    options=options[QueryEnabledStoresOptions.CONCAT_OPTIONS]
+                    if QueryEnabledStoresOptions.CONCAT_OPTIONS in options
                     else None,
                 )
         else:
@@ -358,8 +358,8 @@ class AstraClient:
                     )
                     for key_column_filter in compiled_filter_values
                 ],
-                options=options[QueryEnabledStoresOption.CONCAT_OPTIONS]
-                if QueryEnabledStoresOption.CONCAT_OPTIONS in options
+                options=options[QueryEnabledStoresOptions.CONCAT_OPTIONS]
+                if QueryEnabledStoresOptions.CONCAT_OPTIONS in options
                 else None,
             )
 

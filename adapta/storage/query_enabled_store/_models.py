@@ -25,7 +25,7 @@ from typing import TypeVar, Generic, Type, Iterator, Union, final, Optional, Ite
 
 from adapta.storage.models.base import DataPath
 from adapta.storage.models.filter_expression import Expression
-from adapta.storage.models.enum import QueryEnabledStoresOption
+from adapta.storage.models.enum import QueryEnabledStoresOptions
 from adapta.utils.metaframe import MetaFrame, MetaFrameOptions
 
 TCredential = TypeVar("TCredential")  # pylint: disable=C0103
@@ -89,7 +89,7 @@ class QueryEnabledStore(Generic[TCredential, TSettings], ABC):
         path: DataPath,
         filter_expression: Expression,
         columns: list[str],
-        options: dict[QueryEnabledStoresOption, any] | None = None,
+        options: dict[QueryEnabledStoresOptions, any] | None = None,
     ) -> Union[MetaFrame, Iterator[MetaFrame]]:
         """
         Applies the provided filter expression to this Store and returns the result in a pandas DataFrame
@@ -145,7 +145,7 @@ class QueryConfigurationBuilder:
         self._path = path
         self._filter_expression: Optional[Expression] = None
         self._columns: list[str] = []
-        self._options: dict[QueryEnabledStoresOption, any] = None
+        self._options: dict[QueryEnabledStoresOptions, any] = None
 
     def filter(self, filter_expression: Expression) -> "QueryConfigurationBuilder":
         """
@@ -170,7 +170,7 @@ class QueryConfigurationBuilder:
         self._options = {}
 
         if concat_options:
-            self._options[QueryEnabledStoresOption.CONCAT_OPTIONS] = concat_options
+            self._options[QueryEnabledStoresOptions.CONCAT_OPTIONS] = concat_options
 
         return self
 

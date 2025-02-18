@@ -18,7 +18,7 @@ from adapta.storage.query_enabled_store._models import (
     QueryEnabledStore,
     CONNECTION_STRING_REGEX,
 )
-from adapta.storage.models.enum import QueryEnabledStoresOption
+from adapta.storage.models.enum import QueryEnabledStoresOptions
 from adapta.utils.metaframe import MetaFrame
 
 
@@ -86,7 +86,7 @@ class AstraQueryEnabledStore(QueryEnabledStore[AstraCredential, AstraSettings]):
         path: DataPath,
         filter_expression: Expression,
         columns: list[str],
-        options: dict[QueryEnabledStoresOption, any] | None = None,
+        options: dict[QueryEnabledStoresOptions, any] | None = None,
     ) -> Union[MetaFrame, Iterator[MetaFrame]]:
         assert isinstance(path, AstraPath)
         astra_path: AstraPath = path

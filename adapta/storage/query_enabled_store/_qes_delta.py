@@ -16,7 +16,7 @@ from adapta.storage.query_enabled_store._models import (
     QueryEnabledStore,
     CONNECTION_STRING_REGEX,
 )
-from adapta.storage.models.enum import QueryEnabledStoresOption
+from adapta.storage.models.enum import QueryEnabledStoresOptions
 from adapta.utils.metaframe import MetaFrame
 
 
@@ -75,7 +75,7 @@ class DeltaQueryEnabledStore(QueryEnabledStore[DeltaCredential, DeltaSettings]):
         path: DataPath,
         filter_expression: Expression,
         columns: list[str],
-        options: dict[QueryEnabledStoresOption, any] | None = None,
+        options: dict[QueryEnabledStoresOptions, any] | None = None,
     ) -> Union[MetaFrame, Iterator[MetaFrame]]:
         return load(
             auth_client=self.credentials.auth_client(credentials=self.credentials.auth_client_credentials()),
