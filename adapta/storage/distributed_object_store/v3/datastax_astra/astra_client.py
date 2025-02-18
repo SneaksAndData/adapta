@@ -62,7 +62,7 @@ from adapta import __version__
 from adapta.storage.distributed_object_store.v3.datastax_astra._models import SimilarityFunction, VectorSearchQuery
 from adapta.storage.models.filter_expression import Expression, AstraFilterExpression, compile_expression
 from adapta.utils import chunk_list, rate_limit
-from adapta.utils.metaframe import MetaFrame, concat
+from adapta.utils.metaframe import MetaFrame, concat, MetaFrameOptions
 from adapta.storage.distributed_object_store.v3.datastax_astra._model_mappers import get_mapper
 from adapta.schema_management.schema_entity import PythonSchemaEntity
 
@@ -239,6 +239,7 @@ class AstraClient:
         custom_indexes: Optional[List[str]] = None,
         deduplicate=False,
         num_threads: Optional[int] = None,
+        options: Optional[typing.Iterable[MetaFrameOptions]] = None,
     ) -> MetaFrame:
         """
         Run a filter query on the entity of type TModel backed by table `table_name`.
@@ -337,7 +338,8 @@ class AstraClient:
                             for key_column_filter in compiled_filter_values
                         ],
                         chunksize=max(int(len(compiled_filter_values) / num_threads), 1),
-                    )
+                    ),
+                    options=options
                 )
         else:
             result = concat(
@@ -352,7 +354,8 @@ class AstraClient:
                         else (lambda x: pandas.DataFrame(x, columns=select_columns).drop_duplicates()),
                     )
                     for key_column_filter in compiled_filter_values
-                ]
+                ],
+                options=options
             )
 
         return result

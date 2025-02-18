@@ -4,7 +4,7 @@
 import re
 from dataclasses import dataclass
 from pydoc import locate
-from typing import final, Union, Iterator, Optional, Type
+from typing import final, Union, Iterator, Optional, Type, Iterable
 
 from dataclasses_json import DataClassJsonMixin
 
@@ -13,7 +13,7 @@ from adapta.storage.delta_lake.v3 import load
 from adapta.storage.models.base import DataPath
 from adapta.storage.models.filter_expression import Expression
 from adapta.storage.query_enabled_store._models import QueryEnabledStore, CONNECTION_STRING_REGEX
-from adapta.utils.metaframe import MetaFrame
+from adapta.utils.metaframe import MetaFrame, MetaFrameOptions
 
 
 @dataclass
@@ -67,7 +67,7 @@ class DeltaQueryEnabledStore(QueryEnabledStore[DeltaCredential, DeltaSettings]):
         return cls(credentials=DeltaCredential.from_json(credentials), settings=DeltaSettings.from_json(settings))
 
     def _apply_filter(
-        self, path: DataPath, filter_expression: Expression, columns: list[str]
+        self, path: DataPath, filter_expression: Expression, columns: list[str], options: Optional[Iterable[MetaFrameOptions]] = None
     ) -> Union[MetaFrame, Iterator[MetaFrame]]:
         return load(
             auth_client=self.credentials.auth_client(credentials=self.credentials.auth_client_credentials()),

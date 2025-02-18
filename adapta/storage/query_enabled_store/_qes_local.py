@@ -1,7 +1,7 @@
 """Local Query Enabled Store (QES) for reading local files."""
 import re
 from dataclasses import dataclass
-from typing import final, Iterator
+from typing import final, Iterator, Optional, Iterable
 
 from dataclasses_json import DataClassJsonMixin
 from pyarrow.parquet import read_table
@@ -9,7 +9,7 @@ from pyarrow.parquet import read_table
 from adapta.storage.models import DataPath
 from adapta.storage.models.filter_expression import Expression, compile_expression, ArrowFilterExpression
 from adapta.storage.query_enabled_store._models import QueryEnabledStore, CONNECTION_STRING_REGEX
-from adapta.utils.metaframe import MetaFrame
+from adapta.utils.metaframe import MetaFrame, MetaFrameOptions
 
 
 @dataclass
@@ -51,6 +51,7 @@ class LocalQueryEnabledStore(QueryEnabledStore[LocalCredential, LocalSettings]):
         path: DataPath,
         filter_expression: Expression,
         columns: list[str],
+        options: Optional[Iterable[MetaFrameOptions]] = None
     ) -> MetaFrame | Iterator[MetaFrame]:
         """
         Applies a filter to a local file

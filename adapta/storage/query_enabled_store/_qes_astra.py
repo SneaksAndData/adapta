@@ -4,7 +4,7 @@
 import os
 import re
 from dataclasses import dataclass
-from typing import final, Optional, Union, Iterator
+from typing import final, Optional, Union, Iterator, Iterable
 
 from dataclasses_json import DataClassJsonMixin
 
@@ -15,7 +15,7 @@ from adapta.storage.models.base import DataPath
 from adapta.storage.models.filter_expression import Expression
 
 from adapta.storage.query_enabled_store._models import QueryEnabledStore, CONNECTION_STRING_REGEX
-from adapta.utils.metaframe import MetaFrame
+from adapta.utils.metaframe import MetaFrame, MetaFrameOptions
 
 
 @dataclass
@@ -78,7 +78,7 @@ class AstraQueryEnabledStore(QueryEnabledStore[AstraCredential, AstraSettings]):
             self._astra_client.connect()
 
     def _apply_filter(
-        self, path: DataPath, filter_expression: Expression, columns: list[str]
+        self, path: DataPath, filter_expression: Expression, columns: list[str], options: Optional[Iterable[MetaFrameOptions]] = None
     ) -> Union[MetaFrame, Iterator[MetaFrame]]:
         assert isinstance(path, AstraPath)
         astra_path: AstraPath = path
@@ -91,6 +91,7 @@ class AstraQueryEnabledStore(QueryEnabledStore[AstraCredential, AstraSettings]):
                     table_name=astra_path.table,
                     select_columns=columns,
                     num_threads=-1,  # auto-infer, see method documentation
+                    options=options,
                 )
 
         return self._astra_client.filter_entities(
@@ -100,6 +101,7 @@ class AstraQueryEnabledStore(QueryEnabledStore[AstraCredential, AstraSettings]):
             table_name=astra_path.table,
             select_columns=columns,
             num_threads=-1,  # auto-infer, see method documentation
+            options=options,
         )
 
     def _apply_query(self, query: str) -> Union[MetaFrame, Iterator[MetaFrame]]:

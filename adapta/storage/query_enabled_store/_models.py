@@ -21,11 +21,11 @@ import re
 from abc import ABC, abstractmethod
 from enum import Enum
 from pydoc import locate
-from typing import TypeVar, Generic, Type, Iterator, Union, final, Optional
+from typing import TypeVar, Generic, Type, Iterator, Union, final, Optional, Iterable
 
 from adapta.storage.models.base import DataPath
 from adapta.storage.models.filter_expression import Expression
-from adapta.utils.metaframe import MetaFrame
+from adapta.utils.metaframe import MetaFrame, MetaFrameOptions
 
 TCredential = TypeVar("TCredential")  # pylint: disable=C0103
 TSettings = TypeVar("TSettings")  # pylint: disable=C0103
@@ -84,7 +84,7 @@ class QueryEnabledStore(Generic[TCredential, TSettings], ABC):
 
     @abstractmethod
     def _apply_filter(
-        self, path: DataPath, filter_expression: Expression, columns: list[str]
+        self, path: DataPath, filter_expression: Expression, columns: list[str], options: Optional[Iterable[MetaFrameOptions]] = None
     ) -> Union[MetaFrame, Iterator[MetaFrame]]:
         """
         Applies the provided filter expression to this Store and returns the result in a pandas DataFrame
@@ -140,6 +140,7 @@ class QueryConfigurationBuilder:
         self._path = path
         self._filter_expression: Optional[Expression] = None
         self._columns: list[str] = []
+        self._options: Optional[Iterable[MetaFrameOptions]] = None
 
     def filter(self, filter_expression: Expression) -> "QueryConfigurationBuilder":
         """
@@ -157,10 +158,18 @@ class QueryConfigurationBuilder:
         self._columns = list(columns)
         return self
 
+    def options(self, options: Iterable[MetaFrameOptions]) -> "QueryConfigurationBuilder":
+        """
+        Use the provided options when querying the underlying storage.
+        """
+
+        self._options = options
+        return self
+
     def read(self) -> Union[MetaFrame, Iterator[MetaFrame]]:
         """
         Execute the query on the underlying store.
         """
         return self._store._apply_filter(
-            path=self._path, filter_expression=self._filter_expression, columns=self._columns
+            path=self._path, filter_expression=self._filter_expression, columns=self._columns, options=self._options
         )
