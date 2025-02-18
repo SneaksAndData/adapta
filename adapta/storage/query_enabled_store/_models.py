@@ -84,7 +84,11 @@ class QueryEnabledStore(Generic[TCredential, TSettings], ABC):
 
     @abstractmethod
     def _apply_filter(
-        self, path: DataPath, filter_expression: Expression, columns: list[str], options: Optional[Iterable[MetaFrameOptions]] = None
+        self,
+        path: DataPath,
+        filter_expression: Expression,
+        columns: list[str],
+        concat_options: Optional[Iterable[MetaFrameOptions]] = None,
     ) -> Union[MetaFrame, Iterator[MetaFrame]]:
         """
         Applies the provided filter expression to this Store and returns the result in a pandas DataFrame
@@ -140,7 +144,7 @@ class QueryConfigurationBuilder:
         self._path = path
         self._filter_expression: Optional[Expression] = None
         self._columns: list[str] = []
-        self._options: Optional[Iterable[MetaFrameOptions]] = None
+        self._concat_options: Optional[Iterable[MetaFrameOptions]] = None
 
     def filter(self, filter_expression: Expression) -> "QueryConfigurationBuilder":
         """
@@ -163,7 +167,7 @@ class QueryConfigurationBuilder:
         Use the provided options when querying the underlying storage.
         """
 
-        self._options = options
+        self._concat_options = options
         return self
 
     def read(self) -> Union[MetaFrame, Iterator[MetaFrame]]:
@@ -171,5 +175,8 @@ class QueryConfigurationBuilder:
         Execute the query on the underlying store.
         """
         return self._store._apply_filter(
-            path=self._path, filter_expression=self._filter_expression, columns=self._columns, options=self._options
+            path=self._path,
+            filter_expression=self._filter_expression,
+            columns=self._columns,
+            concat_options=self._concat_options,
         )

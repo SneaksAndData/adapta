@@ -51,7 +51,7 @@ class LocalQueryEnabledStore(QueryEnabledStore[LocalCredential, LocalSettings]):
         path: DataPath,
         filter_expression: Expression,
         columns: list[str],
-        options: Optional[Iterable[MetaFrameOptions]] = None
+        concat_options: Optional[Iterable[MetaFrameOptions]] = None,
     ) -> MetaFrame | Iterator[MetaFrame]:
         """
         Applies a filter to a local file

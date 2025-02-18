@@ -78,7 +78,11 @@ class AstraQueryEnabledStore(QueryEnabledStore[AstraCredential, AstraSettings]):
             self._astra_client.connect()
 
     def _apply_filter(
-        self, path: DataPath, filter_expression: Expression, columns: list[str], options: Optional[Iterable[MetaFrameOptions]] = None
+        self,
+        path: DataPath,
+        filter_expression: Expression,
+        columns: list[str],
+        concat_options: Optional[Iterable[MetaFrameOptions]] = None,
     ) -> Union[MetaFrame, Iterator[MetaFrame]]:
         assert isinstance(path, AstraPath)
         astra_path: AstraPath = path
@@ -91,7 +95,7 @@ class AstraQueryEnabledStore(QueryEnabledStore[AstraCredential, AstraSettings]):
                     table_name=astra_path.table,
                     select_columns=columns,
                     num_threads=-1,  # auto-infer, see method documentation
-                    options=options,
+                    concat_options=concat_options,
                 )
 
         return self._astra_client.filter_entities(
@@ -101,7 +105,7 @@ class AstraQueryEnabledStore(QueryEnabledStore[AstraCredential, AstraSettings]):
             table_name=astra_path.table,
             select_columns=columns,
             num_threads=-1,  # auto-infer, see method documentation
-            options=options,
+            concat_options=concat_options,
         )
 
     def _apply_query(self, query: str) -> Union[MetaFrame, Iterator[MetaFrame]]:

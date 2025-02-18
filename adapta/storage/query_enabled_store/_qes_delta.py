@@ -67,7 +67,11 @@ class DeltaQueryEnabledStore(QueryEnabledStore[DeltaCredential, DeltaSettings]):
         return cls(credentials=DeltaCredential.from_json(credentials), settings=DeltaSettings.from_json(settings))
 
     def _apply_filter(
-        self, path: DataPath, filter_expression: Expression, columns: list[str], options: Optional[Iterable[MetaFrameOptions]] = None
+        self,
+        path: DataPath,
+        filter_expression: Expression,
+        columns: list[str],
+        concat_options: Optional[Iterable[MetaFrameOptions]] = None,
     ) -> Union[MetaFrame, Iterator[MetaFrame]]:
         return load(
             auth_client=self.credentials.auth_client(credentials=self.credentials.auth_client_credentials()),

@@ -239,7 +239,7 @@ class AstraClient:
         custom_indexes: Optional[List[str]] = None,
         deduplicate=False,
         num_threads: Optional[int] = None,
-        options: Optional[typing.Iterable[MetaFrameOptions]] = None,
+        concat_options: Optional[typing.Iterable[MetaFrameOptions]] = None,
     ) -> MetaFrame:
         """
         Run a filter query on the entity of type TModel backed by table `table_name`.
@@ -339,7 +339,7 @@ class AstraClient:
                         ],
                         chunksize=max(int(len(compiled_filter_values) / num_threads), 1),
                     ),
-                    options=options
+                    options=concat_options,
                 )
         else:
             result = concat(
@@ -355,7 +355,7 @@ class AstraClient:
                     )
                     for key_column_filter in compiled_filter_values
                 ],
-                options=options
+                options=concat_options,
             )
 
         return result
