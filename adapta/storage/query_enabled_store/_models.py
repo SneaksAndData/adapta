@@ -162,12 +162,12 @@ class QueryConfigurationBuilder:
         self._columns = list(columns)
         return self
 
-    def options(self, options: Iterable[MetaFrameOptions]) -> "QueryConfigurationBuilder":
+    def concat_options(self, concat_options: Iterable[MetaFrameOptions]) -> "QueryConfigurationBuilder":
         """
         Use the provided options when querying the underlying storage.
         """
 
-        self._concat_options = options
+        self._concat_options = concat_options
         return self
 
     def read(self) -> Union[MetaFrame, Iterator[MetaFrame]]:

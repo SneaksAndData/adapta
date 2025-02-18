@@ -28,7 +28,7 @@ import typing
 from uuid import uuid4
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict
-from typing import Optional, Dict, TypeVar, Callable, Type, List, Any, Union
+from typing import Optional, Dict, TypeVar, Callable, Type, List, Any, Union, Iterable
 
 try:
     from _socket import IPPROTO_TCP, TCP_NODELAY, TCP_USER_TIMEOUT
@@ -239,7 +239,7 @@ class AstraClient:
         custom_indexes: Optional[List[str]] = None,
         deduplicate=False,
         num_threads: Optional[int] = None,
-        concat_options: Optional[typing.Iterable[MetaFrameOptions]] = None,
+        concat_options: Optional[Iterable[MetaFrameOptions]] = None,
     ) -> MetaFrame:
         """
         Run a filter query on the entity of type TModel backed by table `table_name`.
