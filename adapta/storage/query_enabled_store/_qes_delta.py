@@ -12,7 +12,11 @@ from adapta.security.clients import AuthenticationClient
 from adapta.storage.delta_lake.v3 import load
 from adapta.storage.models.base import DataPath
 from adapta.storage.models.filter_expression import Expression
-from adapta.storage.query_enabled_store._models import QueryEnabledStore, CONNECTION_STRING_REGEX
+from adapta.storage.query_enabled_store._models import (
+    QueryEnabledStore,
+    CONNECTION_STRING_REGEX,
+)
+from adapta.storage.models.enum import QueryEnabledStoreOptions
 from adapta.utils.metaframe import MetaFrame
 
 
@@ -67,7 +71,11 @@ class DeltaQueryEnabledStore(QueryEnabledStore[DeltaCredential, DeltaSettings]):
         return cls(credentials=DeltaCredential.from_json(credentials), settings=DeltaSettings.from_json(settings))
 
     def _apply_filter(
-        self, path: DataPath, filter_expression: Expression, columns: list[str]
+        self,
+        path: DataPath,
+        filter_expression: Expression,
+        columns: list[str],
+        options: dict[QueryEnabledStoreOptions, any] | None = None,
     ) -> Union[MetaFrame, Iterator[MetaFrame]]:
         return load(
             auth_client=self.credentials.auth_client(credentials=self.credentials.auth_client_credentials()),

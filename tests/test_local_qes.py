@@ -3,8 +3,10 @@ from io import BytesIO
 import polars as pl
 import pytest
 from adapta.storage.models import LocalPath
+from adapta.storage.models.enum import QueryEnabledStoreOptions
 from adapta.storage.models.filter_expression import FilterExpression, FilterField
 from adapta.storage.query_enabled_store import LocalQueryEnabledStore, LocalSettings, LocalCredential
+from adapta.utils.metaframe import MetaFrameOptions
 
 # Create a test dataset
 data = pl.DataFrame(
@@ -80,6 +82,15 @@ def test_local_qes_read(polars_filters: pl.Expr, qes_filters: FilterExpression):
     bytes_io.seek(0)
 
     polars_data = data.filter(polars_filters) if polars_filters is not None else data
-    qes_data = store.open(LocalPath(path=bytes_io)).select(*data.columns).filter(qes_filters).read().to_polars()
+    qes_data = (
+        store.open(LocalPath(path=bytes_io))
+        .select(*data.columns)
+        .filter(qes_filters)
+        .add_options(
+            option_key=QueryEnabledStoreOptions.CONCAT_OPTIONS, option_value=[MetaFrameOptions(how="vertical")]
+        )
+        .read()
+        .to_polars()
+    )
 
     assert polars_data.equals(qes_data)

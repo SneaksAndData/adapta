@@ -8,7 +8,11 @@ from pyarrow.parquet import read_table
 
 from adapta.storage.models import DataPath
 from adapta.storage.models.filter_expression import Expression, compile_expression, ArrowFilterExpression
-from adapta.storage.query_enabled_store._models import QueryEnabledStore, CONNECTION_STRING_REGEX
+from adapta.storage.query_enabled_store._models import (
+    QueryEnabledStore,
+    CONNECTION_STRING_REGEX,
+)
+from adapta.storage.models.enum import QueryEnabledStoreOptions
 from adapta.utils.metaframe import MetaFrame
 
 
@@ -51,6 +55,7 @@ class LocalQueryEnabledStore(QueryEnabledStore[LocalCredential, LocalSettings]):
         path: DataPath,
         filter_expression: Expression,
         columns: list[str],
+        options: dict[QueryEnabledStoreOptions, any] | None = None,
     ) -> MetaFrame | Iterator[MetaFrame]:
         """
         Applies a filter to a local file
