@@ -5,7 +5,7 @@
 from enum import Enum
 
 
-class QueryEnabledStoresOptions(Enum):
+class QueryEnabledStoreOptions(Enum):
     """
     QES options aliases in Adapta.
     """
