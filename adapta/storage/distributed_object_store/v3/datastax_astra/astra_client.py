@@ -60,7 +60,12 @@ from cassandra.query import dict_factory, BatchType  # pylint: disable=E0611
 
 from adapta import __version__
 from adapta.storage.distributed_object_store.v3.datastax_astra._models import SimilarityFunction, VectorSearchQuery
-from adapta.storage.models.filter_expression import Expression, AstraFilterExpression, compile_expression
+from adapta.storage.models.filter_expression import (
+    Expression,
+    AstraFilterExpression,
+    compile_expression,
+    FilterExpressionOperationAstraSuffix,
+)
 from adapta.utils import chunk_list, rate_limit
 from adapta.utils.metaframe import MetaFrame, concat
 from adapta.storage.distributed_object_store.v3.datastax_astra._model_mappers import get_mapper
@@ -329,14 +334,16 @@ class AstraClient:
             else PythonSchemaEntity(model_class).get_field_names()
         )
 
-        cassandra_model = get_mapper(
+        cassandra_model_mapper = get_mapper(
             data_model=model_class,
             keyspace=keyspace,
             table_name=table_name,
             primary_keys=primary_keys,
             partition_keys=partition_keys,
             custom_indexes=custom_indexes,
-        ).map()
+        )
+
+        cassandra_model = cassandra_model_mapper.map()
 
         compiled_filter_values = (
             compile_expression(key_column_filter_values, AstraFilterExpression)
@@ -351,7 +358,28 @@ class AstraClient:
         )
 
         if allow_partitioning_filtering:
-            print("test")
+            astra_suffixes = [
+                op.value for op in FilterExpressionOperationAstraSuffix.__members__.values() if op.value != ""
+            ]
+            filtering_keys = {key for fk in compiled_filter_values for key in fk.keys()}
+            strip_values = {key: "" for key in filtering_keys}
+
+            for key in filtering_keys:
+                for suffix in astra_suffixes:
+                    if key.endswith(suffix):
+                        strip_values[key] = suffix
+                        break
+
+            filtering_keys_stripped = [
+                key[: -len(suffix)] if len(suffix) > 0 else key for key, suffix in strip_values.items()
+            ]
+
+            missing_primary_keys = list(set(cassandra_model_mapper.primary_keys) - set(filtering_keys_stripped))
+
+            if len(missing_primary_keys) > 0:
+                raise ValueError(
+                    f"All primary keys must be defined in order to allow partitioning filtering. Missing primary keys: {missing_primary_keys}"
+                )
 
         if num_threads:
             max_threads = (
@@ -364,7 +392,7 @@ class AstraClient:
                     tpe.map(
                         lambda args: to_frame(*args),
                         [
-                            (cassandra_model, key_column_filter, select_columns)
+                            (cassandra_model, key_column_filter, select_columns, allow_partitioning_filtering)
                             for key_column_filter in compiled_filter_values
                         ],
                         chunksize=max(int(len(compiled_filter_values) / num_threads), 1),

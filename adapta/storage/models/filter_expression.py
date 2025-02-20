@@ -13,6 +13,19 @@ from adapta.utils import chunk_list
 TCompileResult = TypeVar("TCompileResult")  # pylint: disable=invalid-name
 
 
+class FilterExpressionOperationAstraSuffix(Enum):
+    """
+    An enumeration of filter expression operation astra suffixes.
+    """
+
+    GT = "__gt"
+    GE = "__gte"
+    LT = "__lt"
+    LE = "__lte"
+    EQ = ""
+    IN = "__in"
+
+
 # pylint: disable=E1101
 class FilterExpressionOperation(Enum):
     """
@@ -26,12 +39,12 @@ class FilterExpressionOperation(Enum):
         ],
     }
     OR = {"arrow": pyarrow.compute.Expression.__or__, "astra": lambda left_exprs, right_exprs: left_exprs + right_exprs}
-    GT = {"arrow": pyarrow.compute.Expression.__gt__, "astra": "__gt"}
-    GE = {"arrow": pyarrow.compute.Expression.__ge__, "astra": "__gte"}
-    LT = {"arrow": pyarrow.compute.Expression.__lt__, "astra": "__lt"}
-    LE = {"arrow": pyarrow.compute.Expression.__le__, "astra": "__lte"}
-    EQ = {"arrow": pyarrow.compute.Expression.__eq__, "astra": ""}
-    IN = {"arrow": pyarrow.compute.Expression.isin, "astra": "__in"}
+    GT = {"arrow": pyarrow.compute.Expression.__gt__, "astra": FilterExpressionOperationAstraSuffix.GT.value}
+    GE = {"arrow": pyarrow.compute.Expression.__ge__, "astra": FilterExpressionOperationAstraSuffix.GE.value}
+    LT = {"arrow": pyarrow.compute.Expression.__lt__, "astra": FilterExpressionOperationAstraSuffix.LT.value}
+    LE = {"arrow": pyarrow.compute.Expression.__le__, "astra": FilterExpressionOperationAstraSuffix.LE.value}
+    EQ = {"arrow": pyarrow.compute.Expression.__eq__, "astra": FilterExpressionOperationAstraSuffix.EQ.value}
+    IN = {"arrow": pyarrow.compute.Expression.isin, "astra": FilterExpressionOperationAstraSuffix.IN.value}
 
     def to_string(self):
         """
