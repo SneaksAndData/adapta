@@ -361,24 +361,32 @@ class AstraClient:
             astra_suffixes = [
                 op.value for op in FilterExpressionOperationAstraSuffix.__members__.values() if op.value != ""
             ]
-            filtering_keys = {key for fk in compiled_filter_values for key in fk.keys()}
-            strip_values = {key: "" for key in filtering_keys}
+            filtering_keys = [list(fk.keys()) for fk in compiled_filter_values]
+            filtering_keys = [list(x) for x in set(tuple(x) for x in filtering_keys)]
 
-            for key in filtering_keys:
+            unique_filtering_keys = {key for fk in filtering_keys for key in fk}
+            strip_values = {key: "" for key in unique_filtering_keys}
+
+            for key in unique_filtering_keys:
                 for suffix in astra_suffixes:
                     if key.endswith(suffix):
                         strip_values[key] = suffix
                         break
 
             filtering_keys_stripped = [
-                key[: -len(suffix)] if len(suffix) > 0 else key for key, suffix in strip_values.items()
+                [key[: -len(strip_values[key])] if len(strip_values[key]) > 0 else key for key in fk]
+                for fk in filtering_keys
             ]
 
-            missing_primary_keys = list(set(cassandra_model_mapper.primary_keys) - set(filtering_keys_stripped))
+            missing_primary_keys = [
+                list(set(cassandra_model_mapper.primary_keys) - set(fk_stripped))
+                for fk_stripped in filtering_keys_stripped
+            ]
+            missing_primary_keys = [missing_pk for missing_pk in missing_primary_keys if len(missing_pk) > 0]
 
             if len(missing_primary_keys) > 0:
                 raise ValueError(
-                    f"All primary keys must be defined in order to allow partitioning filtering. Missing primary keys: {missing_primary_keys}"
+                    f"All primary keys must be defined in all filter sets in order to allow partitioning filtering. Missing primary keys in some sets are: {missing_primary_keys}"
                 )
 
         if num_threads:
