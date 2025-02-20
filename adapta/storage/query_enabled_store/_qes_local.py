@@ -7,8 +7,11 @@ from dataclasses_json import DataClassJsonMixin
 from pyarrow.parquet import read_table
 
 from adapta.storage.models import DataPath
-from adapta.storage.models.filter_expression import Expression, compile_expression, ArrowFilterExpression, \
-    AstraFilterExpression
+from adapta.storage.models.filter_expression import (
+    Expression,
+    compile_expression,
+    ArrowFilterExpression,
+)
 from adapta.storage.query_enabled_store._models import (
     QueryEnabledStore,
     CONNECTION_STRING_REGEX,
@@ -62,16 +65,6 @@ class LocalQueryEnabledStore(QueryEnabledStore[LocalCredential, LocalSettings]):
         Applies a filter to a local file
         """
         row_filter = compile_expression(filter_expression, ArrowFilterExpression) if filter_expression else None
-
-        compiled_filter_values = (
-            compile_expression(filter_expression, AstraFilterExpression)
-            if isinstance(filter_expression, Expression)
-            else filter_expression
-        )
-
-
-
-        #assert  # if you allow filtering then your key_column_filter_values must contain full PK
 
         pyarrow_table = read_table(
             path.path,

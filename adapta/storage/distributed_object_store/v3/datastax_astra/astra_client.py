@@ -228,6 +228,7 @@ class AstraClient:
             convert_to_pandas=pandas.DataFrame,
         )
 
+    # pylint: disable=too-many-locals
     def filter_entities(
         self,
         model_class: Type[TModel],
@@ -277,9 +278,12 @@ class AstraClient:
             max_time=self._transient_error_max_wait_s,
             raise_on_giveup=True,
         )
-
-        def apply(model: Type[Model], key_column_filter: Dict[str, Any], columns_to_select: Optional[List[str]],
-                  allow_partitioning_filtering: bool):
+        def apply(
+            model: Type[Model],
+            key_column_filter: Dict[str, Any],
+            columns_to_select: Optional[List[str]],
+            allow_partitioning_filtering: bool,
+        ):
             base_filter = model.filter(**key_column_filter)
             if columns_to_select:
                 base_filter = base_filter.only(select_columns)
@@ -294,10 +298,23 @@ class AstraClient:
             return column_name.replace(filter_suffix[0], "")
 
         def to_frame(
-            model: Type[Model], key_column_filter: Dict[str, Any], columns_to_select: Optional[List[str]], allow_partitioning_filtering: bool
+            model: Type[Model],
+            key_column_filter: Dict[str, Any],
+            columns_to_select: Optional[List[str]],
+            allow_partitioning_filtering: bool,
         ) -> MetaFrame:
             return MetaFrame(
-                [dict(v.items()) for v in list(apply(model=model, key_column_filter=key_column_filter, columns_to_select=columns_to_select, allow_partitioning_filtering=allow_partitioning_filtering))],
+                [
+                    dict(v.items())
+                    for v in list(
+                        apply(
+                            model=model,
+                            key_column_filter=key_column_filter,
+                            columns_to_select=columns_to_select,
+                            allow_partitioning_filtering=allow_partitioning_filtering,
+                        )
+                    )
+                ],
                 convert_to_polars=lambda x: polars.DataFrame(x, schema=select_columns),
                 convert_to_pandas=lambda x: pandas.DataFrame(x, columns=select_columns),
             )
@@ -327,7 +344,11 @@ class AstraClient:
             else key_column_filter_values
         )
 
-        allow_partitioning_filtering = options[QueryEnabledStoreOptions.ALLOW_PARTITIONING_FILTERING] if QueryEnabledStoreOptions.ALLOW_PARTITIONING_FILTERING in options else False
+        allow_partitioning_filtering = (
+            options[QueryEnabledStoreOptions.ALLOW_PARTITIONING_FILTERING]
+            if QueryEnabledStoreOptions.ALLOW_PARTITIONING_FILTERING in options
+            else False
+        )
 
         if allow_partitioning_filtering:
             print("test")
@@ -356,7 +377,17 @@ class AstraClient:
             result = concat(
                 [
                     MetaFrame(
-                        [dict(v.items()) for v in list(apply(model=cassandra_model, key_column_filter=key_column_filter, columns_to_select=select_columns, allow_partitioning_filtering=allow_partitioning_filtering))],
+                        [
+                            dict(v.items())
+                            for v in list(
+                                apply(
+                                    model=cassandra_model,
+                                    key_column_filter=key_column_filter,
+                                    columns_to_select=select_columns,
+                                    allow_partitioning_filtering=allow_partitioning_filtering,
+                                )
+                            )
+                        ],
                         convert_to_polars=(lambda x: polars.DataFrame(x, schema=select_columns))
                         if not deduplicate
                         else (lambda x: polars.DataFrame(x, schema=select_columns).unique()),
