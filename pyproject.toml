@@ -19,7 +19,6 @@ dataclasses-json = "~0.6"
 limits = "~3.7"
 polars = ">=1.7 <2.0"
 pandera = ">=0.20.3 <1.0"
-
 cassandra-driver = { version = "~3.29.1", optional = true }
 
 deltalake = { version = "^0.18.1", optional = true }

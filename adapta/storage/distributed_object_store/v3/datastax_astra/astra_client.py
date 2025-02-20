@@ -60,7 +60,12 @@ from cassandra.query import dict_factory, BatchType  # pylint: disable=E0611
 
 from adapta import __version__
 from adapta.storage.distributed_object_store.v3.datastax_astra._models import SimilarityFunction, VectorSearchQuery
-from adapta.storage.models.filter_expression import Expression, AstraFilterExpression, compile_expression
+from adapta.storage.models.filter_expression import (
+    Expression,
+    AstraFilterExpression,
+    compile_expression,
+    FilterExpressionOperationAstraSuffix,
+)
 from adapta.utils import chunk_list, rate_limit
 from adapta.utils.metaframe import MetaFrame, concat
 from adapta.storage.distributed_object_store.v3.datastax_astra._model_mappers import get_mapper
@@ -228,6 +233,7 @@ class AstraClient:
             convert_to_pandas=pandas.DataFrame,
         )
 
+    # pylint: disable=too-many-locals
     def filter_entities(
         self,
         model_class: Type[TModel],
@@ -277,11 +283,17 @@ class AstraClient:
             max_time=self._transient_error_max_wait_s,
             raise_on_giveup=True,
         )
-        def apply(model: Type[Model], key_column_filter: Dict[str, Any], columns_to_select: Optional[List[str]]):
+        def apply(
+            model: Type[Model],
+            key_column_filter: Dict[str, Any],
+            columns_to_select: Optional[List[str]],
+            allow_filtering: bool,
+        ):
+            base_filter = model.filter(**key_column_filter)
             if columns_to_select:
-                return model.filter(**key_column_filter).only(select_columns)
+                base_filter = base_filter.only(select_columns)
 
-            return model.filter(**key_column_filter)
+            return base_filter if not allow_filtering else base_filter.allow_filtering()
 
         def normalize_column_name(column_name: str) -> str:
             filter_suffix = re.findall(self._filter_pattern, column_name)
@@ -291,10 +303,23 @@ class AstraClient:
             return column_name.replace(filter_suffix[0], "")
 
         def to_frame(
-            model: Type[Model], key_column_filter: Dict[str, Any], columns_to_select: Optional[List[str]]
+            model: Type[Model],
+            key_column_filter: Dict[str, Any],
+            columns_to_select: Optional[List[str]],
+            allow_filtering: bool,
         ) -> MetaFrame:
             return MetaFrame(
-                [dict(v.items()) for v in list(apply(model, key_column_filter, columns_to_select))],
+                [
+                    dict(v.items())
+                    for v in list(
+                        apply(
+                            model=model,
+                            key_column_filter=key_column_filter,
+                            columns_to_select=columns_to_select,
+                            allow_filtering=allow_filtering,
+                        )
+                    )
+                ],
                 convert_to_polars=lambda x: polars.DataFrame(x, schema=select_columns),
                 convert_to_pandas=lambda x: pandas.DataFrame(x, columns=select_columns),
             )
@@ -309,20 +334,60 @@ class AstraClient:
             else PythonSchemaEntity(model_class).get_field_names()
         )
 
-        cassandra_model = get_mapper(
+        cassandra_model_mapper = get_mapper(
             data_model=model_class,
             keyspace=keyspace,
             table_name=table_name,
             primary_keys=primary_keys,
             partition_keys=partition_keys,
             custom_indexes=custom_indexes,
-        ).map()
+        )
+
+        cassandra_model = cassandra_model_mapper.map()
 
         compiled_filter_values = (
             compile_expression(key_column_filter_values, AstraFilterExpression)
             if isinstance(key_column_filter_values, Expression)
             else key_column_filter_values
         )
+
+        allow_filtering = (
+            options[QueryEnabledStoreOptions.ALLOW_FILTERING]
+            if QueryEnabledStoreOptions.ALLOW_FILTERING in options
+            else False
+        )
+
+        if allow_filtering:
+            astra_suffixes = [
+                op.value for op in FilterExpressionOperationAstraSuffix.__members__.values() if op.value != ""
+            ]
+            filtering_keys = [list(fk.keys()) for fk in compiled_filter_values]
+            filtering_keys = [list(x) for x in set(tuple(x) for x in filtering_keys)]
+
+            unique_filtering_keys = {key for fk in filtering_keys for key in fk}
+            strip_values = {key: "" for key in unique_filtering_keys}
+
+            for key in unique_filtering_keys:
+                for suffix in astra_suffixes:
+                    if key.endswith(suffix):
+                        strip_values[key] = suffix
+                        break
+
+            filtering_keys_stripped = [
+                [key[: -len(strip_values[key])] if len(strip_values[key]) > 0 else key for key in fk]
+                for fk in filtering_keys
+            ]
+
+            missing_partition_keys = [
+                list(set(cassandra_model_mapper.partition_keys) - set(fk_stripped))
+                for fk_stripped in filtering_keys_stripped
+            ]
+            missing_partition_keys = [missing_pk for missing_pk in missing_partition_keys if len(missing_pk) > 0]
+
+            if len(missing_partition_keys) > 0:
+                raise ValueError(
+                    f"All partitioning keys must be defined in all filter sets in order to allow partitioning filtering. Missing primary keys in some sets are: {missing_partition_keys}"
+                )
 
         if num_threads:
             max_threads = (
@@ -335,7 +400,7 @@ class AstraClient:
                     tpe.map(
                         lambda args: to_frame(*args),
                         [
-                            (cassandra_model, key_column_filter, select_columns)
+                            (cassandra_model, key_column_filter, select_columns, allow_filtering)
                             for key_column_filter in compiled_filter_values
                         ],
                         chunksize=max(int(len(compiled_filter_values) / num_threads), 1),
@@ -348,7 +413,17 @@ class AstraClient:
             result = concat(
                 [
                     MetaFrame(
-                        [dict(v.items()) for v in list(apply(cassandra_model, key_column_filter, select_columns))],
+                        [
+                            dict(v.items())
+                            for v in list(
+                                apply(
+                                    model=cassandra_model,
+                                    key_column_filter=key_column_filter,
+                                    columns_to_select=select_columns,
+                                    allow_filtering=allow_filtering,
+                                )
+                            )
+                        ],
                         convert_to_polars=(lambda x: polars.DataFrame(x, schema=select_columns))
                         if not deduplicate
                         else (lambda x: polars.DataFrame(x, schema=select_columns).unique()),
