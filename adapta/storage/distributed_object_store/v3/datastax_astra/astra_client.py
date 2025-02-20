@@ -277,11 +277,14 @@ class AstraClient:
             max_time=self._transient_error_max_wait_s,
             raise_on_giveup=True,
         )
-        def apply(model: Type[Model], key_column_filter: Dict[str, Any], columns_to_select: Optional[List[str]]):
-            if columns_to_select:
-                return model.filter(**key_column_filter).only(select_columns)
 
-            return model.filter(**key_column_filter)
+        def apply(model: Type[Model], key_column_filter: Dict[str, Any], columns_to_select: Optional[List[str]],
+                  allow_partitioning_filtering: bool):
+            base_filter = model.filter(**key_column_filter)
+            if columns_to_select:
+                base_filter = base_filter.only(select_columns)
+
+            return base_filter if not allow_partitioning_filtering else base_filter.allow_filtering()
 
         def normalize_column_name(column_name: str) -> str:
             filter_suffix = re.findall(self._filter_pattern, column_name)
@@ -291,10 +294,10 @@ class AstraClient:
             return column_name.replace(filter_suffix[0], "")
 
         def to_frame(
-            model: Type[Model], key_column_filter: Dict[str, Any], columns_to_select: Optional[List[str]]
+            model: Type[Model], key_column_filter: Dict[str, Any], columns_to_select: Optional[List[str]], allow_partitioning_filtering: bool
         ) -> MetaFrame:
             return MetaFrame(
-                [dict(v.items()) for v in list(apply(model, key_column_filter, columns_to_select))],
+                [dict(v.items()) for v in list(apply(model=model, key_column_filter=key_column_filter, columns_to_select=columns_to_select, allow_partitioning_filtering=allow_partitioning_filtering))],
                 convert_to_polars=lambda x: polars.DataFrame(x, schema=select_columns),
                 convert_to_pandas=lambda x: pandas.DataFrame(x, columns=select_columns),
             )
@@ -324,6 +327,11 @@ class AstraClient:
             else key_column_filter_values
         )
 
+        allow_partitioning_filtering = options[QueryEnabledStoreOptions.ALLOW_PARTITIONING_FILTERING] if QueryEnabledStoreOptions.ALLOW_PARTITIONING_FILTERING in options else False
+
+        if allow_partitioning_filtering:
+            print("test")
+
         if num_threads:
             max_threads = (
                 max([int(math.sqrt(len(compiled_filter_values) + 1) / 2), num_threads, os.cpu_count()])
@@ -348,7 +356,7 @@ class AstraClient:
             result = concat(
                 [
                     MetaFrame(
-                        [dict(v.items()) for v in list(apply(cassandra_model, key_column_filter, select_columns))],
+                        [dict(v.items()) for v in list(apply(model=cassandra_model, key_column_filter=key_column_filter, columns_to_select=select_columns, allow_partitioning_filtering=allow_partitioning_filtering))],
                         convert_to_polars=(lambda x: polars.DataFrame(x, schema=select_columns))
                         if not deduplicate
                         else (lambda x: polars.DataFrame(x, schema=select_columns).unique()),

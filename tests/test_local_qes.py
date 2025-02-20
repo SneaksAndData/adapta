@@ -86,8 +86,13 @@ def test_local_qes_read(polars_filters: pl.Expr, qes_filters: FilterExpression):
         store.open(LocalPath(path=bytes_io))
         .select(*data.columns)
         .filter(qes_filters)
+        # This does not do anything in the local qes
         .add_options(
             option_key=QueryEnabledStoreOptions.CONCAT_OPTIONS, option_value=[MetaFrameOptions(how="vertical")]
+        )
+        # This does not do anything in the local qes
+        .add_options(
+            option_key=QueryEnabledStoreOptions.ALLOW_PARTITIONING_FILTERING, option_value=True
         )
         .read()
         .to_polars()
