@@ -287,13 +287,13 @@ class AstraClient:
             model: Type[Model],
             key_column_filter: Dict[str, Any],
             columns_to_select: Optional[List[str]],
-            allow_partitioning_filtering: bool,
+            allow_filtering: bool,
         ):
             base_filter = model.filter(**key_column_filter)
             if columns_to_select:
                 base_filter = base_filter.only(select_columns)
 
-            return base_filter if not allow_partitioning_filtering else base_filter.allow_filtering()
+            return base_filter if not allow_filtering else base_filter.allow_filtering()
 
         def normalize_column_name(column_name: str) -> str:
             filter_suffix = re.findall(self._filter_pattern, column_name)
@@ -306,7 +306,7 @@ class AstraClient:
             model: Type[Model],
             key_column_filter: Dict[str, Any],
             columns_to_select: Optional[List[str]],
-            allow_partitioning_filtering: bool,
+            allow_filtering: bool,
         ) -> MetaFrame:
             return MetaFrame(
                 [
@@ -316,7 +316,7 @@ class AstraClient:
                             model=model,
                             key_column_filter=key_column_filter,
                             columns_to_select=columns_to_select,
-                            allow_partitioning_filtering=allow_partitioning_filtering,
+                            allow_filtering=allow_filtering,
                         )
                     )
                 ],
@@ -351,13 +351,13 @@ class AstraClient:
             else key_column_filter_values
         )
 
-        allow_partitioning_filtering = (
-            options[QueryEnabledStoreOptions.ALLOW_PARTITIONING_FILTERING]
-            if QueryEnabledStoreOptions.ALLOW_PARTITIONING_FILTERING in options
+        allow_filtering = (
+            options[QueryEnabledStoreOptions.ALLOW_FILTERING]
+            if QueryEnabledStoreOptions.ALLOW_FILTERING in options
             else False
         )
 
-        if allow_partitioning_filtering:
+        if allow_filtering:
             astra_suffixes = [
                 op.value for op in FilterExpressionOperationAstraSuffix.__members__.values() if op.value != ""
             ]
@@ -378,15 +378,15 @@ class AstraClient:
                 for fk in filtering_keys
             ]
 
-            missing_primary_keys = [
-                list(set(cassandra_model_mapper.primary_keys) - set(fk_stripped))
+            missing_partition_keys = [
+                list(set(cassandra_model_mapper.partition_keys) - set(fk_stripped))
                 for fk_stripped in filtering_keys_stripped
             ]
-            missing_primary_keys = [missing_pk for missing_pk in missing_primary_keys if len(missing_pk) > 0]
+            missing_partition_keys = [missing_pk for missing_pk in missing_partition_keys if len(missing_pk) > 0]
 
-            if len(missing_primary_keys) > 0:
+            if len(missing_partition_keys) > 0:
                 raise ValueError(
-                    f"All primary keys must be defined in all filter sets in order to allow partitioning filtering. Missing primary keys in some sets are: {missing_primary_keys}"
+                    f"All partitioning keys must be defined in all filter sets in order to allow partitioning filtering. Missing primary keys in some sets are: {missing_partition_keys}"
                 )
 
         if num_threads:
@@ -400,7 +400,7 @@ class AstraClient:
                     tpe.map(
                         lambda args: to_frame(*args),
                         [
-                            (cassandra_model, key_column_filter, select_columns, allow_partitioning_filtering)
+                            (cassandra_model, key_column_filter, select_columns, allow_filtering)
                             for key_column_filter in compiled_filter_values
                         ],
                         chunksize=max(int(len(compiled_filter_values) / num_threads), 1),
@@ -420,7 +420,7 @@ class AstraClient:
                                     model=cassandra_model,
                                     key_column_filter=key_column_filter,
                                     columns_to_select=select_columns,
-                                    allow_partitioning_filtering=allow_partitioning_filtering,
+                                    allow_filtering=allow_filtering,
                                 )
                             )
                         ],
