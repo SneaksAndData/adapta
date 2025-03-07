@@ -28,7 +28,7 @@ from abc import ABC
 from contextlib import contextmanager
 from threading import Thread
 from time import sleep
-from typing import Optional, Dict, Any
+from typing import Any
 
 from adapta.logs._internal import MetadataLogger, from_log_level
 from adapta.logs._logger_interface import LoggerInterface
@@ -38,8 +38,9 @@ from adapta.logs.models import LogLevel
 class _InternalLogger(LoggerInterface, ABC):
     def __init__(
         self,
-        fixed_template: Optional[Dict[str, Dict[str, str]]] = None,
+        fixed_template: dict[str, dict[str, str]] | None = None,
         fixed_template_delimiter=", ",
+        global_tags: dict[str, str] | None = None,
     ):
         """
           Creates a new instance of a InternalLogger
@@ -49,13 +50,14 @@ class _InternalLogger(LoggerInterface, ABC):
         """
         self._fixed_template = fixed_template
         self._fixed_template_delimiter = fixed_template_delimiter
+        self._global_tags = global_tags or {}
 
     def _get_metadata_fields(self, kwargs):
         fields = kwargs
         fields.update(self._get_fixed_args())
         return fields
 
-    def _get_fixed_args(self) -> Dict:
+    def _get_fixed_args(self) -> dict:
         fixed_args = {}
         if self._fixed_template:
             for fixed_value in self._fixed_template.values():
@@ -74,7 +76,7 @@ class _InternalLogger(LoggerInterface, ABC):
         self,
         template: str,
         logger: MetadataLogger,
-        tags: Optional[Dict[str, str]] = None,
+        tags: dict[str, str] = None,
         **kwargs,
     ) -> None:
         """
@@ -91,7 +93,7 @@ class _InternalLogger(LoggerInterface, ABC):
             logging.INFO,
             msg=msg,
             template=self._get_template(template),
-            tags=tags,
+            tags=tags | self._global_tags,
             diagnostics=None,
             stack_info=False,
             exception=None,
@@ -102,8 +104,8 @@ class _InternalLogger(LoggerInterface, ABC):
         self,
         template: str,
         logger: MetadataLogger,
-        exception: Optional[BaseException] = None,
-        tags: Optional[Dict[str, str]] = None,
+        exception: BaseException | None = None,
+        tags: dict[str, str] | None = None,
         **kwargs,
     ) -> None:
         """
@@ -120,7 +122,7 @@ class _InternalLogger(LoggerInterface, ABC):
         logger.log_with_metadata(
             logging.WARN,
             msg=msg,
-            tags=tags,
+            tags=tags | self._global_tags,
             template=template,
             diagnostics=None,
             stack_info=False,
@@ -132,8 +134,8 @@ class _InternalLogger(LoggerInterface, ABC):
         self,
         template: str,
         logger: MetadataLogger,
-        exception: Optional[BaseException] = None,
-        tags: Optional[Dict[str, str]] = None,
+        exception: BaseException | None = None,
+        tags: dict[str, str] | None = None,
         **kwargs,
     ) -> None:
         """
@@ -151,7 +153,7 @@ class _InternalLogger(LoggerInterface, ABC):
             logging.ERROR,
             msg=msg,
             template=template,
-            tags=tags,
+            tags=tags | self._global_tags,
             diagnostics=None,
             stack_info=False,
             exception=exception,
@@ -162,9 +164,9 @@ class _InternalLogger(LoggerInterface, ABC):
         self,
         template: str,
         logger: MetadataLogger,
-        exception: Optional[BaseException] = None,
-        diagnostics: Optional[str] = None,  # pylint: disable=R0913
-        tags: Optional[Dict[str, str]] = None,
+        exception: BaseException | None = None,
+        diagnostics: str | None = None,  # pylint: disable=R0913
+        tags: dict[str, str] | None = None,
         **kwargs,
     ) -> None:
         """
@@ -182,7 +184,7 @@ class _InternalLogger(LoggerInterface, ABC):
             logging.DEBUG,
             msg=msg,
             template=template,
-            tags=tags,
+            tags=tags | self._global_tags,
             diagnostics=diagnostics,
             stack_info=False,
             exception=exception,
@@ -194,15 +196,15 @@ class _InternalLogger(LoggerInterface, ABC):
         logger: MetadataLogger,
         base_template: str,
         message: str,
-        tags: Optional[Dict[str, str]] = None,
-        log_level: Optional[LogLevel] = None,
+        tags: dict[str, str] | None = None,
+        log_level: LogLevel | None = None,
     ):
         template = self._get_template(base_template)
         msg = template.format(**self._get_fixed_args(), message=message)
         logger.log_with_metadata(
             from_log_level(log_level) or logger.level,
             msg=msg,
-            tags=tags,
+            tags=tags | self._global_tags,
             diagnostics=None,
             stack_info=None,
             exception=None,
@@ -253,8 +255,8 @@ class _InternalLogger(LoggerInterface, ABC):
         pos: int,
         tmp_symlink: bytes,
         logger: MetadataLogger,
-        tags: Optional[Dict[str, str]] = None,
-        log_level: Optional[LogLevel] = None,
+        tags: dict[str, str] | None = None,
+        log_level: LogLevel | None = None,
     ) -> int:
         sys.stdout.flush()
         with open(tmp_symlink, "r", encoding="utf-8") as output:
@@ -264,20 +266,20 @@ class _InternalLogger(LoggerInterface, ABC):
                     logger,
                     base_template="Redirected output: {message}",
                     message=line,
-                    tags=tags,
+                    tags=tags | self._global_tags,
                     log_level=log_level,
                 )
             return output.tell()
 
     def _handle_unsupported_redirect(
         self,
-        tags: Optional[Dict[str, str]] = None,
+        tags: dict[str, str] | None = None,
     ):
         if sys.platform == "win32":
             self.info(
                 self._get_template(">> Output redirection not supported on this platform: {platform} <<"),
                 platform=sys.platform,
-                tags=tags,
+                tags=tags | self._global_tags,
             )
             try:
                 yield None
@@ -286,7 +288,7 @@ class _InternalLogger(LoggerInterface, ABC):
                 pass
 
     @contextmanager
-    def _redirect(self, logger: MetadataLogger, tags: Optional[Dict[str, str]] = None, log_level=LogLevel.INFO, **_):
+    def _redirect(self, logger: MetadataLogger, tags: dict[str, str] | None = None, log_level=LogLevel.INFO, **_):
         is_active = False
         tmp_symlink_out = b""
         tmp_symlink_err = b""
@@ -302,17 +304,33 @@ class _InternalLogger(LoggerInterface, ABC):
             # externally control the flushing process
             while is_active:
                 start_position_out = self._flush_and_log(
-                    pos=start_position_out, tmp_symlink=tmp_symlink_out, logger=logger, tags=tags, log_level=log_level
+                    pos=start_position_out,
+                    tmp_symlink=tmp_symlink_out,
+                    logger=logger,
+                    tags=tags | self._global_tags,
+                    log_level=log_level,
                 )
                 start_position_err = self._flush_and_log(
-                    pos=start_position_err, tmp_symlink=tmp_symlink_err, logger=logger, tags=tags, log_level=log_level
+                    pos=start_position_err,
+                    tmp_symlink=tmp_symlink_err,
+                    logger=logger,
+                    tags=tags | self._global_tags,
+                    log_level=log_level,
                 )
                 sleep(0.1)
 
             return self._flush_and_log(
-                pos=start_position_out, tmp_symlink=tmp_symlink_out, logger=logger, tags=tags, log_level=log_level
+                pos=start_position_out,
+                tmp_symlink=tmp_symlink_out,
+                logger=logger,
+                tags=tags | self._global_tags,
+                log_level=log_level,
             ), self._flush_and_log(
-                pos=start_position_err, tmp_symlink=tmp_symlink_err, logger=logger, tags=tags, log_level=log_level
+                pos=start_position_err,
+                tmp_symlink=tmp_symlink_err,
+                logger=logger,
+                tags=tags | self._global_tags,
+                log_level=log_level,
             )
 
         self._handle_unsupported_redirect(tags)
