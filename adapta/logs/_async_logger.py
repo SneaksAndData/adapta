@@ -89,8 +89,9 @@ class _AsyncLogger(Generic[TLogger], _InternalLogger):
         log_handlers: List[logging.Handler],
         fixed_template: Optional[Dict[str, Dict[str, str]]] = None,
         fixed_template_delimiter=", ",
+        global_tags: dict[str, str] | None = None,
     ):
-        super().__init__(fixed_template, fixed_template_delimiter)
+        super().__init__(fixed_template, fixed_template_delimiter, global_tags)
         self._logger: MetadataLogger = logging.getLogger(name)
         self._logger.setLevel(min_log_level.value)
         self._logger_message_queue = Queue(-1)
@@ -210,6 +211,7 @@ def create_async_logger(
     min_log_level: LogLevel = LogLevel.INFO,
     fixed_template: Optional[Dict[str, Dict[str, str]]] = None,
     fixed_template_delimiter=", ",
+    global_tags: dict[str, str] = None,
 ) -> _AsyncLogger[TLogger]:
     """
     Factory method to create an async-io safe logger.
@@ -222,4 +224,5 @@ def create_async_logger(
         log_handlers=log_handlers,
         fixed_template=fixed_template,
         fixed_template_delimiter=fixed_template_delimiter,
+        global_tags=global_tags,
     )
