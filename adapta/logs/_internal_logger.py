@@ -93,7 +93,7 @@ class _InternalLogger(LoggerInterface, ABC):
             logging.INFO,
             msg=msg,
             template=self._get_template(template),
-            tags=tags | self._global_tags,
+            tags=(tags or {}) | self._global_tags,
             diagnostics=None,
             stack_info=False,
             exception=None,
@@ -122,7 +122,7 @@ class _InternalLogger(LoggerInterface, ABC):
         logger.log_with_metadata(
             logging.WARN,
             msg=msg,
-            tags=tags | self._global_tags,
+            tags=(tags or {}) | self._global_tags,
             template=template,
             diagnostics=None,
             stack_info=False,
@@ -153,7 +153,7 @@ class _InternalLogger(LoggerInterface, ABC):
             logging.ERROR,
             msg=msg,
             template=template,
-            tags=tags | self._global_tags,
+            tags=(tags or {}) | self._global_tags,
             diagnostics=None,
             stack_info=False,
             exception=exception,
@@ -184,7 +184,7 @@ class _InternalLogger(LoggerInterface, ABC):
             logging.DEBUG,
             msg=msg,
             template=template,
-            tags=tags | self._global_tags,
+            tags=(tags or {}) | self._global_tags,
             diagnostics=diagnostics,
             stack_info=False,
             exception=exception,
@@ -204,7 +204,7 @@ class _InternalLogger(LoggerInterface, ABC):
         logger.log_with_metadata(
             from_log_level(log_level) or logger.level,
             msg=msg,
-            tags=tags | self._global_tags,
+            tags=(tags or {}) | self._global_tags,
             diagnostics=None,
             stack_info=None,
             exception=None,
@@ -266,7 +266,7 @@ class _InternalLogger(LoggerInterface, ABC):
                     logger,
                     base_template="Redirected output: {message}",
                     message=line,
-                    tags=tags | self._global_tags,
+                    tags=(tags or {}) | self._global_tags,
                     log_level=log_level,
                 )
             return output.tell()
@@ -279,7 +279,7 @@ class _InternalLogger(LoggerInterface, ABC):
             self.info(
                 self._get_template(">> Output redirection not supported on this platform: {platform} <<"),
                 platform=sys.platform,
-                tags=tags | self._global_tags,
+                tags=(tags or {}) | self._global_tags,
             )
             try:
                 yield None
@@ -307,14 +307,14 @@ class _InternalLogger(LoggerInterface, ABC):
                     pos=start_position_out,
                     tmp_symlink=tmp_symlink_out,
                     logger=logger,
-                    tags=tags | self._global_tags,
+                    tags=(tags or {}) | self._global_tags,
                     log_level=log_level,
                 )
                 start_position_err = self._flush_and_log(
                     pos=start_position_err,
                     tmp_symlink=tmp_symlink_err,
                     logger=logger,
-                    tags=tags | self._global_tags,
+                    tags=(tags or {}) | self._global_tags,
                     log_level=log_level,
                 )
                 sleep(0.1)
@@ -323,13 +323,13 @@ class _InternalLogger(LoggerInterface, ABC):
                 pos=start_position_out,
                 tmp_symlink=tmp_symlink_out,
                 logger=logger,
-                tags=tags | self._global_tags,
+                tags=(tags or {}) | self._global_tags,
                 log_level=log_level,
             ), self._flush_and_log(
                 pos=start_position_err,
                 tmp_symlink=tmp_symlink_err,
                 logger=logger,
-                tags=tags | self._global_tags,
+                tags=(tags or {}) | self._global_tags,
                 log_level=log_level,
             )
 
