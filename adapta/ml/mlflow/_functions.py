@@ -58,8 +58,8 @@ def register_mlflow_model(
     version_alias: Optional[str] = None,
     metrics: Optional[Dict[str, float]] = None,
     model_params: Optional[Dict[str, Any]] = None,
-    artifacts_to_log: Dict[str, str] = None,
-    model_tags: Dict[str, str] = None,
+    artifacts_to_log: Optional[Dict[str, str]] = None,
+    model_tags: Optional[Dict[str, str]] = None,
 ) -> str:
     """Registers mlflow model
 
