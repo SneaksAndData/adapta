@@ -16,6 +16,8 @@
 #  limitations under the License.
 #
 
+import re
+
 from dataclasses import dataclass
 from urllib.parse import urlparse
 
@@ -33,9 +35,6 @@ class S3Path(DataPath):
         Converts the S3Path to a URI.
          :return: URI path
         """
-        if not self.bucket or not self.path:
-            raise ValueError("Bucket and path must be defined")
-
         return f"s3://{self.bucket}/{self.path}"
 
     def base_uri(self) -> str:
@@ -43,9 +42,6 @@ class S3Path(DataPath):
         Returns the base URI of the S3Path.
         :return: URI path
         """
-        if not self.bucket:
-            raise ValueError("Bucket must be defined")
-
         return f"https://{self.bucket}.s3.amazonaws.com"
 
     @classmethod
@@ -61,6 +57,15 @@ class S3Path(DataPath):
     bucket: str
     path: str
     protocol: str = DataProtocols.S3.value
+
+    def __post_init__(self):
+        if not self.bucket:
+            raise ValueError("Bucket must be defined")
+
+        path_regex = r"//"
+
+        if re.search(path_regex, self.path):
+            raise ValueError("Invalid S3Path provided: path should not contain consecutive slashes (//)")
 
     @classmethod
     def from_hdfs_path(cls, hdfs_path: str) -> "S3Path":
@@ -78,9 +83,6 @@ class S3Path(DataPath):
         Converts the S3Path to an HDFS compatible path.
         :return: HDFS path
         """
-        if not self.bucket or not self.path:
-            raise ValueError("Bucket and path must be defined")
-
         return f"s3a://{self.bucket}/{self.path}"
 
     def to_delta_rs_path(self) -> str:
