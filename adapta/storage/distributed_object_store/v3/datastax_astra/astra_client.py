@@ -243,6 +243,7 @@ class AstraClient:
         deduplicate=False,
         num_threads: Optional[int] = None,
         options: dict[QueryEnabledStoreOptions, any] = None,
+        limit: Optional[int] = None,
     ) -> MetaFrame:
         """
         Run a filter query on the entity of type TModel backed by table `table_name`.
@@ -267,6 +268,7 @@ class AstraClient:
         :param: custom_indexes: An optional list of custom indexes, if it cannot be inferred, if it cannot be inferred from the data model.
         :param: deduplicate: Optionally deduplicate query result, for example when only the partition key part of a primary key is used to fetch results.
         :param: num_threads: Optionally run filtering using multiple threads. Setting this to -1 will cause this method to automatically evaluate number of threads based on filter expression size.
+        :param: limit: Optionally limit the number of results returned. NOTE the limit works per call to Astra and not on the final result.
         """
 
         @on_exception(
@@ -280,7 +282,7 @@ class AstraClient:
             raise_on_giveup=True,
         )
         def apply(model: Type[Model], key_column_filter: Dict[str, Any], columns_to_select: Optional[List[str]]):
-            model = model.filter(**key_column_filter).limit(None)
+            model = model.filter(**key_column_filter).limit(limit)
             if columns_to_select:
                 return model.only(select_columns)
 

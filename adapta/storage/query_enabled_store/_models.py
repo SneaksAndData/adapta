@@ -90,15 +90,16 @@ class QueryEnabledStore(Generic[TCredential, TSettings], ABC):
         filter_expression: Expression,
         columns: list[str],
         options: dict[QueryEnabledStoreOptions, any] | None = None,
+        limit: Optional[int] = 10000,
     ) -> Union[MetaFrame, Iterator[MetaFrame]]:
         """
-        Applies the provided filter expression to this Store and returns the result in a pandas DataFrame
+        Applies the provided filter expression to this Store and returns the result in a MetaFrame
         """
 
     @abstractmethod
     def _apply_query(self, query: str) -> Union[MetaFrame, Iterator[MetaFrame]]:
         """
-        Applies a plaintext query to this Store and returns the result in a pandas DataFrame
+        Applies a plaintext query to this Store and returns the result in a MetaFrame
         """
 
     @classmethod
@@ -146,6 +147,7 @@ class QueryConfigurationBuilder:
         self._filter_expression: Optional[Expression] = None
         self._columns: list[str] = []
         self._options: dict[QueryEnabledStoreOptions, any] = {}
+        self._limit = 10000
 
     def filter(self, filter_expression: Expression) -> "QueryConfigurationBuilder":
         """
@@ -170,6 +172,11 @@ class QueryConfigurationBuilder:
 
         self._options[option_key] = option_value
 
+    def limit(self, limit: int) -> "QueryConfigurationBuilder":
+        """
+        Limit the number of results returned by the underlying store.
+        """
+        self._limit = limit
         return self
 
     def read(self) -> Union[MetaFrame, Iterator[MetaFrame]]:
@@ -180,5 +187,5 @@ class QueryConfigurationBuilder:
             path=self._path,
             filter_expression=self._filter_expression,
             columns=self._columns,
-            options=self._options,
+            limit=self._limit,
         )
