@@ -301,16 +301,16 @@ class AstraClient:
 
             return column_name.replace(filter_suffix[0], "")
 
+        def convert_to_polars(x: list[dict]) -> polars.DataFrame:
+            try:
+                return polars.DataFrame(x, schema=select_columns)
+            except ComputeError:
+                # Catches errors related to incorrect schema inference and tries again with unlimited schema inference length
+                return polars.DataFrame(x, schema=select_columns, infer_schema_length=None)
+
         def to_frame(
             model: Type[Model], key_column_filter: Dict[str, Any], columns_to_select: Optional[List[str]]
         ) -> MetaFrame:
-            def convert_to_polars(x: list[dict]) -> polars.DataFrame:
-                try:
-                    return polars.DataFrame(x, schema=select_columns)
-                except ComputeError:
-                    # Catches errors related to incorrect schema inference and tries again with unlimited schema inference length
-                    return polars.DataFrame(x, schema=select_columns, infer_schema_length=None)
-
             return MetaFrame(
                 [dict(v.items()) for v in list(apply(model, key_column_filter, columns_to_select))],
                 convert_to_polars=convert_to_polars,
