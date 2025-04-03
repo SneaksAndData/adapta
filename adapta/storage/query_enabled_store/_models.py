@@ -187,5 +187,6 @@ class QueryConfigurationBuilder:
             path=self._path,
             filter_expression=self._filter_expression,
             columns=self._columns,
+            options=self._options,
             limit=self._limit,
         )
