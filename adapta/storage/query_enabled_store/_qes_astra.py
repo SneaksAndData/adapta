@@ -87,6 +87,7 @@ class AstraQueryEnabledStore(QueryEnabledStore[AstraCredential, AstraSettings]):
         filter_expression: Expression,
         columns: list[str],
         options: dict[QueryEnabledStoreOptions, any] | None = None,
+        limit: Optional[int] = 10000,
     ) -> Union[MetaFrame, Iterator[MetaFrame]]:
         assert isinstance(path, AstraPath)
         astra_path: AstraPath = path
@@ -100,6 +101,7 @@ class AstraQueryEnabledStore(QueryEnabledStore[AstraCredential, AstraSettings]):
                     select_columns=columns,
                     num_threads=-1,  # auto-infer, see method documentation
                     options=options,
+                    limit=limit,
                 )
 
         return self._astra_client.filter_entities(
@@ -110,6 +112,7 @@ class AstraQueryEnabledStore(QueryEnabledStore[AstraCredential, AstraSettings]):
             select_columns=columns,
             num_threads=-1,  # auto-infer, see method documentation
             options=options,
+            limit=limit,
         )
 
     def _apply_query(self, query: str) -> Union[MetaFrame, Iterator[MetaFrame]]:

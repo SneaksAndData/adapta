@@ -76,12 +76,14 @@ class DeltaQueryEnabledStore(QueryEnabledStore[DeltaCredential, DeltaSettings]):
         filter_expression: Expression,
         columns: list[str],
         options: dict[QueryEnabledStoreOptions, any] | None = None,
+        limit: Optional[int] = 10000,
     ) -> Union[MetaFrame, Iterator[MetaFrame]]:
         return load(
             auth_client=self.credentials.auth_client(credentials=self.credentials.auth_client_credentials()),
             path=path,
             row_filter=filter_expression,
             columns=columns if columns else None,
+            limit=limit,
         )
 
     def _apply_query(self, query: str) -> Union[MetaFrame, Iterator[MetaFrame]]:
