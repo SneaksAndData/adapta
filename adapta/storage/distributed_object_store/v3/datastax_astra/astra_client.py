@@ -49,7 +49,8 @@ from cassandra.cluster import (  # pylint: disable=E0611
     Session,
     RetryPolicy,
     ExecutionProfile,
-    EXEC_PROFILE_DEFAULT, _NOT_SET,
+    EXEC_PROFILE_DEFAULT,
+    _NOT_SET,
 )
 from cassandra.cqlengine.connection import set_session
 from cassandra.cqlengine.models import Model
@@ -64,7 +65,7 @@ from adapta import __version__
 from adapta.storage.distributed_object_store.v3.datastax_astra._models import SimilarityFunction, VectorSearchQuery
 from adapta.storage.models.filter_expression import Expression, AstraFilterExpression, compile_expression
 from adapta.utils import chunk_list, rate_limit
-from adapta.utils.metaframe import MetaFrame, concat, PolarsOptions
+from adapta.utils.metaframe import MetaFrame, concat
 from adapta.storage.distributed_object_store.v3.datastax_astra._model_mappers import get_mapper
 from adapta.schema_management.schema_entity import PythonSchemaEntity
 from adapta.storage.models.enum import QueryEnabledStoreOptions
@@ -92,8 +93,10 @@ class AstraClient:
      :param: transient_error_max_wait_s: Maximum cumulative wait time for exp backoff attempts for transient errors.
      :param: log_transient_errors: Whether to log errors that can be resolved via exp backoff retries.
      :param: metadata_fetch_timeout_s: Timeout in seconds for the driver’s HTTP call to get cluster metadata from Astra DB. Defaults to 30s up fromf factory default of 5 seconds.
+     :param: protocol_version: Cassandra protocol version to use. Defaults to the latest version supported by the driver.
     """
 
+    # pylint: disable=too-many-locals
     def __init__(
         self,
         client_name: str,
