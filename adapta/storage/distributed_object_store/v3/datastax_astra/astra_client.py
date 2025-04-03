@@ -49,7 +49,7 @@ from cassandra.cluster import (  # pylint: disable=E0611
     Session,
     RetryPolicy,
     ExecutionProfile,
-    EXEC_PROFILE_DEFAULT,
+    EXEC_PROFILE_DEFAULT, _NOT_SET,
 )
 from cassandra.cqlengine.connection import set_session
 from cassandra.cqlengine.models import Model
@@ -109,6 +109,7 @@ class AstraClient:
         transient_error_max_wait_s=300,
         log_transient_errors=True,
         metadata_fetch_timeout_s=30,
+        protocol_version=_NOT_SET,
     ):
         self._secure_connect_bundle_bytes = secure_connect_bundle_bytes or os.getenv("PROTEUS__ASTRA_BUNDLE_BYTES")
         self._client_id = client_id or os.getenv("PROTEUS__ASTRA_CLIENT_ID")
@@ -127,6 +128,7 @@ class AstraClient:
         self._transient_error_max_retries = transient_error_max_retries
         self._transient_error_max_wait_s = transient_error_max_wait_s
         self._metadata_fetch_timeout_s = metadata_fetch_timeout_s
+        self._protocol_version = protocol_version
         if log_transient_errors:
             logging.getLogger("backoff").addHandler(logging.StreamHandler())
 
@@ -165,6 +167,7 @@ class AstraClient:
             compression=True,
             application_name=self._client_name,
             application_version=__version__,
+            protocol_version=self._protocol_version,
             sockopts=[
                 (IPPROTO_TCP, TCP_NODELAY, 1),
                 (IPPROTO_TCP, TCP_USER_TIMEOUT, self._socket_read_timeout),
