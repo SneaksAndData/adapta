@@ -67,7 +67,6 @@ from adapta.storage.models.filter_expression import Expression, AstraFilterExpre
 from adapta.utils import chunk_list, rate_limit
 from adapta.utils.metaframe import MetaFrame, concat
 from adapta.storage.distributed_object_store.v3.datastax_astra._model_mappers import get_mapper
-from adapta.schema_management.schema_entity import PythonSchemaEntity
 from adapta.storage.models.enum import QueryEnabledStoreOptions
 
 TModel = TypeVar("TModel")  # pylint: disable=C0103
@@ -321,20 +320,20 @@ class AstraClient:
             self._session is not None
         ), "Please instantiate an AstraClient using with AstraClient(...) before calling this method"
 
-        select_columns = (
-            list(map(normalize_column_name, select_columns))
-            if select_columns
-            else PythonSchemaEntity(model_class).get_field_names()
-        )
-
-        cassandra_model = get_mapper(
+        cassandra_model_mapper = get_mapper(
             data_model=model_class,
             keyspace=keyspace,
             table_name=table_name,
             primary_keys=primary_keys,
             partition_keys=partition_keys,
             custom_indexes=custom_indexes,
-        ).map()
+        )
+
+        select_columns = (
+            list(map(normalize_column_name, select_columns)) if select_columns else cassandra_model_mapper.column_names
+        )
+
+        cassandra_model = cassandra_model_mapper.map()
 
         compiled_filter_values = (
             compile_expression(key_column_filter_values, AstraFilterExpression)
