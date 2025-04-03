@@ -171,6 +171,7 @@ class QueryConfigurationBuilder:
         """
 
         self._options[option_key] = option_value
+        return self
 
     def limit(self, limit: int) -> "QueryConfigurationBuilder":
         """
