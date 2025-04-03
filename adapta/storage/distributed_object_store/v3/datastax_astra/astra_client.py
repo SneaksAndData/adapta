@@ -367,9 +367,9 @@ class AstraClient:
                 [
                     MetaFrame(
                         [dict(v.items()) for v in list(apply(cassandra_model, key_column_filter, select_columns))],
-                        convert_to_polars=(lambda x: polars.DataFrame(x, schema=select_columns))
+                        convert_to_polars=convert_to_polars
                         if not deduplicate
-                        else (lambda x: polars.DataFrame(x, schema=select_columns).unique()),
+                        else (lambda x: convert_to_polars(x).unique()),
                         convert_to_pandas=(lambda x: pandas.DataFrame(x, columns=select_columns))
                         if not deduplicate
                         else (lambda x: pandas.DataFrame(x, columns=select_columns).drop_duplicates()),
