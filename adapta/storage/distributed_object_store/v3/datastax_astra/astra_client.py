@@ -30,6 +30,8 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict
 from typing import Optional, Dict, TypeVar, Callable, Type, List, Any, Union
 
+from polars.polars import ComputeError
+
 try:
     from _socket import IPPROTO_TCP, TCP_NODELAY, TCP_USER_TIMEOUT
 except ImportError:
@@ -62,7 +64,7 @@ from adapta import __version__
 from adapta.storage.distributed_object_store.v3.datastax_astra._models import SimilarityFunction, VectorSearchQuery
 from adapta.storage.models.filter_expression import Expression, AstraFilterExpression, compile_expression
 from adapta.utils import chunk_list, rate_limit
-from adapta.utils.metaframe import MetaFrame, concat
+from adapta.utils.metaframe import MetaFrame, concat, PolarsOptions
 from adapta.storage.distributed_object_store.v3.datastax_astra._model_mappers import get_mapper
 from adapta.schema_management.schema_entity import PythonSchemaEntity
 from adapta.storage.models.enum import QueryEnabledStoreOptions
@@ -241,6 +243,7 @@ class AstraClient:
         deduplicate=False,
         num_threads: Optional[int] = None,
         options: dict[QueryEnabledStoreOptions, any] = None,
+        limit: Optional[int] = None,
     ) -> MetaFrame:
         """
         Run a filter query on the entity of type TModel backed by table `table_name`.
@@ -265,6 +268,7 @@ class AstraClient:
         :param: custom_indexes: An optional list of custom indexes, if it cannot be inferred, if it cannot be inferred from the data model.
         :param: deduplicate: Optionally deduplicate query result, for example when only the partition key part of a primary key is used to fetch results.
         :param: num_threads: Optionally run filtering using multiple threads. Setting this to -1 will cause this method to automatically evaluate number of threads based on filter expression size.
+        :param: limit: Optionally limit the number of results returned. NOTE the limit works per call to Astra and not on the final result.
         """
 
         @on_exception(
@@ -278,10 +282,11 @@ class AstraClient:
             raise_on_giveup=True,
         )
         def apply(model: Type[Model], key_column_filter: Dict[str, Any], columns_to_select: Optional[List[str]]):
+            model = model.filter(**key_column_filter).limit(limit)
             if columns_to_select:
-                return model.filter(**key_column_filter).only(select_columns)
+                return model.only(select_columns)
 
-            return model.filter(**key_column_filter)
+            return model
 
         def normalize_column_name(column_name: str) -> str:
             filter_suffix = re.findall(self._filter_pattern, column_name)
@@ -293,9 +298,16 @@ class AstraClient:
         def to_frame(
             model: Type[Model], key_column_filter: Dict[str, Any], columns_to_select: Optional[List[str]]
         ) -> MetaFrame:
+            def convert_to_polars(x: list[dict]) -> polars.DataFrame:
+                try:
+                    return polars.DataFrame(x, schema=select_columns)
+                except ComputeError:
+                    # Catches errors related to incorrect schema inference and tries again with unlimited schema inference length
+                    return polars.DataFrame(x, schema=select_columns, infer_schema_length=None)
+
             return MetaFrame(
                 [dict(v.items()) for v in list(apply(model, key_column_filter, columns_to_select))],
-                convert_to_polars=lambda x: polars.DataFrame(x, schema=select_columns),
+                convert_to_polars=convert_to_polars,
                 convert_to_pandas=lambda x: pandas.DataFrame(x, columns=select_columns),
             )
 
