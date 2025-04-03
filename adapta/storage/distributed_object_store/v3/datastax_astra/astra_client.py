@@ -313,7 +313,7 @@ class AstraClient:
 
             return MetaFrame(
                 [dict(v.items()) for v in list(apply(model, key_column_filter, columns_to_select))],
-                convert_to_polars=lambda x: polars.DataFrame(x, schema=select_columns),
+                convert_to_polars=convert_to_polars,
                 convert_to_pandas=lambda x: pandas.DataFrame(x, columns=select_columns),
             )
 
