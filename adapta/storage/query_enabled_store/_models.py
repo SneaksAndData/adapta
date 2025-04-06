@@ -173,7 +173,7 @@ class QueryConfigurationBuilder:
         self._options[option_key] = option_value
         return self
 
-    def limit(self, limit: int) -> "QueryConfigurationBuilder":
+    def limit(self, limit: int | None) -> "QueryConfigurationBuilder":
         """
         Limit the number of results returned by the underlying store.
         """
