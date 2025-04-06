@@ -31,6 +31,8 @@ from polars import lit
 from requests.adapters import HTTPAdapter
 from urllib3 import Retry
 
+from adapta.utils._requests import LocalFileAdapter
+
 try:
     import resource
 except (ImportError, ModuleNotFoundError):
@@ -77,6 +79,7 @@ def session_with_retries(
     http = requests.Session()
     http.mount("https://", adapter)
     http.mount("http://", adapter)
+    http.mount("file://", LocalFileAdapter())
     http.request = partial(http.request, timeout=request_timeout)
     http.send = partial(http.send, timeout=request_timeout)
 
