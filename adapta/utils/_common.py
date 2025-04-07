@@ -30,6 +30,7 @@ import requests
 from polars import lit
 from requests.adapters import HTTPAdapter
 from urllib3 import Retry
+from adapta.utils._requests import LocalFileAdapter
 
 from adapta.utils._requests import LocalFileAdapter
 
