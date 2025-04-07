@@ -21,3 +21,4 @@ from adapta.utils._common import *
 from adapta.utils.decorators import run_time_metrics
 from adapta.utils.decorators import rate_limit
 from adapta.utils.data_structures import *
+from adapta.utils._requests import LocalFileAdapter
