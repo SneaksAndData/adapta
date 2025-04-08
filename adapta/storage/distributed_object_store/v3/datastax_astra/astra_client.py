@@ -275,6 +275,8 @@ class AstraClient:
         :param: num_threads: Optionally run filtering using multiple threads. Setting this to -1 will cause this method to automatically evaluate number of threads based on filter expression size.
         :param: limit: Optionally limit the number of results returned. NOTE the limit works per call to Astra and not on the final result.
         """
+        if options is None:
+            options = {}
 
         @on_exception(
             wait_gen=expo,
