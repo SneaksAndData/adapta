@@ -63,6 +63,7 @@ def session_with_retries(
     request_timeout: Optional[float] = 300,
     status_list: Tuple[int, ...] = (400, 429, 500, 502, 503, 504),
     retry_count: int = 4,
+    file_protocol_supported: bool = False,
 ):
     """
      Provisions http session manager with retries.
@@ -78,7 +79,9 @@ def session_with_retries(
     http = requests.Session()
     http.mount("https://", adapter)
     http.mount("http://", adapter)
-    http.mount("file://", LocalFileAdapter())
+    if file_protocol_supported:
+        http.mount("file://", LocalFileAdapter())
+
     http.request = partial(http.request, timeout=request_timeout)
     http.send = partial(http.send, timeout=request_timeout)
 
