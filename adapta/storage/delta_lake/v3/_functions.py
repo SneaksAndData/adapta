@@ -80,7 +80,7 @@ def load(  # pylint: disable=R0913
     if timeout is not None:
         storage_options["timeout"] = f"{timeout}s"
 
-    pyarrow_ds = DeltaTable(path.to_delta_rs_path(), version=version, storage_options=auth_client.connect_storage(path))
+    pyarrow_ds = DeltaTable(path.to_delta_rs_path(), version=version, storage_options=storage_options)
 
     if timestamp:
         pyarrow_ds.load_as_version(timestamp)
