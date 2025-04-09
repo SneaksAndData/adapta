@@ -46,6 +46,7 @@ def load(  # pylint: disable=R0913
     batch_size: Optional[int] = None,
     partition_filter_expressions: Optional[List[Tuple]] = None,
     limit: Optional[int] = None,
+    timeout: Optional[int] = None,
 ) -> Union[MetaFrame, Iterator[MetaFrame]]:
     """
      Loads Delta Lake table from Azure or AWS storage and converts it to a pandas dataframe.
@@ -68,10 +69,16 @@ def load(  # pylint: disable=R0913
        partition_filter_expressions = [("day", "in", ["3", "20"])]
        partition_filter_expressions = [("day", "not in", ["3", "20"]), ("year", "=", "2021")]
 
+    :param timeout: Optional timeout for the read operation. Measured in seconds.
     :return: A DeltaTable wrapped Rust class, pandas Dataframe or an iterator of pandas Dataframes, for batched reads.
     """
     if version:
         timestamp = None
+
+    storage_options = auth_client.connect_storage(path)
+
+    if timeout is not None:
+        storage_options["timeout"] = f"{timeout}s"
 
     pyarrow_ds = DeltaTable(path.to_delta_rs_path(), version=version, storage_options=auth_client.connect_storage(path))
 

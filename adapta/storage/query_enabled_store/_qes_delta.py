@@ -84,6 +84,7 @@ class DeltaQueryEnabledStore(QueryEnabledStore[DeltaCredential, DeltaSettings]):
             row_filter=filter_expression,
             columns=columns if columns else None,
             limit=limit,
+            timeout=options.get(QueryEnabledStoreOptions.TIMEOUT, None),
         )
 
     def _apply_query(self, query: str) -> Union[MetaFrame, Iterator[MetaFrame]]:
