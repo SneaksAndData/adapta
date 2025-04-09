@@ -56,7 +56,7 @@ class LocalQueryEnabledStore(QueryEnabledStore[LocalCredential, LocalSettings]):
         filter_expression: Expression,
         columns: list[str],
         options: dict[QueryEnabledStoreOptions, any] | None = None,
-        limit: int = 10000,
+        limit: int = None,
     ) -> MetaFrame | Iterator[MetaFrame]:
         """
         Applies a filter to a local file

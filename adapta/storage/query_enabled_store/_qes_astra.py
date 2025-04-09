@@ -87,10 +87,12 @@ class AstraQueryEnabledStore(QueryEnabledStore[AstraCredential, AstraSettings]):
         filter_expression: Expression,
         columns: list[str],
         options: dict[QueryEnabledStoreOptions, any] | None = None,
-        limit: Optional[int] = 10000,
+        limit: Optional[int] = None,
     ) -> Union[MetaFrame, Iterator[MetaFrame]]:
         assert isinstance(path, AstraPath)
         astra_path: AstraPath = path
+        if limit is None:
+            limit = 10000
         if self._lazy:
             with self._astra_client as astra_client:
                 return astra_client.filter_entities(

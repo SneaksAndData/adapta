@@ -90,11 +90,13 @@ def load(  # pylint: disable=R0913
 
     if batch_size:
         if limit is not None:
-            pyarrow_table: Table = pyarrow_ds.head(limit)
+            pyarrow_table: Table = pyarrow_ds.filter(filter=row_filter).head(
+                int_num_rows=limit, columns=columns, batch_size=batch_size
+            )
+        else:
+            pyarrow_table: Table = pyarrow_ds.to_table(filter=row_filter, columns=columns, batch_size=batch_size)
 
-        batches: Iterator[RecordBatch] = pyarrow_table.to_batches(
-            filter=row_filter, columns=columns, batch_size=batch_size
-        )
+        batches: list[RecordBatch] = pyarrow_table.to_batches(max_chunksize=batch_size)
 
         return map(
             lambda batch: MetaFrame.from_arrow(
