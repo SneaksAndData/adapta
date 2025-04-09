@@ -84,15 +84,15 @@ def load(  # pylint: disable=R0913
         filesystem=auth_client.get_pyarrow_filesystem(path),
     )
 
-    if limit:
-        pyarrow_ds = pyarrow_ds.head(limit)
-
     row_filter = (
         compile_expression(row_filter, ArrowFilterExpression) if isinstance(row_filter, Expression) else row_filter
     )
 
     if batch_size:
-        batches: Iterator[RecordBatch] = pyarrow_ds.to_batches(
+        if limit is not None:
+            pyarrow_table: Table = pyarrow_ds.head(limit)
+
+        batches: Iterator[RecordBatch] = pyarrow_table.to_batches(
             filter=row_filter, columns=columns, batch_size=batch_size
         )
 
@@ -104,7 +104,10 @@ def load(  # pylint: disable=R0913
             batches,
         )
 
-    pyarrow_table: Table = pyarrow_ds.to_table(filter=row_filter, columns=columns)
+    if limit is not None:
+        pyarrow_table: Table = pyarrow_ds.filter(row_filter).head(int_num_rows=limit, columns=columns)
+    else:
+        pyarrow_table: Table = pyarrow_ds.to_table(filter=row_filter, columns=columns)
 
     return MetaFrame.from_arrow(
         data=pyarrow_table,

@@ -147,7 +147,7 @@ class QueryConfigurationBuilder:
         self._filter_expression: Optional[Expression] = None
         self._columns: list[str] = []
         self._options: dict[QueryEnabledStoreOptions, any] = {}
-        self._limit = 10000
+        self._limit = None
 
     def filter(self, filter_expression: Expression) -> "QueryConfigurationBuilder":
         """
