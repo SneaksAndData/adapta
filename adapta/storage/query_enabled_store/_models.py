@@ -90,7 +90,7 @@ class QueryEnabledStore(Generic[TCredential, TSettings], ABC):
         filter_expression: Expression,
         columns: list[str],
         options: dict[QueryEnabledStoreOptions, any] | None = None,
-        limit: Optional[int] = 10000,
+        limit: Optional[int] = None,
     ) -> Union[MetaFrame, Iterator[MetaFrame]]:
         """
         Applies the provided filter expression to this Store and returns the result in a MetaFrame
@@ -147,7 +147,7 @@ class QueryConfigurationBuilder:
         self._filter_expression: Optional[Expression] = None
         self._columns: list[str] = []
         self._options: dict[QueryEnabledStoreOptions, any] = {}
-        self._limit = 10000
+        self._limit = None
 
     def filter(self, filter_expression: Expression) -> "QueryConfigurationBuilder":
         """
