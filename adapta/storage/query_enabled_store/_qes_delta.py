@@ -76,7 +76,7 @@ class DeltaQueryEnabledStore(QueryEnabledStore[DeltaCredential, DeltaSettings]):
         filter_expression: Expression,
         columns: list[str],
         options: dict[QueryEnabledStoreOptions, any] | None = None,
-        limit: Optional[int] = 10000,
+        limit: Optional[int] = None,
     ) -> Union[MetaFrame, Iterator[MetaFrame]]:
         return load(
             auth_client=self.credentials.auth_client(credentials=self.credentials.auth_client_credentials()),
