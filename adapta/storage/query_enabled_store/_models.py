@@ -41,6 +41,7 @@ class BundledQueryEnabledStores(Enum):
     """
 
     DELTA = "adapta.storage.query_enabled_store.DeltaQueryEnabledStore"
+    PARQUET = "adapta.storage.query_enabled_store.ParquetQueryEnabledStore"
     ASTRA = "adapta.storage.query_enabled_store.AstraQueryEnabledStore"
     LOCAL = "adapta.storage.query_enabled_store.LocalQueryEnabledStore"
 
