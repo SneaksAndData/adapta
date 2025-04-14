@@ -8,6 +8,7 @@ from adapta.storage.query_enabled_store import (
     AstraQueryEnabledStore,
     LocalQueryEnabledStore,
 )
+from adapta.storage.query_enabled_store._qes_parquet import ParquetQueryEnabledStore
 
 
 @pytest.mark.parametrize(
@@ -28,6 +29,22 @@ from adapta.storage.query_enabled_store import (
         (
             'qes://engine=DELTA;plaintext_credentials={"auth_client_class":"adapta.security.clients.aws.AwsClient", "auth_client_credentials_class": "adapta.security.clients.aws._aws_credentials.EnvironmentAwsCredentials"};settings={}',
             DeltaQueryEnabledStore,
+        ),
+        (
+            'qes://engine=PARQUET;plaintext_credentials={"auth_client_class":"adapta.security.clients.aws.AwsClient"};settings={}',
+            ParquetQueryEnabledStore,
+        ),
+        (
+            'qes://engine=PARQUET;plaintext_credentials={"auth_client_class":"adapta.security.clients.aws.AwsClient", "auth_client_credentials_class": "adapta.security.clients.aws._aws_credentials.EnvironmentAwsCredentials"};settings={}',
+            ParquetQueryEnabledStore,
+        ),
+        (
+            'qes://engine=adapta.storage.query_enabled_store.ParquetQueryEnabledStore;plaintext_credentials={"auth_client_class":"adapta.security.clients.AzureClient"};settings={}',
+            NotImplementedError,
+        ),
+        (
+            'qes://engine=PARQUET;plaintext_credentials={"auth_client_class":"adapta.security.clients.AzureClient"};settings={}',
+            NotImplementedError,
         ),
         (
             'qes://engine=DELTA;plaintext_credentials={"auth_client_class":"adapta.security.clients.TestClient"};settings={}',
