@@ -17,7 +17,7 @@ Contains credentials provider for AWS clients
 #
 import os
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Optional, final
 
 
 class AccessKeyCredentials(ABC):
@@ -50,7 +50,13 @@ class AccessKeyCredentials(ABC):
     def endpoint(self) -> Optional[str]:
         """AWS custom endpoint"""
 
+    @property
+    @abstractmethod
+    def use_http(self) -> Optional[bool]:
+        """Allow or disallow usage of bare HTTP"""
 
+
+@final
 class EnvironmentAwsCredentials(AccessKeyCredentials):
     """
     Reads credentials from environment variables
@@ -59,6 +65,7 @@ class EnvironmentAwsCredentials(AccessKeyCredentials):
     def __init__(self):
         self._session_token = None
         self._endpoint = None
+        self._use_http = False
 
         if "PROTEUS__AWS_SECRET_ACCESS_KEY" not in os.environ:
             raise ValueError("PROTEUS__AWS_SECRET_ACCESS_KEY must be set")
@@ -78,6 +85,9 @@ class EnvironmentAwsCredentials(AccessKeyCredentials):
         if "PROTEUS__AWS_ENDPOINT" in os.environ:
             self._endpoint = os.environ["PROTEUS__AWS_ENDPOINT"]
 
+        if "PROTEUS__AWS_USE_HTTP" in os.environ:
+            self._use_http = os.environ["PROTEUS__AWS_USE_HTTP"] == "1"
+
     @property
     def access_key(self) -> str:
         return self._access_key
@@ -98,18 +108,24 @@ class EnvironmentAwsCredentials(AccessKeyCredentials):
     def endpoint(self) -> Optional[str]:
         return self._endpoint
 
+    @property
+    def use_http(self) -> Optional[bool]:
+        return self._use_http
 
+
+@final
 class ExplicitAwsCredentials(AccessKeyCredentials):
     """
     Explicitly passed AWS credentials
     """
 
-    def __init__(self, access_key, access_key_id, region, session_token=None, endpoint=None):
+    def __init__(self, access_key, access_key_id, region, session_token=None, endpoint=None, use_http=False):
         self._access_key = access_key
         self._access_key_id = access_key_id
         self._region = region
         self._session_token = session_token
         self._endpoint = endpoint
+        self._use_http = use_http
 
     @property
     def access_key(self) -> str:
@@ -130,3 +146,7 @@ class ExplicitAwsCredentials(AccessKeyCredentials):
     @property
     def endpoint(self) -> Optional[str]:
         return self._endpoint
+
+    @property
+    def use_http(self) -> Optional[bool]:
+        return self._use_http
