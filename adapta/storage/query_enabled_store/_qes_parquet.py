@@ -13,7 +13,7 @@ from adapta.security.clients import AwsClient, AzureClient
 from adapta.storage.blob.base import StorageClient
 from adapta.storage.blob.s3_storage_client import S3StorageClient
 from adapta.storage.models.base import DataPath
-from adapta.storage.models.filter_expression import Expression
+from adapta.storage.models.filter_expression import Expression, ArrowFilterExpression, compile_expression
 from adapta.storage.models.format import PolarsDataFrameParquetSerializationFormat
 from adapta.storage.query_enabled_store._models import (
     QueryEnabledStore,
@@ -88,13 +88,24 @@ class ParquetQueryEnabledStore(QueryEnabledStore[ParquetCredential, ParquetSetti
         options: dict[QueryEnabledStoreOptions, any] | None = None,
         limit: Optional[int] = None,
     ) -> Union[MetaFrame, Iterator[MetaFrame]]:
-        polars_table = pl.concat(
+        pyarrow_table = pl.concat(
             self.credentials.storage_client.read_blobs(
                 blob_path=path,
                 serialization_format=PolarsDataFrameParquetSerializationFormat,
                 filter_predicate=lambda b: b.key.endswith(".parquet"),
             )
+        ).to_arrow()
+
+        row_filter = (
+            compile_expression(filter_expression, ArrowFilterExpression)
+            if isinstance(filter_expression, Expression)
+            else filter_expression
         )
+
+        if row_filter:
+            pyarrow_table = pyarrow_table.filter(row_filter)
+
+        polars_table = pl.from_arrow(pyarrow_table)
 
         return MetaFrame.from_polars(
             data=polars_table,
