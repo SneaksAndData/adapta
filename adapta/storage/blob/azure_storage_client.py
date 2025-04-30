@@ -274,6 +274,18 @@ class AzureStorageClient(StorageClient):
                     path=blob.name,
                 )
 
+    def list_matching_prefixes(self, blob_path: DataPath, delimiter: str = "/") -> Iterator[DataPath]:
+        azure_path = cast_path(blob_path)
+        for prefix in self._get_container_client(azure_path).walk_blobs(
+            name_starts_with=blob_path.path,
+            delimiter=delimiter,
+        ):
+            yield AdlsGen2Path(
+                account=azure_path.account,
+                container=azure_path.container,
+                path=prefix.name,
+            )
+
     def delete_blob(
         self,
         blob_path: DataPath,
