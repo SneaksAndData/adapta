@@ -311,7 +311,7 @@ class AzureStorageClient(StorageClient):
         """
         azure_path = cast_path(blob_path)
 
-        lease_client = BlobLeaseClient(self._get_container_client(azure_path).get_blob_client(blob_path.path))
+        lease_client = BlobLeaseClient(self._get_blob_client(azure_path))
         lease_client.break_lease()
 
         self._get_container_client(azure_path).delete_blob(blob_path.path)
