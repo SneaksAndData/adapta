@@ -32,6 +32,7 @@ from azure.storage.blob import (
     BlobProperties,
     ExponentialRetry,
     ContainerClient,
+    BlobLeaseClient,
 )
 
 from adapta.storage.blob.base import StorageClient
@@ -301,6 +302,17 @@ class AzureStorageClient(StorageClient):
         blob_path: DataPath,
     ) -> None:
         azure_path = cast_path(blob_path)
+
+        self._get_container_client(azure_path).delete_blob(blob_path.path)
+
+    def delete_leased_blob(self, blob_path: DataPath) -> None:
+        """
+        Azure specific deletion that takes care of a leased blob
+        """
+        azure_path = cast_path(blob_path)
+
+        lease_client = BlobLeaseClient(self._get_blob_client(azure_path))
+        lease_client.break_lease()
 
         self._get_container_client(azure_path).delete_blob(blob_path.path)
 
