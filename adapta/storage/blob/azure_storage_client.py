@@ -79,7 +79,7 @@ class AzureStorageClient(StorageClient):
                 blob_endpoint = os.environ["ADAPTA__AZURE_STORAGE_BLOB_ENDPOINT"]
 
             if "ADAPTA__AZURE_STORAGE_DEFAULT_PROTOCOL" in os.environ:
-                endpoint_protocol = f"DefaultEndpointsProtocol={os.environ['ADAPTA__AZURE_STORAGE_DEFAULT_PROTOCOL']};"
+                endpoint_protocol = f"DefaultEndpointsProtocol={os.environ['ADAPTA__AZURE_STORAGE_DEFAULT_PROTOCOL']}"
 
             connection_string = ";".join(
                 [
