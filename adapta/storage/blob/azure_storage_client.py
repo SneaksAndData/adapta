@@ -85,7 +85,7 @@ class AzureStorageClient(StorageClient):
                 [
                     endpoint_protocol,
                     f"AccountName={self._storage_options['AZURE_STORAGE_ACCOUNT_NAME']}",
-                    f"AccountKey={self._storage_options['AZURE_STORAGE_ACCOUNT_KEY']};",
+                    f"AccountKey={self._storage_options['AZURE_STORAGE_ACCOUNT_KEY']}",
                     blob_endpoint,
                 ]
             )
