@@ -33,6 +33,7 @@ from azure.storage.blob import (
     ExponentialRetry,
     ContainerClient,
     BlobLeaseClient,
+    LeaseProperties,
 )
 
 from adapta.storage.blob.base import StorageClient
@@ -76,7 +77,7 @@ class AzureStorageClient(StorageClient):
             endpoint_protocol = "DefaultEndpointsProtocol=https"
 
             if "ADAPTA__AZURE_STORAGE_BLOB_ENDPOINT" in os.environ:
-                blob_endpoint = os.environ["ADAPTA__AZURE_STORAGE_BLOB_ENDPOINT"]
+                blob_endpoint = f'BlobEndpoint={os.environ["ADAPTA__AZURE_STORAGE_BLOB_ENDPOINT"]}'
 
             if "ADAPTA__AZURE_STORAGE_DEFAULT_PROTOCOL" in os.environ:
                 endpoint_protocol = f"DefaultEndpointsProtocol={os.environ['ADAPTA__AZURE_STORAGE_DEFAULT_PROTOCOL']}"
@@ -324,9 +325,10 @@ class AzureStorageClient(StorageClient):
         Azure specific deletion that takes care of a leased blob
         """
         azure_path = cast_path(blob_path)
+        blob_client = self._get_blob_client(azure_path)
 
-        lease_client = BlobLeaseClient(self._get_blob_client(azure_path))
-        lease_client.break_lease()
+        if blob_client.get_blob_properties().lease.state == "leased":
+            BlobLeaseClient(blob_client).break_lease()
 
         self._get_container_client(azure_path).delete_blob(blob_path.path)
 
