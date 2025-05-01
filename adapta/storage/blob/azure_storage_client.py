@@ -33,7 +33,6 @@ from azure.storage.blob import (
     ExponentialRetry,
     ContainerClient,
     BlobLeaseClient,
-    LeaseProperties,
 )
 
 from adapta.storage.blob.base import StorageClient
