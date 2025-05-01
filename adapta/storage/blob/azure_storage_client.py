@@ -71,15 +71,15 @@ class AzureStorageClient(StorageClient):
         else:
             self._storage_options = self._base_client.connect_storage(path)
             blob_endpoint = (
-                f"BlobEndpoint=https://{self._storage_options['AZURE_STORAGE_ACCOUNT_NAME']}.blob.core.windows.net/;"
+                f"BlobEndpoint=https://{self._storage_options['AZURE_STORAGE_ACCOUNT_NAME']}.blob.core.windows.net/"
             )
-            endpoint_protocol = "DefaultEndpointsProtocol=https;"
+            endpoint_protocol = "DefaultEndpointsProtocol=https"
 
             if "ADAPTA__AZURE_STORAGE_BLOB_ENDPOINT" in os.environ:
                 blob_endpoint = os.environ["ADAPTA__AZURE_STORAGE_BLOB_ENDPOINT"]
 
             if "ADAPTA__AZURE_STORAGE_DEFAULT_PROTOCOL" in os.environ:
-                endpoint_protocol = f"DefaultEndpointsProtocol={os.environ['ADAPTA__AZURE_STORAGE_DEFAULT_PROTOCOL']};"
+                endpoint_protocol = f"DefaultEndpointsProtocol={os.environ['ADAPTA__AZURE_STORAGE_DEFAULT_PROTOCOL']}"
 
             connection_string = ";".join(
                 [
