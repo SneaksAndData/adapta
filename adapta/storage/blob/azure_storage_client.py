@@ -306,7 +306,7 @@ class AzureStorageClient(StorageClient):
         for prefix in self._get_container_client(azure_path).walk_blobs(
             name_starts_with=blob_path.path,
             delimiter=delimiter,
-            timeout_seconds=timeout_seconds,
+            timeout=timeout_seconds,
         ):
             yield AdlsGen2Path(
                 account=azure_path.account,
