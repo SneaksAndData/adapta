@@ -289,7 +289,9 @@ class AzureStorageClient(StorageClient):
                     path=blob.name,
                 )
 
-    def list_matching_prefixes(self, blob_path: DataPath, delimiter: str = "/") -> Iterator[DataPath]:
+    def list_matching_prefixes(
+        self, blob_path: DataPath, delimiter: str = "/", timeout_seconds: int = 3600
+    ) -> Iterator[DataPath]:
         """
         List blobs in accordance with a hierarchy, as delimited by the specified delimiter character.
         For example, calling list_matching_prefixes(AldsGen2Path.from_hdfs_path(path), delimiter="/"),
@@ -304,6 +306,7 @@ class AzureStorageClient(StorageClient):
         for prefix in self._get_container_client(azure_path).walk_blobs(
             name_starts_with=blob_path.path,
             delimiter=delimiter,
+            timeout_seconds=timeout_seconds,
         ):
             yield AdlsGen2Path(
                 account=azure_path.account,
