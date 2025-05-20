@@ -32,7 +32,7 @@ from adapta.storage.models.format import (
     PolarsLazyFrameJsonSerializationFormat,
     PolarsLazyFrameParquetSerializationFormat,
     PolarsLazyFrameCsvSerializationFormat,
-    PolarsDataFrameExcelSerializationFormat,
+    PolarsDataFrameExcelSerializationFormat, PandasDataFrameExcelSerializationFormat,
 )
 from adapta.utils.metaframe import MetaFrame
 
@@ -40,7 +40,6 @@ from adapta.utils.metaframe import MetaFrame
 @pytest.mark.parametrize(
     "serializer, data",
     [
-        (PolarsDataFrameExcelSerializationFormat, polars.DataFrame(data={"test": [1, 2, 3]})),
         (DictJsonSerializationFormat, {"test": "test"}),
         (
             PandasDataFrameParquetSerializationFormat,
@@ -80,6 +79,8 @@ from adapta.utils.metaframe import MetaFrame
         (UnitSerializationFormat, b"Test string"),
         (MetaFrameParquetSerializationFormat, MetaFrame.from_pandas(pandas.DataFrame(data={"test": [1, 2, 3]}))),
         (MetaFrameParquetSerializationFormat, MetaFrame.from_polars(polars.DataFrame(data={"test": [1, 2, 3]}))),
+        (PolarsDataFrameExcelSerializationFormat, polars.DataFrame(data={"test": [1, 2, 3]})),
+        (PandasDataFrameExcelSerializationFormat, pandas.DataFrame(data={"test": [1, 2, 3]})),
     ],
 )
 def test_unit_serialization(serializer: Type[SerializationFormat], data: any):
