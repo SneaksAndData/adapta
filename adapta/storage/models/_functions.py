@@ -56,7 +56,7 @@ def format_excel_columns(buffer: io.BytesIO, columns: list[str]):
     :param buffer: BytesIO buffer containing the Excel file.
     :param columns: List of column names.
     """
-    # pylint: disable=import-outside-toplevel)
+    # pylint: disable=import-outside-toplevel
     from openpyxl.utils import get_column_letter
     from openpyxl import load_workbook
 
