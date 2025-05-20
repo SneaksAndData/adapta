@@ -30,7 +30,8 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict
 from typing import Optional, Dict, TypeVar, Callable, Type, List, Any, Union
 
-from adapta.schema_management.schema_entity import PythonSchemaEntity
+from polars.polars import ComputeError
+
 try:
     from _socket import IPPROTO_TCP, TCP_NODELAY, TCP_USER_TIMEOUT
 except ImportError:
@@ -49,6 +50,7 @@ from cassandra.cluster import (  # pylint: disable=E0611
     RetryPolicy,
     ExecutionProfile,
     EXEC_PROFILE_DEFAULT,
+    _NOT_SET,
 )
 from cassandra.cqlengine.connection import set_session
 from cassandra.cqlengine.models import Model
@@ -65,7 +67,7 @@ from adapta.storage.models.filter_expression import Expression, AstraFilterExpre
 from adapta.utils import chunk_list, rate_limit
 from adapta.utils.metaframe import MetaFrame, concat
 from adapta.storage.distributed_object_store.v3.datastax_astra._model_mappers import get_mapper
-from adapta.schema_management.schema_entity import PythonSchemaEntity
+from adapta.storage.models.enum import QueryEnabledStoreOptions
 
 TModel = TypeVar("TModel")  # pylint: disable=C0103
 
@@ -90,8 +92,10 @@ class AstraClient:
      :param: transient_error_max_wait_s: Maximum cumulative wait time for exp backoff attempts for transient errors.
      :param: log_transient_errors: Whether to log errors that can be resolved via exp backoff retries.
      :param: metadata_fetch_timeout_s: Timeout in seconds for the driver’s HTTP call to get cluster metadata from Astra DB. Defaults to 30s up fromf factory default of 5 seconds.
+     :param: protocol_version: Cassandra protocol version to use. Defaults to the latest version supported by the driver.
     """
 
+    # pylint: disable=too-many-locals
     def __init__(
         self,
         client_name: str,
@@ -107,6 +111,7 @@ class AstraClient:
         transient_error_max_wait_s=300,
         log_transient_errors=True,
         metadata_fetch_timeout_s=30,
+        protocol_version=_NOT_SET,
     ):
         self._secure_connect_bundle_bytes = secure_connect_bundle_bytes or os.getenv("PROTEUS__ASTRA_BUNDLE_BYTES")
         self._client_id = client_id or os.getenv("PROTEUS__ASTRA_CLIENT_ID")
@@ -125,6 +130,7 @@ class AstraClient:
         self._transient_error_max_retries = transient_error_max_retries
         self._transient_error_max_wait_s = transient_error_max_wait_s
         self._metadata_fetch_timeout_s = metadata_fetch_timeout_s
+        self._protocol_version = protocol_version
         if log_transient_errors:
             logging.getLogger("backoff").addHandler(logging.StreamHandler())
 
@@ -163,6 +169,7 @@ class AstraClient:
             compression=True,
             application_name=self._client_name,
             application_version=__version__,
+            protocol_version=self._protocol_version,
             sockopts=[
                 (IPPROTO_TCP, TCP_NODELAY, 1),
                 (IPPROTO_TCP, TCP_USER_TIMEOUT, self._socket_read_timeout),
@@ -240,6 +247,8 @@ class AstraClient:
         custom_indexes: Optional[List[str]] = None,
         deduplicate=False,
         num_threads: Optional[int] = None,
+        options: dict[QueryEnabledStoreOptions, any] = None,
+        limit: Optional[int] = None,
     ) -> MetaFrame:
         """
         Run a filter query on the entity of type TModel backed by table `table_name`.
@@ -264,7 +273,10 @@ class AstraClient:
         :param: custom_indexes: An optional list of custom indexes, if it cannot be inferred, if it cannot be inferred from the data model.
         :param: deduplicate: Optionally deduplicate query result, for example when only the partition key part of a primary key is used to fetch results.
         :param: num_threads: Optionally run filtering using multiple threads. Setting this to -1 will cause this method to automatically evaluate number of threads based on filter expression size.
+        :param: limit: Optionally limit the number of results returned. NOTE the limit works per call to Astra and not on the final result.
         """
+        if options is None:
+            options = {}
 
         @on_exception(
             wait_gen=expo,
@@ -277,10 +289,11 @@ class AstraClient:
             raise_on_giveup=True,
         )
         def apply(model: Type[Model], key_column_filter: Dict[str, Any], columns_to_select: Optional[List[str]]):
+            model = model.filter(**key_column_filter).limit(limit)
             if columns_to_select:
-                return model.filter(**key_column_filter).only(select_columns)
+                return model.only(select_columns)
 
-            return model.filter(**key_column_filter)
+            return model
 
         def normalize_column_name(column_name: str) -> str:
             filter_suffix = re.findall(self._filter_pattern, column_name)
@@ -289,35 +302,40 @@ class AstraClient:
 
             return column_name.replace(filter_suffix[0], "")
 
+        def convert_to_polars(x: list[dict]) -> polars.DataFrame:
+            try:
+                return polars.DataFrame(x, schema=select_columns)
+            except ComputeError:
+                # Catches errors related to incorrect schema inference and tries again with unlimited schema inference length
+                return polars.DataFrame(x, schema=select_columns, infer_schema_length=None)
+
         def to_frame(
             model: Type[Model], key_column_filter: Dict[str, Any], columns_to_select: Optional[List[str]]
         ) -> MetaFrame:
             return MetaFrame(
                 [dict(v.items()) for v in list(apply(model, key_column_filter, columns_to_select))],
-                convert_to_polars=lambda x: polars.DataFrame(x, schema=select_columns),
-                convert_to_pandas=lambda x: pandas.DataFrame(
-                    x, columns=select_columns or PythonSchemaEntity(model).get_field_names()
-                ),
+                convert_to_polars=convert_to_polars,
+                convert_to_pandas=lambda x: pandas.DataFrame(x, columns=select_columns),
             )
 
         assert (
             self._session is not None
         ), "Please instantiate an AstraClient using with AstraClient(...) before calling this method"
 
-        select_columns = (
-            list(map(normalize_column_name, select_columns))
-            if select_columns
-            else PythonSchemaEntity(model_class).get_field_names()
-        )
-
-        cassandra_model = get_mapper(
+        cassandra_model_mapper = get_mapper(
             data_model=model_class,
             keyspace=keyspace,
             table_name=table_name,
             primary_keys=primary_keys,
             partition_keys=partition_keys,
             custom_indexes=custom_indexes,
-        ).map()
+        )
+
+        select_columns = (
+            list(map(normalize_column_name, select_columns)) if select_columns else cassandra_model_mapper.column_names
+        )
+
+        cassandra_model = cassandra_model_mapper.map()
 
         compiled_filter_values = (
             compile_expression(key_column_filter_values, AstraFilterExpression)
@@ -340,22 +358,28 @@ class AstraClient:
                             for key_column_filter in compiled_filter_values
                         ],
                         chunksize=max(int(len(compiled_filter_values) / num_threads), 1),
-                    )
+                    ),
+                    options=options[QueryEnabledStoreOptions.CONCAT_OPTIONS]
+                    if QueryEnabledStoreOptions.CONCAT_OPTIONS in options
+                    else None,
                 )
         else:
             result = concat(
                 [
                     MetaFrame(
                         [dict(v.items()) for v in list(apply(cassandra_model, key_column_filter, select_columns))],
-                        convert_to_polars=(lambda x: polars.DataFrame(x, schema=select_columns))
+                        convert_to_polars=convert_to_polars
                         if not deduplicate
-                        else (lambda x: polars.DataFrame(x, schema=select_columns).unique()),
+                        else (lambda x: convert_to_polars(x).unique()),
                         convert_to_pandas=(lambda x: pandas.DataFrame(x, columns=select_columns))
                         if not deduplicate
                         else (lambda x: pandas.DataFrame(x, columns=select_columns).drop_duplicates()),
                     )
                     for key_column_filter in compiled_filter_values
-                ]
+                ],
+                options=options[QueryEnabledStoreOptions.CONCAT_OPTIONS]
+                if QueryEnabledStoreOptions.CONCAT_OPTIONS in options
+                else None,
             )
 
         return result

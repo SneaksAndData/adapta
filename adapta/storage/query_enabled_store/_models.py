@@ -25,6 +25,7 @@ from typing import TypeVar, Generic, Type, Iterator, Union, final, Optional
 
 from adapta.storage.models.base import DataPath
 from adapta.storage.models.filter_expression import Expression
+from adapta.storage.models.enum import QueryEnabledStoreOptions
 from adapta.utils.metaframe import MetaFrame
 
 TCredential = TypeVar("TCredential")  # pylint: disable=C0103
@@ -84,16 +85,21 @@ class QueryEnabledStore(Generic[TCredential, TSettings], ABC):
 
     @abstractmethod
     def _apply_filter(
-        self, path: DataPath, filter_expression: Expression, columns: list[str]
+        self,
+        path: DataPath,
+        filter_expression: Expression,
+        columns: list[str],
+        options: dict[QueryEnabledStoreOptions, any] | None = None,
+        limit: Optional[int] = None,
     ) -> Union[MetaFrame, Iterator[MetaFrame]]:
         """
-        Applies the provided filter expression to this Store and returns the result in a pandas DataFrame
+        Applies the provided filter expression to this Store and returns the result in a MetaFrame
         """
 
     @abstractmethod
     def _apply_query(self, query: str) -> Union[MetaFrame, Iterator[MetaFrame]]:
         """
-        Applies a plaintext query to this Store and returns the result in a pandas DataFrame
+        Applies a plaintext query to this Store and returns the result in a MetaFrame
         """
 
     @classmethod
@@ -140,6 +146,8 @@ class QueryConfigurationBuilder:
         self._path = path
         self._filter_expression: Optional[Expression] = None
         self._columns: list[str] = []
+        self._options: dict[QueryEnabledStoreOptions, any] = {}
+        self._limit = None
 
     def filter(self, filter_expression: Expression) -> "QueryConfigurationBuilder":
         """
@@ -157,10 +165,29 @@ class QueryConfigurationBuilder:
         self._columns = list(columns)
         return self
 
+    def add_options(self, option_key: QueryEnabledStoreOptions, option_value: any) -> "QueryConfigurationBuilder":
+        """
+        Use the provided options when querying the underlying storage.
+        """
+
+        self._options[option_key] = option_value
+        return self
+
+    def limit(self, limit: int | None) -> "QueryConfigurationBuilder":
+        """
+        Limit the number of results returned by the underlying store.
+        """
+        self._limit = limit
+        return self
+
     def read(self) -> Union[MetaFrame, Iterator[MetaFrame]]:
         """
         Execute the query on the underlying store.
         """
         return self._store._apply_filter(
-            path=self._path, filter_expression=self._filter_expression, columns=self._columns
+            path=self._path,
+            filter_expression=self._filter_expression,
+            columns=self._columns,
+            options=self._options,
+            limit=self._limit,
         )

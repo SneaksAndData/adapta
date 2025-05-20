@@ -32,6 +32,7 @@ from azure.storage.blob import (
     BlobProperties,
     ExponentialRetry,
     ContainerClient,
+    BlobLeaseClient,
 )
 
 from adapta.storage.blob.base import StorageClient
@@ -69,12 +70,26 @@ class AzureStorageClient(StorageClient):
             self._storage_options = None
         else:
             self._storage_options = self._base_client.connect_storage(path)
-            connection_string = (
-                f"DefaultEndpointsProtocol=https;"
-                f"AccountName={self._storage_options['AZURE_STORAGE_ACCOUNT_NAME']};"
-                f"AccountKey={self._storage_options['AZURE_STORAGE_ACCOUNT_KEY']};"
-                f"BlobEndpoint=https://{self._storage_options['AZURE_STORAGE_ACCOUNT_NAME']}.blob.core.windows.net/;"
+            blob_endpoint = (
+                f"BlobEndpoint=https://{self._storage_options['AZURE_STORAGE_ACCOUNT_NAME']}.blob.core.windows.net/"
             )
+            endpoint_protocol = "DefaultEndpointsProtocol=https"
+
+            if "ADAPTA__AZURE_STORAGE_BLOB_ENDPOINT" in os.environ:
+                blob_endpoint = f'BlobEndpoint={os.environ["ADAPTA__AZURE_STORAGE_BLOB_ENDPOINT"]}'
+
+            if "ADAPTA__AZURE_STORAGE_DEFAULT_PROTOCOL" in os.environ:
+                endpoint_protocol = f"DefaultEndpointsProtocol={os.environ['ADAPTA__AZURE_STORAGE_DEFAULT_PROTOCOL']}"
+
+            connection_string = ";".join(
+                [
+                    endpoint_protocol,
+                    f"AccountName={self._storage_options['AZURE_STORAGE_ACCOUNT_NAME']}",
+                    f"AccountKey={self._storage_options['AZURE_STORAGE_ACCOUNT_KEY']}",
+                    blob_endpoint,
+                ]
+            )
+
             self._blob_service_client: BlobServiceClient = BlobServiceClient.from_connection_string(
                 connection_string, retry_policy=retry_policy
             )
@@ -274,11 +289,48 @@ class AzureStorageClient(StorageClient):
                     path=blob.name,
                 )
 
+    def list_matching_prefixes(
+        self, blob_path: DataPath, delimiter: str = "/", timeout_seconds: int = 3600
+    ) -> Iterator[DataPath]:
+        """
+        List blobs in accordance with a hierarchy, as delimited by the specified delimiter character.
+        For example, calling list_matching_prefixes(AldsGen2Path.from_hdfs_path(path), delimiter="/"),
+        where path=abfss://c@a.dfs.core.windows.net/my/pre will return:
+        abfss://c@a.dfs.core.windows.net/my/pre1
+        abfss://c@a.dfs.core.windows.net/my/preadad
+        abfss://c@a.dfs.core.windows.net/my/preeqweq
+
+        but will not return abfss://c@a.dfs.core.windows.net/my/pre1/pre2
+        """
+        azure_path = cast_path(blob_path)
+        for prefix in self._get_container_client(azure_path).walk_blobs(
+            name_starts_with=blob_path.path,
+            delimiter=delimiter,
+            timeout=timeout_seconds,
+        ):
+            yield AdlsGen2Path(
+                account=azure_path.account,
+                container=azure_path.container,
+                path=prefix.name,
+            )
+
     def delete_blob(
         self,
         blob_path: DataPath,
     ) -> None:
         azure_path = cast_path(blob_path)
+
+        self._get_container_client(azure_path).delete_blob(blob_path.path)
+
+    def delete_leased_blob(self, blob_path: DataPath) -> None:
+        """
+        Azure specific deletion that takes care of a leased blob
+        """
+        azure_path = cast_path(blob_path)
+        blob_client = self._get_blob_client(azure_path)
+
+        if blob_client.get_blob_properties().lease.state == "leased":
+            BlobLeaseClient(blob_client).break_lease()
 
         self._get_container_client(azure_path).delete_blob(blob_path.path)
 

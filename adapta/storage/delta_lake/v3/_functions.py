@@ -45,6 +45,8 @@ def load(  # pylint: disable=R0913
     columns: Optional[List[str]] = None,
     batch_size: Optional[int] = None,
     partition_filter_expressions: Optional[List[Tuple]] = None,
+    limit: Optional[int] = None,
+    timeout: Optional[int] = None,
 ) -> Union[MetaFrame, Iterator[MetaFrame]]:
     """
      Loads Delta Lake table from Azure or AWS storage and converts it to a pandas dataframe.
@@ -60,18 +62,25 @@ def load(  # pylint: disable=R0913
 
     :param columns: Optional list of columns to select when reading. Defaults to all columns of not provided.
     :param batch_size: Optional batch size when reading in batches. If not set, whole table will be loaded into memory.
+    :param limit: Optional limit on number of rows to read.
     :param partition_filter_expressions: Optional partitions filters. Examples:
 
        partition_filter_expressions = [("day", "=", "3")]
        partition_filter_expressions = [("day", "in", ["3", "20"])]
        partition_filter_expressions = [("day", "not in", ["3", "20"]), ("year", "=", "2021")]
 
+    :param timeout: Optional timeout for the read operation. Measured in seconds.
     :return: A DeltaTable wrapped Rust class, pandas Dataframe or an iterator of pandas Dataframes, for batched reads.
     """
     if version:
         timestamp = None
 
-    pyarrow_ds = DeltaTable(path.to_delta_rs_path(), version=version, storage_options=auth_client.connect_storage(path))
+    storage_options = auth_client.connect_storage(path)
+
+    if timeout is not None:
+        storage_options["timeout"] = f"{timeout}s"
+
+    pyarrow_ds = DeltaTable(path.to_delta_rs_path(), version=version, storage_options=storage_options)
 
     if timestamp:
         pyarrow_ds.load_as_version(timestamp)
@@ -87,9 +96,14 @@ def load(  # pylint: disable=R0913
     )
 
     if batch_size:
-        batches: Iterator[RecordBatch] = pyarrow_ds.to_batches(
-            filter=row_filter, columns=columns, batch_size=batch_size
-        )
+        if limit is not None:
+            pyarrow_table: Table = pyarrow_ds.filter(filter=row_filter).head(
+                int_num_rows=limit, columns=columns, batch_size=batch_size
+            )
+        else:
+            pyarrow_table: Table = pyarrow_ds.to_table(filter=row_filter, columns=columns, batch_size=batch_size)
+
+        batches: list[RecordBatch] = pyarrow_table.to_batches(max_chunksize=batch_size)
 
         return map(
             lambda batch: MetaFrame.from_arrow(
@@ -99,7 +113,10 @@ def load(  # pylint: disable=R0913
             batches,
         )
 
-    pyarrow_table: Table = pyarrow_ds.to_table(filter=row_filter, columns=columns)
+    if limit is not None:
+        pyarrow_table: Table = pyarrow_ds.filter(row_filter).head(int_num_rows=limit, columns=columns)
+    else:
+        pyarrow_table: Table = pyarrow_ds.to_table(filter=row_filter, columns=columns)
 
     return MetaFrame.from_arrow(
         data=pyarrow_table,
