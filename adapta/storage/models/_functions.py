@@ -50,9 +50,13 @@ def format_excel_columns(buffer: io.BytesIO, columns: list[str]):
     """
     Adjusts Excel column widths based on column name lengths.
 
+    The imports are inside the function to avoid functions messing up
+    because these are extra dependencies.
+
     :param buffer: BytesIO buffer containing the Excel file.
     :param columns: List of column names.
     """
+    # pylint: disable=import-outside-toplevel)
     from openpyxl.utils import get_column_letter
     from openpyxl import load_workbook
 
