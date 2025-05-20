@@ -15,7 +15,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
-import io
 from typing import Iterable, Optional
 
 from adapta.storage.models.astra import AstraPath
@@ -44,30 +43,3 @@ def parse_data_path(
             continue
 
     return None
-
-
-def format_excel_columns(buffer: io.BytesIO, columns: list[str]):
-    """
-    Adjusts Excel column widths based on column name lengths.
-
-    The imports are inside the function to avoid functions messing up
-    because these are extra dependencies.
-
-    :param buffer: BytesIO buffer containing the Excel file.
-    :param columns: List of column names.
-    """
-    # pylint: disable=import-outside-toplevel
-    from openpyxl.utils import get_column_letter
-    from openpyxl import load_workbook
-
-    buffer.seek(0)
-    wb = load_workbook(buffer)
-    ws = wb.active
-
-    for i, col in enumerate(columns, 1):
-        max_length = len(str(col))
-        ws.column_dimensions[get_column_letter(i)].width = max_length + 2
-
-    buffer.seek(0)
-    wb.save(buffer)
-    buffer.seek(0)

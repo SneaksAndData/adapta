@@ -364,7 +364,6 @@ class PolarsDataFrameExcelSerializationFormat(SerializationFormat[polars.DataFra
         """
         buffer = io.BytesIO()
         data.write_excel(buffer)
-        format_excel_columns(buffer=buffer, columns=data.columns)
         return buffer.getvalue()
 
     def deserialize(self, data: bytes) -> polars.DataFrame:
@@ -389,7 +388,6 @@ class PandasDataFrameExcelSerializationFormat(SerializationFormat[pandas.DataFra
         """
         buffer = io.BytesIO()
         data.to_excel(buffer, index=False, engine="openpyxl")
-        format_excel_columns(buffer=buffer, columns=data.columns)
         return buffer.getvalue()
 
     def deserialize(self, data: bytes) -> pandas.DataFrame:
