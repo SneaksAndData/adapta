@@ -25,7 +25,6 @@ from typing import Generic, TypeVar
 import pandas
 import polars
 
-from adapta.storage.models import format_excel_columns
 from adapta.utils.metaframe import MetaFrame
 
 T = TypeVar("T")  # pylint: disable=C0103
