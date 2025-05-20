@@ -25,6 +25,7 @@ from typing import Generic, TypeVar
 import pandas
 import polars
 
+from adapta.storage.models import format_excel_columns
 from adapta.utils.metaframe import MetaFrame
 
 T = TypeVar("T")  # pylint: disable=C0103
@@ -348,6 +349,54 @@ class PickleSerializationFormat(SerializationFormat[T]):
         :return: Deserialized object.
         """
         return pickle.loads(data)
+class PolarsDataFrameExcelSerializationFormat(SerializationFormat[polars.DataFrame]):
+    """
+    Serializes dataframes as Excel (.xlsx) format.
+    """
+
+    def serialize(self, data: polars.DataFrame) -> bytes:
+        """
+        Serializes dataframe to bytes using Excel format.
+        :param data: Dataframe to serialize.
+        :return: Excel serialized dataframe as byte array.
+        """
+        buffer = io.BytesIO()
+        data.write_excel(buffer)
+        format_excel_columns(buffer=buffer, columns=data.columns)
+        return buffer.getvalue()
+
+    def deserialize(self, data: bytes) -> polars.DataFrame:
+        """
+        Deserializes dataframe from bytes using Excel format.
+        :param data: Dataframe to deserialize in Excel format as bytes.
+        :return: Deserialized dataframe.
+        """
+        return polars.read_excel(io.BytesIO(data))
+
+class PandasDataFrameExcelSerializationFormat(SerializationFormat[pandas.DataFrame]):
+    """
+    Serializes dataframes as Excel (.xlsx) format.
+    """
+
+    def serialize(self, data: pandas.DataFrame) -> bytes:
+        """
+        Serializes dataframe to bytes using Excel format.
+        :param data: Dataframe to serialize.
+        :return: Excel serialized dataframe as byte array.
+        """
+        buffer = io.BytesIO()
+        data.to_excel(buffer, index=False, engine='openpyxl')
+        format_excel_columns(buffer=buffer, columns=data.columns)
+        return buffer.getvalue()
+
+    def deserialize(self, data: bytes) -> pandas.DataFrame:
+        """
+        Deserializes dataframe from bytes using Excel format.
+        :param data: Dataframe to deserialize in Excel format as bytes.
+        :return: Deserialized dataframe.
+        """
+        return pandas.read_excel(io.BytesIO(data), engine='openpyxl')
+
 
 
 # Temporary aliases
