@@ -32,7 +32,8 @@ from adapta.storage.models.format import (
     PolarsLazyFrameJsonSerializationFormat,
     PolarsLazyFrameParquetSerializationFormat,
     PolarsLazyFrameCsvSerializationFormat,
-    PolarsDataFrameExcelSerializationFormat, PandasDataFrameExcelSerializationFormat,
+    PolarsDataFrameExcelSerializationFormat,
+    PandasDataFrameExcelSerializationFormat,
 )
 from adapta.utils.metaframe import MetaFrame
 
