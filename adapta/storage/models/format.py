@@ -349,6 +349,8 @@ class PickleSerializationFormat(SerializationFormat[T]):
         :return: Deserialized object.
         """
         return pickle.loads(data)
+
+
 class PolarsDataFrameExcelSerializationFormat(SerializationFormat[polars.DataFrame]):
     """
     Serializes dataframes as Excel (.xlsx) format.
@@ -373,6 +375,7 @@ class PolarsDataFrameExcelSerializationFormat(SerializationFormat[polars.DataFra
         """
         return polars.read_excel(io.BytesIO(data))
 
+
 class PandasDataFrameExcelSerializationFormat(SerializationFormat[pandas.DataFrame]):
     """
     Serializes dataframes as Excel (.xlsx) format.
@@ -385,7 +388,7 @@ class PandasDataFrameExcelSerializationFormat(SerializationFormat[pandas.DataFra
         :return: Excel serialized dataframe as byte array.
         """
         buffer = io.BytesIO()
-        data.to_excel(buffer, index=False, engine='openpyxl')
+        data.to_excel(buffer, index=False, engine="openpyxl")
         format_excel_columns(buffer=buffer, columns=data.columns)
         return buffer.getvalue()
 
@@ -395,8 +398,7 @@ class PandasDataFrameExcelSerializationFormat(SerializationFormat[pandas.DataFra
         :param data: Dataframe to deserialize in Excel format as bytes.
         :return: Deserialized dataframe.
         """
-        return pandas.read_excel(io.BytesIO(data), engine='openpyxl')
-
+        return pandas.read_excel(io.BytesIO(data), engine="openpyxl")
 
 
 # Temporary aliases
