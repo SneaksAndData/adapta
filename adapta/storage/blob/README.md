@@ -14,7 +14,7 @@ import pandas
 from adapta.security.clients import AzureClient
 from adapta.storage.models.azure import AdlsGen2Path
 from adapta.storage.blob.azure_storage_client import AzureStorageClient
-from adapta.storage.models.formatters import DataFrameParquetSerializationFormat
+from adapta.storage.models.formatters import PandasDataFrameParquetSerializationFormat
 
 azure_client = AzureClient()
 adls_path = AdlsGen2Path.from_hdfs_path('abfss://container@account.dfs.core.windows.net/path/to/my/table')
@@ -26,7 +26,7 @@ azure_storage_client = AzureStorageClient(base_client=azure_client, path=adls_pa
 
 non_partitioned_parquet_table: pandas.DataFrame = pandas.concat(azure_storage_client.read_blobs(
     blob_path=adls_path,
-    serialization_format=DataFrameParquetSerializationFormat,
+    serialization_format=PandasDataFrameParquetSerializationFormat,
     filter_predicate=lambda b: b.name.endswith('.parquet')  # Ignore non-parquet files that might be present in a folder
 ))
 ```
@@ -63,9 +63,9 @@ from adapta.storage.blob.s3_storage_client import S3StorageClient
 from adapta.storage.models.formatters import DictJsonSerializationFormat
 
 # Set up environment variables
-os.environ["PROTEUS__AWS_ACCESS_KEY_ID"] = < aws_access_key_id >
-os.environ["PROTEUS__AWS_SESSION_TOKEN"] = < aws_session_token >
-os.environ["PROTEUS__AWS_SECRET_ACCESS_KEY"] = < aws_secret_access_key >
+os.environ["PROTEUS__AWS_ACCESS_KEY_ID"] = <aws_access_key_id>
+os.environ["PROTEUS__AWS_SESSION_TOKEN"] = <aws_session_token>
+os.environ["PROTEUS__AWS_SECRET_ACCESS_KEY"] = <aws_secret_access_key>
 os.environ["PROTEUS__AWS_REGION"] = "eu-central-1"
 os.environ["PROTEUS__AWS_ENDPOINT"] = "http://example.com"
 
@@ -122,7 +122,7 @@ from adapta.security.clients import AwsClient
 from adapta.security.clients.aws._aws_credentials import EnvironmentAwsCredentials
 from adapta.storage.models.aws import S3Path
 from adapta.storage.blob.s3_storage_client import S3StorageClient
-from adapta.storage.models.formatters import DataFrameParquetSerializationFormat
+from adapta.storage.models.formatters import PandasDataFrameParquetSerializationFormat
 
 # Set up environment variables
 os.environ["PROTEUS__AWS_ACCESS_KEY_ID"] = < aws_access_key_id >
@@ -150,7 +150,7 @@ for blob_details in blob_list:
 
 # Read blobs from the S3 
 s3_path_parquet_file = S3Path.from_hdfs_path("'s3a://bucket/path_to_blob_file.parquet")
-blobs = s3_client.read_blobs(s3_path_parquet_file, serialization_format=DataFrameParquetSerializationFormat)
+blobs = s3_client.read_blobs(s3_path_parquet_file, serialization_format=PandasDataFrameParquetSerializationFormat)
 # Print blobs content
 print(list(blobs))
 

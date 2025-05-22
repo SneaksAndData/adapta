@@ -5,40 +5,6 @@ import polars
 from adapta.storage.models.format import SerializationFormat
 
 
-class PolarsDataFrameExcelSerializationFormat(SerializationFormat[polars.DataFrame]):
-    """
-    Serializes dataframes as Excel (.xlsx) format.
-    """
-
-    file_format = "xlsx"
-
-    def serialize(self, data: polars.DataFrame) -> bytes:
-        """
-        Serializes dataframe to bytes using Excel format.
-        :param data: Dataframe to serialize.
-        :return: Excel serialized dataframe as byte array.
-        """
-        buffer = io.BytesIO()
-        data.write_excel(buffer)
-        return buffer.getvalue()
-
-    def deserialize(self, data: bytes) -> polars.DataFrame:
-        """
-        Deserializes dataframe from bytes using Excel format.
-        :param data: Dataframe to deserialize in Excel format as bytes.
-        :return: Deserialized dataframe.
-        """
-        return polars.read_excel(io.BytesIO(data))
-
-
-class PolarsDataFrameExcelSerializationFormatWithFileFormat(PolarsDataFrameExcelSerializationFormat):
-    """
-    Serializes dataframes as Excel (.xlsx) format with file format.
-    """
-
-    include_file_format_in_output_name = True
-
-
 class PolarsLazyFrameJsonSerializationFormat(SerializationFormat[polars.LazyFrame]):
     """
     Serializes lazyframes as JSON format.
@@ -232,6 +198,40 @@ class PolarsDataFrameParquetSerializationFormat(SerializationFormat[polars.DataF
 class PolarsDataFrameParquetSerializationFormatWithFileFormat(PolarsDataFrameParquetSerializationFormat):
     """
     Serializes dataframes as parquet format with file format.
+    """
+
+    include_file_format_in_output_name = True
+
+
+class PolarsDataFrameExcelSerializationFormat(SerializationFormat[polars.DataFrame]):
+    """
+    Serializes dataframes as Excel (.xlsx) format.
+    """
+
+    file_format = "xlsx"
+
+    def serialize(self, data: polars.DataFrame) -> bytes:
+        """
+        Serializes dataframe to bytes using Excel format.
+        :param data: Dataframe to serialize.
+        :return: Excel serialized dataframe as byte array.
+        """
+        buffer = io.BytesIO()
+        data.write_excel(buffer)
+        return buffer.getvalue()
+
+    def deserialize(self, data: bytes) -> polars.DataFrame:
+        """
+        Deserializes dataframe from bytes using Excel format.
+        :param data: Dataframe to deserialize in Excel format as bytes.
+        :return: Deserialized dataframe.
+        """
+        return polars.read_excel(io.BytesIO(data))
+
+
+class PolarsDataFrameExcelSerializationFormatWithFileFormat(PolarsDataFrameExcelSerializationFormat):
+    """
+    Serializes dataframes as Excel (.xlsx) format with file format.
     """
 
     include_file_format_in_output_name = True
