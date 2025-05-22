@@ -34,7 +34,7 @@ from adapta.security.clients._base import AuthenticationClient
 from adapta.storage.models.base import DataPath
 from adapta.storage.delta_lake.v2._models import DeltaTransaction
 from adapta.storage.cache import KeyValueCache
-from adapta.storage.models.format import DataFrameParquetSerializationFormat
+from adapta.storage.models.formatters import PandasDataFrameParquetSerializationFormat
 from adapta.storage.models.filter_expression import Expression, ArrowFilterExpression, compile_expression
 
 
@@ -233,7 +233,7 @@ def load_cached(  # pylint: disable=R0913
         try:
             return concat(
                 [
-                    DataFrameParquetSerializationFormat().deserialize(zlib.decompress(cached_batch))
+                    PandasDataFrameParquetSerializationFormat().deserialize(zlib.decompress(cached_batch))
                     for batch_key, cached_batch in cache.get(cache_key, is_map=True).items()
                     if batch_key != b"completed"
                 ]
@@ -271,7 +271,7 @@ def load_cached(  # pylint: disable=R0913
             cache.include(
                 key=cache_key,
                 attribute=str(batch_index),
-                value=zlib.compress(DataFrameParquetSerializationFormat().serialize(batch)),
+                value=zlib.compress(PandasDataFrameParquetSerializationFormat().serialize(batch)),
             )
             for batch_index, batch in enumerate(data)
         ],
