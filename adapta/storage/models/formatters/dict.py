@@ -1,3 +1,6 @@
+"""
+Module for serializing and deserializing dictionaries.
+"""
 import json
 
 from adapta.storage.models.format import SerializationFormat
