@@ -52,9 +52,9 @@ class SerializationFormat(ABC, Generic[T]):
         return ""
 
     @property
-    def include_file_format_in_output_name(self) -> bool:
+    def append_file_format_extension(self) -> bool:
         """
-        Returns whether to include the file format in the output name.
+        Returns whether to include the file format as an extension in the output name.
         :return: True if the file format should be included in the output name, False otherwise.
         """
         return False
@@ -65,4 +65,4 @@ class SerializationFormat(ABC, Generic[T]):
         :param output_name: Name of the file.
         :return: File name for the serialized data.
         """
-        return f"{output_name}.{self.file_format}" if self.include_file_format_in_output_name else output_name
+        return f"{output_name}.{self.file_format}" if self.append_file_format_extension else output_name
