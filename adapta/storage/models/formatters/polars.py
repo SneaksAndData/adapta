@@ -1,3 +1,6 @@
+"""
+Module for serializing and deserializing polars DataFrames in various formats.
+"""
 import io
 
 import polars

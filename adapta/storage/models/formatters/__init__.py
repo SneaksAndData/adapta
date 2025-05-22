@@ -1,3 +1,6 @@
+"""
+Serialization formatters for various data types.
+"""
 from adapta.storage.models.formatters.dict import DictJsonSerializationFormat, DictJsonSerializationFormatWithFileFormat
 from adapta.storage.models.formatters.metaframe import (
     MetaFrameParquetSerializationFormat,
