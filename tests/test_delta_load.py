@@ -25,7 +25,7 @@ from adapta.security.clients import LocalClient
 from adapta.storage.models.local import LocalPath
 from adapta.storage.delta_lake.v3 import load, load_cached, get_cache_key
 from adapta.storage.cache import KeyValueCache
-from adapta.storage.models.format import DataFrameParquetSerializationFormat
+from adapta.storage.models.formatters import PandasDataFrameParquetSerializationFormat
 
 from pyarrow.dataset import field as pyarrow_field
 
@@ -98,7 +98,9 @@ def test_delta_load_cached(mock_cache: MagicMock, get_client_and_path):
 
     cache.exists.return_value = True
     cache.get.return_value = {
-        b"0": zlib.compress(DataFrameParquetSerializationFormat().serialize(pandas.DataFrame([{"a": 1, "b": 2}]))),
+        b"0": zlib.compress(
+            PandasDataFrameParquetSerializationFormat().serialize(pandas.DataFrame([{"a": 1, "b": 2}]))
+        ),
         b"completed": 1,
     }
 

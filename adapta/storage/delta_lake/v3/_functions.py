@@ -31,7 +31,7 @@ from adapta.security.clients._base import AuthenticationClient
 from adapta.storage.models.base import DataPath
 from adapta.storage.delta_lake.v3._models import DeltaTransaction
 from adapta.storage.cache import KeyValueCache
-from adapta.storage.models.format import MetaFrameParquetSerializationFormat
+from adapta.storage.models.formatters import MetaFrameParquetSerializationFormat
 from adapta.storage.models.filter_expression import Expression, ArrowFilterExpression, compile_expression
 from adapta.utils.metaframe import MetaFrame, concat, PandasOptions
 

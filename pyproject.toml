@@ -19,6 +19,9 @@ dataclasses-json = "~0.6"
 limits = "~3.7"
 polars = ">=1.7 <2.0"
 pandera = ">=0.20.3 <1.0"
+xlsxwriter = { version = "^3.0", optional = true }
+fastexcel = { version = "^0.14.0", optional = true }
+openpyxl = { version = "^3.0", optional = true }
 
 cassandra-driver = { version = "~3.29.1", optional = true }
 
@@ -98,6 +101,12 @@ storage = [
 aws = [
     "boto3",
     "botocore"
+]
+
+excel = [
+    "xlsxwriter",
+    "fastexcel",
+    "openpyxl"
 ]
 
 [tool.poetry.group.dev.dependencies]
