@@ -37,7 +37,7 @@ class PolarsLazyFrameJsonSerializationFormatWithFileFormat(PolarsLazyFrameJsonSe
     Serializes lazyframes as JSON format with file format.
     """
 
-    include_file_format_in_output_name = True
+    append_file_format_extension = True
 
 
 class PolarsLazyFrameCsvSerializationFormat(SerializationFormat[polars.LazyFrame]):
@@ -70,7 +70,7 @@ class PolarsLazyFrameCsvSerializationFormatWithFileFormat(PolarsLazyFrameCsvSeri
     Serializes lazyframes as CSV format with file format.
     """
 
-    include_file_format_in_output_name = True
+    append_file_format_extension = True
 
 
 class PolarsLazyFrameParquetSerializationFormat(SerializationFormat[polars.LazyFrame]):
@@ -104,7 +104,7 @@ class PolarsLazyFrameParquetSerializationFormatWithFileFormat(PolarsLazyFramePar
     Serializes lazyframes as parquet format with file format.
     """
 
-    include_file_format_in_output_name = True
+    append_file_format_extension = True
 
 
 class PolarsDataFrameJsonSerializationFormat(SerializationFormat[polars.DataFrame]):
@@ -136,7 +136,7 @@ class PolarsDataFrameJsonSerializationFormatWithFileFormat(PolarsDataFrameJsonSe
     Serializes dataframes as JSON format with file format.
     """
 
-    include_file_format_in_output_name = True
+    append_file_format_extension = True
 
 
 class PolarsDataFrameCsvSerializationFormat(SerializationFormat[polars.DataFrame]):
@@ -169,7 +169,7 @@ class PolarsDataFrameCsvSerializationFormatWithFileFormat(PolarsDataFrameCsvSeri
     Serializes dataframes as CSV format with file format.
     """
 
-    include_file_format_in_output_name = True
+    append_file_format_extension = True
 
 
 class PolarsDataFrameParquetSerializationFormat(SerializationFormat[polars.DataFrame]):
@@ -203,7 +203,7 @@ class PolarsDataFrameParquetSerializationFormatWithFileFormat(PolarsDataFramePar
     Serializes dataframes as parquet format with file format.
     """
 
-    include_file_format_in_output_name = True
+    append_file_format_extension = True
 
 
 class PolarsDataFrameExcelSerializationFormat(SerializationFormat[polars.DataFrame]):
@@ -237,4 +237,4 @@ class PolarsDataFrameExcelSerializationFormatWithFileFormat(PolarsDataFrameExcel
     Serializes dataframes as Excel (.xlsx) format with file format.
     """
 
-    include_file_format_in_output_name = True
+    append_file_format_extension = True

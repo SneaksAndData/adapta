@@ -33,4 +33,4 @@ class PickleSerializationFormatWithFileFormat(PickleSerializationFormat):
     Serializes objects as pickle format with file format.
     """
 
-    include_file_format_in_output_name = True
+    append_file_format_extension = True

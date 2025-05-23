@@ -38,7 +38,7 @@ class PandasDataFrameJsonSerializationFormatWithFileFormat(PandasDataFrameJsonSe
     Serializes dataframes as JSON format with file format.
     """
 
-    include_file_format_in_output_name = True
+    append_file_format_extension = True
 
 
 class PandasDataFrameCsvSerializationFormat(SerializationFormat[pandas.DataFrame]):
@@ -70,7 +70,7 @@ class PandasDataFrameCsvSerializationFormatWithFileFormat(PandasDataFrameCsvSeri
     Serializes dataframes as CSV format with file format.
     """
 
-    include_file_format_in_output_name = True
+    append_file_format_extension = True
 
 
 class PandasDataFrameParquetSerializationFormat(SerializationFormat[pandas.DataFrame]):
@@ -102,7 +102,7 @@ class PandasDataFrameParquetSerializationFormatWithFileFormat(PandasDataFramePar
     Serializes dataframes as parquet format with file format.
     """
 
-    include_file_format_in_output_name = True
+    append_file_format_extension = True
 
 
 class PandasDataFrameExcelSerializationFormat(SerializationFormat[pandas.DataFrame]):
@@ -136,4 +136,4 @@ class PandasDataFrameExcelSerializationFormatWithFileFormat(PandasDataFrameExcel
     Serializes dataframes as Excel (.xlsx) format with file format extension.
     """
 
-    include_file_format_in_output_name = True
+    append_file_format_extension = True
