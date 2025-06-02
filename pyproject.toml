@@ -9,7 +9,7 @@ readme = "README.md"
 repository = 'https://github.com/SneaksAndData/adapta'
 
 [tool.poetry.dependencies]
-python = ">=3.11, <3.13"
+python = ">=3.11, <4"
 requests = "^2.26"
 backoff = "^2.2"
 cryptography = ">=36"
