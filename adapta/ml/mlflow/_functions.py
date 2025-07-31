@@ -60,7 +60,7 @@ def register_mlflow_model(
     metrics: Optional[Dict[str, float]] = None,
     model_params: Optional[Dict[str, Any]] = None,
     artifacts_to_log: Optional[Dict[str, str]] = None,
-    model_tags: Optional[Dict[str, str]] = None,
+    run_tags: Optional[Dict[str, str]] = None,
     model_version_tags: Optional[Dict[str, str]] = None,
 ) -> str:
     """Registers mlflow model
@@ -77,7 +77,7 @@ def register_mlflow_model(
     :param metrics: Metrics to log
     :param model_params: Model hyperparameters to log
     :param artifacts_to_log: Additional artifacts to log
-    :param model_tags: Tags to log in the experiment run
+    :param run_tags: Tags to log in the experiment run
     :param model_version_tags: Tags to log for specific model version
 
     :return: Run id of the newly created run for registering the model.
@@ -124,8 +124,8 @@ def register_mlflow_model(
         if model_params is not None:
             mlflow.log_params(model_params)
 
-        if model_tags is not None:
-            mlflow.set_tags(model_tags)
+        if run_tags is not None:
+            mlflow.set_tags(run_tags)
 
         version = mlflow_client.get_latest_model_version(model_name).version
 
