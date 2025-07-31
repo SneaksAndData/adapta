@@ -116,7 +116,6 @@ def register_mlflow_model(
             python_model=_MlflowMachineLearningModel(),
             registered_model_name=model_name,
             artifacts=artifacts,
-            tags=model_tags,
         )
 
         if metrics is not None:
