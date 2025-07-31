@@ -45,6 +45,7 @@ class _MlflowMachineLearningModel(PythonModel):
     def predict_stream(self, context, model_input, params: Optional[Dict[str, Any]] = None):
         raise NotImplementedError("Predict stream is not currently supported")
 
+
 # pylint: disable = too-many-locals
 def register_mlflow_model(
     model: MachineLearningModel,
