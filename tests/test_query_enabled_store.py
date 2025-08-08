@@ -64,7 +64,7 @@ from adapta.storage.query_enabled_store import (
     ],
 )
 def test_query_store_instantiation(
-    connection_string: str, expected_store_type: Union[Type[QueryEnabledStore], Exception]
+    connection_string: str, expected_store_type: type[QueryEnabledStore] | Exception
 ):
     try:
         store = QueryEnabledStore.from_string(connection_string, lazy_init=True)

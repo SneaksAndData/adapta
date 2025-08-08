@@ -85,7 +85,7 @@ class TestLoggerClass:
 def test_log_format(
     level: LogLevel,
     template: str,
-    args: Dict,
+    args: dict,
     exception: BaseException,
     diagnostics: str,
     expected_message: str,
@@ -113,7 +113,7 @@ def test_log_format(
         if level == LogLevel.DEBUG:
             stream_logger.debug(template=template, exception=exception, diagnostics=diagnostics, **args)
 
-    logged_lines = open(test_file_path, "r").readlines()
+    logged_lines = open(test_file_path).readlines()
     assert expected_message in logged_lines
 
 
@@ -304,7 +304,7 @@ async def test_log_level_async(restore_logger_class, datadog_handler):
 async def test_log_format_async(
     level: LogLevel,
     template: str,
-    args: Dict,
+    args: dict,
     exception: BaseException,
     diagnostics: str,
     expected_message: str,
@@ -331,7 +331,7 @@ async def test_log_format_async(
 
         await asyncio.sleep(1)
 
-        logged_lines = open(test_file_path, "r").readlines()
+        logged_lines = open(test_file_path).readlines()
         assert expected_message in logged_lines
 
 
@@ -340,7 +340,7 @@ def printf_messages(message_count: int, output_type: str) -> None:
     cstd = ctypes.c_void_p.in_dll(libc, output_type)
     libc.setbuf(cstd, None)
     for log_n in range(message_count):
-        libc.fprintf(cstd, b"Testing: %s\n", f"Test log message #{log_n}".encode("utf-8"))
+        libc.fprintf(cstd, b"Testing: %s\n", f"Test log message #{log_n}".encode())
 
 
 @pytest.mark.parametrize(

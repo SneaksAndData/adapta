@@ -23,7 +23,7 @@ class TestEntity:
     col_a: str = field(metadata={"is_primary_key": True, "is_partition_key": True})
     col_b: str = field(metadata={"is_primary_key": True, "is_partition_key": False})
     col_c: int
-    col_d: List[int]
+    col_d: list[int]
 
 
 TEST_ENTITY_SCHEMA: TestEntity = PythonSchemaEntity(TestEntity)
@@ -100,9 +100,9 @@ TEST_ENTITY_SCHEMA: TestEntity = PythonSchemaEntity(TestEntity)
     ],
 )
 def test_generic_filtering(
-    filter_expr: Union[FilterField, FilterExpression],
+    filter_expr: FilterField | FilterExpression,
     pyarrow_expected_expr: pc.Expression,
-    astra_expected_expr: Dict[str, Any],
+    astra_expected_expr: dict[str, Any],
 ):
     assert compile_expression(filter_expr, ArrowFilterExpression).equals(pyarrow_expected_expr)
     assert compile_expression(filter_expr, AstraFilterExpression) == astra_expected_expr
@@ -135,7 +135,7 @@ def test_print_filter_expression(filter_expr: FilterExpression, expected_output:
     [
         (
             (FilterField(TEST_ENTITY_SCHEMA.col_d).isin([str(i) for i in range(1, 28)])),
-            ((pyarrow_field("col_d").isin([str(i) for i in range(1, 28)]))),
+            (pyarrow_field("col_d").isin([str(i) for i in range(1, 28)])),
             (
                 [
                     {"col_d__in": [str(i) for i in range(1, 15)]},
@@ -154,7 +154,7 @@ def test_print_filter_expression(filter_expr: FilterExpression, expected_output:
         ),
         (
             (FilterField(TEST_ENTITY_SCHEMA.col_d).isin([str(i) for i in range(1, 101)])),
-            ((pyarrow_field("col_d").isin([str(i) for i in range(1, 101)]))),
+            (pyarrow_field("col_d").isin([str(i) for i in range(1, 101)])),
             (
                 [
                     {"col_d__in": [str(i) for i in range(1, 26)]},
@@ -167,9 +167,9 @@ def test_print_filter_expression(filter_expr: FilterExpression, expected_output:
     ],
 )
 def test_long_is_in_list(
-    filter_expr: Union[FilterField, FilterExpression],
+    filter_expr: FilterField | FilterExpression,
     pyarrow_expected_expr: pc.Expression,
-    astra_expected_expr: Dict[str, Any],
+    astra_expected_expr: dict[str, Any],
 ):
     assert compile_expression(filter_expr, ArrowFilterExpression).equals(pyarrow_expected_expr)
     assert compile_expression(filter_expr, AstraFilterExpression) == astra_expected_expr
@@ -191,7 +191,7 @@ def test_long_is_in_list(
         )
     ],
 )
-def test_large_filter(filter_expr: Union[FilterField, FilterExpression]):
+def test_large_filter(filter_expr: FilterField | FilterExpression):
     try:
         compile_expression(filter_expr, AstraFilterExpression)
     except RecursionError as re:

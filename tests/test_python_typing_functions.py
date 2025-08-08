@@ -15,8 +15,8 @@ from adapta.utils.python_typing import is_optional
         (Union[str, Optional[int]], True),  # Same as Union[str, int, None], which is an optional type
         (str, False),
         (Union[str, int], False),
-        (List[str], False),
-        (Tuple[int, ...], False),
+        (list[str], False),
+        (tuple[int, ...], False),
     ],
 )
 def test_is_optional(type_: Any, expected: bool):

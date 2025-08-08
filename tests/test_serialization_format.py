@@ -123,7 +123,7 @@ from adapta.utils.metaframe import MetaFrame
         (PandasDataFrameExcelSerializationFormatWithFileFormat, pandas.DataFrame(data={"test": [1, 2, 3]})),
     ],
 )
-def test_unit_serialization(serializer: Type[SerializationFormat], data: any):
+def test_unit_serialization(serializer: type[SerializationFormat], data: any):
     """
     Tests that serializing and then immediately deserializing any data equals the original data.
     """
