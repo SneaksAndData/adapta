@@ -3,7 +3,7 @@
  ODBC client extension for Azure SQL.
 """
 
-#  Copyright (c) 2023-2024. ECCO Sneaks & Data
+#  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
