@@ -259,7 +259,7 @@ class _InternalLogger(LoggerInterface, ABC):
         log_level: LogLevel | None = None,
     ) -> int:
         sys.stdout.flush()
-        with open(tmp_symlink, "r", encoding="utf-8") as output:
+        with open(tmp_symlink, encoding="utf-8") as output:
             output.seek(pos)
             for line in output.readlines():
                 self._log_redirect_message(

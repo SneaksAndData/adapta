@@ -18,7 +18,6 @@ Models for log messages
 #
 
 from dataclasses import dataclass
-from typing import Optional, Dict
 
 
 @dataclass
@@ -28,6 +27,6 @@ class CompositeLogMetadata:
     """
 
     template: str
-    diagnostics: Optional[str] = None
-    tags: Optional[Dict[str, str]] = None
-    fields: Optional[Dict[str, str]] = None
+    diagnostics: str | None = None
+    tags: dict[str, str] | None = None
+    fields: dict[str, str] | None = None

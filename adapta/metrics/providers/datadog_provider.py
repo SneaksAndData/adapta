@@ -20,7 +20,6 @@ import logging
 import os
 import sys
 from enum import Enum
-from typing import Dict, Union, Optional
 
 from datadog import initialize, statsd, api
 from datadog_api_client.v1.model.metric_metadata import MetricMetadata
@@ -45,7 +44,7 @@ class DatadogMetricsProvider(MetricsProvider):
     DogStatsD projection of MetricsProvider.
     """
 
-    def __init__(self, metric_namespace: str, fixed_tags: Dict[str, str] = None, debug=False, **options):
+    def __init__(self, metric_namespace: str, fixed_tags: dict[str, str] = None, debug=False, **options):
         self._options = {
             "statsd_namespace": metric_namespace,
             "statsd_constant_tags": convert_datadog_tags(fixed_tags) if fixed_tags else None,
@@ -59,7 +58,7 @@ class DatadogMetricsProvider(MetricsProvider):
             logging.getLogger("datadog.dogstatsd").addHandler(logging.StreamHandler(sys.stdout))
 
     @classmethod
-    def udp(cls, metric_namespace: str, fixed_tags: Dict[str, str] = None, debug=False):
+    def udp(cls, metric_namespace: str, fixed_tags: dict[str, str] = None, debug=False):
         """
         Enables sending metrics via UDP
         """
@@ -75,7 +74,7 @@ class DatadogMetricsProvider(MetricsProvider):
         )
 
     @classmethod
-    def uds(cls, metric_namespace: str, fixed_tags: Dict[str, str] = None, debug=False):
+    def uds(cls, metric_namespace: str, fixed_tags: dict[str, str] = None, debug=False):
         """
         Enables sending metrics over UDS (Unix Domain Socket).
         You must have dsdsocket path mounted on your system in order to use this mode.
@@ -99,36 +98,36 @@ class DatadogMetricsProvider(MetricsProvider):
 
         self._api.metadata.Metadata.update(metric_name=metric_name, **metric_metadata.to_dict())
 
-    def increment(self, metric_name: str, tags: Optional[Dict[str, str]] = None) -> None:
+    def increment(self, metric_name: str, tags: dict[str, str] | None = None) -> None:
         statsd.increment(metric=metric_name, tags=convert_datadog_tags(tags))
 
-    def decrement(self, metric_name: str, tags: Optional[Dict[str, str]] = None) -> None:
+    def decrement(self, metric_name: str, tags: dict[str, str] | None = None) -> None:
         statsd.decrement(metric=metric_name, tags=convert_datadog_tags(tags))
 
-    def count(self, metric_name: str, metric_value: int, tags: Optional[Dict[str, str]] = None) -> None:
+    def count(self, metric_name: str, metric_value: int, tags: dict[str, str] | None = None) -> None:
         raise NotImplementedError
 
     def gauge(
         self,
         metric_name: str,
-        metric_value: Union[int, float],
-        tags: Optional[Dict[str, str]] = None,
+        metric_value: int | float,
+        tags: dict[str, str] | None = None,
     ) -> None:
         statsd.gauge(metric=metric_name, value=metric_value, tags=convert_datadog_tags(tags))
 
     def set(
         self,
         metric_name: str,
-        metric_value: Union[str, int, float],
-        tags: Optional[Dict[str, str]] = None,
+        metric_value: str | int | float,
+        tags: dict[str, str] | None = None,
     ) -> None:
         statsd.set(metric=metric_name, value=metric_value, tags=convert_datadog_tags(tags))
 
     def histogram(
         self,
         metric_name: str,
-        metric_value: Union[int, float],
-        tags: Optional[Dict[str, str]] = None,
+        metric_value: int | float,
+        tags: dict[str, str] | None = None,
     ) -> None:
         statsd.histogram(metric=metric_name, value=metric_value, tags=convert_datadog_tags(tags))
 
@@ -136,13 +135,13 @@ class DatadogMetricsProvider(MetricsProvider):
         self,
         title: str,
         message: str,
-        alert_type: Optional[str] = EventAlertType.INFO.value,
-        aggregation_key: Optional[str] = None,
-        source_type_name: Optional[str] = None,
-        date_happened: Optional[int] = None,
-        priority: Optional[str] = None,
-        tags: Optional[Optional[Dict[str, str]]] = None,
-        hostname: Optional[str] = None,
+        alert_type: str | None = EventAlertType.INFO.value,
+        aggregation_key: str | None = None,
+        source_type_name: str | None = None,
+        date_happened: int | None = None,
+        priority: str | None = None,
+        tags: dict[str, str] | None | None = None,
+        hostname: str | None = None,
     ) -> None:
         statsd.event(
             title=title,

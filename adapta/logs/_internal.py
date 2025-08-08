@@ -15,7 +15,6 @@
 #
 
 import logging
-from typing import Optional, Dict
 
 from adapta.logs.models import CompositeLogMetadata, LogLevel
 
@@ -39,11 +38,11 @@ class MetadataLogger(logging.Logger):
         log_level: int,
         msg: str,
         template: str,
-        tags: Optional[Dict[str, str]],
-        diagnostics: Optional[str],
+        tags: dict[str, str] | None,
+        diagnostics: str | None,
         stack_info: bool,
-        metadata_fields: Optional[Dict[str, str]],
-        exception: Optional[BaseException],
+        metadata_fields: dict[str, str] | None,
+        exception: BaseException | None,
     ):
         """
         Creates log entry with metadata from Composite Logger
@@ -77,7 +76,7 @@ class MetadataLogger(logging.Logger):
         )
 
 
-def from_log_level(log_level: Optional[LogLevel]) -> Optional[int]:
+def from_log_level(log_level: LogLevel | None) -> int | None:
     """
     Converts adapta log level to logging log level
     """

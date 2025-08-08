@@ -1,6 +1,5 @@
 """Requests module"""
 import os
-from typing import Tuple
 from urllib.request import url2pathname
 
 import requests
@@ -11,7 +10,7 @@ class LocalFileAdapter(BaseAdapter):
     """Protocol Adapter to allow Requests to GET file:// URLs"""
 
     @staticmethod
-    def _validate_local_path(method, path) -> Tuple[int, str]:
+    def _validate_local_path(method, path) -> tuple[int, str]:
         """Return an HTTP status for the given filesystem path."""
         if method.lower() in ("put", "delete"):
             return 501, "Not Implemented"
@@ -36,7 +35,7 @@ class LocalFileAdapter(BaseAdapter):
                     with open(path, "rb") as file:
                         response._content = file.read()
                         response.raw = None
-                except (OSError, IOError) as err:
+                except OSError as err:
                     response.status_code = 500
                     response.reason = str(err)
 

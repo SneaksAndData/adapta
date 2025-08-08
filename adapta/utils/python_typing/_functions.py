@@ -1,12 +1,10 @@
 """Common python typing functions. All of these are imported into __init__.py"""
-import sys
-from typing import Type, get_origin, Union, get_args
+from typing import get_origin, Union, get_args
+from types import UnionType
 
-ArgumentType = Type
-if sys.version_info >= (3, 10):
-    from types import UnionType
+ArgumentType = type
 
-    ArgumentType = Union[UnionType, Type]
+ArgumentType = Union[UnionType, type]
 
 
 def is_optional(type_: ArgumentType) -> bool:
@@ -18,7 +16,4 @@ def is_optional(type_: ArgumentType) -> bool:
     """
     origin_type = get_origin(type_)
 
-    if sys.version_info >= (3, 10):
-        return (origin_type is UnionType or origin_type is Union) and type(None) in get_args(type_)
-
-    return origin_type is Union and type(None) in get_args(type_)
+    return (origin_type is UnionType or origin_type is Union) and type(None) in get_args(type_)

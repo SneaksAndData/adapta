@@ -17,7 +17,7 @@
 #
 
 from dataclasses import dataclass
-from typing import Optional, List, Iterable, Type
+from typing import Iterable
 
 from dataclasses_json import DataClassJsonMixin
 
@@ -45,7 +45,7 @@ class DataSocket(DataClassJsonMixin):
     data_format: str
 
     # optional partitions that exist in the data (read-in, write-out)
-    data_partitions: Optional[List[str]] = None
+    data_partitions: list[str] | None = None
 
     def __post_init__(self):
         assert (
@@ -53,8 +53,8 @@ class DataSocket(DataClassJsonMixin):
         ), "Fields alias, data_path and data_format must have a value provided to instantiate a DataSocket."
 
     def parse_data_path(
-        self, candidates: Iterable[Type[DataPath]] = (AdlsGen2Path, LocalPath, WasbPath, AstraPath, S3Path)
-    ) -> Optional[DataPath]:
+        self, candidates: Iterable[type[DataPath]] = (AdlsGen2Path, LocalPath, WasbPath, AstraPath, S3Path)
+    ) -> DataPath | None:
         """
           Attempts to convert this socket's data path to one of the known DataPath types.
 
@@ -80,7 +80,7 @@ class DataSocket(DataClassJsonMixin):
         return cls(alias=vals[0], data_path=vals[1], data_format=vals[2])
 
     @staticmethod
-    def find(sockets: List["DataSocket"], alias: str) -> "DataSocket":
+    def find(sockets: list["DataSocket"], alias: str) -> "DataSocket":
         """Fetches a data socket from a list of sockets.
         :param sockets: List of sockets
         :param alias: Alias to look up

@@ -1,5 +1,3 @@
-from typing import Type, Union
-
 import pytest
 
 from adapta.storage.query_enabled_store import (
@@ -63,9 +61,7 @@ from adapta.storage.query_enabled_store import (
         ),
     ],
 )
-def test_query_store_instantiation(
-    connection_string: str, expected_store_type: Union[Type[QueryEnabledStore], Exception]
-):
+def test_query_store_instantiation(connection_string: str, expected_store_type: type[QueryEnabledStore] | Exception):
     try:
         store = QueryEnabledStore.from_string(connection_string, lazy_init=True)
         assert isinstance(store, expected_store_type)

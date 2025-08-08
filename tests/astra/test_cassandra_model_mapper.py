@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from typing import Type
 
 import polars
 import pytest
@@ -79,7 +78,7 @@ class PanderaPolarsModel(pandera.polars.DataFrameModel):
         (PanderaPolarsModel, PanderaPolarsMapper, {}),
     ],
 )
-def test_cassandra_model_mapper(data_model, Mapper: Type[CassandraModelMapper], mapper_kwargs: dict):
+def test_cassandra_model_mapper(data_model, Mapper: type[CassandraModelMapper], mapper_kwargs: dict):
     mapper = Mapper(data_model=data_model, **mapper_kwargs)
     mapped_model = mapper.map()
     assert (
@@ -106,7 +105,7 @@ def test_cassandra_model_mapper(data_model, Mapper: Type[CassandraModelMapper], 
         (PanderaPolarsModel, PanderaPolarsMapper),
     ],
 )
-def test_model_mapper_factory(data_model, expected_mapper: Type[CassandraModelMapper]):
+def test_model_mapper_factory(data_model, expected_mapper: type[CassandraModelMapper]):
     mapper = get_mapper(data_model)
 
     assert isinstance(mapper, expected_mapper)

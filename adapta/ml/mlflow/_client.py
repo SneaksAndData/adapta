@@ -17,7 +17,7 @@
 #
 
 import os
-from typing import List, Optional, Dict, Any
+from typing import Any
 
 import mlflow
 from mlflow.entities.model_registry import ModelVersion
@@ -48,14 +48,14 @@ class MlflowBasicClient:
         """Returns tracking server URI"""
         return self._tracking_server_uri
 
-    def _get_latest_model_versions(self, model_name: str) -> List[mlflow.entities.model_registry.ModelVersion]:
+    def _get_latest_model_versions(self, model_name: str) -> list[mlflow.entities.model_registry.ModelVersion]:
         """Gets latest model versions, one for each stage
 
         :param model_name: Model name
         """
         return self._client.get_registered_model(model_name).latest_versions
 
-    def get_latest_model_version(self, model_name: str, model_stage: Optional[str] = None) -> ModelVersion:
+    def get_latest_model_version(self, model_name: str, model_stage: str | None = None) -> ModelVersion:
         """
           Get model version using mlflow client
 
@@ -124,7 +124,7 @@ class MlflowBasicClient:
             stage=stage,
         )
 
-    def set_model_alias(self, model_name: str, alias: str, model_version: Optional[str]) -> None:
+    def set_model_alias(self, model_name: str, alias: str, model_version: str | None) -> None:
         """
         inherited the setting model version alias in Mlflow
         :param model_name: model name
@@ -140,10 +140,10 @@ class MlflowBasicClient:
     def set_model_version_tag(
         self,
         name: str,
-        version: Optional[str] = None,
+        version: str | None = None,
         key: str = None,
         value: Any = None,
-        stage: Optional[str] = None,
+        stage: str | None = None,
     ) -> None:
         """
         inherited the setting model version tag in Mlflow
@@ -179,7 +179,7 @@ class MlflowBasicClient:
         self,
         experiment_name: str,
         run_name: str,
-        tags: Optional[Dict[str, Any]] = None,
+        tags: dict[str, Any] | None = None,
     ) -> str:
         """
         inherited the creating run in Mlflow

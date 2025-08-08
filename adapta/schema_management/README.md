@@ -4,7 +4,6 @@ Creating a data model for a table "Order":
 ```python
 from dataclasses import field, dataclass
 from datetime import datetime
-from typing import Optional
 
 from adapta.schema_management.schema_entity import PythonSchemaEntity
 

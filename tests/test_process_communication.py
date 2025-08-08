@@ -14,7 +14,6 @@
 #
 
 from contextlib import nullcontext as does_not_raise, AbstractContextManager
-from typing import Optional, Union, Dict
 
 import pytest
 
@@ -121,7 +120,7 @@ def test_data_socket_serialize(
         ),
     ],
 )
-def test_socket_from_json(value: Union[str, Dict], expectation_handler: AbstractContextManager):
+def test_socket_from_json(value: str | dict, expectation_handler: AbstractContextManager):
     """
       DataSocket must deserialize from json text and from dict correctly. Invalid values must throw an assertion error.
 
@@ -170,7 +169,7 @@ def test_data_socket_deserialize(value: str, expectation_handler: AbstractContex
         ("test", "api://some-folder/file", "json", None),
     ],
 )
-def test_path_parse(alias: str, data_path: str, data_format: str, expected_path: Optional[DataPath]):
+def test_path_parse(alias: str, data_path: str, data_format: str, expected_path: DataPath | None):
     """
       DataSocket must parse data_path to one of the supported paths or return None if a given path format is unknown.
 

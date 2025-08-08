@@ -5,7 +5,6 @@ import sys
 import typing
 from abc import ABC, abstractmethod
 from dataclasses import is_dataclass, fields
-from typing import Type, Optional, List
 import re
 
 import polars
@@ -30,12 +29,12 @@ class CassandraModelMapper(ABC):
 
     def __init__(
         self,
-        data_model: Type[TModel],
-        keyspace: Optional[str] = None,
-        table_name: Optional[str] = None,
-        primary_keys: Optional[List[str]] = None,
-        partition_keys: Optional[List[str]] = None,
-        custom_indexes: Optional[List[str]] = None,
+        data_model: type[TModel],
+        keyspace: str | None = None,
+        table_name: str | None = None,
+        primary_keys: list[str] | None = None,
+        partition_keys: list[str] | None = None,
+        custom_indexes: list[str] | None = None,
     ):
         self._data_model = data_model
         self._keyspace = keyspace
@@ -47,9 +46,9 @@ class CassandraModelMapper(ABC):
 
     def map(
         self,
-    ) -> Type[Model]:
+    ) -> type[Model]:
         """Maps a datamodel to a Cassandra model."""
-        models_attributes: typing.Dict[str, typing.Union[Column, str]] = {
+        models_attributes: dict[str, Column | str] = {
             name: self._map_to_cassandra(
                 type_to_map=dtype,
                 db_field=name,
@@ -67,7 +66,7 @@ class CassandraModelMapper(ABC):
 
     @property
     @abstractmethod
-    def column_names(self) -> List[str]:
+    def column_names(self) -> list[str]:
         """Returns list of column names for the given data model."""
 
     @property
@@ -77,21 +76,21 @@ class CassandraModelMapper(ABC):
 
     @property
     @abstractmethod
-    def primary_keys(self) -> List[str]:
+    def primary_keys(self) -> list[str]:
         """Primary keys for the given data model"""
 
     @property
     @abstractmethod
     def partition_keys(
         self,
-    ) -> List[str]:
+    ) -> list[str]:
         """Partition keys for the given data model."""
 
     @property
     @abstractmethod
     def custom_indices(
         self,
-    ) -> List[str]:
+    ) -> list[str]:
         """Custom indices for the given data model."""
 
     @property
@@ -102,8 +101,8 @@ class CassandraModelMapper(ABC):
     @abstractmethod
     def _get_original_types(
         self,
-        subset: Optional[List[str]] = None,
-    ) -> typing.Dict[str, Type]:
+        subset: list[str] | None = None,
+    ) -> dict[str, type]:
         """Get original column types for the given data model. If subset is provided, only return types for the subset.
 
         :param subset: Optional subset of columns to get types for.
@@ -112,15 +111,15 @@ class CassandraModelMapper(ABC):
 
     def _map_to_column(  # pylint: disable=R0911
         self,
-        type_to_map: Type,
-    ) -> typing.Union[
-        typing.Tuple[Type[columns.List],],
-        typing.Tuple[Type[columns.Map],],
-        typing.Tuple[Type[Column],],
-        typing.Tuple[Type[Column], Type[Column]],
-        typing.Tuple[Type[Column], Type[Column], Type[Column]],
-        typing.Tuple[Type[columns.List], typing.Tuple[Type[columns.Map]]],
-    ]:
+        type_to_map: type,
+    ) -> (
+        tuple[type[columns.List],]
+        | tuple[type[columns.Map],]
+        | tuple[type[Column],]
+        | tuple[type[Column], type[Column]]
+        | tuple[type[Column], type[Column], type[Column]]
+        | tuple[type[columns.List], tuple[type[columns.Map]]]
+    ):
         """Map Type to Cassandra column type.
 
         :param type_to_map: Type to map.
@@ -183,7 +182,7 @@ class CassandraModelMapper(ABC):
         raise TypeError(f"Unsupported type: {type_to_map}")
 
     def _map_to_cassandra(
-        self, type_to_map: Type, db_field: str, is_primary_key: bool, is_partition_key: bool, is_custom_index: bool
+        self, type_to_map: type, db_field: str, is_primary_key: bool, is_partition_key: bool, is_custom_index: bool
     ) -> Column:
         cassandra_types = self._map_to_column(type_to_map)
         if len(cassandra_types) == 1:  # simple type
@@ -237,12 +236,12 @@ class DataclassMapper(CassandraModelMapper):
 
     def __init__(
         self,
-        data_model: Type[TModel],
-        keyspace: Optional[str] = None,
-        table_name: Optional[str] = None,
-        primary_keys: Optional[List[str]] = None,
-        partition_keys: Optional[List[str]] = None,
-        custom_indexes: Optional[List[str]] = None,
+        data_model: type[TModel],
+        keyspace: str | None = None,
+        table_name: str | None = None,
+        primary_keys: list[str] | None = None,
+        partition_keys: list[str] | None = None,
+        custom_indexes: list[str] | None = None,
     ):
         super().__init__(
             data_model=data_model,
@@ -258,11 +257,11 @@ class DataclassMapper(CassandraModelMapper):
         return self._table_name or self._snake_pattern.sub("_", self._data_model.__name__).lower()
 
     @property
-    def column_names(self) -> List[str]:
+    def column_names(self) -> list[str]:
         return [field.name for field in fields(self._data_model)]
 
     @property
-    def primary_keys(self) -> List[str]:
+    def primary_keys(self) -> list[str]:
         return self._primary_keys or [
             field.name for field in fields(self._data_model) if field.metadata.get("is_primary_key", False)
         ]
@@ -270,7 +269,7 @@ class DataclassMapper(CassandraModelMapper):
     @property
     def partition_keys(
         self,
-    ) -> List[str]:
+    ) -> list[str]:
         return self._partition_keys or [
             field.name for field in fields(self._data_model) if field.metadata.get("is_partition_key", False)
         ]
@@ -278,7 +277,7 @@ class DataclassMapper(CassandraModelMapper):
     @property
     def custom_indices(
         self,
-    ) -> List[str]:
+    ) -> list[str]:
         return self._custom_indexes or [
             field.name for field in fields(self._data_model) if field.metadata.get("is_custom_index", False)
         ]
@@ -299,8 +298,8 @@ class DataclassMapper(CassandraModelMapper):
 
     def _get_original_types(
         self,
-        subset: Optional[List[str]] = None,
-    ) -> typing.Dict[str, Type]:
+        subset: list[str] | None = None,
+    ) -> dict[str, type]:
         return {field.name: field.type for field in fields(self._data_model) if not subset or field.name in subset}
 
 
@@ -310,12 +309,12 @@ class PanderaPolarsMapper(CassandraModelMapper):
 
     def __init__(
         self,
-        data_model: Type[pandera.polars.DataFrameModel],
-        keyspace: Optional[str] = None,
-        table_name: Optional[str] = None,
-        primary_keys: Optional[List[str]] = None,
-        partition_keys: Optional[List[str]] = None,
-        custom_indexes: Optional[List[str]] = None,
+        data_model: type[pandera.polars.DataFrameModel],
+        keyspace: str | None = None,
+        table_name: str | None = None,
+        primary_keys: list[str] | None = None,
+        partition_keys: list[str] | None = None,
+        custom_indexes: list[str] | None = None,
     ):
         super().__init__(
             data_model=data_model,
@@ -329,15 +328,15 @@ class PanderaPolarsMapper(CassandraModelMapper):
 
     def _map_to_column(
         self,
-        type_to_map: Type,
-    ) -> typing.Union[
-        typing.Tuple[Type[columns.List],],
-        typing.Tuple[Type[columns.Map],],
-        typing.Tuple[Type[Column],],
-        typing.Tuple[Type[Column], Type[Column]],
-        typing.Tuple[Type[Column], Type[Column], Type[Column]],
-        typing.Tuple[Type[columns.List], columns.Map],
-    ]:
+        type_to_map: type,
+    ) -> (
+        tuple[type[columns.List],]
+        | tuple[type[columns.Map],]
+        | tuple[type[Column],]
+        | tuple[type[Column], type[Column]]
+        | tuple[type[Column], type[Column], type[Column]]
+        | tuple[type[columns.List], columns.Map]
+    ):
         mapping = {
             polars.Int8: (columns.TinyInt,),
             polars.Int16: (columns.SmallInt,),
@@ -375,8 +374,8 @@ class PanderaPolarsMapper(CassandraModelMapper):
 
     def _get_original_types(
         self,
-        subset: Optional[List[str]] = None,
-    ) -> typing.Dict[str, Type]:
+        subset: list[str] | None = None,
+    ) -> dict[str, type]:
         cols = [col for name, col in self._data_model_schema.columns.items() if not subset or name in subset]
         map_ = {}
         for col in cols:
@@ -390,7 +389,7 @@ class PanderaPolarsMapper(CassandraModelMapper):
         return map_
 
     @property
-    def column_names(self) -> List[str]:
+    def column_names(self) -> list[str]:
         return list(self._data_model_schema.columns.keys())
 
     @property
@@ -398,7 +397,7 @@ class PanderaPolarsMapper(CassandraModelMapper):
         return self._table_name or self._data_model.Config.name
 
     @property
-    def primary_keys(self) -> List[str]:
+    def primary_keys(self) -> list[str]:
         return self._primary_keys or [
             name
             for name, col in self._data_model_schema.columns.items()
@@ -406,7 +405,7 @@ class PanderaPolarsMapper(CassandraModelMapper):
         ]
 
     @property
-    def partition_keys(self) -> List[str]:
+    def partition_keys(self) -> list[str]:
         return self._partition_keys or [
             name
             for name, col in self._data_model_schema.columns.items()
@@ -414,7 +413,7 @@ class PanderaPolarsMapper(CassandraModelMapper):
         ]
 
     @property
-    def custom_indices(self) -> List[str]:
+    def custom_indices(self) -> list[str]:
         return self._custom_indexes or [
             name
             for name, col in self._data_model_schema.columns.items()
@@ -439,12 +438,12 @@ class PanderaPolarsMapper(CassandraModelMapper):
 
 
 def get_mapper(
-    data_model: Type[TModel],
-    keyspace: Optional[str] = None,
-    table_name: Optional[str] = None,
-    primary_keys: Optional[List[str]] = None,
-    partition_keys: Optional[List[str]] = None,
-    custom_indexes: Optional[List[str]] = None,
+    data_model: type[TModel],
+    keyspace: str | None = None,
+    table_name: str | None = None,
+    primary_keys: list[str] | None = None,
+    partition_keys: list[str] | None = None,
+    custom_indexes: list[str] | None = None,
 ) -> CassandraModelMapper:
     """Factory function for creating a model mapper based on the data model type."""
     if is_dataclass(data_model):

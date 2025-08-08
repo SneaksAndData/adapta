@@ -17,7 +17,6 @@ Contains credentials provider for AWS clients
 #
 import os
 from abc import ABC, abstractmethod
-from typing import Optional
 
 
 class AccessKeyCredentials(ABC):
@@ -42,12 +41,12 @@ class AccessKeyCredentials(ABC):
 
     @property
     @abstractmethod
-    def session_token(self) -> Optional[str]:
+    def session_token(self) -> str | None:
         """AWS session token"""
 
     @property
     @abstractmethod
-    def endpoint(self) -> Optional[str]:
+    def endpoint(self) -> str | None:
         """AWS custom endpoint"""
 
 
@@ -91,11 +90,11 @@ class EnvironmentAwsCredentials(AccessKeyCredentials):
         return self._region
 
     @property
-    def session_token(self) -> Optional[str]:
+    def session_token(self) -> str | None:
         return self._session_token
 
     @property
-    def endpoint(self) -> Optional[str]:
+    def endpoint(self) -> str | None:
         return self._endpoint
 
 
@@ -124,9 +123,9 @@ class ExplicitAwsCredentials(AccessKeyCredentials):
         return self._region
 
     @property
-    def session_token(self) -> Optional[str]:
+    def session_token(self) -> str | None:
         return self._session_token
 
     @property
-    def endpoint(self) -> Optional[str]:
+    def endpoint(self) -> str | None:
         return self._endpoint

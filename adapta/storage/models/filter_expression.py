@@ -3,7 +3,7 @@
 """
 import math
 from abc import ABC, abstractmethod
-from typing import final, Any, TypeVar, Generic, Type, Tuple, Union
+from typing import final, Any, TypeVar, Generic, Self
 from enum import Enum
 import pyarrow.compute
 from pyarrow.dataset import field as pyarrow_field
@@ -139,8 +139,8 @@ class Expression:
 
     def __init__(
         self,
-        left_operand: Union["Expression", FilterField],
-        right_operand: Union["Expression", Any, list],
+        left_operand: Self | FilterField,
+        right_operand: Self | Any | list,
         operation: FilterExpressionOperation,
     ):
         assert (isinstance(left_operand, Expression) and isinstance(right_operand, Expression)) or (
@@ -325,7 +325,7 @@ class ArrowFilterExpression(FilterExpression[pyarrow.compute.Expression]):
         field_values: Any,
         filter_operation: FilterExpressionOperation,
         separator: str = ",",
-    ) -> Tuple[pyarrow.compute.Expression, Any]:
+    ) -> tuple[pyarrow.compute.Expression, Any]:
         """
         Handle nested types in PyArrow filter expressions.
 
@@ -394,7 +394,7 @@ class ArrowFilterExpression(FilterExpression[pyarrow.compute.Expression]):
         return filter_operation.value["arrow"](compiled_result_a, compiled_result_b)
 
 
-def compile_expression(expression: Expression, target: Type[FilterExpression[TCompileResult]]) -> TCompileResult:
+def compile_expression(expression: Expression, target: type[FilterExpression[TCompileResult]]) -> TCompileResult:
     """
     Compiles a filter expression using the specified target implementation.
     """

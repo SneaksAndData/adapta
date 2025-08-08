@@ -17,7 +17,8 @@
 #
 
 from abc import ABC, abstractmethod
-from typing import Optional, Dict, Type, TypeVar, Iterator, Callable
+from typing import TypeVar
+from collections.abc import Iterator, Callable
 
 from adapta.security.clients import AuthenticationClient
 from adapta.storage.models.base import DataPath
@@ -36,7 +37,7 @@ class StorageClient(ABC):
         self._base_client = base_client
 
     @classmethod
-    def create(cls, auth: AuthenticationClient, endpoint_url: Optional[str] = None):
+    def create(cls, auth: AuthenticationClient, endpoint_url: str | None = None):
         """
          Creates a Storage client using the AuthenticationClient to set up its session.
 
@@ -71,8 +72,8 @@ class StorageClient(ABC):
         self,
         data: T,
         blob_path: DataPath,
-        serialization_format: Type[SerializationFormat[T]],
-        metadata: Optional[Dict[str, str]] = None,
+        serialization_format: type[SerializationFormat[T]],
+        metadata: dict[str, str] | None = None,
         overwrite: bool = False,
     ) -> None:
         """
@@ -102,7 +103,7 @@ class StorageClient(ABC):
     def list_blobs(
         self,
         blob_path: DataPath,
-        filter_predicate: Optional[Callable[[...], bool]] = None,
+        filter_predicate: Callable[[...], bool] | None = None,
     ) -> Iterator[DataPath]:
         """
         Lists blobs in blob_path
@@ -116,8 +117,8 @@ class StorageClient(ABC):
     def read_blobs(
         self,
         blob_path: DataPath,
-        serialization_format: Type[SerializationFormat[T]],
-        filter_predicate: Optional[Callable[[...], bool]] = None,
+        serialization_format: type[SerializationFormat[T]],
+        filter_predicate: Callable[[...], bool] | None = None,
     ) -> Iterator[T]:
         """
          Reads data under provided path into the given format.
@@ -133,8 +134,8 @@ class StorageClient(ABC):
         self,
         blob_path: DataPath,
         local_path: str,
-        threads: Optional[int] = None,
-        filter_predicate: Optional[Callable[[...], bool]] = None,
+        threads: int | None = None,
+        filter_predicate: Callable[[...], bool] | None = None,
     ) -> None:
         """
          Reads data under provided path into the given format.

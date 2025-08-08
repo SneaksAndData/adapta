@@ -19,7 +19,6 @@
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict
 
 
 @dataclass
@@ -29,7 +28,7 @@ class SqlAlchemyDialect:
     """
 
     dialect: str
-    driver: Dict[str, str]
+    driver: dict[str, str]
 
 
 class DatabaseType(Enum):

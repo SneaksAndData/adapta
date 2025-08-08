@@ -19,7 +19,8 @@
 #
 
 from abc import ABC
-from typing import Optional, Union, Iterator
+from collections.abc import Iterator
+from typing import Self
 from warnings import warn
 
 from pandas import DataFrame, read_sql
@@ -42,11 +43,11 @@ class OdbcClient(ABC):
         self,
         logger: SemanticLogger,
         database_type: DatabaseType,
-        host_name: Optional[str] = None,
-        user_name: Optional[str] = None,
-        database: Optional[str] = None,
-        password: Optional[str] = None,
-        port: Optional[int] = None,
+        host_name: str | None = None,
+        user_name: str | None = None,
+        database: str | None = None,
+        password: str | None = None,
+        port: int | None = None,
     ):
         """
          Creates an instance of an OdbcClient
@@ -77,7 +78,7 @@ class OdbcClient(ABC):
         self._connection = None
         pyodbc.pooling = False
 
-    def __enter__(self) -> Optional["OdbcClient"]:
+    def __enter__(self) -> Self | None:
         connection_url: sqlalchemy.engine.URL = URL.create(
             drivername=self._dialect.dialect,
             host=self._host,
@@ -127,14 +128,14 @@ class OdbcClient(ABC):
             port=self._port,
         )
 
-    def _get_connection(self) -> Optional[sqlalchemy.engine.Connection]:
+    def _get_connection(self) -> sqlalchemy.engine.Connection | None:
         if self._connection is None:
             self._logger.info("No connection is active. Please create one using with OdbcClient(..) as client: ...")
             return None
 
         return self._connection
 
-    def query(self, query: str, chunksize: Optional[int] = None) -> Optional[Union[DataFrame, Iterator[DataFrame]]]:
+    def query(self, query: str, chunksize: int | None = None) -> DataFrame | Iterator[DataFrame] | None:
         """
           Read result of SQL query into a pandas dataframe.
 
@@ -164,8 +165,8 @@ class OdbcClient(ABC):
         schema: str,
         name: str,
         overwrite: bool = False,
-        chunksize: Optional[int] = None,
-    ) -> Optional[int]:
+        chunksize: int | None = None,
+    ) -> int | None:
         """
           Materialize dataframe as a table in a database.
 

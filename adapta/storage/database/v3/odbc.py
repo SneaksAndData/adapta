@@ -18,7 +18,8 @@
 #
 
 from abc import ABC
-from typing import Optional, Union, Iterator
+from typing import Optional
+from collections.abc import Iterator
 
 from pandas import read_sql
 import sqlalchemy
@@ -41,11 +42,11 @@ class OdbcClient(ABC):
         self,
         logger: SemanticLogger,
         database_type: DatabaseType,
-        host_name: Optional[str] = None,
-        user_name: Optional[str] = None,
-        database: Optional[str] = None,
-        password: Optional[str] = None,
-        port: Optional[int] = None,
+        host_name: str | None = None,
+        user_name: str | None = None,
+        database: str | None = None,
+        password: str | None = None,
+        port: int | None = None,
     ):
         """
          Creates an instance of an OdbcClient
@@ -120,14 +121,14 @@ class OdbcClient(ABC):
             port=self._port,
         )
 
-    def _get_connection(self) -> Optional[sqlalchemy.engine.Connection]:
+    def _get_connection(self) -> sqlalchemy.engine.Connection | None:
         if self._connection is None:
             self._logger.info("No connection is active. Please create one using with OdbcClient(..) as client: ...")
             return None
 
         return self._connection
 
-    def query(self, query: str, chunksize: Optional[int] = None) -> Optional[Union[MetaFrame, Iterator[MetaFrame]]]:
+    def query(self, query: str, chunksize: int | None = None) -> MetaFrame | Iterator[MetaFrame] | None:
         """
           Read result of SQL query into a MetaFrame. The latent representation of the MetaFrame is a Pandas dataframe.
 
@@ -160,8 +161,8 @@ class OdbcClient(ABC):
         schema: str,
         name: str,
         overwrite: bool = False,
-        chunksize: Optional[int] = None,
-    ) -> Optional[int]:
+        chunksize: int | None = None,
+    ) -> int | None:
         """
           Materialize MetaFrame as a table in a database.
           The table is converted to a Pandas dataframe before materialization.

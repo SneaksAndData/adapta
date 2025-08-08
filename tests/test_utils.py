@@ -20,7 +20,7 @@ import sys
 import time
 from dataclasses import dataclass
 from logging import StreamHandler
-from typing import List, Any, Dict, Optional
+from typing import Any
 
 import numpy
 import pandas
@@ -73,11 +73,11 @@ def test_operation_time():
         ([], 2, []),
     ],
 )
-def test_chunk_list(list_to_chunk: List[Any], num_chunks: int, expected_list):
+def test_chunk_list(list_to_chunk: list[Any], num_chunks: int, expected_list):
     assert chunk_list(list_to_chunk, num_chunks) == expected_list
 
 
-def mock_func(a: float, b: str, c: bool) -> Dict:
+def mock_func(a: float, b: str, c: bool) -> dict:
     time.sleep(a)
     return {"a": a, "b": b, "c": c}
 
@@ -92,9 +92,9 @@ def mock_func(a: float, b: str, c: bool) -> Dict:
             # however since time.sleep effectively blocks the main thread if using ThreadPoolExecutor, subsequent submissions will delay each other
             # thus we should expect at most 0.5s + small time to get results of each future.
             [
-                Executable[Dict](func=mock_func, args=[0.1, "test", True], alias="case1"),
-                Executable[Dict](func=mock_func, args=[0.3, "test1", True], alias="case2"),
-                Executable[Dict](func=mock_func, args=[0.5, "test2", False], alias="case3"),
+                Executable[dict](func=mock_func, args=[0.1, "test", True], alias="case1"),
+                Executable[dict](func=mock_func, args=[0.3, "test1", True], alias="case2"),
+                Executable[dict](func=mock_func, args=[0.5, "test2", False], alias="case3"),
             ],
             3,
             False,
@@ -109,9 +109,9 @@ def mock_func(a: float, b: str, c: bool) -> Dict:
         # Expected to see 1s + 2s + 3s + result process time ~ slightly above 6s
         (
             [
-                Executable[Dict](func=mock_func, args=[1, "test", True], alias="case1"),
-                Executable[Dict](func=mock_func, args=[2, "test1", True], alias="case2"),
-                Executable[Dict](func=mock_func, args=[3, "test2", False], alias="case3"),
+                Executable[dict](func=mock_func, args=[1, "test", True], alias="case1"),
+                Executable[dict](func=mock_func, args=[2, "test1", True], alias="case2"),
+                Executable[dict](func=mock_func, args=[3, "test2", False], alias="case3"),
             ],
             1,
             False,
@@ -126,9 +126,9 @@ def mock_func(a: float, b: str, c: bool) -> Dict:
         # Same as the second test case, but now we use ProcessPoolExecutor, so we should expect 3s + process start time overhead
         (
             [
-                Executable[Dict](func=mock_func, args=[1, "test", True], alias="case1"),
-                Executable[Dict](func=mock_func, args=[2, "test1", True], alias="case2"),
-                Executable[Dict](func=mock_func, args=[3, "test2", False], alias="case3"),
+                Executable[dict](func=mock_func, args=[1, "test", True], alias="case1"),
+                Executable[dict](func=mock_func, args=[2, "test1", True], alias="case2"),
+                Executable[dict](func=mock_func, args=[3, "test2", False], alias="case3"),
             ],
             3,
             True,
@@ -143,9 +143,9 @@ def mock_func(a: float, b: str, c: bool) -> Dict:
         # Same as the third test case, but using kwargs instead of args. Exact same result expected
         (
             [
-                Executable[Dict](func=mock_func, kwargs={"a": 1, "b": "test", "c": True}, alias="case1"),
-                Executable[Dict](func=mock_func, kwargs={"a": 2, "b": "test1", "c": True}, alias="case2"),
-                Executable[Dict](func=mock_func, kwargs={"a": 3, "b": "test2", "c": False}, alias="case3"),
+                Executable[dict](func=mock_func, kwargs={"a": 1, "b": "test", "c": True}, alias="case1"),
+                Executable[dict](func=mock_func, kwargs={"a": 2, "b": "test1", "c": True}, alias="case2"),
+                Executable[dict](func=mock_func, kwargs={"a": 3, "b": "test2", "c": False}, alias="case3"),
             ],
             3,
             True,
@@ -159,10 +159,10 @@ def mock_func(a: float, b: str, c: bool) -> Dict:
     ],
 )
 def test_concurrent_task_runner(
-    func_list: List[Executable[Dict]],
+    func_list: list[Executable[dict]],
     num_threads: int,
     use_processes: bool,
-    expectations: Dict[str, Dict],
+    expectations: dict[str, dict],
     expected_wait: float,
 ):
     start = time.monotonic_ns()
@@ -187,7 +187,7 @@ def test_concurrent_task_runner(
     ],
 )
 def test_memory_limit_enough_memory(
-    limit_bytes: Optional[int], limit_percentage: Optional[float], num_iterations: int, expected_limit: int
+    limit_bytes: int | None, limit_percentage: float | None, num_iterations: int, expected_limit: int
 ):
     """
     This unit test method verifies that the function `memory_limit` correctly enforces the given memory limit.
@@ -223,7 +223,7 @@ def test_memory_limit_enough_memory(
         (None, 1e-9, 1024 * 1024 * 1024),
     ],
 )
-def test_memory_limit_error(limit_bytes: Optional[int], limit_percentage: Optional[float], num_iterations: int):
+def test_memory_limit_error(limit_bytes: int | None, limit_percentage: float | None, num_iterations: int):
     """
      This unit test method is testing the `memory_limit` function for correct handling of MemoryError exceptions. The test is skipped on Windows as the functionality is not supported on this platform.
 
@@ -466,15 +466,15 @@ class Complicated(DataClassJsonMixin):
     """
 
     date_id: str
-    time_id: Optional[int] = None
-    books_id: Optional[int] = None
-    books_listname: Optional[str] = None
-    books_database: Optional[str] = None
-    book_color: Optional[str] = None
-    book_size: Optional[float] = None
-    description: Optional[str] = None
-    price: Optional[float] = None
-    price_currency: Optional[str] = None
+    time_id: int | None = None
+    books_id: int | None = None
+    books_listname: str | None = None
+    books_database: str | None = None
+    book_color: str | None = None
+    book_size: float | None = None
+    description: str | None = None
+    price: float | None = None
+    price_currency: str | None = None
 
 
 @pytest.mark.parametrize(

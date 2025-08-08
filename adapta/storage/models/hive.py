@@ -19,7 +19,6 @@
 
 import os
 from dataclasses import dataclass
-from typing import Optional
 
 from adapta.storage.database.v3.azure_sql import AzureSqlClient
 from adapta.storage.models.base import DataPath, DataProtocols
@@ -51,13 +50,13 @@ class HivePath(DataPath):
     path: str
     protocol: str = DataProtocols.HIVE.value
     database_type: DatabaseType = DatabaseType.SQL_SERVER_ODBC
-    hive_table: Optional[str] = None
+    hive_table: str | None = None
 
     @classmethod
     def from_hdfs_path(
         cls,
         hdfs_path: str,
-        database_type: Optional[DatabaseType] = DatabaseType.SQL_SERVER_ODBC,
+        database_type: DatabaseType | None = DatabaseType.SQL_SERVER_ODBC,
     ) -> "HivePath":
         # sample path
         # hive://engine@my-hive-server.net:1234/database/schema/table
@@ -80,7 +79,7 @@ class HivePath(DataPath):
     def from_hive_name(
         schema: str,
         table: str,
-        database_type: Optional[DatabaseType] = DatabaseType.SQL_SERVER_ODBC,
+        database_type: DatabaseType | None = DatabaseType.SQL_SERVER_ODBC,
     ) -> "HivePath":
         """
          Creates a HivePath from schema and table names. Relies on the rest of Hive connection info being provided through environment.
@@ -114,7 +113,7 @@ class HivePath(DataPath):
         self._check_path()
         return f"{self.protocol}://{self.hive_engine}@{self.hive_server}:{self.hive_server_port}/{self.path}"
 
-    def get_physical_path(self, logger: SemanticLogger) -> Optional[str]:
+    def get_physical_path(self, logger: SemanticLogger) -> str | None:
         """
          Converts this virtual HivePath to a physical HDFS path.
 

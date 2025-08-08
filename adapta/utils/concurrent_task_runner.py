@@ -21,7 +21,8 @@ import os
 import sys
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 from dataclasses import dataclass, field
-from typing import Callable, Any, List, TypeVar, Generic, Optional, Dict
+from typing import Any, TypeVar, Generic
+from collections.abc import Callable
 
 T = TypeVar("T")
 
@@ -34,8 +35,8 @@ class Executable(Generic[T]):
 
     func: Callable[[...], T]
     alias: str
-    args: List[Any] = field(default_factory=list)
-    kwargs: Dict[str, Any] = field(default_factory=dict)
+    args: list[Any] = field(default_factory=list)
+    kwargs: dict[str, Any] = field(default_factory=dict)
 
 
 class ConcurrentTaskRunner(Generic[T]):
@@ -62,15 +63,15 @@ class ConcurrentTaskRunner(Generic[T]):
 
     def __init__(
         self,
-        func_list: List[Executable[T]],
-        num_threads: Optional[int] = None,
+        func_list: list[Executable[T]],
+        num_threads: int | None = None,
         use_processes: bool = False,
     ):
         self._func_list = func_list
         self._num_threads = num_threads
         self._use_processes = use_processes
 
-    def _run_tasks(self) -> Dict[str, concurrent.futures.Future]:
+    def _run_tasks(self) -> dict[str, concurrent.futures.Future]:
         """
          Executes a list of functions in parallel using threads or processes.
 
@@ -91,7 +92,7 @@ class ConcurrentTaskRunner(Generic[T]):
                 for executable in self._func_list
             }
 
-    def lazy(self) -> Dict[str, concurrent.futures.Future]:
+    def lazy(self) -> dict[str, concurrent.futures.Future]:
         """
          Executes the function list without explicitly collecting the results, allowing them to be retrieved by the client
          when needed.
@@ -100,7 +101,7 @@ class ConcurrentTaskRunner(Generic[T]):
         """
         return self._run_tasks()
 
-    def eager(self) -> Dict[str, T]:
+    def eager(self) -> dict[str, T]:
         """
          Executes the function list and wait for all threads to complete execution before returning
 
