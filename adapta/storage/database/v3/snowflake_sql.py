@@ -44,8 +44,8 @@ class SnowflakeClient:
             min_log_level=LogLevel.INFO,
             is_default=True,
         ),
-        password: Optional[str] = None,
-        role: Optional[str] = None,
+        password: str | None = None,
+        role: str | None = None,
     ):
         self._user = user
         self._account = account
@@ -79,9 +79,9 @@ class SnowflakeClient:
 
     def __exit__(
         self,
-        exc_type: Optional[type[BaseException]] = None,
-        exc_val: Optional[BaseException] = None,
-        exc_tb: Optional[TracebackType] = None,
+        exc_type: type[BaseException] | None = None,
+        exc_val: BaseException | None = None,
+        exc_tb: TracebackType | None = None,
     ) -> None:
         """
         Exits the context manager and closes the database connection.
@@ -94,7 +94,7 @@ class SnowflakeClient:
         if exc_val is not None:
             self._logger.error(f"An error occurred while closing the database connection: {exc_val}")
 
-    def query(self, query: str, fetch_dataframe: bool = True) -> Optional[MetaFrame]:
+    def query(self, query: str, fetch_dataframe: bool = True) -> MetaFrame | None:
         """
         Executes the given SQL query and returns the result as a Pandas DataFrame.
 
@@ -147,10 +147,10 @@ class SnowflakeClient:
         schema: str,
         table: str,
         refresh_metadata_only: bool = False,
-        path: Optional[DataPath] = None,
-        table_schema: Optional[Dict[str, str]] = None,
-        partition_columns: Optional[List[str]] = None,
-        storage_integration: Optional[str] = None,
+        path: DataPath | None = None,
+        table_schema: dict[str, str] | None = None,
+        partition_columns: list[str] | None = None,
+        storage_integration: str | None = None,
     ) -> None:
         """
         Creates delta table as external table in Snowflake

@@ -20,7 +20,8 @@
 import os.path
 import shutil
 
-from typing import final, Optional, Callable, Type, Iterator, Dict
+from typing import final, Optional, Type, Dict
+from collections.abc import Callable, Iterator
 
 from adapta.security.clients import LocalClient, AuthenticationClient
 from adapta.storage.blob.base import StorageClient, T
@@ -38,7 +39,7 @@ class LocalStorageClient(StorageClient):
         super().__init__(base_client=LocalClient())
 
     @classmethod
-    def create(cls, auth: AuthenticationClient, endpoint_url: Optional[str] = None):
+    def create(cls, auth: AuthenticationClient, endpoint_url: str | None = None):
         return cls()
 
     def get_blob_uri(self, blob_path: DataPath, expires_in_seconds: float = 3600.0, **kwargs) -> str:
@@ -51,8 +52,8 @@ class LocalStorageClient(StorageClient):
         self,
         data: T,
         blob_path: DataPath,
-        serialization_format: Type[SerializationFormat[T]],
-        metadata: Optional[Dict[str, str]] = None,
+        serialization_format: type[SerializationFormat[T]],
+        metadata: dict[str, str] | None = None,
         overwrite: bool = False,
     ) -> None:
         bytes_ = serialization_format().serialize(data)
@@ -67,7 +68,7 @@ class LocalStorageClient(StorageClient):
         os.remove(cast_path(blob_path).path)
 
     def list_blobs(
-        self, blob_path: DataPath, filter_predicate: Optional[Callable[[...], bool]] = None
+        self, blob_path: DataPath, filter_predicate: Callable[[...], bool] | None = None
     ) -> Iterator[DataPath]:
         for blob in os.listdir(cast_path(blob_path).path):
             if filter_predicate is not None and not filter_predicate(blob):
@@ -77,8 +78,8 @@ class LocalStorageClient(StorageClient):
     def read_blobs(
         self,
         blob_path: DataPath,
-        serialization_format: Type[SerializationFormat[T]],
-        filter_predicate: Optional[Callable[[...], bool]] = None,
+        serialization_format: type[SerializationFormat[T]],
+        filter_predicate: Callable[[...], bool] | None = None,
     ) -> Iterator[T]:
         dir_path = cast_path(blob_path).path
         if os.path.isdir(dir_path):
@@ -95,8 +96,8 @@ class LocalStorageClient(StorageClient):
         self,
         blob_path: DataPath,
         local_path: str,
-        threads: Optional[int] = None,
-        filter_predicate: Optional[Callable[[...], bool]] = None,
+        threads: int | None = None,
+        filter_predicate: Callable[[...], bool] | None = None,
     ) -> None:
         raise NotImplementedError("Not supported by this client")
 

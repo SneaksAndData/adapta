@@ -39,10 +39,10 @@ class _MlflowMachineLearningModel(PythonModel):
         class_ = getattr(module, config["model"]["class_name"])
         self.model = class_.load_model(context.artifacts["model"])  # pylint: disable=W0201
 
-    def predict(self, context, model_input, params: Optional[Dict[str, Any]] = None):
+    def predict(self, context, model_input, params: dict[str, Any] | None = None):
         return self.model.predict(**model_input)
 
-    def predict_stream(self, context, model_input, params: Optional[Dict[str, Any]] = None):
+    def predict_stream(self, context, model_input, params: dict[str, Any] | None = None):
         raise NotImplementedError("Predict stream is not currently supported")
 
 
@@ -52,16 +52,16 @@ def register_mlflow_model(
     mlflow_client: MlflowBasicClient,
     model_name: str,
     experiment: str,
-    run_name: Optional[str] = None,
-    run_id: Optional[str] = None,
-    transition_to_stage: Optional[Literal["staging", "production"]] = None,
-    parent_run_id: Optional[str] = None,
-    version_alias: Optional[str] = None,
-    metrics: Optional[Dict[str, float]] = None,
-    model_params: Optional[Dict[str, Any]] = None,
-    artifacts_to_log: Optional[Dict[str, str]] = None,
-    run_tags: Optional[Dict[str, str]] = None,
-    model_version_tags: Optional[Dict[str, str]] = None,
+    run_name: str | None = None,
+    run_id: str | None = None,
+    transition_to_stage: Literal["staging", "production"] | None = None,
+    parent_run_id: str | None = None,
+    version_alias: str | None = None,
+    metrics: dict[str, float] | None = None,
+    model_params: dict[str, Any] | None = None,
+    artifacts_to_log: dict[str, str] | None = None,
+    run_tags: dict[str, str] | None = None,
+    model_version_tags: dict[str, str] | None = None,
 ) -> str:
     """Registers mlflow model
 

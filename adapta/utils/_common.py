@@ -59,9 +59,9 @@ def doze(seconds: int, doze_period_ms: int = 100) -> int:
 
 
 def session_with_retries(
-    method_list: Tuple[str, ...] = ("HEAD", "GET", "OPTIONS", "TRACE"),
-    request_timeout: Optional[float] = 300,
-    status_list: Tuple[int, ...] = (400, 429, 500, 502, 503, 504),
+    method_list: tuple[str, ...] = ("HEAD", "GET", "OPTIONS", "TRACE"),
+    request_timeout: float | None = 300,
+    status_list: tuple[int, ...] = (400, 429, 500, 502, 503, 504),
     retry_count: int = 4,
     file_protocol_supported: bool = False,
 ):
@@ -88,7 +88,7 @@ def session_with_retries(
     return http
 
 
-def convert_datadog_tags(tag_dict: Optional[Dict[str, str]]) -> Optional[List[str]]:
+def convert_datadog_tags(tag_dict: dict[str, str] | None) -> list[str] | None:
     """
      Converts tags dictionary to Datadog tag format.
 
@@ -115,7 +115,7 @@ def operation_time():
     result.elapsed = result.end - result.start
 
 
-def chunk_list(value: List[Any], num_chunks: int) -> List[List[Any]]:
+def chunk_list(value: list[Any], num_chunks: int) -> list[list[Any]]:
     """
      Chunks the provided list into at most the specified number of chunks. This method is thread-safe.
 
@@ -132,7 +132,7 @@ def chunk_list(value: List[Any], num_chunks: int) -> List[List[Any]]:
 
 
 @contextlib.contextmanager
-def memory_limit(*, memory_limit_percentage: Optional[float] = None, memory_limit_bytes: Optional[int] = None):
+def memory_limit(*, memory_limit_percentage: float | None = None, memory_limit_bytes: int | None = None):
     """
     Context manager to limit the amount of memory used by a process.
     On context exit, the memory limit is reset to the total memory available.
@@ -171,8 +171,8 @@ def memory_limit(*, memory_limit_percentage: Optional[float] = None, memory_limi
 
 def map_column_names(
     dataframe: pandas.DataFrame,
-    column_map: Dict[str, str],
-    default_values: Optional[Dict[str, Union[str, int, float]]] = None,
+    column_map: dict[str, str],
+    default_values: dict[str, str | int | float] | None = None,
     drop_missing: bool = True,
 ) -> pandas.DataFrame:
     """
@@ -197,8 +197,8 @@ def map_column_names(
 
 def map_column_names_polars(
     dataframe: polars.DataFrame,
-    column_map: Dict[str, str],
-    default_values: Optional[Dict[str, Union[str, int, float]]] = None,
+    column_map: dict[str, str],
+    default_values: dict[str, str | int | float] | None = None,
     drop_missing: bool = True,
 ) -> polars.DataFrame:
     """
@@ -221,7 +221,7 @@ def map_column_names_polars(
     return dataframe.with_columns(*[lit(value).alias(col) for col, value in default_values.items()])
 
 
-def downcast_dataframe(dataframe: pandas.DataFrame, columns: Optional[List[str]] = None) -> pandas.DataFrame:
+def downcast_dataframe(dataframe: pandas.DataFrame, columns: list[str] | None = None) -> pandas.DataFrame:
     """
     Downcasts a Pandas dataframe to the smallest possible data type for each column. Only interger and float
     columns are downcasted. Other columns are left as is.
@@ -234,7 +234,7 @@ def downcast_dataframe(dataframe: pandas.DataFrame, columns: Optional[List[str]]
 
     columns = list(dataframe.columns) if columns is None else columns
 
-    def get_downcast_type(column: pandas.Series) -> Optional[str]:
+    def get_downcast_type(column: pandas.Series) -> str | None:
         """
         Returns the downcast type for a Pandas column.
 

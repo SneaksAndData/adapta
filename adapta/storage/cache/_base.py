@@ -37,7 +37,7 @@ class KeyValueCache(ABC):
         """
 
     @abstractmethod
-    def exists(self, key: str, attribute: Optional[str] = None) -> bool:
+    def exists(self, key: str, attribute: str | None = None) -> bool:
         """
           Checks if a cache key is present. If an attribute is provided, should also check
           if a value possesses this attributes.
@@ -48,7 +48,7 @@ class KeyValueCache(ABC):
         """
 
     @abstractmethod
-    def multi_exists(self, keys: List[str]) -> bool:
+    def multi_exists(self, keys: list[str]) -> bool:
         """
          Checks if all keys exist
 
@@ -57,7 +57,7 @@ class KeyValueCache(ABC):
         """
 
     @abstractmethod
-    def multi_get(self, keys: List[str]) -> List[Any]:
+    def multi_get(self, keys: list[str]) -> list[Any]:
         """
           Reads multiple keys in a single call.
 

@@ -48,19 +48,19 @@ class DeltaTransaction:
     version: int
     timestamp: int
     operation: DeltaOperation
-    operation_parameters: Dict
+    operation_parameters: dict
     read_version: int
     is_blind_append: bool
 
     @classmethod
-    def from_dict(cls, value: Dict) -> "DeltaTransaction":
+    def from_dict(cls, value: dict) -> "DeltaTransaction":
         """
           Converts delta transaction log entry to DeltaTransaction.
         :param value: single entry from `describe history ...`
         :return:
         """
         delta_op = value.get("operation", DeltaOperation.UNDEFINED.value)
-        supported_ops = set(item.value for item in DeltaOperation)
+        supported_ops = {item.value for item in DeltaOperation}
 
         return cls(
             version=value.get("version", -1),

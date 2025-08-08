@@ -3,7 +3,8 @@ This module contains the MetaFrame class which contains structured data for a da
 The MetaFrame can be used to convert the latent representation to other formats.
 """
 from abc import ABC
-from typing import Callable, Iterable, Optional
+from typing import Optional
+from collections.abc import Callable, Iterable
 
 import pandas
 import polars
@@ -49,7 +50,7 @@ class MetaFrame:
 
     @classmethod
     def from_pandas(
-        cls, data: pandas.DataFrame, convert_to_polars: Optional[Callable[[any], polars.DataFrame]] = None
+        cls, data: pandas.DataFrame, convert_to_polars: Callable[[any], polars.DataFrame] | None = None
     ) -> "MetaFrame":
         """
         Create a MetaFrame from a pandas DataFrame.
@@ -66,7 +67,7 @@ class MetaFrame:
 
     @classmethod
     def from_polars(
-        cls, data: polars.DataFrame, convert_to_pandas: Optional[Callable[[any], pandas.DataFrame]] = None
+        cls, data: polars.DataFrame, convert_to_pandas: Callable[[any], pandas.DataFrame] | None = None
     ) -> "MetaFrame":
         """
         Create a MetaFrame from a Polars DataFrame.
@@ -85,8 +86,8 @@ class MetaFrame:
     def from_arrow(
         cls,
         data: pyarrow.Table,
-        convert_to_polars: Optional[Callable[[any], polars.DataFrame]] = None,
-        convert_to_pandas: Optional[Callable[[any], pandas.DataFrame]] = None,
+        convert_to_polars: Callable[[any], polars.DataFrame] | None = None,
+        convert_to_pandas: Callable[[any], pandas.DataFrame] | None = None,
     ) -> "MetaFrame":
         """
         Create a MetaFrame from an Arrow Table.
@@ -115,7 +116,7 @@ class MetaFrame:
         return self._convert_to_polars(self._data)
 
 
-def concat(dataframes: Iterable[MetaFrame], options: Optional[Iterable[MetaFrameOptions]] = None) -> MetaFrame:
+def concat(dataframes: Iterable[MetaFrame], options: Iterable[MetaFrameOptions] | None = None) -> MetaFrame:
     """
     Concatenate a list of MetaFrames.
     :param dataframes: List of MetaFrames to concatenate.

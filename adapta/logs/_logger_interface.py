@@ -28,14 +28,14 @@ class LoggerInterface(ABC):
     """
 
     @abstractmethod
-    def info(self, template: str, tags: Optional[Dict[str, str]] = None, **kwargs):
+    def info(self, template: str, tags: dict[str, str] | None = None, **kwargs):
         """
         Logs a message on INFO level
         """
 
     @abstractmethod
     def warning(
-        self, template: str, exception: Optional[BaseException] = None, tags: Optional[Dict[str, str]] = None, **kwargs
+        self, template: str, exception: BaseException | None = None, tags: dict[str, str] | None = None, **kwargs
     ):
         """
         Logs a message on WARN level
@@ -43,7 +43,7 @@ class LoggerInterface(ABC):
 
     @abstractmethod
     def error(
-        self, template: str, exception: Optional[BaseException] = None, tags: Optional[Dict[str, str]] = None, **kwargs
+        self, template: str, exception: BaseException | None = None, tags: dict[str, str] | None = None, **kwargs
     ):
         """
         Logs a message on ERROR level
@@ -53,9 +53,9 @@ class LoggerInterface(ABC):
     def debug(
         self,
         template: str,
-        exception: Optional[BaseException] = None,
-        diagnostics: Optional[str] = None,
-        tags: Optional[Dict[str, str]] = None,
+        exception: BaseException | None = None,
+        diagnostics: str | None = None,
+        tags: dict[str, str] | None = None,
         **kwargs
     ):
         """
@@ -76,7 +76,7 @@ class LoggerInterface(ABC):
 
     @contextmanager
     @abstractmethod
-    def redirect(self, tags: Optional[Dict[str, str]] = None, **kwargs):
+    def redirect(self, tags: dict[str, str] | None = None, **kwargs):
         """
          Redirects stdout to a temporary file and dumps its contents as INFO messages
          once the wrapped code block finishes execution. Stdout is restored after the block completes execution.
@@ -101,7 +101,7 @@ class LoggerInterface(ABC):
 
     @asynccontextmanager
     @abstractmethod
-    async def redirect_async(self, tags: Optional[Dict[str, str]] = None, **kwargs):
+    async def redirect_async(self, tags: dict[str, str] | None = None, **kwargs):
         """
         Async version of a redirect. Not supported in sync client
         """

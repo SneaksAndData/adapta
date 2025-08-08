@@ -16,7 +16,8 @@
 #  limitations under the License.
 #
 
-from typing import Union, Dict, Iterable
+from typing import Union, Dict
+from collections.abc import Iterable
 
 import hvac
 
@@ -41,7 +42,7 @@ class HashicorpSecretStorageClient(SecretStorageClient):
         self.client = hvac.Client(self._base_client.vault_address, self._access_token)
         self._role = role
 
-    def read_secret(self, storage_name: str, secret_name: str) -> Union[bytes, str, Dict[str, str]]:
+    def read_secret(self, storage_name: str, secret_name: str) -> bytes | str | dict[str, str]:
         secret = self.client.secrets.kv.v2.read_secret_version(path=secret_name)
         return secret["data"]["data"]
 
@@ -49,10 +50,10 @@ class HashicorpSecretStorageClient(SecretStorageClient):
         self,
         storage_name: str,
         secret_name: str,
-        secret_value: Union[str, Dict[str, str]],
+        secret_value: str | dict[str, str],
         b64_encode=False,
     ) -> None:
-        if not isinstance(secret_value, Dict):
+        if not isinstance(secret_value, dict):
             raise ValueError(
                 f"Only Dict secret type supported in HashicorpSecretStorageClient but was: {type(secret_value)}"
             )

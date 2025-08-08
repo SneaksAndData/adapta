@@ -1,7 +1,8 @@
 """Local Query Enabled Store (QES) for reading local files."""
 import re
 from dataclasses import dataclass
-from typing import final, Iterator
+from typing import final
+from collections.abc import Iterator
 
 from dataclasses_json import DataClassJsonMixin
 from pyarrow.parquet import read_table

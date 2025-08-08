@@ -58,7 +58,7 @@ class VectorSearchQuery:
         vector: list[float],
         field_name: str,
         num_results=1,
-        key_column_filter_values: Optional[Union[Expression, List[Dict[str, Any]]]] = None,
+        key_column_filter_values: Expression | list[dict[str, Any]] | None = None,
     ):
         self._sim_func = sim_func
         self._vector = vector

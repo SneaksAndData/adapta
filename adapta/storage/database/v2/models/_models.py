@@ -29,7 +29,7 @@ class SqlAlchemyDialect:
     """
 
     dialect: str
-    driver: Dict[str, str]
+    driver: dict[str, str]
 
 
 class DatabaseType(Enum):

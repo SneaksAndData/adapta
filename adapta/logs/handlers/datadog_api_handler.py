@@ -54,7 +54,7 @@ class DataDogApiHandler(Handler):
         debug=False,
         max_flush_retry_time=30,
         ignore_flush_failure=True,
-        fixed_tags: Optional[Dict[str, str]] = None,
+        fixed_tags: dict[str, str] | None = None,
     ):
         """
           Creates a handler than can upload log records to DataDog index.
@@ -89,7 +89,7 @@ class DataDogApiHandler(Handler):
             configuration.debug = True
 
         self._logs_api = LogsApi(api_client=ApiClient(configuration))
-        self._buffer: List[HTTPLogItem] = []
+        self._buffer: list[HTTPLogItem] = []
         self._buffer_size = buffer_size
         self._debug = debug
         self._configuration = configuration
@@ -102,7 +102,7 @@ class DataDogApiHandler(Handler):
         if "environment" not in self._fixed_tags:
             self._fixed_tags.setdefault("environment", "local")
             try:
-                with open("/var/run/secrets/kubernetes.io/serviceaccount/token", "r", encoding="utf-8") as token_file:
+                with open("/var/run/secrets/kubernetes.io/serviceaccount/token", encoding="utf-8") as token_file:
                     issued_jwt = token_file.readline()
                     issuer_url = urlparse(
                         json.loads(base64.b64decode(issued_jwt.split(".")[1] + "==").decode("utf-8"))["iss"]
@@ -196,9 +196,9 @@ class DataDogApiHandler(Handler):
 
     def emit(self, record: LogRecord) -> None:
         def convert_record(rec: LogRecord) -> HTTPLogItem:
-            metadata: Optional[CompositeLogMetadata] = rec.__dict__.get(CompositeLogMetadata.__name__)
+            metadata: CompositeLogMetadata | None = rec.__dict__.get(CompositeLogMetadata.__name__)
             tags = {}
-            formatted_message: Dict[str, Any] = {"text": rec.getMessage()}
+            formatted_message: dict[str, Any] = {"text": rec.getMessage()}
             if metadata:
                 if metadata.tags:
                     tags.update(metadata.tags)

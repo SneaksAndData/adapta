@@ -136,7 +136,7 @@ class WasbPath(DataPath):
         return cls(account=adls_path.account, container=adls_path.container, path=adls_path.path)
 
 
-def cast_path(blob_path: DataPath) -> Union[AdlsGen2Path, WasbPath]:
+def cast_path(blob_path: DataPath) -> AdlsGen2Path | WasbPath:
     """
      Type cast from DataPath to one of Azure paths.
 

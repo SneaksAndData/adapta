@@ -24,7 +24,7 @@ from typing import Union, Any, List
 class PythonSchemaEntity:
     """Entity used to override getattr to provide schema hints"""
 
-    def __init__(self, underlying_type: Union[Any, List[Field]]) -> None:
+    def __init__(self, underlying_type: Any | list[Field]) -> None:
         for field_name in underlying_type.__dataclass_fields__:
             self.__setattr__(field_name, field_name)
 

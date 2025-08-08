@@ -17,7 +17,8 @@
 #
 
 from abc import ABC, abstractmethod
-from typing import Optional, Dict, Callable
+from typing import Optional, Dict
+from collections.abc import Callable
 
 from pyarrow.fs import FileSystem
 from adapta.storage.models.base import DataPath
@@ -41,7 +42,7 @@ class AuthenticationClient(ABC):
         """
 
     @abstractmethod
-    def get_access_token(self, scope: Optional[str] = None) -> str:
+    def get_access_token(self, scope: str | None = None) -> str:
         """
          If a provider uses OAuth2, it must implement this method to allow fetching access tokens on the fly.
 
@@ -50,7 +51,7 @@ class AuthenticationClient(ABC):
         """
 
     @abstractmethod
-    def connect_storage(self, path: DataPath, set_env: bool = False) -> Optional[Dict]:
+    def connect_storage(self, path: DataPath, set_env: bool = False) -> dict | None:
         """
          Optional method to create authenticated session for the provided path.
 
@@ -68,7 +69,7 @@ class AuthenticationClient(ABC):
         """
 
     @abstractmethod
-    def get_pyarrow_filesystem(self, path: DataPath, connection_options: Optional[Dict[str, str]] = None) -> FileSystem:
+    def get_pyarrow_filesystem(self, path: DataPath, connection_options: dict[str, str] | None = None) -> FileSystem:
         """
         Returns a `PyFileSystem` object that's authenticated for the provided path
 
@@ -78,7 +79,7 @@ class AuthenticationClient(ABC):
         """
 
     @abstractmethod
-    def initialize_session(self, session_callable: Optional[Callable[[], None]] = None) -> "AuthenticationClient":
+    def initialize_session(self, session_callable: Callable[[], None] | None = None) -> "AuthenticationClient":
         """
         Initializes the session by custom session function or a default one if no function is provided.
         """

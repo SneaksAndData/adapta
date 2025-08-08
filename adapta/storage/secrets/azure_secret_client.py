@@ -43,14 +43,14 @@ class AzureSecretStorageClient(SecretStorageClient):
         kv_uri = f"https://{keyvault}.vault.azure.net"
         return SecretClient(kv_uri, self._base_client.get_credentials())
 
-    def read_secret(self, storage_name: str, secret_name: str) -> Union[bytes, str, Dict[str, str]]:
+    def read_secret(self, storage_name: str, secret_name: str) -> bytes | str | dict[str, str]:
         return self._get_keyvault(storage_name).get_secret(secret_name).value
 
     def create_secret(
         self,
         storage_name: str,
         secret_name: str,
-        secret_value: Union[str, Dict[str, str]],
+        secret_value: str | dict[str, str],
         b64_encode=False,
     ) -> None:
         if not isinstance(secret_value, str):

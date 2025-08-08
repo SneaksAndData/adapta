@@ -4,7 +4,8 @@
 import os
 import re
 from dataclasses import dataclass
-from typing import final, Optional, Union, Iterator
+from typing import final, Optional, Union
+from collections.abc import Iterator
 
 from dataclasses_json import DataClassJsonMixin
 
@@ -28,9 +29,9 @@ class AstraCredential(DataClassJsonMixin):
     Astra DB credential helper for QES.
     """
 
-    secret_connection_bundle_bytes: Optional[str] = None
-    client_id: Optional[str] = None
-    client_secret: Optional[str] = None
+    secret_connection_bundle_bytes: str | None = None
+    client_id: str | None = None
+    client_secret: str | None = None
 
     def __post_init__(self):
         self.secret_connection_bundle_bytes = self.secret_connection_bundle_bytes or os.getenv(
@@ -51,8 +52,8 @@ class AstraSettings(DataClassJsonMixin):
     Astra DB connection settings for QES.
     """
 
-    client_name: Optional[str] = None
-    keyspace: Optional[str] = None
+    client_name: str | None = None
+    keyspace: str | None = None
 
     def __post_init__(self):
         self.client_name = self.client_name or f"Adapta Client {__version__}"
@@ -87,8 +88,8 @@ class AstraQueryEnabledStore(QueryEnabledStore[AstraCredential, AstraSettings]):
         filter_expression: Expression,
         columns: list[str],
         options: dict[QueryEnabledStoreOptions, any] | None = None,
-        limit: Optional[int] = 10000,
-    ) -> Union[MetaFrame, Iterator[MetaFrame]]:
+        limit: int | None = 10000,
+    ) -> MetaFrame | Iterator[MetaFrame]:
         assert isinstance(path, AstraPath)
         astra_path: AstraPath = path
         if self._lazy:
@@ -115,7 +116,7 @@ class AstraQueryEnabledStore(QueryEnabledStore[AstraCredential, AstraSettings]):
             limit=limit,
         )
 
-    def _apply_query(self, query: str) -> Union[MetaFrame, Iterator[MetaFrame]]:
+    def _apply_query(self, query: str) -> MetaFrame | Iterator[MetaFrame]:
         if self._lazy:
             with self._astra_client as astra_client:
                 return astra_client.get_entities_raw(query)

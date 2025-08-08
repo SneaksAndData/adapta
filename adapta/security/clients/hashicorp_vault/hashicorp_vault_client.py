@@ -58,7 +58,7 @@ class HashicorpVaultClient(AuthenticationClient):
         """Returns address of Hashicorp Vault server"""
         return self._vault_address
 
-    def connect_storage(self, path: DataPath, set_env: bool = False) -> Optional[Dict]:
+    def connect_storage(self, path: DataPath, set_env: bool = False) -> dict | None:
         """
          Not supported  in HashicorpVaultClient
         :return:
@@ -72,7 +72,7 @@ class HashicorpVaultClient(AuthenticationClient):
         """
         raise ValueError("Not supported  in HashicorpVaultClient")
 
-    def get_pyarrow_filesystem(self, path: DataPath, connection_options: Optional[Dict[str, str]] = None) -> FileSystem:
+    def get_pyarrow_filesystem(self, path: DataPath, connection_options: dict[str, str] | None = None) -> FileSystem:
         """
          Not supported  in HashicorpVaultClient
         :return:
@@ -91,5 +91,5 @@ class HashicorpVaultClient(AuthenticationClient):
         pass
 
     @abstractmethod
-    def get_access_token(self, scope: Optional[str] = None) -> str:
+    def get_access_token(self, scope: str | None = None) -> str:
         pass

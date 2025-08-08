@@ -325,7 +325,7 @@ class ArrowFilterExpression(FilterExpression[pyarrow.compute.Expression]):
         field_values: Any,
         filter_operation: FilterExpressionOperation,
         separator: str = ",",
-    ) -> Tuple[pyarrow.compute.Expression, Any]:
+    ) -> tuple[pyarrow.compute.Expression, Any]:
         """
         Handle nested types in PyArrow filter expressions.
 
@@ -394,7 +394,7 @@ class ArrowFilterExpression(FilterExpression[pyarrow.compute.Expression]):
         return filter_operation.value["arrow"](compiled_result_a, compiled_result_b)
 
 
-def compile_expression(expression: Expression, target: Type[FilterExpression[TCompileResult]]) -> TCompileResult:
+def compile_expression(expression: Expression, target: type[FilterExpression[TCompileResult]]) -> TCompileResult:
     """
     Compiles a filter expression using the specified target implementation.
     """

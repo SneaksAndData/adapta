@@ -55,5 +55,5 @@ class HashicorpVaultTokenClient(HashicorpVaultClient):
     def get_credentials(self):
         self.get_access_token()
 
-    def get_access_token(self, scope: Optional[str] = None) -> str:
+    def get_access_token(self, scope: str | None = None) -> str:
         return self._client.token

@@ -102,5 +102,5 @@ class HashicorpVaultOidcClient(HashicorpVaultClient):
         )
         return auth_result
 
-    def get_access_token(self, scope: Optional[str] = None) -> str:
+    def get_access_token(self, scope: str | None = None) -> str:
         return self.get_credentials()["auth"]["client_token"]

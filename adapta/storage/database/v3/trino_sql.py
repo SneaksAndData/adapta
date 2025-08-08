@@ -19,7 +19,8 @@
 
 import os
 from dataclasses import dataclass
-from typing import final, Optional, Iterator
+from typing import final, Optional
+from collections.abc import Iterator
 
 import sqlalchemy
 from pandas import read_sql_query

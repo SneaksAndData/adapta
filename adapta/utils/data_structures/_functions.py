@@ -9,7 +9,7 @@ import xml.etree.ElementTree as ET
 XmlNodeT = TypeVar("XmlNodeT")
 
 
-def xmltree_to_dict_collection(xml_source: Union[str, Path], node_type: type[XmlNodeT]) -> List[XmlNodeT]:
+def xmltree_to_dict_collection(xml_source: str | Path, node_type: type[XmlNodeT]) -> list[XmlNodeT]:
     """
      Convert a xml source to a list of dict, which can be a path or a xml string
 
@@ -37,7 +37,7 @@ def xmltree_to_dict_collection(xml_source: Union[str, Path], node_type: type[Xml
     :return:
     """
 
-    def node_attributes_to_dict(node: ET.Element) -> Dict:
+    def node_attributes_to_dict(node: ET.Element) -> dict:
         """
          Get the node's attributes
 
@@ -49,7 +49,7 @@ def xmltree_to_dict_collection(xml_source: Union[str, Path], node_type: type[Xml
         """
         return {f"{node.tag.lower()}_{key.lower()}": value for key, value in node.attrib.items()}
 
-    def merge(node: ET.Element, leaf: ET.Element) -> Dict:
+    def merge(node: ET.Element, leaf: ET.Element) -> dict:
         """
          Merge current node's attributes, all the leafs' attributes and text
 
@@ -61,7 +61,7 @@ def xmltree_to_dict_collection(xml_source: Union[str, Path], node_type: type[Xml
 
         return node_attributes_to_dict(node) | node_attributes_to_dict(leaf) | {leaf.tag.lower(): leaf.text}
 
-    def node_type_convert(base_node: Dict) -> XmlNodeT:
+    def node_type_convert(base_node: dict) -> XmlNodeT:
         """
          Convert type of node to XmlNodeT
 
@@ -79,7 +79,7 @@ def xmltree_to_dict_collection(xml_source: Union[str, Path], node_type: type[Xml
 
         return all(len(child) == 0 for child in node)
 
-    def backtrack(node: ET.Element, converted_node: Dict):
+    def backtrack(node: ET.Element, converted_node: dict):
         """
          Generate all the combinations from root to the node closest to leaves based on the backtracking algorithm
 

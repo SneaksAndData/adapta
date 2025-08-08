@@ -31,10 +31,10 @@ class SemanticLogger(_InternalLogger):
     Proxy for a collection of python loggers that use the same formatting interface.
     """
 
-    async def redirect_async(self, tags: Optional[Dict[str, str]] = None, **kwargs):
+    async def redirect_async(self, tags: dict[str, str] | None = None, **kwargs):
         raise NotImplementedError("Async operations are not supported by this logger")
 
-    def redirect(self, tags: Optional[Dict[str, str]] = None, log_source_name: Optional[str] = None, **kwargs):
+    def redirect(self, tags: dict[str, str] | None = None, log_source_name: str | None = None, **kwargs):
         return self._redirect(logger=self._get_logger(log_source_name), tags=tags)
 
     def start(self) -> None:
@@ -43,7 +43,7 @@ class SemanticLogger(_InternalLogger):
     def stop(self) -> None:
         pass
 
-    def __init__(self, fixed_template: Optional[Dict[str, Dict[str, str]]] = None, fixed_template_delimiter=", "):
+    def __init__(self, fixed_template: dict[str, dict[str, str]] | None = None, fixed_template_delimiter=", "):
         """
           Creates a new instance of a SemanticLogger
 
@@ -51,7 +51,7 @@ class SemanticLogger(_InternalLogger):
         :param fixed_template_delimiter: Optional delimiter to use when appending fixed templates.
         """
         super().__init__(fixed_template, fixed_template_delimiter)
-        self._loggers: Dict[str, logging.Logger] = {}
+        self._loggers: dict[str, logging.Logger] = {}
         self._default_log_source = None
         self._fixed_template = fixed_template
         self._fixed_template_delimiter = fixed_template_delimiter
@@ -62,7 +62,7 @@ class SemanticLogger(_InternalLogger):
         *,
         log_source_name: str,
         min_log_level: LogLevel,
-        log_handlers: Optional[List[Handler]] = None,
+        log_handlers: list[Handler] | None = None,
         is_default=False,
     ) -> "SemanticLogger":
         """
@@ -90,13 +90,13 @@ class SemanticLogger(_InternalLogger):
 
         return self
 
-    def __getattr__(self, log_source) -> Optional[logging.Logger]:
+    def __getattr__(self, log_source) -> logging.Logger | None:
         if log_source in self._loggers:
             return self._loggers[log_source]
 
         return None
 
-    def _get_logger(self, log_source_name: Optional[str] = None) -> MetadataLogger:
+    def _get_logger(self, log_source_name: str | None = None) -> MetadataLogger:
         """
           Retrieves a logger by log source name, or a default logger is log source name is not provided.
 
@@ -117,8 +117,8 @@ class SemanticLogger(_InternalLogger):
     def info(
         self,
         template: str,
-        tags: Optional[Dict[str, str]] = None,
-        log_source_name: Optional[str] = None,
+        tags: dict[str, str] | None = None,
+        log_source_name: str | None = None,
         **kwargs,
     ) -> None:
         """
@@ -136,9 +136,9 @@ class SemanticLogger(_InternalLogger):
     def warning(
         self,
         template: str,
-        exception: Optional[BaseException] = None,
-        tags: Optional[Dict[str, str]] = None,
-        log_source_name: Optional[str] = None,
+        exception: BaseException | None = None,
+        tags: dict[str, str] | None = None,
+        log_source_name: str | None = None,
         **kwargs,
     ) -> None:
         """
@@ -157,9 +157,9 @@ class SemanticLogger(_InternalLogger):
     def error(
         self,
         template: str,
-        exception: Optional[BaseException] = None,
-        tags: Optional[Dict[str, str]] = None,
-        log_source_name: Optional[str] = None,
+        exception: BaseException | None = None,
+        tags: dict[str, str] | None = None,
+        log_source_name: str | None = None,
         **kwargs,
     ) -> None:
         """
@@ -178,10 +178,10 @@ class SemanticLogger(_InternalLogger):
     def debug(
         self,
         template: str,
-        exception: Optional[BaseException] = None,
-        diagnostics: Optional[str] = None,  # pylint: disable=R0913
-        tags: Optional[Dict[str, str]] = None,
-        log_source_name: Optional[str] = None,
+        exception: BaseException | None = None,
+        diagnostics: str | None = None,  # pylint: disable=R0913
+        tags: dict[str, str] | None = None,
+        log_source_name: str | None = None,
         **kwargs,
     ) -> None:
         """

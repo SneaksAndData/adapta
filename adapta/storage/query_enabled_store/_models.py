@@ -21,7 +21,8 @@ import re
 from abc import ABC, abstractmethod
 from enum import Enum
 from pydoc import locate
-from typing import TypeVar, Generic, Type, Iterator, Union, final, Optional
+from typing import TypeVar, Generic, Type, Union, final, Optional
+from collections.abc import Iterator
 
 from adapta.storage.models.base import DataPath
 from adapta.storage.models.filter_expression import Expression
@@ -90,14 +91,14 @@ class QueryEnabledStore(Generic[TCredential, TSettings], ABC):
         filter_expression: Expression,
         columns: list[str],
         options: dict[QueryEnabledStoreOptions, any] | None = None,
-        limit: Optional[int] = None,
-    ) -> Union[MetaFrame, Iterator[MetaFrame]]:
+        limit: int | None = None,
+    ) -> MetaFrame | Iterator[MetaFrame]:
         """
         Applies the provided filter expression to this Store and returns the result in a MetaFrame
         """
 
     @abstractmethod
-    def _apply_query(self, query: str) -> Union[MetaFrame, Iterator[MetaFrame]]:
+    def _apply_query(self, query: str) -> MetaFrame | Iterator[MetaFrame]:
         """
         Applies a plaintext query to this Store and returns the result in a MetaFrame
         """
@@ -123,7 +124,7 @@ class QueryEnabledStore(Generic[TCredential, TSettings], ABC):
         :param: lazy_init: Whether to set this instance QES for querying eagerly or lazily.
         """
 
-        def get_qes_class(name: str) -> Type[QueryEnabledStore[TCredential, TSettings]]:
+        def get_qes_class(name: str) -> type[QueryEnabledStore[TCredential, TSettings]]:
             return locate(BUNDLED_STORES.get(name, name))
 
         class_name, _, _ = re.findall(re.compile(CONNECTION_STRING_REGEX), connection_string)[0]
@@ -144,7 +145,7 @@ class QueryConfigurationBuilder:
     def __init__(self, store: QueryEnabledStore, path: DataPath):
         self._store = store
         self._path = path
-        self._filter_expression: Optional[Expression] = None
+        self._filter_expression: Expression | None = None
         self._columns: list[str] = []
         self._options: dict[QueryEnabledStoreOptions, any] = {}
         self._limit = None
@@ -180,7 +181,7 @@ class QueryConfigurationBuilder:
         self._limit = limit
         return self
 
-    def read(self) -> Union[MetaFrame, Iterator[MetaFrame]]:
+    def read(self) -> MetaFrame | Iterator[MetaFrame]:
         """
         Execute the query on the underlying store.
         """

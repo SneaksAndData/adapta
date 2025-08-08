@@ -19,7 +19,8 @@
 #
 
 import os
-from typing import Optional, Iterator, Tuple
+from typing import Optional, Tuple
+from collections.abc import Iterator
 from warnings import warn
 
 from pandas import DataFrame, read_sql_query
@@ -42,9 +43,9 @@ class TrinoClient:
         self,
         host: str,
         catalog: str,
-        port: Optional[int] = 443,
-        oauth2_username: Optional[str] = None,
-        credentials_provider: Optional[Tuple[str, SecretStorageClient]] = None,
+        port: int | None = 443,
+        oauth2_username: str | None = None,
+        credentials_provider: tuple[str, SecretStorageClient] | None = None,
         logger: SemanticLogger = SemanticLogger().add_log_source(
             log_source_name="adapta-trino-client",
             min_log_level=LogLevel.INFO,
@@ -95,7 +96,7 @@ class TrinoClient:
             )
 
         self._logger = logger
-        self._connection: Optional[sqlalchemy.engine.Connection] = None
+        self._connection: sqlalchemy.engine.Connection | None = None
 
     def __enter__(self) -> Optional["TrinoClient"]:
         try:

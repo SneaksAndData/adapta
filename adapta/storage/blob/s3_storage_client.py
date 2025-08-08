@@ -18,7 +18,8 @@
 
 import os
 
-from typing import Optional, Callable, Type, Iterator, Dict, TypeVar, final
+from typing import Optional, Type, Dict, TypeVar, final
+from collections.abc import Callable, Iterator
 from boto3 import Session
 from botocore.config import Config
 from botocore.exceptions import ClientError
@@ -40,7 +41,7 @@ class S3StorageClient(StorageClient):
     S3 Storage Client.
     """
 
-    def __init__(self, *, base_client: AwsClient, s3_resource: Optional[Session] = None):
+    def __init__(self, *, base_client: AwsClient, s3_resource: Session | None = None):
         super().__init__(base_client=base_client)
         self._base_client = base_client
         self._s3_resource = s3_resource if s3_resource is not None else base_client.session.resource("s3")
@@ -49,10 +50,10 @@ class S3StorageClient(StorageClient):
     def create(
         cls,
         auth: AwsClient,
-        endpoint_url: Optional[str] = None,
-        session_callable: Optional[Callable[[], Session]] = None,
+        endpoint_url: str | None = None,
+        session_callable: Callable[[], Session] | None = None,
     ):
-        def _get_endpoint_url() -> Optional[str]:
+        def _get_endpoint_url() -> str | None:
             if endpoint_url:
                 return endpoint_url
             if auth.get_credentials():
@@ -99,8 +100,8 @@ class S3StorageClient(StorageClient):
         self,
         data: T,
         blob_path: DataPath,
-        serialization_format: Type[SerializationFormat[T]],
-        metadata: Optional[Dict[str, str]] = None,
+        serialization_format: type[SerializationFormat[T]],
+        metadata: dict[str, str] | None = None,
         overwrite: bool = False,
     ) -> None:
         """
@@ -134,7 +135,7 @@ class S3StorageClient(StorageClient):
         self._s3_resource.Bucket(s3_path.bucket).Object(blob_path.path).delete()
 
     def list_blobs(
-        self, blob_path: DataPath, filter_predicate: Optional[Callable[[...], bool]] = None
+        self, blob_path: DataPath, filter_predicate: Callable[[...], bool] | None = None
     ) -> Iterator[DataPath]:
         """
         Lists blobs in S3 storage.
@@ -167,8 +168,8 @@ class S3StorageClient(StorageClient):
     def read_blobs(
         self,
         blob_path: DataPath,
-        serialization_format: Type[SerializationFormat[T]],
-        filter_predicate: Optional[Callable[[...], bool]] = None,
+        serialization_format: type[SerializationFormat[T]],
+        filter_predicate: Callable[[...], bool] | None = None,
     ) -> Iterator[T]:
         """
          Reads data under provided path into the given format.
@@ -188,8 +189,8 @@ class S3StorageClient(StorageClient):
         self,
         blob_path: DataPath,
         local_path: str,
-        threads: Optional[int] = None,
-        filter_predicate: Optional[Callable[[...], bool]] = None,
+        threads: int | None = None,
+        filter_predicate: Callable[[...], bool] | None = None,
     ) -> None:
         """
         Downloads blobs from S3 storage to a local path.

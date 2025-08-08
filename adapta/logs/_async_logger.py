@@ -38,11 +38,11 @@ class _AsyncLogger(Generic[TLogger], _InternalLogger):
     Asyncio-safe wrapper for MetadataLogger
     """
 
-    def redirect(self, tags: Optional[Dict[str, str]] = None, **kwargs):
+    def redirect(self, tags: dict[str, str] | None = None, **kwargs):
         return self._redirect(logger=self._logger, tags=tags)
 
     @asynccontextmanager
-    async def redirect_async(self, tags: Optional[Dict[str, str]] = None, **kwargs):
+    async def redirect_async(self, tags: dict[str, str] | None = None, **kwargs):
         is_active = False
         tmp_symlink_out = b""
         tmp_symlink_err = b""
@@ -86,8 +86,8 @@ class _AsyncLogger(Generic[TLogger], _InternalLogger):
         self,
         name: str,
         min_log_level: LogLevel,
-        log_handlers: List[logging.Handler],
-        fixed_template: Optional[Dict[str, Dict[str, str]]] = None,
+        log_handlers: list[logging.Handler],
+        fixed_template: dict[str, dict[str, str]] | None = None,
         fixed_template_delimiter=", ",
         global_tags: dict[str, str] | None = None,
     ):
@@ -98,14 +98,14 @@ class _AsyncLogger(Generic[TLogger], _InternalLogger):
         self._logger_queue_handler = QueueHandler(self._logger_message_queue)
         self._logger.addHandler(self._logger_queue_handler)
         self._log_handlers = log_handlers
-        self._listener: Optional[QueueListener] = None
+        self._listener: QueueListener | None = None
         self._is_active: bool = False
         self._lock = threading.RLock()
 
     def info(
         self,
         template: str,
-        tags: Optional[Dict[str, str]] = None,
+        tags: dict[str, str] | None = None,
         **kwargs,
     ) -> None:
         """
@@ -121,8 +121,8 @@ class _AsyncLogger(Generic[TLogger], _InternalLogger):
     def warning(
         self,
         template: str,
-        exception: Optional[BaseException] = None,
-        tags: Optional[Dict[str, str]] = None,
+        exception: BaseException | None = None,
+        tags: dict[str, str] | None = None,
         **kwargs,
     ) -> None:
         """
@@ -139,8 +139,8 @@ class _AsyncLogger(Generic[TLogger], _InternalLogger):
     def error(
         self,
         template: str,
-        exception: Optional[BaseException] = None,
-        tags: Optional[Dict[str, str]] = None,
+        exception: BaseException | None = None,
+        tags: dict[str, str] | None = None,
         **kwargs,
     ) -> None:
         """
@@ -157,9 +157,9 @@ class _AsyncLogger(Generic[TLogger], _InternalLogger):
     def debug(
         self,
         template: str,
-        exception: Optional[BaseException] = None,
-        diagnostics: Optional[str] = None,  # pylint: disable=R0913
-        tags: Optional[Dict[str, str]] = None,
+        exception: BaseException | None = None,
+        diagnostics: str | None = None,  # pylint: disable=R0913
+        tags: dict[str, str] | None = None,
         **kwargs,
     ) -> None:
         """
@@ -206,10 +206,10 @@ class _AsyncLogger(Generic[TLogger], _InternalLogger):
 
 
 def create_async_logger(
-    logger_type: Type[TLogger],
-    log_handlers: List[logging.Handler],
+    logger_type: type[TLogger],
+    log_handlers: list[logging.Handler],
     min_log_level: LogLevel = LogLevel.INFO,
-    fixed_template: Optional[Dict[str, Dict[str, str]]] = None,
+    fixed_template: dict[str, dict[str, str]] | None = None,
     fixed_template_delimiter=", ",
     global_tags: dict[str, str] = None,
 ) -> _AsyncLogger[TLogger]:

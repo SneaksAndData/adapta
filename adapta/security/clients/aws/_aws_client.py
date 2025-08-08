@@ -16,7 +16,8 @@
 #  limitations under the License.
 #
 
-from typing import Optional, Dict, final, Callable
+from typing import Optional, Dict, final
+from collections.abc import Callable
 
 import boto3
 from boto3.session import Session
@@ -33,7 +34,7 @@ class AwsClient(AuthenticationClient):
     AWS Credentials provider for various AWS resources.
     """
 
-    def __init__(self, credentials: Optional[AccessKeyCredentials] = None, allow_http: bool = False):
+    def __init__(self, credentials: AccessKeyCredentials | None = None, allow_http: bool = False):
         super().__init__()
         self._session = None
         self._credentials = credentials
@@ -56,18 +57,18 @@ class AwsClient(AuthenticationClient):
         """
         return client if isinstance(client, AwsClient) else None
 
-    def get_credentials(self) -> Optional[AccessKeyCredentials]:
+    def get_credentials(self) -> AccessKeyCredentials | None:
         """
         Returns configured credentials (if any)
         """
         return self._credentials
 
-    def get_access_token(self, scope: Optional[str] = None) -> str:
+    def get_access_token(self, scope: str | None = None) -> str:
         """
         Not used in AWS.
         """
 
-    def connect_storage(self, path: DataPath, set_env: bool = False) -> Optional[Dict]:
+    def connect_storage(self, path: DataPath, set_env: bool = False) -> dict | None:
         """
         Configures the necessary storage options to be used to connect the AWS client for Delta Lake operations.
         :return: All need storage options to set up Delta Lake storage client.
@@ -86,13 +87,13 @@ class AwsClient(AuthenticationClient):
         :return:
         """
 
-    def get_pyarrow_filesystem(self, path: DataPath, connection_options: Optional[Dict[str, str]] = None) -> FileSystem:
+    def get_pyarrow_filesystem(self, path: DataPath, connection_options: dict[str, str] | None = None) -> FileSystem:
         """
         Not supported in AwsClient.
         :return:
         """
 
-    def initialize_session(self, session_callable: Optional[Callable[[], Session]] = None) -> "AwsClient":
+    def initialize_session(self, session_callable: Callable[[], Session] | None = None) -> "AwsClient":
         """
         Initializes the session by custom session function or a default one if no function is provided."
         :return: AwsClient with established session.

@@ -28,6 +28,6 @@ class CompositeLogMetadata:
     """
 
     template: str
-    diagnostics: Optional[str] = None
-    tags: Optional[Dict[str, str]] = None
-    fields: Optional[Dict[str, str]] = None
+    diagnostics: str | None = None
+    tags: dict[str, str] | None = None
+    fields: dict[str, str] | None = None
