@@ -19,7 +19,7 @@
 #
 
 import os
-from typing import Optional, Tuple
+from typing import Optional
 from collections.abc import Iterator
 from warnings import warn
 

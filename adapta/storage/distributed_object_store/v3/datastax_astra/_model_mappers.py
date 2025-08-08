@@ -5,7 +5,6 @@ import sys
 import typing
 from abc import ABC, abstractmethod
 from dataclasses import is_dataclass, fields
-from typing import Type, Optional, List
 import re
 
 import polars

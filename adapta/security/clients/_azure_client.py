@@ -20,8 +20,8 @@ import os
 
 import logging
 
-from typing import Optional, List, Dict, Tuple, Union
 from collections.abc import Callable
+from typing import Self
 
 from adlfs import AzureBlobFileSystem
 from azure.mgmt.storage.v2021_08_01.models import StorageAccountKey, StorageAccount
@@ -66,7 +66,7 @@ class AzureClient(AuthenticationClient):
         logger.setLevel(default_log_level)
 
     @classmethod
-    def from_base_client(cls, client: AuthenticationClient) -> Optional["AzureClient"]:
+    def from_base_client(cls, client: AuthenticationClient) -> Self | None:
         """
          Safe casts AuthenticationClient to AzureClient if type checks out.
 

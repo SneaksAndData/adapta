@@ -17,7 +17,6 @@
 #
 
 import base64
-from typing import Union, Dict
 
 from azure.keyvault.secrets import SecretClient
 

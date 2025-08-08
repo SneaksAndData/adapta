@@ -18,7 +18,6 @@
 #  limitations under the License.
 #
 
-from typing import Optional
 from warnings import warn
 
 from sqlalchemy import text

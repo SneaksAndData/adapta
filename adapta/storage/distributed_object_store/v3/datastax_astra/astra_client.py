@@ -28,7 +28,7 @@ import typing
 from uuid import uuid4
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict
-from typing import Optional, Dict, TypeVar, Type, List, Any, Union
+from typing import TypeVar, Any
 from collections.abc import Callable
 
 from polars.polars import ComputeError

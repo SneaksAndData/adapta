@@ -5,7 +5,7 @@
 import os
 import re
 from types import TracebackType
-from typing import List, Optional, Dict
+from typing import Self
 
 import snowflake.connector
 
@@ -56,7 +56,7 @@ class SnowflakeClient:
         self._role = role
         self._conn = None
 
-    def __enter__(self) -> Optional["SnowflakeClient"]:
+    def __enter__(self) -> Self | None:
         """
         Enters the context manager and establishes a connection to the Snowflake database.
         :return: The SnowflakeClient instance, or None if there was an error connecting to the database.

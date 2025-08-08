@@ -1,6 +1,5 @@
 """Requests module"""
 import os
-from typing import Tuple
 from urllib.request import url2pathname
 
 import requests

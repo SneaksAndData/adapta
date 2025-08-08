@@ -1,5 +1,3 @@
-from typing import Type, Union
-
 import pytest
 
 from adapta.storage.query_enabled_store import (

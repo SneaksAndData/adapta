@@ -16,7 +16,7 @@
 #  limitations under the License.
 #
 
-from typing import Optional, Dict, final
+from typing import final, Self
 from collections.abc import Callable
 
 import boto3
@@ -48,7 +48,7 @@ class AwsClient(AuthenticationClient):
         return self._session
 
     @classmethod
-    def from_base_client(cls, client: AuthenticationClient) -> Optional["AwsClient"]:
+    def from_base_client(cls, client: AuthenticationClient) -> Self | None:
         """
          Safe casts AuthenticationClient to AwsClient if type checks out.
 

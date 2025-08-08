@@ -14,7 +14,6 @@
 #
 
 import pytest
-from typing import Type
 import pandas
 import polars
 from adapta.storage.models.format import (

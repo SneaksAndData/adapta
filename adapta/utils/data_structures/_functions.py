@@ -3,7 +3,7 @@
 """
 import os.path
 from pathlib import Path
-from typing import List, Union, TypeVar, Dict
+from typing import TypeVar
 import xml.etree.ElementTree as ET
 
 XmlNodeT = TypeVar("XmlNodeT")

@@ -16,7 +16,6 @@
 #  limitations under the License.
 #
 
-from typing import Union, Dict
 from collections.abc import Iterable
 
 import hvac

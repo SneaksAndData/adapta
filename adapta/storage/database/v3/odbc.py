@@ -18,7 +18,7 @@
 #
 
 from abc import ABC
-from typing import Optional, Union
+from typing import Optional
 from collections.abc import Iterator
 
 from pandas import read_sql

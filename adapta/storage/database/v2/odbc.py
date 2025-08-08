@@ -19,8 +19,8 @@
 #
 
 from abc import ABC
-from typing import Optional, Union
 from collections.abc import Iterator
+from typing import Self
 from warnings import warn
 
 from pandas import DataFrame, read_sql
@@ -78,7 +78,7 @@ class OdbcClient(ABC):
         self._connection = None
         pyodbc.pooling = False
 
-    def __enter__(self) -> Optional["OdbcClient"]:
+    def __enter__(self) -> Self | None:
         connection_url: sqlalchemy.engine.URL = URL.create(
             drivername=self._dialect.dialect,
             host=self._host,

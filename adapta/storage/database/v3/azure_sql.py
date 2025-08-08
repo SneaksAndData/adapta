@@ -17,8 +17,6 @@
 #  limitations under the License.
 #
 
-from typing import Optional
-
 from sqlalchemy import text
 
 from adapta.logs import SemanticLogger

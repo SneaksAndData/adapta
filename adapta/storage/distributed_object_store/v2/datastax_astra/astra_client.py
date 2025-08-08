@@ -32,7 +32,7 @@ import typing
 from uuid import uuid4
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import fields, is_dataclass, asdict
-from typing import Optional, Dict, TypeVar, Type, List, Any, get_origin, Union
+from typing import TypeVar, Any, get_origin
 from collections.abc import Callable
 from warnings import warn
 

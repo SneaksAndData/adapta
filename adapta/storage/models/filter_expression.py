@@ -3,7 +3,7 @@
 """
 import math
 from abc import ABC, abstractmethod
-from typing import final, Any, TypeVar, Generic, Type, Tuple, Union
+from typing import final, Any, TypeVar, Generic, Self
 from enum import Enum
 import pyarrow.compute
 from pyarrow.dataset import field as pyarrow_field
@@ -139,8 +139,8 @@ class Expression:
 
     def __init__(
         self,
-        left_operand: Union["Expression", FilterField],
-        right_operand: Union["Expression", Any, list],
+        left_operand: Self | FilterField,
+        right_operand: Self | Any | list,
         operation: FilterExpressionOperation,
     ):
         assert (isinstance(left_operand, Expression) and isinstance(right_operand, Expression)) or (

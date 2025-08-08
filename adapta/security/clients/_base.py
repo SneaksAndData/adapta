@@ -17,7 +17,6 @@
 #
 
 from abc import ABC, abstractmethod
-from typing import Optional, Dict
 from collections.abc import Callable
 
 from pyarrow.fs import FileSystem

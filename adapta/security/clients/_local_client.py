@@ -16,7 +16,6 @@
 #  limitations under the License.
 #
 
-from typing import Optional, Dict
 from collections.abc import Callable
 from pyarrow.fs import FileSystem, LocalFileSystem, SubTreeFileSystem
 from adapta.security.clients._base import AuthenticationClient

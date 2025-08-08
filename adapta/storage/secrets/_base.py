@@ -18,7 +18,7 @@
 #
 
 from abc import ABC, abstractmethod
-from typing import Union, Dict, Any
+from typing import Any
 from collections.abc import Iterable
 
 from adapta.security.clients import AuthenticationClient

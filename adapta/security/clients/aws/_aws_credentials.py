@@ -17,7 +17,6 @@ Contains credentials provider for AWS clients
 #
 import os
 from abc import ABC, abstractmethod
-from typing import Optional
 
 
 class AccessKeyCredentials(ABC):

@@ -18,7 +18,7 @@
 
 from abc import ABC, abstractmethod
 from datetime import timedelta
-from typing import Any, List, Optional
+from typing import Any
 
 
 class KeyValueCache(ABC):

@@ -19,7 +19,7 @@
 import os
 import ssl
 from datetime import timedelta
-from typing import Any, List, Optional
+from typing import Any
 
 import redis
 from redis import default_backoff

@@ -20,7 +20,7 @@
 import re
 from dataclasses import dataclass
 from pydoc import locate
-from typing import Optional, TypeVar, Type
+from typing import TypeVar
 
 from adapta.storage.models.base import DataPath, DataProtocols
 

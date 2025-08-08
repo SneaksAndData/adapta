@@ -19,7 +19,6 @@
 
 import os
 from dataclasses import dataclass
-from typing import Optional
 
 from adapta.storage.database.v3.azure_sql import AzureSqlClient
 from adapta.storage.models.base import DataPath, DataProtocols

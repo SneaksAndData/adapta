@@ -17,7 +17,6 @@
 #
 
 from dataclasses import dataclass
-from typing import Union
 
 from adapta.storage.models.base import DataPath, DataProtocols
 
