@@ -46,6 +46,7 @@ class _MlflowMachineLearningModel(PythonModel):
         raise NotImplementedError("Predict stream is not currently supported")
 
 
+# pylint: disable = too-many-locals
 def register_mlflow_model(
     model: MachineLearningModel,
     mlflow_client: MlflowBasicClient,
@@ -59,7 +60,8 @@ def register_mlflow_model(
     metrics: Optional[Dict[str, float]] = None,
     model_params: Optional[Dict[str, Any]] = None,
     artifacts_to_log: Optional[Dict[str, str]] = None,
-    model_tags: Optional[Dict[str, str]] = None,
+    run_tags: Optional[Dict[str, str]] = None,
+    model_version_tags: Optional[Dict[str, str]] = None,
 ) -> str:
     """Registers mlflow model
 
@@ -75,7 +77,8 @@ def register_mlflow_model(
     :param metrics: Metrics to log
     :param model_params: Model hyperparameters to log
     :param artifacts_to_log: Additional artifacts to log
-    :param model_tags: Tags to log
+    :param run_tags: Tags to log in the experiment run
+    :param model_version_tags: Tags to log for specific model version
 
     :return: Run id of the newly created run for registering the model.
     If run_id is provided, it will be the same as run_id
@@ -121,13 +124,17 @@ def register_mlflow_model(
         if model_params is not None:
             mlflow.log_params(model_params)
 
-        if model_tags is not None:
-            mlflow.set_tags(model_tags)
+        if run_tags is not None:
+            mlflow.set_tags(run_tags)
 
         version = mlflow_client.get_latest_model_version(model_name).version
 
         if version_alias is not None:
             mlflow_client.set_model_alias(model_name=model_name, alias=version_alias, model_version=version)
+
+        if model_version_tags is not None:
+            for tag_key, tag_value in model_version_tags.items():
+                mlflow_client.set_model_version_tag(name=model_name, version=version, key=tag_key, value=tag_value)
 
         if transition_to_stage is not None:
             mlflow_client.set_model_stage(
