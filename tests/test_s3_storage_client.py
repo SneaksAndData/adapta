@@ -12,10 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+import pytest
 
 from adapta.storage.blob.s3_storage_client import S3StorageClient
 from adapta.storage.models.aws import S3Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 
 def test_from_hdfs_path():
@@ -27,6 +28,21 @@ def test_from_hdfs_path():
 def test_to_hdfs_path():
     path = S3Path("bucket", "nested/key").to_hdfs_path()
     assert path == "s3a://bucket/nested/key"
+
+
+@pytest.mark.parametrize(
+    "path_a, path_b, expected_result",
+    [
+        (
+            S3Path("bucket", "nested/folder"),
+            S3Path("bucket", "other/nested/key"),
+            S3Path("bucket", "nested/folder/other/nested/key"),
+        ),
+        (S3Path("bucket", "folder"), S3Path("bucket", "key"), S3Path("bucket", "folder/key")),
+    ],
+)
+def test_add(path_a: S3Path, path_b: S3Path, expected_result: S3Path):
+    assert (path_a + path_b).to_hdfs_path() == expected_result.to_hdfs_path()
 
 
 @patch("adapta.storage.blob.s3_storage_client.AwsClient")
