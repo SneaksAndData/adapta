@@ -15,7 +15,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
-from collections.abc import Iterable
+from typing import Iterable
 
 from adapta.storage.models.astra import AstraPath
 from adapta.storage.models.aws import S3Path
@@ -25,7 +25,7 @@ from adapta.storage.models.local import LocalPath
 
 
 def parse_data_path(
-    path: str, candidates: Iterable[DataPath] = (AdlsGen2Path, LocalPath, WasbPath, AstraPath, S3Path)
+    path: str, candidates: Iterable[type[DataPath]] = (AdlsGen2Path, LocalPath, WasbPath, AstraPath, S3Path)
 ) -> DataPath | None:
     """
       Attempts to convert a string path to one of the known DataPath types.

@@ -17,7 +17,7 @@
 #
 
 from dataclasses import dataclass
-from collections.abc import Iterable
+from typing import Iterable
 
 from dataclasses_json import DataClassJsonMixin
 
@@ -53,7 +53,7 @@ class DataSocket(DataClassJsonMixin):
         ), "Fields alias, data_path and data_format must have a value provided to instantiate a DataSocket."
 
     def parse_data_path(
-        self, candidates: Iterable[DataPath] = (AdlsGen2Path, LocalPath, WasbPath, AstraPath, S3Path)
+        self, candidates: Iterable[type[DataPath]] = (AdlsGen2Path, LocalPath, WasbPath, AstraPath, S3Path)
     ) -> DataPath | None:
         """
           Attempts to convert this socket's data path to one of the known DataPath types.
