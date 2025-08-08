@@ -18,6 +18,7 @@
 
 from abc import abstractmethod, ABC
 from enum import Enum
+from typing import Self
 
 
 class DataProtocols(Enum):
@@ -86,3 +87,9 @@ class DataPath(ABC):
          Returns valid Delta-RS (https://github.com/delta-io/delta-rs) path from this class.
         :return:
         """
+
+    def __add__(self, other: Self) -> Self:
+        """
+        Concatenate two DataPaths into a new DataPath.
+        """
+        return self.from_hdfs_path("/".join([self.to_hdfs_path(), other.path]))
