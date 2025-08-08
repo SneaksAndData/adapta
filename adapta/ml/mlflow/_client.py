@@ -17,7 +17,7 @@
 #
 
 import os
-from typing import List, Optional, Dict, Any
+from typing import Any
 
 import mlflow
 from mlflow.entities.model_registry import ModelVersion

@@ -21,7 +21,7 @@ import sys
 from io import TextIOWrapper
 from logging import StreamHandler
 
-from typing import IO, Optional
+from typing import IO
 
 
 class SafeStreamHandler(StreamHandler):

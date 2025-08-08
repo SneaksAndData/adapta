@@ -3,7 +3,6 @@ This module contains the MetaFrame class which contains structured data for a da
 The MetaFrame can be used to convert the latent representation to other formats.
 """
 from abc import ABC
-from typing import Optional
 from collections.abc import Callable, Iterable
 
 import pandas

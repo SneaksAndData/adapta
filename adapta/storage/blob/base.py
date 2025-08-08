@@ -17,7 +17,7 @@
 #
 
 from abc import ABC, abstractmethod
-from typing import Optional, Dict, Type, TypeVar
+from typing import TypeVar
 from collections.abc import Iterator, Callable
 
 from adapta.security.clients import AuthenticationClient

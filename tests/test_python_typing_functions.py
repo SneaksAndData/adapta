@@ -1,5 +1,5 @@
 import sys
-from typing import Optional, Union, List, Tuple, Any
+from typing import Any
 
 import pytest
 
@@ -9,12 +9,12 @@ from adapta.utils.python_typing import is_optional
 @pytest.mark.parametrize(
     "type_,expected",
     [
-        (Optional[Union[str, int]], True),
-        (Optional[str], True),
-        (Union[str, None], True),  # Same as Optional[str]
-        (Union[str, Optional[int]], True),  # Same as Union[str, int, None], which is an optional type
+        (str | int | None, True),
+        (str | None, True),
+        (str | None, True),  # Same as Optional[str]
+        (str | int | None, True),  # Same as Union[str, int, None], which is an optional type
         (str, False),
-        (Union[str, int], False),
+        (str | int, False),
         (list[str], False),
         (tuple[int, ...], False),
     ],

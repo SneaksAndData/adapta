@@ -18,7 +18,7 @@
 
 import logging
 from logging import Handler, StreamHandler
-from typing import List, Optional, Dict, final
+from typing import final
 
 from adapta.logs._internal_logger import _InternalLogger
 from adapta.logs.models import LogLevel

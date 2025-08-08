@@ -18,7 +18,7 @@ import configparser
 import importlib
 import pathlib
 import tempfile
-from typing import Optional, Dict, Any, Literal
+from typing import Any, Literal
 
 import mlflow
 from mlflow.pyfunc import PythonModel

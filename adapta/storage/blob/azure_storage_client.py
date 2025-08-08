@@ -21,7 +21,7 @@ from datetime import datetime, timedelta
 from functools import partial
 import signal
 from threading import Thread
-from typing import Union, Optional, Dict, Type, TypeVar, List, final
+from typing import TypeVar, final
 from collections.abc import Iterator, Callable
 
 from azure.core.paging import ItemPaged

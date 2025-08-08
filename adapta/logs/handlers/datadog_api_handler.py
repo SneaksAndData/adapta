@@ -25,7 +25,6 @@ import platform
 import traceback
 from json import JSONDecodeError
 from logging import LogRecord, Handler
-from typing import List, Optional, Dict, Any
 from urllib.parse import urlparse
 
 import backoff

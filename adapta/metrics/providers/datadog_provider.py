@@ -20,7 +20,6 @@ import logging
 import os
 import sys
 from enum import Enum
-from typing import Dict, Union, Optional
 
 from datadog import initialize, statsd, api
 from datadog_api_client.v1.model.metric_metadata import MetricMetadata

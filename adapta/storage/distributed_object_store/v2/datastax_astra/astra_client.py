@@ -394,12 +394,12 @@ class AstraClient:
         def map_to_column(  # pylint: disable=R0911
             python_type: type,
         ) -> (
-            tuple[type[columns.List],] |
-            tuple[type[columns.Map],] |
-            tuple[type[Column],] |
-            tuple[type[Column], type[Column]] |
-            tuple[type[Column], type[Column], type[Column]] |
-            tuple[type[columns.List], columns.Map]
+            tuple[type[columns.List],]
+            | tuple[type[columns.Map],]
+            | tuple[type[Column],]
+            | tuple[type[Column], type[Column]]
+            | tuple[type[Column], type[Column], type[Column]]
+            | tuple[type[columns.List], columns.Map]
         ):
             if python_type is type(None):
                 raise TypeError("NoneType cannot be mapped to any existing table column types")

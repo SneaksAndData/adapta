@@ -3,7 +3,6 @@ Rate limit decorator.
 """
 from enum import Enum
 from functools import wraps
-from typing import Optional
 from collections.abc import Callable
 
 from limits.storage import storage_from_string

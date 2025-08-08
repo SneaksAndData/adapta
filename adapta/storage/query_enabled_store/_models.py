@@ -21,7 +21,7 @@ import re
 from abc import ABC, abstractmethod
 from enum import Enum
 from pydoc import locate
-from typing import TypeVar, Generic, Type, Union, final, Optional
+from typing import TypeVar, Generic, final
 from collections.abc import Iterator
 
 from adapta.storage.models.base import DataPath

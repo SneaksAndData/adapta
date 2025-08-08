@@ -15,7 +15,6 @@
 #
 
 import logging
-from typing import Optional, Dict
 
 from adapta.logs.models import CompositeLogMetadata, LogLevel
 

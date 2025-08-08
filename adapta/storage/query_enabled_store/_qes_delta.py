@@ -4,7 +4,7 @@
 import re
 from dataclasses import dataclass
 from pydoc import locate
-from typing import final, Union, Optional, Type
+from typing import final
 from collections.abc import Iterator
 
 from dataclasses_json import DataClassJsonMixin

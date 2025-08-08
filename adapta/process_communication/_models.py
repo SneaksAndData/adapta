@@ -17,7 +17,6 @@
 #
 
 from dataclasses import dataclass
-from typing import Optional, List
 from collections.abc import Iterable
 
 from dataclasses_json import DataClassJsonMixin

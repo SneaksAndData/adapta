@@ -114,12 +114,12 @@ class CassandraModelMapper(ABC):
         self,
         type_to_map: type,
     ) -> (
-        tuple[type[columns.List],] |
-        tuple[type[columns.Map],] |
-        tuple[type[Column],] |
-        tuple[type[Column], type[Column]] |
-        tuple[type[Column], type[Column], type[Column]] |
-        tuple[type[columns.List], tuple[type[columns.Map]]]
+        tuple[type[columns.List],]
+        | tuple[type[columns.Map],]
+        | tuple[type[Column],]
+        | tuple[type[Column], type[Column]]
+        | tuple[type[Column], type[Column], type[Column]]
+        | tuple[type[columns.List], tuple[type[columns.Map]]]
     ):
         """Map Type to Cassandra column type.
 
@@ -331,12 +331,12 @@ class PanderaPolarsMapper(CassandraModelMapper):
         self,
         type_to_map: type,
     ) -> (
-        tuple[type[columns.List],] |
-        tuple[type[columns.Map],] |
-        tuple[type[Column],] |
-        tuple[type[Column], type[Column]] |
-        tuple[type[Column], type[Column], type[Column]] |
-        tuple[type[columns.List], columns.Map]
+        tuple[type[columns.List],]
+        | tuple[type[columns.Map],]
+        | tuple[type[Column],]
+        | tuple[type[Column], type[Column]]
+        | tuple[type[Column], type[Column], type[Column]]
+        | tuple[type[columns.List], columns.Map]
     ):
         mapping = {
             polars.Int8: (columns.TinyInt,),

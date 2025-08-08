@@ -18,7 +18,6 @@ Models for log messages
 #
 
 from dataclasses import dataclass
-from typing import Optional, Dict
 
 
 @dataclass

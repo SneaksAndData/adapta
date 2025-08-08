@@ -18,7 +18,7 @@
 
 import os
 
-from typing import Optional, Type, Dict, TypeVar, final
+from typing import TypeVar, final
 from collections.abc import Callable, Iterator
 from boto3 import Session
 from botocore.config import Config

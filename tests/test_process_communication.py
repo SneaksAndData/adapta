@@ -14,7 +14,6 @@
 #
 
 from contextlib import nullcontext as does_not_raise, AbstractContextManager
-from typing import Optional, Union, Dict
 
 import pytest
 

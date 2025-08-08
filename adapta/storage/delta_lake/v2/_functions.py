@@ -20,7 +20,6 @@
 import datetime
 import hashlib
 import zlib
-from typing import Optional, Union, List, Tuple
 from collections.abc import Iterator, Iterable
 from warnings import warn
 
