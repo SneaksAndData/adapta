@@ -32,6 +32,7 @@ class DataProtocols(Enum):
     HIVE = "hive"
     ASTRA = "astra"
     S3 = "s3"
+    TRINO = "trino"
 
 
 class DataPath(ABC):

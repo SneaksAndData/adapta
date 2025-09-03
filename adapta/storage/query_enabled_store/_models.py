@@ -44,6 +44,7 @@ class BundledQueryEnabledStores(Enum):
     DELTA = "adapta.storage.query_enabled_store.DeltaQueryEnabledStore"
     ASTRA = "adapta.storage.query_enabled_store.AstraQueryEnabledStore"
     LOCAL = "adapta.storage.query_enabled_store.LocalQueryEnabledStore"
+    TRINO = "adapta.storage.query_enabled_store.TrinoQueryEnabledStore"
 
 
 BUNDLED_STORES = {store.name: store.value for store in BundledQueryEnabledStores}

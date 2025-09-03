@@ -5,6 +5,7 @@ from adapta.storage.query_enabled_store import (
     DeltaQueryEnabledStore,
     AstraQueryEnabledStore,
     LocalQueryEnabledStore,
+    TrinoQueryEnabledStore
 )
 
 
@@ -58,6 +59,18 @@ from adapta.storage.query_enabled_store import (
         (
             "qes://engine=LOCAL;plaintext_credentials={};settings={}",
             LocalQueryEnabledStore,
+        ),
+        (
+            'qes://engine=TRINO;plaintext_credentials={"oauth2_username": "test"};settings={"host": "tester", "port": 443}',
+            TrinoQueryEnabledStore,
+        ),
+        (
+            'qes://engine=adapta.storage.query_enabled_store.TrinoQueryEnabledStore;plaintext_credentials={"oauth2_username": "test"};settings={"host": "tester", "port": "443"}',
+            TrinoQueryEnabledStore,
+        ),
+        (
+            'qes://engine=TRINO;plaintext_credentials={"oauth2_username": "test"};settings={"host": "tester"}',
+            TrinoQueryEnabledStore,
         ),
     ],
 )
