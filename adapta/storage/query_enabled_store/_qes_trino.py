@@ -11,7 +11,11 @@ from dataclasses_json import DataClassJsonMixin
 
 from adapta.storage.database.v3.trino_sql import TrinoClient
 from adapta.storage.models import TrinoPath
-from adapta.storage.models.filter_expression import Expression, compile_expression, ArrowFilterExpression
+from adapta.storage.models.filter_expression import (
+    Expression,
+    compile_expression,
+    TrinoFilterExpression,
+)
 from adapta.storage.query_enabled_store._models import (
     QueryEnabledStore,
     CONNECTION_STRING_REGEX,
@@ -81,35 +85,18 @@ class TrinoQueryEnabledStore(QueryEnabledStore[TrinoCredential, TrinoSettings]):
         options: dict[QueryEnabledStoreOptions, any] | None = None,
         limit: int | None = None,
     ) -> MetaFrame | Iterator[MetaFrame]:
+        query = self._build_query(query=path.query, filter_expression=filter_expression, columns=columns, limit=limit)
+
         with self._trino_client as trino_client:
             if QueryEnabledStoreOptions.BATCH_SIZE in options:
                 data = concat(
                     trino_client.query(
-                        query=path.query,
+                        query=query,
                         batch_size=options[QueryEnabledStoreOptions.BATCH_SIZE],
                     )
                 )
             else:
-                data = concat(trino_client.query(query=path.query))
-
-        if limit or columns or filter_expression:
-            pyarrow_data = data.to_polars().to_arrow()
-
-            if filter_expression:
-                row_filter = (
-                    compile_expression(filter_expression, ArrowFilterExpression)
-                    if isinstance(filter_expression, Expression)
-                    else filter_expression
-                )
-                pyarrow_data = pyarrow_data.filter(row_filter)
-
-            if columns:
-                pyarrow_data = pyarrow_data.select(columns)
-
-            if limit:
-                pyarrow_data = pyarrow_data.slice(0, limit)
-
-            data = MetaFrame.from_arrow(pyarrow_data)
+                data = concat(trino_client.query(query=query))
 
         return data
 
@@ -125,3 +112,22 @@ class TrinoQueryEnabledStore(QueryEnabledStore[TrinoCredential, TrinoSettings]):
             credentials=TrinoCredential.from_json(credentials),
             settings=TrinoSettings.from_json(settings),
         )
+
+    @staticmethod
+    def _build_query(query: str, filter_expression: Expression, columns: list[str], limit: int | None) -> str:
+        """
+        Build the final query by applying the filter expression, selected columns, and limit to the base query.
+        """
+
+        if filter_expression or columns or limit:
+            columns_to_select = ", ".join(columns) if columns else "*"
+            query = f"SELECT {columns_to_select} FROM ({query})"
+
+            if filter_expression:
+                compiled_expression = compile_expression(expression=filter_expression, target=TrinoFilterExpression)
+                query = f"{query} WHERE {compiled_expression}"
+
+            if limit:
+                query = f"{query} LIMIT {limit}"
+
+        return query

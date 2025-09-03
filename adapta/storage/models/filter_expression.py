@@ -394,6 +394,42 @@ class ArrowFilterExpression(FilterExpression[pyarrow.compute.Expression]):
         return filter_operation.value["arrow"](compiled_result_a, compiled_result_b)
 
 
+class TrinoFilterExpression(FilterExpression[str]):
+    """
+    A concrete implementation of the 'FilterExpression' abstract class for Trino SQL.
+    Compiles filter expressions into Trino-compatible SQL WHERE clause fragments.
+    """
+
+    def _compile_base_case(self, field_name: str, field_values: Any, operation: FilterExpressionOperation) -> str:
+        # Map EQ to '=' for Trino
+        if operation == FilterExpressionOperation.EQ:
+            return f"{field_name} = {self._format_value(field_values)}"
+
+        # Handle IN as a series of ORs for Trino
+        if operation == FilterExpressionOperation.IN:
+            if not isinstance(field_values, list):
+                raise ValueError("IN operation requires a list of values")
+            return "(" + " or ".join(f"{field_name} = {self._format_value(v)}" for v in field_values) + ")"
+        # Handle other operations
+        op_str = operation.to_string()
+        return f"{field_name} {op_str} {self._format_value(field_values)}"
+
+    def _combine_results(
+        self, compiled_result_a: str, compiled_result_b: str, operation: FilterExpressionOperation
+    ) -> str:
+        op_str = operation.to_string()
+        return f"({compiled_result_a} {op_str} {compiled_result_b})"
+
+    @staticmethod
+    def _format_value(value: Any) -> str:
+        # Format value for SQL: quote strings, leave numbers as is and return NULL for None
+        if isinstance(value, str):
+            return f"'{value}'"
+        if value is None:
+            return "NULL"
+        return str(value)
+
+
 def compile_expression(expression: Expression, target: type[FilterExpression[TCompileResult]]) -> TCompileResult:
     """
     Compiles a filter expression using the specified target implementation.
