@@ -5,7 +5,7 @@ from adapta.storage.query_enabled_store import (
     DeltaQueryEnabledStore,
     AstraQueryEnabledStore,
     LocalQueryEnabledStore,
-    TrinoQueryEnabledStore
+    TrinoQueryEnabledStore,
 )
 
 
