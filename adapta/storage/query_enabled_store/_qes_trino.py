@@ -11,7 +11,7 @@ from dataclasses_json import DataClassJsonMixin
 
 from adapta.storage.database.v3.trino_sql import TrinoClient
 from adapta.storage.models import TrinoPath
-from adapta.storage.models.filter_expression import Expression
+from adapta.storage.models.filter_expression import Expression, compile_expression, ArrowFilterExpression
 from adapta.storage.query_enabled_store._models import (
     QueryEnabledStore,
     CONNECTION_STRING_REGEX,
@@ -83,14 +83,35 @@ class TrinoQueryEnabledStore(QueryEnabledStore[TrinoCredential, TrinoSettings]):
     ) -> MetaFrame | Iterator[MetaFrame]:
         with self._trino_client as trino_client:
             if QueryEnabledStoreOptions.BATCH_SIZE in options:
-                return concat(
+                data = concat(
                     trino_client.query(
                         query=path.query,
                         batch_size=options[QueryEnabledStoreOptions.BATCH_SIZE],
                     )
                 )
+            else:
+                data = concat(trino_client.query(query=path.query))
 
-            return concat(trino_client.query(query=path.query))
+        if limit or columns or filter_expression:
+            pyarrow_data = data.to_polars().to_arrow()
+
+            if filter_expression:
+                row_filter = (
+                    compile_expression(filter_expression, ArrowFilterExpression)
+                    if isinstance(filter_expression, Expression)
+                    else filter_expression
+                )
+                pyarrow_data = pyarrow_data.filter(row_filter)
+
+            if columns:
+                pyarrow_data = pyarrow_data.select(columns)
+
+            if limit:
+                pyarrow_data = pyarrow_data.slice(0, limit)
+
+            data = MetaFrame.from_arrow(pyarrow_data)
+
+        return data
 
     def _apply_query(self, query: str) -> MetaFrame | Iterator[MetaFrame]:
         raise NotImplementedError("Text queries are not supported by Trino QES")
