@@ -7,6 +7,7 @@ from adapta.storage.models.filter_expression import (
     FilterExpression,
     ArrowFilterExpression,
     AstraFilterExpression,
+    TrinoFilterExpression,
     compile_expression,
 )
 
@@ -30,40 +31,61 @@ TEST_ENTITY_SCHEMA: TestEntity = PythonSchemaEntity(TestEntity)
 
 
 @pytest.mark.parametrize(
-    "filter_expr, pyarrow_expected_expr, astra_expected_expr",
+    "filter_expr, pyarrow_expected_expr, astra_expected_expr, trino_expected_expr",
     [
-        (FilterField(TEST_ENTITY_SCHEMA.col_a) == "test", (pyarrow_field("col_a") == "test"), [{"col_a": "test"}]),
+        (
+            FilterField(TEST_ENTITY_SCHEMA.col_a) == "test",
+            (pyarrow_field("col_a") == "test"),
+            [{"col_a": "test"}],
+            "col_a = 'test'",
+        ),
         (
             FilterField(TEST_ENTITY_SCHEMA.col_a) >= "test",
             (pyarrow_field("col_a") >= "test"),
             [{"col_a__gte": "test"}],
+            "col_a >= 'test'",
         ),
-        (FilterField(TEST_ENTITY_SCHEMA.col_a) > "test", (pyarrow_field("col_a") > "test"), [{"col_a__gt": "test"}]),
-        (FilterField(TEST_ENTITY_SCHEMA.col_a) < "test", (pyarrow_field("col_a") < "test"), [{"col_a__lt": "test"}]),
+        (
+            FilterField(TEST_ENTITY_SCHEMA.col_a) > "test",
+            (pyarrow_field("col_a") > "test"),
+            [{"col_a__gt": "test"}],
+            "col_a > 'test'",
+        ),
+        (
+            FilterField(TEST_ENTITY_SCHEMA.col_a) < "test",
+            (pyarrow_field("col_a") < "test"),
+            [{"col_a__lt": "test"}],
+            "col_a < 'test'",
+        ),
         (
             FilterField(TEST_ENTITY_SCHEMA.col_a) <= "test",
             (pyarrow_field("col_a") <= "test"),
             [{"col_a__lte": "test"}],
+            "col_a <= 'test'",
         ),
         (
             FilterField(TEST_ENTITY_SCHEMA.col_a).isin(["val1", "val2"]),
             (pyarrow_field("col_a").isin(["val1", "val2"])),
             [{"col_a__in": ["val1", "val2"]}],
+            "col_a IN ('val1', 'val2')",
         ),
         (
             (FilterField(TEST_ENTITY_SCHEMA.col_a) == "test") & (FilterField(TEST_ENTITY_SCHEMA.col_b) == "other"),
             (pyarrow_field("col_a") == "test") & (pyarrow_field("col_b") == "other"),
             [{"col_a": "test", "col_b": "other"}],
+            "(col_a = 'test' AND col_b = 'other')",
         ),
         (
             (FilterField(TEST_ENTITY_SCHEMA.col_a) == "test") & (FilterField(TEST_ENTITY_SCHEMA.col_c).isin([1, 2, 3])),
             ((pyarrow_field("col_a") == "test") & (pyarrow_field("col_c").isin([1, 2, 3]))),
             [{"col_a": "test", "col_c__in": [1, 2, 3]}],
+            "(col_a = 'test' AND col_c IN (1, 2, 3))",
         ),
         (
             (FilterField(TEST_ENTITY_SCHEMA.col_a) == "test") | (FilterField(TEST_ENTITY_SCHEMA.col_b) == "other"),
             (pyarrow_field("col_a") == "test") | (pyarrow_field("col_b") == "other"),
             [{"col_a": "test"}, {"col_b": "other"}],
+            "(col_a = 'test' OR col_b = 'other')",
         ),
         (
             (FilterField(TEST_ENTITY_SCHEMA.col_a) == "test")
@@ -71,18 +93,21 @@ TEST_ENTITY_SCHEMA: TestEntity = PythonSchemaEntity(TestEntity)
             | (FilterField(TEST_ENTITY_SCHEMA.col_c) == 1),
             ((pyarrow_field("col_a") == "test") | (pyarrow_field("col_b") == "other") | (pyarrow_field("col_c") == 1)),
             [{"col_a": "test"}, {"col_b": "other"}, {"col_c": 1}],
+            "((col_a = 'test' OR col_b = 'other') OR col_c = 1)",
         ),
         (
             ((FilterField(TEST_ENTITY_SCHEMA.col_a) == "test") | (FilterField(TEST_ENTITY_SCHEMA.col_b) == "other"))
             & (FilterField(TEST_ENTITY_SCHEMA.col_c) == 1),
             ((pyarrow_field("col_a") == "test") | (pyarrow_field("col_b") == "other")) & (pyarrow_field("col_c") == 1),
             [{"col_a": "test", "col_c": 1}, {"col_b": "other", "col_c": 1}],
+            "((col_a = 'test' OR col_b = 'other') AND col_c = 1)",
         ),
         (
             (FilterField(TEST_ENTITY_SCHEMA.col_a) == "test") & (FilterField(TEST_ENTITY_SCHEMA.col_c) == 1)
             | (FilterField(TEST_ENTITY_SCHEMA.col_b) == "other"),
             ((pyarrow_field("col_a") == "test") & (pyarrow_field("col_c") == 1) | (pyarrow_field("col_b") == "other")),
             [{"col_a": "test", "col_c": 1}, {"col_b": "other"}],
+            "((col_a = 'test' AND col_c = 1) OR col_b = 'other')",
         ),
         (
             (
@@ -96,6 +121,7 @@ TEST_ENTITY_SCHEMA: TestEntity = PythonSchemaEntity(TestEntity)
                 & ((pyarrow_field("col_c") == 2) | (pyarrow_field("col_d").isin([1, 2])))
             ),
             ([{"col_a": "test", "col_c": 1}, {"col_b": "other", "col_c": 2}, {"col_b": "other", "col_d__in": [1, 2]}]),
+            "((col_a = 'test' AND col_c = 1) OR (col_b = 'other' AND (col_c = 2 OR col_d IN (1, 2))))",
         ),
     ],
 )
@@ -103,9 +129,11 @@ def test_generic_filtering(
     filter_expr: FilterField | FilterExpression,
     pyarrow_expected_expr: pc.Expression,
     astra_expected_expr: dict[str, Any],
+    trino_expected_expr: str,
 ):
     assert compile_expression(filter_expr, ArrowFilterExpression).equals(pyarrow_expected_expr)
     assert compile_expression(filter_expr, AstraFilterExpression) == astra_expected_expr
+    assert compile_expression(filter_expr, TrinoFilterExpression) == trino_expected_expr
 
 
 @pytest.mark.parametrize(
@@ -131,7 +159,7 @@ def test_print_filter_expression(filter_expr: FilterExpression, expected_output:
 
 
 @pytest.mark.parametrize(
-    "filter_expr, pyarrow_expected_expr, astra_expected_expr",
+    "filter_expr, pyarrow_expected_expr, astra_expected_expr, trino_expected_expr",
     [
         (
             (FilterField(TEST_ENTITY_SCHEMA.col_d).isin([str(i) for i in range(1, 28)])),
@@ -142,6 +170,7 @@ def test_print_filter_expression(filter_expr: FilterExpression, expected_output:
                     {"col_d__in": [str(i) for i in range(15, 28)]},
                 ]
             ),
+            "col_d IN (" + ", ".join(["'" + str(i) + "'" for i in range(1, 28)]) + ")",
         ),
         (
             (FilterField(TEST_ENTITY_SCHEMA.col_d).isin([str(i) for i in range(1, 26)])),
@@ -151,6 +180,7 @@ def test_print_filter_expression(filter_expr: FilterExpression, expected_output:
                     {"col_d__in": [str(i) for i in range(1, 26)]},
                 ]
             ),
+            "col_d IN (" + ", ".join(["'" + str(i) + "'" for i in range(1, 26)]) + ")",
         ),
         (
             (FilterField(TEST_ENTITY_SCHEMA.col_d).isin([str(i) for i in range(1, 101)])),
@@ -163,6 +193,7 @@ def test_print_filter_expression(filter_expr: FilterExpression, expected_output:
                     {"col_d__in": [str(i) for i in range(76, 101)]},
                 ]
             ),
+            "col_d IN (" + ", ".join(["'" + str(i) + "'" for i in range(1, 101)]) + ")",
         ),
     ],
 )
@@ -170,9 +201,11 @@ def test_long_is_in_list(
     filter_expr: FilterField | FilterExpression,
     pyarrow_expected_expr: pc.Expression,
     astra_expected_expr: dict[str, Any],
+    trino_expected_expr: str,
 ):
     assert compile_expression(filter_expr, ArrowFilterExpression).equals(pyarrow_expected_expr)
     assert compile_expression(filter_expr, AstraFilterExpression) == astra_expected_expr
+    assert compile_expression(filter_expr, TrinoFilterExpression) == trino_expected_expr
 
 
 @pytest.mark.parametrize(
