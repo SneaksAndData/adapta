@@ -1,6 +1,7 @@
 """
     Models for generating filter expressions for PyArrow and Astra.
 """
+import datetime
 import math
 from abc import ABC, abstractmethod
 from typing import final, Any, TypeVar, Generic, Self
@@ -409,7 +410,7 @@ class TrinoFilterExpression(FilterExpression[str]):
         if operation == FilterExpressionOperation.IN:
             if not isinstance(field_values, list):
                 raise ValueError("IN operation requires a list of values")
-            return "(" + " or ".join(f"{field_name} = {self._format_value(v)}" for v in field_values) + ")"
+            return f"{field_name} IN ({', '.join(self._format_value(v) for v in field_values)})"
         # Handle other operations
         op_str = operation.to_string()
         return f"{field_name} {op_str} {self._format_value(field_values)}"
@@ -425,6 +426,10 @@ class TrinoFilterExpression(FilterExpression[str]):
         # Format value for SQL: quote strings, leave numbers as is and return NULL for None
         if isinstance(value, str):
             return f"'{value}'"
+        if isinstance(value, datetime.datetime):
+            return f"TIMESTAMP '{value}'"
+        if isinstance(value, datetime.date):
+            return f"DATE '{value}'"
         if value is None:
             return "NULL"
         return str(value)
