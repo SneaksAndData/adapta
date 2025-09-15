@@ -121,6 +121,7 @@ class AstraClient:
         self._tmp_bundle_path = os.path.join(tempfile.gettempdir(), ".astra")
         self._client_name = client_name
         self._session: Session | None = None
+        self._cluster: Cluster | None = None
         self._reconnect_base_delay_ms = reconnect_base_delay_ms
         self._reconnect_max_delay_ms = reconnect_max_delay_ms
         self._socket_connection_timeout = socket_connection_timeout_ms
@@ -160,7 +161,7 @@ class AstraClient:
         )
 
         # https://docs.datastax.com/en/developer/python-driver/3.28/getting_started/
-        self._session = Cluster(
+        self._cluster = Cluster(
             execution_profiles={EXEC_PROFILE_DEFAULT: profile},
             cloud=cloud_config,
             auth_provider=auth_provider,
@@ -177,7 +178,9 @@ class AstraClient:
             ]
             if platform.system().lower() != "darwin"
             else [(IPPROTO_TCP, TCP_NODELAY, 1)],
-        ).connect(self._keyspace)
+        )
+
+        self._session = self._cluster.connect(self._keyspace)
 
         set_session(self._session)
 
@@ -188,7 +191,9 @@ class AstraClient:
         Disconnect from the database and destroy the session.
         """
         self._session.shutdown()
+        self._cluster.shutdown()
         self._session = None
+        self._cluster = None
 
     def __enter__(self) -> "AstraClient":
         """
