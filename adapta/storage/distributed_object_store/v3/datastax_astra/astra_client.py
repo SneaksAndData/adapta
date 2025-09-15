@@ -188,6 +188,7 @@ class AstraClient:
         Disconnect from the database and destroy the session.
         """
         self._session.shutdown()
+        self._cl
         self._session = None
 
     def __enter__(self) -> "AstraClient":

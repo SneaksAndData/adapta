@@ -20,4 +20,9 @@ from adapta.storage.query_enabled_store._models import *
 from adapta.storage.query_enabled_store._qes_astra import *
 from adapta.storage.query_enabled_store._qes_delta import *
 from adapta.storage.query_enabled_store._qes_local import *
-from adapta.storage.query_enabled_store._qes_trino import *
+
+try:
+    from adapta.storage.query_enabled_store._qes_trino import *
+except (ImportError, ModuleNotFoundError) as ex:
+    print(f"Failed to import from adapta.storage.query_enabled_store._qes_trino: {ex}")
+    pass
