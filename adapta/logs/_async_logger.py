@@ -21,7 +21,7 @@ import asyncio
 import logging
 import threading
 from contextlib import asynccontextmanager
-from logging.handlers import QueueHandler, QueueListener, _QueueLike
+from logging.handlers import QueueHandler, QueueListener
 from queue import Queue
 from typing import final, TypeVar, Generic
 
@@ -90,7 +90,6 @@ class _AsyncLogger(Generic[TLogger], _InternalLogger):
         fixed_template: dict[str, dict[str, str]] | None = None,
         fixed_template_delimiter=", ",
         global_tags: dict[str, str] | None = None,
-        queue_class: type[_QueueLike] | None = None,
     ):
         super().__init__(fixed_template, fixed_template_delimiter, global_tags)
         self._logger: MetadataLogger = logging.getLogger(name)
