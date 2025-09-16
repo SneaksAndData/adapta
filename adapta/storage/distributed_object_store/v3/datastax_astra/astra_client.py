@@ -52,6 +52,7 @@ from cassandra.cluster import (  # pylint: disable=E0611
     ExecutionProfile,
     EXEC_PROFILE_DEFAULT,
     _NOT_SET,
+    DefaultConnection,
 )
 from cassandra.cqlengine.connection import set_session
 from cassandra.cqlengine.models import Model
@@ -113,6 +114,7 @@ class AstraClient:
         log_transient_errors=True,
         metadata_fetch_timeout_s=30,
         protocol_version=_NOT_SET,
+        connection_class=DefaultConnection,
     ):
         self._secure_connect_bundle_bytes = secure_connect_bundle_bytes or os.getenv("PROTEUS__ASTRA_BUNDLE_BYTES")
         self._client_id = client_id or os.getenv("PROTEUS__ASTRA_CLIENT_ID")
@@ -133,6 +135,7 @@ class AstraClient:
         self._transient_error_max_wait_s = transient_error_max_wait_s
         self._metadata_fetch_timeout_s = metadata_fetch_timeout_s
         self._protocol_version = protocol_version
+        self._connection_class = connection_class
         if log_transient_errors:
             logging.getLogger("backoff").addHandler(logging.StreamHandler())
 
@@ -162,6 +165,7 @@ class AstraClient:
 
         # https://docs.datastax.com/en/developer/python-driver/3.28/getting_started/
         self._cluster = Cluster(
+            connection_class=self._connection_class,
             execution_profiles={EXEC_PROFILE_DEFAULT: profile},
             cloud=cloud_config,
             auth_provider=auth_provider,
