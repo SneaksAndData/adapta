@@ -6,7 +6,7 @@
 # it should appear only once).
 disable=W0212,R0903,C0301,R0902
 
-max-positional-arguments = 15
-max-args = 15
+max-positional-arguments = 20
+max-args = 20
 max-locals = 20
 min-similarity-lines = 20

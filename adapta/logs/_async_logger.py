@@ -22,7 +22,7 @@ import logging
 import threading
 from contextlib import asynccontextmanager
 from logging.handlers import QueueHandler, QueueListener
-from multiprocessing import Queue
+from queue import Queue
 from typing import final, TypeVar, Generic
 
 from adapta.logs._internal import MetadataLogger
