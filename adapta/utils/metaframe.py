@@ -123,7 +123,7 @@ def concat(dataframes: Iterable[MetaFrame], options: Iterable[MetaFrameOptions] 
     :return: Concatenated MetaFrame.
     """
 
-    if not [df for df in dataframes]:
+    if not list(dataframes):
         return MetaFrame(
             data=[],
             convert_to_polars=lambda _: polars.DataFrame(),
