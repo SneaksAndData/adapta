@@ -1,3 +1,5 @@
+from collections.abc import Iterable
+
 import pandas
 import polars
 
@@ -16,7 +18,6 @@ def test_to_df():
     assert metaframe.to_pandas().equals(pandas.DataFrame({"A": [1, 2, 3]}))
     assert metaframe.to_polars().equals(polars.DataFrame({"A": [1, 2, 3]}))
 
-
 def test_concat():
     """
     Test the concat method and the PandasOptions.
@@ -31,7 +32,30 @@ def test_concat():
         convert_to_pandas=lambda x: pandas.DataFrame.from_dict(x),
         convert_to_polars=lambda x: polars.from_dict(x),
     )
-    metaframe = concat([metaframe1, metaframe2], options=[PandasOptions(ignore_index=True)])
+    metaframe = concat(dataframes=[metaframe1, metaframe2], options=[PandasOptions(ignore_index=True)])
+    assert metaframe.to_pandas().equals(pandas.DataFrame({"A": [1, 2, 3, 4, 5, 6]}))
+    assert metaframe.to_polars().equals(polars.DataFrame({"A": [1, 2, 3, 4, 5, 6]}))
+
+
+def test_concat_with_generator():
+    """
+    Test the concat method with a generator instead of a list.
+    """
+    metaframe1 = MetaFrame(
+        data={"A": [1, 2, 3]},
+        convert_to_pandas=lambda x: pandas.DataFrame.from_dict(x),
+        convert_to_polars=lambda x: polars.from_dict(x),
+    )
+    metaframe2 = MetaFrame(
+        data={"A": [4, 5, 6]},
+        convert_to_pandas=lambda x: pandas.DataFrame.from_dict(x),
+        convert_to_polars=lambda x: polars.from_dict(x),
+    )
+
+    # Create a generator instead of a list
+    metaframes_generator = (mf for mf in [metaframe1, metaframe2])
+
+    metaframe = concat(metaframes_generator, options=[PandasOptions(ignore_index=True)])
     assert metaframe.to_pandas().equals(pandas.DataFrame({"A": [1, 2, 3, 4, 5, 6]}))
     assert metaframe.to_polars().equals(polars.DataFrame({"A": [1, 2, 3, 4, 5, 6]}))
 
