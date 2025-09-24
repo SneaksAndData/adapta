@@ -36,6 +36,16 @@ def test_concat():
     assert metaframe.to_polars().equals(polars.DataFrame({"A": [1, 2, 3, 4, 5, 6]}))
 
 
+def test_empty_concat():
+    """
+    Test the concat method on empty dataframes.
+    """
+
+    metaframe = concat(dataframes=[])
+    assert metaframe.to_pandas().equals(pandas.DataFrame())
+    assert metaframe.to_polars().equals(polars.DataFrame())
+
+
 def test_from_df():
     """
     Test the from_pandas and from_polars methods.

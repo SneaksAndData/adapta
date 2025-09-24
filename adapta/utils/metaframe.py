@@ -122,6 +122,14 @@ def concat(dataframes: Iterable[MetaFrame], options: Iterable[MetaFrameOptions] 
     :param options: Options for the concatenation.
     :return: Concatenated MetaFrame.
     """
+
+    if not dataframes:
+        return MetaFrame(
+            data=[],
+            convert_to_polars=lambda _: polars.DataFrame(),
+            convert_to_pandas=lambda _: pandas.DataFrame(),
+        )
+
     if options is None:
         options = []
 
