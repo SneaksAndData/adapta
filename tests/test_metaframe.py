@@ -16,6 +16,7 @@ def test_to_df():
     assert metaframe.to_pandas().equals(pandas.DataFrame({"A": [1, 2, 3]}))
     assert metaframe.to_polars().equals(polars.DataFrame({"A": [1, 2, 3]}))
 
+
 def test_concat():
     """
     Test the concat method and the PandasOptions.
