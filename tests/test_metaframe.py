@@ -34,15 +34,15 @@ metaframe2 = MetaFrame(
     "dataframes,expected",
     [
         (
-            [metaframe1, metaframe2],  # list
+            [metaframe1.clone(), metaframe2.clone()],  # list
             polars.DataFrame({"A": [1, 2, 3, 4, 5, 6]}),
         ),
         (
-            (mf for mf in [metaframe1, metaframe2]),  # generator
+            (mf for mf in [metaframe1.clone(), metaframe2.clone()]),  # generator
             polars.DataFrame({"A": [1, 2, 3, 4, 5, 6]}),
         ),
         (
-            (metaframe1, metaframe2),  # tuple
+            (metaframe1.clone(), metaframe2.clone()),  # tuple
             polars.DataFrame({"A": [1, 2, 3, 4, 5, 6]}),
         ),
         ([], polars.DataFrame()),  # empty list
@@ -61,15 +61,15 @@ def test_concat_polars(dataframes, expected):
     "dataframes,expected",
     [
         (
-            [metaframe1, metaframe2],  # list
+            [metaframe1.clone(), metaframe2.clone()],  # list
             pandas.DataFrame({"A": [1, 2, 3, 4, 5, 6]}),
         ),
         (
-            (mf for mf in [metaframe1, metaframe2]),  # generator
+            (mf for mf in [metaframe1.clone(), metaframe2.clone()]),  # generator
             pandas.DataFrame({"A": [1, 2, 3, 4, 5, 6]}),
         ),
         (
-            (metaframe1, metaframe2),  # tuple
+            (metaframe1.clone(), metaframe2.clone()),  # tuple
             pandas.DataFrame({"A": [1, 2, 3, 4, 5, 6]}),
         ),
         (
@@ -85,6 +85,27 @@ def test_concat_pandas(dataframes, expected):
 
     metaframe = concat(dataframes=dataframes, options=[PandasOptions(ignore_index=True)])
     assert metaframe.to_pandas().equals(expected)
+
+
+@pytest.mark.parametrize(
+    "dataframes,expected_pandas, expected_polars",
+    [
+        (
+            [metaframe1.clone(), metaframe2.clone()],  # list
+            pandas.DataFrame({"A": [1, 2, 3, 4, 5, 6]}),
+            polars.DataFrame({"A": [1, 2, 3, 4, 5, 6]}),
+        ),
+    ],
+)
+def test_concat(dataframes, expected_pandas, expected_polars):
+    """
+    Test the concat method for pandas dataframes and the PandasOptions.
+    """
+
+    metaframe1_ = concat(dataframes=dataframes, options=[PandasOptions(ignore_index=True)])
+    metaframe2_ = metaframe1.clone()
+    assert metaframe1_.to_pandas().equals(expected_pandas)
+    assert metaframe2_.to_polars().equals(expected_polars)
 
 
 def test_from_df():

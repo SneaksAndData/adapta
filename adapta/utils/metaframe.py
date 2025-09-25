@@ -5,6 +5,7 @@ The MetaFrame can be used to convert the latent representation to other formats.
 import itertools
 from abc import ABC
 from collections.abc import Callable, Iterable
+from typing import Self
 
 import pandas
 import polars
@@ -44,9 +45,20 @@ class MetaFrame:
         convert_to_polars: Callable[[any], polars.DataFrame],
         convert_to_pandas: Callable[[any], pandas.DataFrame],
     ):
+        self._materialized = False
         self._data = data
         self._convert_to_polars = convert_to_polars
         self._convert_to_pandas = convert_to_pandas
+
+    def clone(self) -> Self:
+        """
+        Clone the MetaFrame.
+        """
+        return MetaFrame(
+            data=self._data,
+            convert_to_polars=self._convert_to_polars,
+            convert_to_pandas=self._convert_to_pandas,
+        )
 
     @classmethod
     def from_pandas(
@@ -107,12 +119,18 @@ class MetaFrame:
         """
         Convert the MetaFrame to a pandas DataFrame.
         """
+        if self._materialized:
+            raise RuntimeError("no")
+        self._materialized = True
         return self._convert_to_pandas(self._data)
 
     def to_polars(self) -> polars.DataFrame:
         """
         Convert the MetaFrame to a Polars DataFrame.
         """
+        if self._materialized:
+            raise RuntimeError("no")
+        self._materialized = True
         return self._convert_to_polars(self._data)
 
 
@@ -125,17 +143,15 @@ def concat(dataframes: Iterable[MetaFrame], options: Iterable[MetaFrameOptions] 
     """
 
     dataframes_iter = iter(dataframes)
-    try:
-        first_dataframe = next(dataframes_iter)
-    except StopIteration:
-        # The iterable was empty from the start.
+    first = next(dataframes_iter, None)
+    if not first:
         return MetaFrame(
             data=[],
             convert_to_polars=lambda _: polars.DataFrame(),
             convert_to_pandas=lambda _: pandas.DataFrame(),
         )
 
-    dataframes = itertools.chain([first_dataframe], dataframes_iter)
+    dataframes = itertools.chain([first], dataframes_iter)
 
     if options is None:
         options = []
@@ -143,7 +159,7 @@ def concat(dataframes: Iterable[MetaFrame], options: Iterable[MetaFrameOptions] 
     return MetaFrame(
         data=dataframes,
         convert_to_polars=lambda data: polars.concat(
-            [df.to_polars() for df in data],
+            map(lambda df: df.to_polars(), data),
             **{
                 k: v
                 for options_object in options
@@ -152,7 +168,7 @@ def concat(dataframes: Iterable[MetaFrame], options: Iterable[MetaFrameOptions] 
             }
         ),
         convert_to_pandas=lambda data: pandas.concat(
-            [df.to_pandas() for df in data],
+            map(lambda df: df.to_pandas(), data),
             **{
                 k: v
                 for options_object in options
