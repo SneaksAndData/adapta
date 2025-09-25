@@ -123,36 +123,40 @@ def concat(dataframes: Iterable[MetaFrame], options: Iterable[MetaFrameOptions] 
     :return: Concatenated MetaFrame.
     """
 
-    dataframe_list = list(dataframes)
+    def _get_polars_concatenator(data: Iterable[MetaFrame], options: Iterable[MetaFrameOptions]) -> polars.DataFrame:
+        data_list = [df.to_polars() for df in data]
+        if not data_list:
+            return polars.DataFrame()
 
-    if not dataframe_list:
-        return MetaFrame(
-            data=[],
-            convert_to_polars=lambda _: polars.DataFrame(),
-            convert_to_pandas=lambda _: pandas.DataFrame(),
-        )
-
-    if options is None:
-        options = []
-
-    return MetaFrame(
-        data=dataframe_list,
-        convert_to_polars=lambda data: polars.concat(
-            [df.to_polars() for df in data],
+        return polars.concat(
+            data_list,
             **{
                 k: v
                 for options_object in options
                 for k, v in options_object.kwargs.items()
                 if isinstance(options_object, PolarsOptions)
             }
-        ),
-        convert_to_pandas=lambda data: pandas.concat(
-            [df.to_pandas() for df in data],
+        )
+
+    def _get_pandas_concatenator(data: Iterable[MetaFrame], options: Iterable[MetaFrameOptions]) -> pandas.DataFrame:
+        data_list = [df.to_pandas() for df in data]
+        if not data_list:
+            return pandas.DataFrame()
+        return pandas.concat(
+            data_list,
             **{
                 k: v
                 for options_object in options
                 for k, v in options_object.kwargs.items()
                 if isinstance(options_object, PandasOptions)
             }
-        ),
+        )
+
+    if options is None:
+        options = []
+
+    return MetaFrame(
+        data=dataframes,
+        convert_to_polars=lambda data: _get_polars_concatenator(data, options),
+        convert_to_pandas=lambda data: _get_pandas_concatenator(data, options),
     )
