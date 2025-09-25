@@ -137,7 +137,7 @@ def concat(dataframes: Iterable[MetaFrame], options: Iterable[MetaFrameOptions] 
 
     dataframes_iter = iter(dataframes)
     first = next(dataframes_iter, None)
-    if not first:
+    if first is None:
         return MetaFrame(
             data=[],
             convert_to_polars=lambda _: polars.DataFrame(),
