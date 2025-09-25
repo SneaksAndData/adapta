@@ -114,5 +114,7 @@ def test_materialized_check():
         convert_to_polars=lambda x: polars.from_dict(x),
     )
     assert metaframe.to_polars().equals(polars.DataFrame({"A": [1, 2, 3]}))
-    assert pytest.raises(RuntimeError, metaframe.to_polars)
-    assert pytest.raises(RuntimeError, metaframe.to_pandas)
+    with pytest.raises(RuntimeError):
+        metaframe.to_polars()
+    with pytest.raises(RuntimeError):
+        metaframe.to_pandas()
