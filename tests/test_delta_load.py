@@ -15,6 +15,7 @@
 
 import pathlib
 import zlib
+from copy import deepcopy
 from unittest.mock import patch, MagicMock, ANY, call
 
 import pandas
@@ -63,24 +64,24 @@ def test_delta_batch_load(get_client_and_path):
     client, data_path = get_client_and_path
     table = list(load(client, data_path, batch_size=10))
 
-    assert isinstance(table[0].to_pandas(), pandas.DataFrame)
-    assert isinstance(table[0].to_polars(), polars.DataFrame)
+    assert isinstance(deepcopy(table[0]).to_pandas(), pandas.DataFrame)
+    assert isinstance(deepcopy(table[0]).to_polars(), polars.DataFrame)
 
 
 def test_delta_filter(get_client_and_path):
     client, data_path = get_client_and_path
     table = load(client, data_path, row_filter=(pyarrow_field("A") == "b"))
 
-    assert len(table.to_pandas()) == 0
-    assert len(table.to_polars()) == 0
+    assert len(deepcopy(table).to_pandas()) == 0
+    assert len(deepcopy(table).to_polars()) == 0
 
 
 def test_column_project(get_client_and_path):
     client, data_path = get_client_and_path
     table = load(client, data_path, columns=["B"])
 
-    assert len(table.to_pandas().columns.to_list()) == 1
-    assert len(table.to_polars().columns) == 1
+    assert len(deepcopy(table).to_pandas().columns.to_list()) == 1
+    assert len(deepcopy(table).to_polars().columns) == 1
 
 
 def test_delta_load_with_partitions(get_client_and_path_partitioned):
