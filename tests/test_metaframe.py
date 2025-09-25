@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 import pandas
 import polars
 import pytest
@@ -14,8 +16,8 @@ def test_to_df():
         convert_to_pandas=lambda x: pandas.DataFrame.from_dict(x),
         convert_to_polars=lambda x: polars.from_dict(x),
     )
-    assert metaframe.to_pandas().equals(pandas.DataFrame({"A": [1, 2, 3]}))
-    assert metaframe.to_polars().equals(polars.DataFrame({"A": [1, 2, 3]}))
+    assert deepcopy(metaframe).to_pandas().equals(pandas.DataFrame({"A": [1, 2, 3]}))
+    assert deepcopy(metaframe).to_polars().equals(polars.DataFrame({"A": [1, 2, 3]}))
 
 
 metaframe1 = MetaFrame(
@@ -34,15 +36,15 @@ metaframe2 = MetaFrame(
     "dataframes,expected",
     [
         (
-            [metaframe1.clone(), metaframe2.clone()],  # list
+            [deepcopy(metaframe1), deepcopy(metaframe2)],  # list
             polars.DataFrame({"A": [1, 2, 3, 4, 5, 6]}),
         ),
         (
-            (mf for mf in [metaframe1.clone(), metaframe2.clone()]),  # generator
+            (mf for mf in [deepcopy(metaframe1), deepcopy(metaframe2)]),  # generator
             polars.DataFrame({"A": [1, 2, 3, 4, 5, 6]}),
         ),
         (
-            (metaframe1.clone(), metaframe2.clone()),  # tuple
+            (deepcopy(metaframe1), deepcopy(metaframe2)),  # tuple
             polars.DataFrame({"A": [1, 2, 3, 4, 5, 6]}),
         ),
         ([], polars.DataFrame()),  # empty list
@@ -61,15 +63,15 @@ def test_concat_polars(dataframes, expected):
     "dataframes,expected",
     [
         (
-            [metaframe1.clone(), metaframe2.clone()],  # list
+            [deepcopy(metaframe1), deepcopy(metaframe2)],  # list
             pandas.DataFrame({"A": [1, 2, 3, 4, 5, 6]}),
         ),
         (
-            (mf for mf in [metaframe1.clone(), metaframe2.clone()]),  # generator
+            (mf for mf in [deepcopy(metaframe1), deepcopy(metaframe2)]),  # generator
             pandas.DataFrame({"A": [1, 2, 3, 4, 5, 6]}),
         ),
         (
-            (metaframe1.clone(), metaframe2.clone()),  # tuple
+            (deepcopy(metaframe1), deepcopy(metaframe2)),  # tuple
             pandas.DataFrame({"A": [1, 2, 3, 4, 5, 6]}),
         ),
         (
@@ -87,27 +89,6 @@ def test_concat_pandas(dataframes, expected):
     assert metaframe.to_pandas().equals(expected)
 
 
-@pytest.mark.parametrize(
-    "dataframes,expected_pandas, expected_polars",
-    [
-        (
-            [metaframe1.clone(), metaframe2.clone()],  # list
-            pandas.DataFrame({"A": [1, 2, 3, 4, 5, 6]}),
-            polars.DataFrame({"A": [1, 2, 3, 4, 5, 6]}),
-        ),
-    ],
-)
-def test_concat(dataframes, expected_pandas, expected_polars):
-    """
-    Test the concat method for pandas dataframes and the PandasOptions.
-    """
-
-    metaframe1_ = concat(dataframes=dataframes, options=[PandasOptions(ignore_index=True)])
-    metaframe2_ = metaframe1.clone()
-    assert metaframe1_.to_pandas().equals(expected_pandas)
-    assert metaframe2_.to_polars().equals(expected_polars)
-
-
 def test_from_df():
     """
     Test the from_pandas and from_polars methods.
@@ -116,7 +97,22 @@ def test_from_df():
     polars_df = polars.DataFrame({"A": [1, 2, 3]})
     metaframe_pandas = MetaFrame.from_pandas(pandas_df)
     metaframe_polars = MetaFrame.from_polars(polars_df)
-    assert metaframe_pandas.to_pandas().equals(pandas_df)
-    assert metaframe_polars.to_polars().equals(polars_df)
-    assert metaframe_pandas.to_polars().equals(polars_df)
-    assert metaframe_polars.to_pandas().equals(pandas_df)
+    assert deepcopy(metaframe_pandas).to_pandas().equals(pandas_df)
+    assert deepcopy(metaframe_polars).to_polars().equals(polars_df)
+    assert deepcopy(metaframe_pandas).to_polars().equals(polars_df)
+    assert deepcopy(metaframe_polars).to_pandas().equals(pandas_df)
+
+
+def test_materialized_check():
+    """
+    Test the _check_if_materialized method work accordingly. It should raise a runtime error the second time we call
+    to_pandas or to_polars on the same MetaFrame instance.
+    """
+    metaframe = MetaFrame(
+        data={"A": [1, 2, 3]},
+        convert_to_pandas=lambda x: pandas.DataFrame.from_dict(x),
+        convert_to_polars=lambda x: polars.from_dict(x),
+    )
+    assert metaframe.to_polars().equals(polars.DataFrame({"A": [1, 2, 3]}))
+    assert pytest.raises(RuntimeError, metaframe.to_polars)
+    assert pytest.raises(RuntimeError, metaframe.to_pandas)

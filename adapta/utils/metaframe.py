@@ -5,7 +5,6 @@ The MetaFrame can be used to convert the latent representation to other formats.
 import itertools
 from abc import ABC
 from collections.abc import Callable, Iterable
-from typing import Self
 
 import pandas
 import polars
@@ -49,16 +48,6 @@ class MetaFrame:
         self._data = data
         self._convert_to_polars = convert_to_polars
         self._convert_to_pandas = convert_to_pandas
-
-    def clone(self) -> Self:
-        """
-        Clone the MetaFrame.
-        """
-        return MetaFrame(
-            data=self._data,
-            convert_to_polars=self._convert_to_polars,
-            convert_to_pandas=self._convert_to_pandas,
-        )
 
     @classmethod
     def from_pandas(
@@ -115,22 +104,26 @@ class MetaFrame:
             convert_to_pandas=convert_to_pandas or (lambda x: x.to_pandas()),
         )
 
+    def _check_if_materialized(self) -> None:
+        if self._materialized:
+            raise RuntimeError(
+                "MetaFrame has already been materialized. You can only call 'to_pandas' or 'to_polars' once."
+            )
+
+        self._materialized = True
+
     def to_pandas(self) -> pandas.DataFrame:
         """
         Convert the MetaFrame to a pandas DataFrame.
         """
-        if self._materialized:
-            raise RuntimeError("no")
-        self._materialized = True
+        self._check_if_materialized()
         return self._convert_to_pandas(self._data)
 
     def to_polars(self) -> polars.DataFrame:
         """
         Convert the MetaFrame to a Polars DataFrame.
         """
-        if self._materialized:
-            raise RuntimeError("no")
-        self._materialized = True
+        self._check_if_materialized()
         return self._convert_to_polars(self._data)
 
 
