@@ -2,6 +2,7 @@
 This module contains the MetaFrame class which contains structured data for a dataframe.
 The MetaFrame can be used to convert the latent representation to other formats.
 """
+import itertools
 from abc import ABC
 from collections.abc import Callable, Iterable
 
@@ -123,40 +124,40 @@ def concat(dataframes: Iterable[MetaFrame], options: Iterable[MetaFrameOptions] 
     :return: Concatenated MetaFrame.
     """
 
-    def _get_polars_concatenator(data: Iterable[MetaFrame], options: Iterable[MetaFrameOptions]) -> polars.DataFrame:
-        data_list = [df.to_polars() for df in data]
-        if not data_list:
-            return polars.DataFrame()
-
-        return polars.concat(
-            data_list,
-            **{
-                k: v
-                for options_object in options
-                for k, v in options_object.kwargs.items()
-                if isinstance(options_object, PolarsOptions)
-            }
+    dataframes_iter = iter(dataframes)
+    try:
+        first_dataframe = next(dataframes_iter)
+    except StopIteration:
+        # The iterable was empty from the start.
+        return MetaFrame(
+            data=[],
+            convert_to_polars=lambda _: polars.DataFrame(),
+            convert_to_pandas=lambda _: pandas.DataFrame(),
         )
 
-    def _get_pandas_concatenator(data: Iterable[MetaFrame], options: Iterable[MetaFrameOptions]) -> pandas.DataFrame:
-        data_list = [df.to_pandas() for df in data]
-        if not data_list:
-            return pandas.DataFrame()
-        return pandas.concat(
-            data_list,
-            **{
-                k: v
-                for options_object in options
-                for k, v in options_object.kwargs.items()
-                if isinstance(options_object, PandasOptions)
-            }
-        )
+    dataframes = itertools.chain([first_dataframe], dataframes_iter)
 
     if options is None:
         options = []
 
     return MetaFrame(
         data=dataframes,
-        convert_to_polars=lambda data: _get_polars_concatenator(data, options),
-        convert_to_pandas=lambda data: _get_pandas_concatenator(data, options),
+        convert_to_polars=lambda data: polars.concat(
+            [df.to_polars() for df in data],
+            **{
+                k: v
+                for options_object in options
+                for k, v in options_object.kwargs.items()
+                if isinstance(options_object, PolarsOptions)
+            }
+        ),
+        convert_to_pandas=lambda data: pandas.concat(
+            [df.to_pandas() for df in data],
+            **{
+                k: v
+                for options_object in options
+                for k, v in options_object.kwargs.items()
+                if isinstance(options_object, PandasOptions)
+            }
+        ),
     )
