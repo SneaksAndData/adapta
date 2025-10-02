@@ -252,6 +252,60 @@ def test_fixed_template(mocker: MockerFixture, restore_logger_class):
     ]
 
 
+def test_fixed_template_duplicate_handler(mocker: MockerFixture, restore_logger_class):
+    mocker.patch(
+        "adapta.logs.handlers.datadog_api_handler.DataDogApiHandler._flush",
+        return_value=None,
+    )
+
+    mock_environment = {
+        "PROTEUS__DD_API_KEY": "some-key",
+        "PROTEUS__DD_APP_KEY": "some-app-key",
+        "PROTEUS__DD_SITE": "some-site.dog",
+    }
+    with patch.dict(os.environ, mock_environment):
+        logger = SemanticLogger(
+            fixed_template={
+                "running with job id {job_id} on {owner}": {
+                    "job_id": "my_job_id",
+                    "owner": "owner",
+                }
+            },
+            fixed_template_delimiter="|",
+        ).add_log_source(
+            log_source_name="test_fixed_template",
+            min_log_level=LogLevel.INFO,
+            log_handlers=[DataDogApiHandler()],
+        )
+        logger.info(
+            "About to log a duplicate={custom_value} for {job_id} on {owner}",
+            log_source_name="test_fixed_template",
+            custom_value="my-value",
+            job_id="my_job_id2",
+            owner="owner2",
+        )
+
+    requests_log = logging.getLogger("test_fixed_template")
+    handler = [handler for handler in requests_log.handlers if isinstance(handler, DataDogApiHandler)][0]
+    buffers = [json.loads(msg.message) for msg in handler._buffer]
+    assert buffers == [
+        {
+            "template": "About to log a duplicate={custom_value} for {job_id} on {owner}|running with job id {job_id} on {owner}",
+            "custom_value": "my-value",
+            "job_id": "my_job_id",
+            "owner": "owner",
+            "text": "About to log a duplicate=my-value for my_job_id on owner|running with job id my_job_id on owner",
+        },
+        {
+            "template": "Duplicated log properties provided: {job_id}, {owner}",
+            "custom_value": "my-value",
+            "job_id": "my_job_id",
+            "owner": "owner",
+            "text": "Duplicated log properties provided: my_job_id2, owner2",
+        },
+    ]
+
+
 @pytest.mark.asyncio
 async def test_log_level_async(restore_logger_class, datadog_handler):
     with create_async_logger(logger_type=TestLoggerClass, log_handlers=[datadog_handler]) as logger:
