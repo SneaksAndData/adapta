@@ -17,6 +17,7 @@ import ctypes
 import json
 import logging
 import os
+import sys
 import traceback
 from logging import StreamHandler
 
@@ -348,6 +349,7 @@ def printf_messages(message_count: int, output_type: str) -> None:
     "std_type",
     ["stdout", "stderr"],
 )
+@pytest.mark.skipif(sys.platform in ["darwin", "win32"], reason="redirect is only supported on Linux")
 def test_redirect(datadog_handler: DataDogApiHandler, restore_logger_class, std_type: str):
     """
     Test sync redirect in a sync program from an external non-python process print.
@@ -381,6 +383,7 @@ def test_redirect(datadog_handler: DataDogApiHandler, restore_logger_class, std_
     ["stdout", "stderr"],
 )
 @pytest.mark.asyncio
+@pytest.mark.skipif(sys.platform in ["darwin", "win32"], reason="redirect is only supported on Linux")
 async def test_redirect_async_legacy(restore_logger_class, datadog_handler, std_type: str):
     """
     Test sync redirect when running inside asyncio loop, from an external non-python process print.
@@ -412,6 +415,7 @@ async def test_redirect_async_legacy(restore_logger_class, datadog_handler, std_
     ["stdout", "stderr"],
 )
 @pytest.mark.asyncio
+@pytest.mark.skipif(sys.platform in ["darwin", "win32"], reason="redirect is only supported on Linux")
 async def test_redirect_async(restore_logger_class, datadog_handler, std_type: str):
     """
     Test async redirect from an external non-python process print, when running inside asyncio loop
