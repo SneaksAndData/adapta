@@ -162,18 +162,12 @@ def test_adapta_logger_replacement(mocker: MockerFixture, restore_logger_class):
         return_value=None,
     )
 
-    mock_environment = {
-        "PROTEUS__DD_API_KEY": "some-key",
-        "PROTEUS__DD_APP_KEY": "some-app-key",
-        "PROTEUS__DD_SITE": "some-site.dog",
-    }
-    with patch.dict(os.environ, mock_environment):
-        SemanticLogger().add_log_source(
-            log_source_name="urllib3",
-            min_log_level=LogLevel.DEBUG,
-            log_handlers=[DataDogApiHandler()],
-        )
-        requests.get("https://example.com")
+    SemanticLogger().add_log_source(
+        log_source_name="urllib3",
+        min_log_level=LogLevel.DEBUG,
+        log_handlers=[DataDogApiHandler()],
+    )
+    requests.get("https://example.com")
 
     requests_log = logging.getLogger("urllib3")
     handler = [handler for handler in requests_log.handlers if isinstance(handler, DataDogApiHandler)][0]
@@ -187,19 +181,13 @@ def test_log_level(mocker: MockerFixture, restore_logger_class):
         return_value=None,
     )
 
-    mock_environment = {
-        "PROTEUS__DD_API_KEY": "some-key",
-        "PROTEUS__DD_APP_KEY": "some-app-key",
-        "PROTEUS__DD_SITE": "some-site.dog",
-    }
-    with patch.dict(os.environ, mock_environment):
-        logger = SemanticLogger().add_log_source(
-            log_source_name="test",
-            min_log_level=LogLevel.INFO,
-            log_handlers=[DataDogApiHandler()],
-        )
-        logger.debug("Debug message", log_source_name="test")
-        logger.info("Info message", log_source_name="test")
+    logger = SemanticLogger().add_log_source(
+        log_source_name="test",
+        min_log_level=LogLevel.INFO,
+        log_handlers=[DataDogApiHandler()],
+    )
+    logger.debug("Debug message", log_source_name="test")
+    logger.info("Info message", log_source_name="test")
 
     requests_log = logging.getLogger("test")
     handler = [handler for handler in requests_log.handlers if isinstance(handler, DataDogApiHandler)][0]
@@ -213,30 +201,24 @@ def test_fixed_template(mocker: MockerFixture, restore_logger_class):
         return_value=None,
     )
 
-    mock_environment = {
-        "PROTEUS__DD_API_KEY": "some-key",
-        "PROTEUS__DD_APP_KEY": "some-app-key",
-        "PROTEUS__DD_SITE": "some-site.dog",
-    }
-    with patch.dict(os.environ, mock_environment):
-        logger = SemanticLogger(
-            fixed_template={
-                "running with job id {job_id} on {owner}": {
-                    "job_id": "my_job_id",
-                    "owner": "owner",
-                }
-            },
-            fixed_template_delimiter="|",
-        ).add_log_source(
-            log_source_name="test_fixed_template",
-            min_log_level=LogLevel.INFO,
-            log_handlers=[DataDogApiHandler()],
-        )
-        logger.info(
-            "Custom template={custom_value}",
-            log_source_name="test_fixed_template",
-            custom_value="my-value",
-        )
+    logger = SemanticLogger(
+        fixed_template={
+            "running with job id {job_id} on {owner}": {
+                "job_id": "my_job_id",
+                "owner": "owner",
+            }
+        },
+        fixed_template_delimiter="|",
+    ).add_log_source(
+        log_source_name="test_fixed_template",
+        min_log_level=LogLevel.INFO,
+        log_handlers=[DataDogApiHandler()],
+    )
+    logger.info(
+        "Custom template={custom_value}",
+        log_source_name="test_fixed_template",
+        custom_value="my-value",
+    )
 
     requests_log = logging.getLogger("test_fixed_template")
     handler = [handler for handler in requests_log.handlers if isinstance(handler, DataDogApiHandler)][0]
@@ -258,32 +240,26 @@ def test_fixed_template_duplicate_handler(mocker: MockerFixture, restore_logger_
         return_value=None,
     )
 
-    mock_environment = {
-        "PROTEUS__DD_API_KEY": "some-key",
-        "PROTEUS__DD_APP_KEY": "some-app-key",
-        "PROTEUS__DD_SITE": "some-site.dog",
-    }
-    with patch.dict(os.environ, mock_environment):
-        logger = SemanticLogger(
-            fixed_template={
-                "running with job id {job_id} on {owner}": {
-                    "job_id": "my_job_id",
-                    "owner": "owner",
-                }
-            },
-            fixed_template_delimiter="|",
-        ).add_log_source(
-            log_source_name="test_fixed_template",
-            min_log_level=LogLevel.INFO,
-            log_handlers=[DataDogApiHandler()],
-        )
-        logger.info(
-            "About to log a duplicate={custom_value} for {job_id} on {owner}",
-            log_source_name="test_fixed_template",
-            custom_value="my-value",
-            job_id="my_job_id2",
-            owner="owner2",
-        )
+    logger = SemanticLogger(
+        fixed_template={
+            "running with job id {job_id} on {owner}": {
+                "job_id": "my_job_id",
+                "owner": "owner",
+            }
+        },
+        fixed_template_delimiter="|",
+    ).add_log_source(
+        log_source_name="test_fixed_template",
+        min_log_level=LogLevel.INFO,
+        log_handlers=[DataDogApiHandler()],
+    )
+    logger.info(
+        "About to log a duplicate={custom_value} for {job_id} on {owner}",
+        log_source_name="test_fixed_template",
+        custom_value="my-value",
+        job_id="my_job_id2",
+        owner="owner2",
+    )
 
     requests_log = logging.getLogger("test_fixed_template")
     handler = [handler for handler in requests_log.handlers if isinstance(handler, DataDogApiHandler)][0]

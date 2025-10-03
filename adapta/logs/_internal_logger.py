@@ -83,6 +83,30 @@ class _InternalLogger(LoggerInterface, ABC):
             else template
         )
 
+    def _log_malformed_template(
+        self,
+        logger: MetadataLogger,
+        duplicates: dict[str, str],
+        tags: dict[str, str] = None,
+        **kwargs,
+    ) -> None:
+        dup_template = " ".join(
+            [
+                "Duplicated log properties provided:",
+                ", ".join(map(lambda key: "".join(["{", key, "}"]), duplicates.keys())),
+            ]
+        )
+        logger.log_with_metadata(
+            logging.WARN,
+            msg=dup_template.format(**duplicates),
+            template=dup_template,
+            tags=(tags or {}) | self._global_tags,
+            diagnostics=None,
+            stack_info=False,
+            exception=None,
+            metadata_fields=self._get_metadata_fields(kwargs),
+        )
+
     def _meta_info(
         self,
         template: str,
@@ -101,44 +125,18 @@ class _InternalLogger(LoggerInterface, ABC):
         """
         log_args, duplicates = self._get_format_args(**kwargs)
         msg = self._get_template(template).format(**log_args)
-        if len(duplicates) == 0:
-            logger.log_with_metadata(
-                logging.INFO,
-                msg=msg,
-                template=self._get_template(template),
-                tags=(tags or {}) | self._global_tags,
-                diagnostics=None,
-                stack_info=False,
-                exception=None,
-                metadata_fields=self._get_metadata_fields(kwargs),
-            )
-        else:
-            logger.log_with_metadata(
-                logging.INFO,
-                msg=msg,
-                template=self._get_template(template),
-                tags=(tags or {}) | self._global_tags,
-                diagnostics=None,
-                stack_info=False,
-                exception=None,
-                metadata_fields=self._get_metadata_fields(kwargs),
-            )
-            dup_template = " ".join(
-                [
-                    "Duplicated log properties provided:",
-                    ", ".join(map(lambda key: "".join(["{", key, "}"]), duplicates.keys())),
-                ]
-            )
-            logger.log_with_metadata(
-                logging.WARN,
-                msg=dup_template.format(**duplicates),
-                template=dup_template,
-                tags=(tags or {}) | self._global_tags,
-                diagnostics=None,
-                stack_info=False,
-                exception=None,
-                metadata_fields=self._get_metadata_fields(kwargs),
-            )
+        logger.log_with_metadata(
+            logging.INFO,
+            msg=msg,
+            template=self._get_template(template),
+            tags=(tags or {}) | self._global_tags,
+            diagnostics=None,
+            stack_info=False,
+            exception=None,
+            metadata_fields=self._get_metadata_fields(kwargs),
+        )
+        if len(duplicates) > 0:
+            self._log_malformed_template(logger, duplicates, tags, **kwargs)
 
     def _meta_warning(
         self,
@@ -158,7 +156,8 @@ class _InternalLogger(LoggerInterface, ABC):
         :param kwargs: Templated arguments (key=value).
         :return:
         """
-        msg = self._get_template(template).format(**self._get_fixed_args(), **kwargs)
+        log_args, duplicates = self._get_format_args(**kwargs)
+        msg = self._get_template(template).format(**log_args)
         logger.log_with_metadata(
             logging.WARN,
             msg=msg,
@@ -169,6 +168,8 @@ class _InternalLogger(LoggerInterface, ABC):
             exception=exception,
             metadata_fields=self._get_metadata_fields(kwargs),
         )
+        if len(duplicates) > 0:
+            self._log_malformed_template(logger, duplicates, tags, **kwargs)
 
     def _meta_error(
         self,
@@ -188,7 +189,8 @@ class _InternalLogger(LoggerInterface, ABC):
         :param kwargs: Templated arguments (key=value).
         :return:
         """
-        msg = self._get_template(template).format(**self._get_fixed_args(), **kwargs)
+        log_args, duplicates = self._get_format_args(**kwargs)
+        msg = self._get_template(template).format(**log_args)
         logger.log_with_metadata(
             logging.ERROR,
             msg=msg,
@@ -199,6 +201,8 @@ class _InternalLogger(LoggerInterface, ABC):
             exception=exception,
             metadata_fields=self._get_metadata_fields(kwargs),
         )
+        if len(duplicates) > 0:
+            self._log_malformed_template(logger, duplicates, tags, **kwargs)
 
     def _meta_debug(
         self,
@@ -219,7 +223,8 @@ class _InternalLogger(LoggerInterface, ABC):
         :param kwargs: Templated arguments (key=value).
         :return:
         """
-        msg = self._get_template(template).format(**self._get_fixed_args(), **kwargs)
+        log_args, duplicates = self._get_format_args(**kwargs)
+        msg = self._get_template(template).format(**log_args)
         logger.log_with_metadata(
             logging.DEBUG,
             msg=msg,
@@ -230,6 +235,8 @@ class _InternalLogger(LoggerInterface, ABC):
             exception=exception,
             metadata_fields=self._get_metadata_fields(kwargs),
         )
+        if len(duplicates) > 0:
+            self._log_malformed_template(logger, duplicates, tags, **kwargs)
 
     def _log_redirect_message(
         self,
