@@ -32,9 +32,7 @@ class DictJsonSerializationFormat(SerializationFormat[dict]):
         if isinstance(result, dict):
             return result
 
-        raise SerializationError(
-            f"Deserialized data is not a dictionary. Actual type: {type(result)}"
-        )
+        raise SerializationError(f"Deserialized data is not a dictionary. Actual type: {type(result)}")
 
 
 class DictJsonSerializationFormatWithFileFormat(DictJsonSerializationFormat):

@@ -140,9 +140,7 @@ def test_unit_serialization(serializer: type[SerializationFormat], data: any):
 
 @pytest.mark.parametrize(
     "serializer, data",
-    [
-        (DictJsonSerializationFormat, b'"{\\"key\\": \\"value\\"}"')
-    ],
+    [(DictJsonSerializationFormat, b'"{\\"key\\": \\"value\\"}"')],
 )
 def test_throws_serializer_error(serializer: type[SerializationFormat], data: any):
     with pytest.raises(SerializationError):
