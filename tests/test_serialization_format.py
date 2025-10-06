@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+from copy import deepcopy
 
 import pytest
 import pandas
@@ -128,7 +129,7 @@ def test_unit_serialization(serializer: type[SerializationFormat], data: any):
     Tests that serializing and then immediately deserializing any data equals the original data.
     """
     if isinstance(data, MetaFrame):
-        assert data.to_pandas().equals(serializer().deserialize(serializer().serialize(data)).to_pandas())
+        assert deepcopy(data).to_pandas().equals(serializer().deserialize(serializer().serialize(data)).to_pandas())
     elif isinstance(data, pandas.DataFrame):
         assert data.equals(serializer().deserialize(serializer().serialize(data)))
     elif isinstance(data, polars.LazyFrame) | isinstance(data, polars.DataFrame):

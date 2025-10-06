@@ -17,20 +17,18 @@ import ctypes
 import json
 import logging
 import os
+import sys
 import traceback
 from logging import StreamHandler
 
 import tempfile
 from threading import Thread
 from time import sleep
-from typing import Dict
-from unittest.mock import patch
 
 import pytest
 import uuid
 
 import requests
-from pytest_mock import MockerFixture
 
 from adapta.logs import SemanticLogger, create_async_logger
 from adapta.logs.handlers.datadog_api_handler import DataDogApiHandler
@@ -117,29 +115,23 @@ def test_log_format(
     assert expected_message in logged_lines
 
 
-def test_datadog_api_handler(mocker: MockerFixture):
-    mocker.patch(
-        "adapta.logs.handlers.datadog_api_handler.DataDogApiHandler._flush",
-        return_value=None,
-    )
-    mock_handler = DataDogApiHandler(buffer_size=1)
+def test_datadog_api_handler(datadog_handler: DataDogApiHandler):
     mock_source = str(uuid.uuid4())
 
     dd_logger = SemanticLogger().add_log_source(
         log_source_name=mock_source,
         min_log_level=LogLevel.INFO,
-        log_handlers=[mock_handler],
+        log_handlers=[datadog_handler],
         is_default=True,
     )
 
-    ex_str = None
     try:
         raise ValueError("test warning")
     except BaseException as ex:
         dd_logger.warning(template="This a unit test logger {index}", exception=ex, index=1)
         ex_str = traceback.format_exc().removesuffix("\n")
 
-    log_item = mock_handler._buffer[0]
+    log_item = datadog_handler._buffer[0]
     message = json.loads(log_item.message)
 
     assert log_item.ddsource == mock_source
@@ -156,24 +148,13 @@ def test_datadog_api_handler(mocker: MockerFixture):
     assert "tags" not in message
 
 
-def test_adapta_logger_replacement(mocker: MockerFixture, restore_logger_class):
-    mocker.patch(
-        "adapta.logs.handlers.datadog_api_handler.DataDogApiHandler._flush",
-        return_value=None,
+def test_adapta_logger_replacement(datadog_handler: DataDogApiHandler, restore_logger_class):
+    SemanticLogger().add_log_source(
+        log_source_name="urllib3",
+        min_log_level=LogLevel.DEBUG,
+        log_handlers=[datadog_handler],
     )
-
-    mock_environment = {
-        "PROTEUS__DD_API_KEY": "some-key",
-        "PROTEUS__DD_APP_KEY": "some-app-key",
-        "PROTEUS__DD_SITE": "some-site.dog",
-    }
-    with patch.dict(os.environ, mock_environment):
-        SemanticLogger().add_log_source(
-            log_source_name="urllib3",
-            min_log_level=LogLevel.DEBUG,
-            log_handlers=[DataDogApiHandler()],
-        )
-        requests.get("https://example.com")
+    requests.get("https://example.com")
 
     requests_log = logging.getLogger("urllib3")
     handler = [handler for handler in requests_log.handlers if isinstance(handler, DataDogApiHandler)][0]
@@ -181,25 +162,14 @@ def test_adapta_logger_replacement(mocker: MockerFixture, restore_logger_class):
     assert {"text": "Starting new HTTPS connection (1): example.com:443"} in buffers
 
 
-def test_log_level(mocker: MockerFixture, restore_logger_class):
-    mocker.patch(
-        "adapta.logs.handlers.datadog_api_handler.DataDogApiHandler._flush",
-        return_value=None,
+def test_log_level(datadog_handler: DataDogApiHandler, restore_logger_class):
+    logger = SemanticLogger().add_log_source(
+        log_source_name="test",
+        min_log_level=LogLevel.INFO,
+        log_handlers=[datadog_handler],
     )
-
-    mock_environment = {
-        "PROTEUS__DD_API_KEY": "some-key",
-        "PROTEUS__DD_APP_KEY": "some-app-key",
-        "PROTEUS__DD_SITE": "some-site.dog",
-    }
-    with patch.dict(os.environ, mock_environment):
-        logger = SemanticLogger().add_log_source(
-            log_source_name="test",
-            min_log_level=LogLevel.INFO,
-            log_handlers=[DataDogApiHandler()],
-        )
-        logger.debug("Debug message", log_source_name="test")
-        logger.info("Info message", log_source_name="test")
+    logger.debug("Debug message", log_source_name="test")
+    logger.info("Info message", log_source_name="test")
 
     requests_log = logging.getLogger("test")
     handler = [handler for handler in requests_log.handlers if isinstance(handler, DataDogApiHandler)][0]
@@ -207,36 +177,25 @@ def test_log_level(mocker: MockerFixture, restore_logger_class):
     assert buffers == [{"template": "Info message", "text": "Info message"}]
 
 
-def test_fixed_template(mocker: MockerFixture, restore_logger_class):
-    mocker.patch(
-        "adapta.logs.handlers.datadog_api_handler.DataDogApiHandler._flush",
-        return_value=None,
+def test_fixed_template(datadog_handler: DataDogApiHandler, restore_logger_class):
+    logger = SemanticLogger(
+        fixed_template={
+            "running with job id {job_id} on {owner}": {
+                "job_id": "my_job_id",
+                "owner": "owner",
+            }
+        },
+        fixed_template_delimiter="|",
+    ).add_log_source(
+        log_source_name="test_fixed_template",
+        min_log_level=LogLevel.INFO,
+        log_handlers=[datadog_handler],
     )
-
-    mock_environment = {
-        "PROTEUS__DD_API_KEY": "some-key",
-        "PROTEUS__DD_APP_KEY": "some-app-key",
-        "PROTEUS__DD_SITE": "some-site.dog",
-    }
-    with patch.dict(os.environ, mock_environment):
-        logger = SemanticLogger(
-            fixed_template={
-                "running with job id {job_id} on {owner}": {
-                    "job_id": "my_job_id",
-                    "owner": "owner",
-                }
-            },
-            fixed_template_delimiter="|",
-        ).add_log_source(
-            log_source_name="test_fixed_template",
-            min_log_level=LogLevel.INFO,
-            log_handlers=[DataDogApiHandler()],
-        )
-        logger.info(
-            "Custom template={custom_value}",
-            log_source_name="test_fixed_template",
-            custom_value="my-value",
-        )
+    logger.info(
+        "Custom template={custom_value}",
+        log_source_name="test_fixed_template",
+        custom_value="my-value",
+    )
 
     requests_log = logging.getLogger("test_fixed_template")
     handler = [handler for handler in requests_log.handlers if isinstance(handler, DataDogApiHandler)][0]
@@ -249,6 +208,49 @@ def test_fixed_template(mocker: MockerFixture, restore_logger_class):
             "owner": "owner",
             "text": "Custom template=my-value|running with job id my_job_id on owner",
         }
+    ]
+
+
+def test_fixed_template_duplicate_handler(datadog_handler: DataDogApiHandler, restore_logger_class):
+    logger = SemanticLogger(
+        fixed_template={
+            "running with job id {job_id} on {owner}": {
+                "job_id": "my_job_id",
+                "owner": "owner",
+            }
+        },
+        fixed_template_delimiter="|",
+    ).add_log_source(
+        log_source_name="test_fixed_template",
+        min_log_level=LogLevel.INFO,
+        log_handlers=[datadog_handler],
+    )
+    logger.info(
+        "About to log a duplicate={custom_value} for {job_id} on {owner}",
+        log_source_name="test_fixed_template",
+        custom_value="my-value",
+        job_id="my_job_id2",
+        owner="owner2",
+    )
+
+    requests_log = logging.getLogger("test_fixed_template")
+    handler = [handler for handler in requests_log.handlers if isinstance(handler, DataDogApiHandler)][0]
+    buffers = [json.loads(msg.message) for msg in handler._buffer]
+    assert buffers == [
+        {
+            "template": "About to log a duplicate={custom_value} for {job_id} on {owner}|running with job id {job_id} on {owner}",
+            "custom_value": "my-value",
+            "job_id": "my_job_id",
+            "owner": "owner",
+            "text": "About to log a duplicate=my-value for my_job_id on owner|running with job id my_job_id on owner",
+        },
+        {
+            "template": "Duplicated log properties provided: {job_id}, {owner}",
+            "custom_value": "my-value",
+            "job_id": "my_job_id",
+            "owner": "owner",
+            "text": "Duplicated log properties provided: my_job_id2, owner2",
+        },
     ]
 
 
@@ -347,20 +349,15 @@ def printf_messages(message_count: int, output_type: str) -> None:
     "std_type",
     ["stdout", "stderr"],
 )
-def test_redirect(restore_logger_class, mocker: MockerFixture, std_type: str):
+@pytest.mark.skipif(sys.platform in ["darwin", "win32"], reason="redirect is only supported on Linux")
+def test_redirect(datadog_handler: DataDogApiHandler, restore_logger_class, std_type: str):
     """
     Test sync redirect in a sync program from an external non-python process print.
     """
-    mocker.patch(
-        "adapta.logs.handlers.datadog_api_handler.DataDogApiHandler._flush",
-        return_value=None,
-    )
-    handler = DataDogApiHandler()
-
     logger = SemanticLogger().add_log_source(
         log_source_name="test",
         min_log_level=LogLevel.INFO,
-        log_handlers=[handler],
+        log_handlers=[datadog_handler],
         is_default=True,
     )
 
@@ -376,7 +373,7 @@ def test_redirect(restore_logger_class, mocker: MockerFixture, std_type: str):
         print_thread.start()
         sleep(1)
 
-    buffer = [json.loads(msg.message) for msg in handler._buffer]
+    buffer = [json.loads(msg.message) for msg in datadog_handler._buffer]
 
     assert len(buffer) == 10
 
@@ -386,6 +383,7 @@ def test_redirect(restore_logger_class, mocker: MockerFixture, std_type: str):
     ["stdout", "stderr"],
 )
 @pytest.mark.asyncio
+@pytest.mark.skipif(sys.platform in ["darwin", "win32"], reason="redirect is only supported on Linux")
 async def test_redirect_async_legacy(restore_logger_class, datadog_handler, std_type: str):
     """
     Test sync redirect when running inside asyncio loop, from an external non-python process print.
@@ -417,6 +415,7 @@ async def test_redirect_async_legacy(restore_logger_class, datadog_handler, std_
     ["stdout", "stderr"],
 )
 @pytest.mark.asyncio
+@pytest.mark.skipif(sys.platform in ["darwin", "win32"], reason="redirect is only supported on Linux")
 async def test_redirect_async(restore_logger_class, datadog_handler, std_type: str):
     """
     Test async redirect from an external non-python process print, when running inside asyncio loop
