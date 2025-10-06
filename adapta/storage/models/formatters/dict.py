@@ -4,6 +4,7 @@ Module for serializing and deserializing dictionaries.
 import json
 
 from adapta.storage.models.format import SerializationFormat
+from adapta.storage.models.formatters.exceptions import SerializationError
 
 
 class DictJsonSerializationFormat(SerializationFormat[dict]):
@@ -27,7 +28,13 @@ class DictJsonSerializationFormat(SerializationFormat[dict]):
         :param data: Dictionary to deserialize in JSON format as bytes.
         :return: Deserialized dictionary.
         """
-        return json.loads(data.decode("utf-8"))
+        result = json.loads(data.decode("utf-8"))
+        if isinstance(result, dict):
+            return result
+
+        raise SerializationError(
+            f"Deserialized data is not a dictionary. Actual type: {type(result)}"
+        )
 
 
 class DictJsonSerializationFormatWithFileFormat(DictJsonSerializationFormat):
