@@ -51,6 +51,7 @@ from adapta.storage.models.formatters import (
     PolarsDataFrameParquetSerializationFormatWithFileFormat,
     UnitSerializationFormat,
 )
+from adapta.storage.models.formatters.exceptions import SerializationError
 
 from adapta.utils.metaframe import MetaFrame
 
@@ -135,3 +136,12 @@ def test_unit_serialization(serializer: type[SerializationFormat], data: any):
         assert data.lazy().collect().equals(serializer().deserialize(serializer().serialize(data)).lazy().collect())
     else:
         assert data == serializer().deserialize(serializer().serialize(data))
+
+
+@pytest.mark.parametrize(
+    "serializer, data",
+    [(DictJsonSerializationFormat, b'"{\\"key\\": \\"value\\"}"')],
+)
+def test_throws_serializer_error(serializer: type[SerializationFormat], data: any):
+    with pytest.raises(SerializationError):
+        serializer().deserialize(data)
