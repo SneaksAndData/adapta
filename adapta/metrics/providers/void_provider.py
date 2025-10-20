@@ -12,6 +12,9 @@ class VoidMetricsProvider(MetricsProvider):
     Metrics provider that sends data into the void. Useful for testing.
     """
 
+    def __init__(self, **options):
+        pass
+
     def increment(self, metric_name: str, tags: dict[str, str] | None = None) -> None:
         pass
 
