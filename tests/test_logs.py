@@ -380,7 +380,9 @@ def test_redirect(datadog_handler: DataDogApiHandler, restore_logger_class, std_
 
     with logger.redirect():
         print_thread.start()
-        sleep(1)
+        print_thread.join()
+
+    sleep(1)
 
     buffer = [json.loads(msg.message) for msg in datadog_handler._buffer]
 
@@ -412,7 +414,9 @@ async def test_redirect_async_legacy(restore_logger_class, datadog_handler, std_
         )
         with logger.redirect():
             print_thread.start()
-            await asyncio.sleep(1)
+            print_thread.join()
+
+        await asyncio.sleep(1)
 
         buffer = [json.loads(msg.message) for msg in logger._log_handlers[0]._buffer]
 
@@ -446,7 +450,7 @@ async def test_redirect_async(restore_logger_class, datadog_handler, std_type: s
             print_thread.start()
             print_thread.join()
 
-        # await asyncio.sleep(1)
+        await asyncio.sleep(1)
 
         buffer = [json.loads(msg.message) for msg in logger._log_handlers[0]._buffer]
 
