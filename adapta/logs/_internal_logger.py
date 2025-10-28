@@ -309,13 +309,14 @@ class _InternalLogger(LoggerInterface, ABC):
         with open(tmp_symlink, encoding="utf-8") as output:
             output.seek(pos)
             for line in output.readlines():
-                self._log_redirect_message(
-                    logger,
-                    base_template="Redirected output: {message}",
-                    message=line,
-                    tags=(tags or {}) | self._global_tags,
-                    log_level=log_level,
-                )
+                if line:
+                    self._log_redirect_message(
+                        logger,
+                        base_template="Redirected output: {message}",
+                        message=line,
+                        tags=(tags or {}) | self._global_tags,
+                        log_level=log_level,
+                    )
             return output.tell()
 
     def _handle_unsupported_redirect(
