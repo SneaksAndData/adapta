@@ -19,6 +19,7 @@ import asyncio
 #
 
 import logging
+import sys
 import threading
 from contextlib import asynccontextmanager
 from logging.handlers import QueueHandler, QueueListener
@@ -57,16 +58,26 @@ class _AsyncLogger(Generic[TLogger], _InternalLogger):
             # externally control the flushing process
             while is_active:
                 start_position_out = self._flush_and_log(
-                    pos=start_position_out, tmp_symlink=tmp_symlink_out, logger=self._logger, tags=tags
+                    pos=start_position_out,
+                    tmp_symlink=tmp_symlink_out,
+                    logger=self._logger,
+                    tags=tags,
+                    channel=sys.stdout,
                 )
                 start_position_err = self._flush_and_log(
-                    pos=start_position_err, tmp_symlink=tmp_symlink_err, logger=self._logger, tags=tags
+                    pos=start_position_err,
+                    tmp_symlink=tmp_symlink_err,
+                    logger=self._logger,
+                    tags=tags,
+                    channel=sys.stderr,
                 )
                 await asyncio.sleep(0.1)
 
             return self._flush_and_log(
-                pos=start_position_out, tmp_symlink=tmp_symlink_out, logger=self._logger, tags=tags
-            ), self._flush_and_log(pos=start_position_err, tmp_symlink=tmp_symlink_err, logger=self._logger, tags=tags)
+                pos=start_position_out, tmp_symlink=tmp_symlink_out, logger=self._logger, tags=tags, channel=sys.stdout
+            ), self._flush_and_log(
+                pos=start_position_err, tmp_symlink=tmp_symlink_err, logger=self._logger, tags=tags, channel=sys.stderr
+            )
 
         self._handle_unsupported_redirect(tags)
         libc, saved_stdout, saved_stderr, tmp_file_out, tmp_file_err = self._prepare_redirect()

@@ -19,6 +19,7 @@ import logging
 import os
 import sys
 import traceback
+from ctypes.util import find_library
 from logging import StreamHandler
 
 import tempfile
@@ -338,18 +339,26 @@ async def test_log_format_async(
 
 
 def printf_messages(message_count: int, output_type: str) -> None:
-    libc = ctypes.cdll.LoadLibrary("libc.so.6")
-    cstd = ctypes.c_void_p.in_dll(libc, output_type)
+    libc = ctypes.cdll.LoadLibrary(find_library("c"))
+    cstd = None
+    if sys.platform == "darwin":
+        cstd = ctypes.c_void_p.in_dll(libc, "__stdoutp" if output_type == "stdout" else "__stderrp")
+    if sys.platform == "linux":
+        cstd = ctypes.c_void_p.in_dll(libc, output_type)
+
+    if sys.platform == "win32":
+        raise RuntimeError(f"Unsupported platform: {sys.platform}")
+
     libc.setbuf(cstd, None)
     for log_n in range(message_count):
-        libc.fprintf(cstd, b"Testing: %s\n", f"Test log message #{log_n}".encode())
+        libc.fprintf(cstd, bytes(f"Test log message: #{log_n}\n", encoding="utf-8"))
 
 
 @pytest.mark.parametrize(
     "std_type",
     ["stdout", "stderr"],
 )
-@pytest.mark.skipif(sys.platform in ["darwin", "win32"], reason="redirect is only supported on Linux")
+@pytest.mark.skipif(sys.platform in ["win32"], reason="redirect is only supported on Linux/MacOS")
 def test_redirect(datadog_handler: DataDogApiHandler, restore_logger_class, std_type: str):
     """
     Test sync redirect in a sync program from an external non-python process print.
@@ -371,7 +380,9 @@ def test_redirect(datadog_handler: DataDogApiHandler, restore_logger_class, std_
 
     with logger.redirect():
         print_thread.start()
-        sleep(1)
+        print_thread.join()
+
+    sleep(1)
 
     buffer = [json.loads(msg.message) for msg in datadog_handler._buffer]
 
@@ -383,7 +394,7 @@ def test_redirect(datadog_handler: DataDogApiHandler, restore_logger_class, std_
     ["stdout", "stderr"],
 )
 @pytest.mark.asyncio
-@pytest.mark.skipif(sys.platform in ["darwin", "win32"], reason="redirect is only supported on Linux")
+@pytest.mark.skipif(sys.platform in ["win32"], reason="redirect is only supported on Linux/MacOS")
 async def test_redirect_async_legacy(restore_logger_class, datadog_handler, std_type: str):
     """
     Test sync redirect when running inside asyncio loop, from an external non-python process print.
@@ -403,7 +414,9 @@ async def test_redirect_async_legacy(restore_logger_class, datadog_handler, std_
         )
         with logger.redirect():
             print_thread.start()
-            await asyncio.sleep(1)
+            print_thread.join()
+
+        await asyncio.sleep(1)
 
         buffer = [json.loads(msg.message) for msg in logger._log_handlers[0]._buffer]
 
@@ -415,7 +428,7 @@ async def test_redirect_async_legacy(restore_logger_class, datadog_handler, std_
     ["stdout", "stderr"],
 )
 @pytest.mark.asyncio
-@pytest.mark.skipif(sys.platform in ["darwin", "win32"], reason="redirect is only supported on Linux")
+@pytest.mark.skipif(sys.platform in ["win32"], reason="redirect is only supported on Linux/MacOS")
 async def test_redirect_async(restore_logger_class, datadog_handler, std_type: str):
     """
     Test async redirect from an external non-python process print, when running inside asyncio loop
@@ -435,7 +448,9 @@ async def test_redirect_async(restore_logger_class, datadog_handler, std_type: s
         )
         async with logger.redirect_async():
             print_thread.start()
-            await asyncio.sleep(1)
+            print_thread.join()
+
+        await asyncio.sleep(1)
 
         buffer = [json.loads(msg.message) for msg in logger._log_handlers[0]._buffer]
 

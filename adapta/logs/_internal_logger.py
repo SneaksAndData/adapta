@@ -28,7 +28,7 @@ from abc import ABC
 from contextlib import contextmanager
 from threading import Thread
 from time import sleep
-from typing import Any
+from typing import Any, TextIO
 
 from adapta.logs._internal import MetadataLogger, from_log_level
 from adapta.logs._logger_interface import LoggerInterface
@@ -302,20 +302,22 @@ class _InternalLogger(LoggerInterface, ABC):
         pos: int,
         tmp_symlink: bytes,
         logger: MetadataLogger,
+        channel: TextIO,
         tags: dict[str, str] | None = None,
         log_level: LogLevel | None = None,
     ) -> int:
-        sys.stdout.flush()
+        channel.flush()
         with open(tmp_symlink, encoding="utf-8") as output:
             output.seek(pos)
             for line in output.readlines():
-                self._log_redirect_message(
-                    logger,
-                    base_template="Redirected output: {message}",
-                    message=line,
-                    tags=(tags or {}) | self._global_tags,
-                    log_level=log_level,
-                )
+                if line:
+                    self._log_redirect_message(
+                        logger,
+                        base_template="Redirected output: {message}",
+                        message=line,
+                        tags=(tags or {}) | self._global_tags,
+                        log_level=log_level,
+                    )
             return output.tell()
 
     def _handle_unsupported_redirect(
@@ -356,6 +358,7 @@ class _InternalLogger(LoggerInterface, ABC):
                     logger=logger,
                     tags=(tags or {}) | self._global_tags,
                     log_level=log_level,
+                    channel=sys.stdout,
                 )
                 start_position_err = self._flush_and_log(
                     pos=start_position_err,
@@ -363,6 +366,7 @@ class _InternalLogger(LoggerInterface, ABC):
                     logger=logger,
                     tags=(tags or {}) | self._global_tags,
                     log_level=log_level,
+                    channel=sys.stderr,
                 )
                 sleep(0.1)
 
@@ -372,12 +376,14 @@ class _InternalLogger(LoggerInterface, ABC):
                 logger=logger,
                 tags=(tags or {}) | self._global_tags,
                 log_level=log_level,
+                channel=sys.stdout,
             ), self._flush_and_log(
                 pos=start_position_err,
                 tmp_symlink=tmp_symlink_err,
                 logger=logger,
                 tags=(tags or {}) | self._global_tags,
                 log_level=log_level,
+                channel=sys.stderr,
             )
 
         self._handle_unsupported_redirect(tags)
