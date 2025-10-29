@@ -310,11 +310,12 @@ class _InternalLogger(LoggerInterface, ABC):
         with open(tmp_symlink, encoding="utf-8") as output:
             output.seek(pos)
             for line in output.readlines():
-                if line:
+                clean_line = line.strip("\n")
+                if clean_line:
                     self._log_redirect_message(
                         logger,
                         base_template="Redirected output: {message}",
-                        message=line,
+                        message=clean_line,
                         tags=(tags or {}) | self._global_tags,
                         log_level=log_level,
                     )
