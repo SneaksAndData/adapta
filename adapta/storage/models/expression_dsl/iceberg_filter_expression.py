@@ -1,5 +1,4 @@
 from typing import final, Any
-import pyiceberg.expressions
 from pyiceberg.expressions import BooleanExpression
 
 from adapta.storage.models.expression_dsl.filter_expression import (
@@ -10,6 +9,10 @@ from adapta.storage.models.expression_dsl.filter_expression import (
 
 @final
 class IcebergFilterExpression(FilterExpression[BooleanExpression]):
+    """
+    FilterExpression implementation for Apache Iceberg tables
+    """
+
     def _compile_base_case(
         self, field_name: str, field_values: Any, operation: FilterExpressionOperation
     ) -> BooleanExpression:
