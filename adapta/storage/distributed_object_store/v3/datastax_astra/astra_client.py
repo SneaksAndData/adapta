@@ -436,15 +436,15 @@ class AstraClient:
         def _delete_entity(model_class: type[Model], key_filter: dict):
             model_class.filter(**key_filter).delete()
 
-        cassandra_model = get_mapper(
-            data_model=type[entity],
+        cassandra_mapper = get_mapper(
+            data_model=type(entity),
             table_name=table_name,
             keyspace=keyspace,
-        ).map()
+        )
 
         _delete_entity(
-            model_class=cassandra_model,
-            key_filter={key: getattr(entity, key) for key in cassandra_model.primary_keys},
+            model_class=cassandra_mapper.map(),
+            key_filter={key: getattr(entity, key) for key in cassandra_mapper.primary_keys},
         )
 
     def upsert_entity(
