@@ -2,19 +2,19 @@ from functools import reduce
 
 import pytest
 
-from adapta.storage.models.filter_expression import (
+from adapta.storage.models.expression_dsl.filter_expression import (
     FilterField,
     FilterExpression,
-    ArrowFilterExpression,
-    AstraFilterExpression,
-    TrinoFilterExpression,
     compile_expression,
 )
+from adapta.storage.models.expression_dsl.trino_filter_expression import TrinoFilterExpression
+from adapta.storage.models.expression_dsl.arrow_filter_expression import ArrowFilterExpression
+from adapta.storage.models.expression_dsl.astra_filter_expression import AstraFilterExpression
 
 from adapta.schema_management.schema_entity import PythonSchemaEntity
 
 from dataclasses import dataclass, field
-from typing import List, Any, Dict, Union
+from typing import Any
 from pyarrow.dataset import field as pyarrow_field
 import pyarrow.compute as pc
 

@@ -89,13 +89,16 @@ for batch in batches:
 ```
 ## Using the Filtering API.
 1. Create generic filter expressions
+
 ```python
-from adapta.storage.models.filter_expression import FilterField
+from adapta.storage.models.expression_dsl.filter_expression import FilterField
 
 simple_filter = FilterField("my_column") == "some-value"
 combined_filter = (FilterField("my_column") == "some-value") & (FilterField("other_column") == "another-value")
-combined_filter_with_collection = (FilterField("my_column") == "something1") & (FilterField("other_column").isin(['else', 'nonexistent']))
-complex_filter = (FilterField("my_column") == "something1") | (FilterField("my_other_column") == "else") & (FilterField("another_column") == 123)
+combined_filter_with_collection = (FilterField("my_column") == "something1") & (
+    FilterField("other_column").isin(['else', 'nonexistent']))
+complex_filter = (FilterField("my_column") == "something1") | (FilterField("my_other_column") == "else") & (
+            FilterField("another_column") == 123)
 ```
 2. Load and apply the expression
 ```python

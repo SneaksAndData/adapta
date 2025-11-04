@@ -4,7 +4,7 @@ import polars as pl
 import pytest
 from adapta.storage.models import LocalPath
 from adapta.storage.models.enum import QueryEnabledStoreOptions
-from adapta.storage.models.filter_expression import FilterExpression, FilterField
+from adapta.storage.models.expression_dsl.filter_expression import FilterExpression, FilterField
 from adapta.storage.query_enabled_store import LocalQueryEnabledStore, LocalSettings, LocalCredential
 from adapta.utils.metaframe import MetaFrameOptions
 
