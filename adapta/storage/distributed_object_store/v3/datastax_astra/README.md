@@ -76,7 +76,7 @@ insert into tmp.test_entity_new (col_a, col_b, col_c) VALUES ('something2', 'spe
 2. Create field expressions and apply them
 
 ```python
-from adapta.storage.models.filter_expression import FilterField
+from adapta.storage.models.expression_dsl.filter_expression import FilterField
 from adapta.storage.distributed_object_store.v3.datastax_astra import AstraClient
 from adapta.schema_management.schema_entity import PythonSchemaEntity
 
@@ -122,7 +122,7 @@ with AstraClient(
     print(ac.filter_entities(TestEntityNew, combined_filter).to_pandas())
     #         col_a col_b  col_c
     # 0  something1  else    123
-    
+
     print(ac.filter_entities(TestEntityNew, combined_filter_with_collection).to_pandas())
     #         col_a col_b  col_c
     # 0  something1  else    123
@@ -152,10 +152,11 @@ INSERT INTO tmp.test_entity_with_embeddings (col_a, col_b, col_c, col_d)
 VALUES ('something2', 'different1', [0.1, 0.24, 0.25], 'extra2');
 ```
 2. Test out functionality in Python
+
 ```python
 from adapta.storage.distributed_object_store.v3.datastax_astra import AstraClient
 from adapta.storage.distributed_object_store.v3.datastax_astra import SimilarityFunction
-from adapta.storage.models.filter_expression import FilterField
+from adapta.storage.models.expression_dsl.filter_expression import FilterField
 
 from dataclasses import dataclass, field
 
@@ -194,7 +195,6 @@ with astra_client:
     # 0  something2  different1  extra2     0.5665
     # 1  something1   different  extra1     0.6300
 
-    
 # Search with primary key filter in Astra (with dictionary)
 filter_expression = [{'col_a': 'something2', 'col_b': 'different1'}]
 with astra_client:
@@ -205,10 +205,9 @@ with astra_client:
         num_results=2,
         key_column_filter_values=filter_expression
     ).to_pandas())
-    
+
     #         col_a       col_b   col_d  sim_value
     # 0  something2  different1  extra2     0.5665
-
 
 # Search with primary key filter in Astra (with Expression)
 filter_expression = (FilterField('col_a') == 'something2') & (FilterField('col_b').isin(['different1', 'doesnt_exist']))

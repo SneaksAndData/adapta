@@ -1,6 +1,3 @@
-"""
-Import index
-"""
 #  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,5 +12,6 @@ Import index
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
-from adapta.storage.delta_lake.v2._models import *
-from adapta.storage.delta_lake.v2._functions import *
+
+from adapta.storage.iceberg.v1._functions import *
+from adapta.storage.iceberg.v1._models import *

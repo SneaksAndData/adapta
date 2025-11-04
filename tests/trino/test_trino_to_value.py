@@ -16,7 +16,7 @@ import datetime
 
 import pytest
 
-from adapta.storage.models.filter_expression import TrinoFilterExpression
+from adapta.storage.models.expression_dsl.trino_filter_expression import TrinoFilterExpression
 
 
 @pytest.mark.parametrize(
