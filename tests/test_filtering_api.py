@@ -1,12 +1,24 @@
 from functools import reduce
 
 import pytest
+from pyiceberg.expressions import (
+    BooleanExpression,
+    EqualTo,
+    GreaterThanOrEqual,
+    GreaterThan,
+    LessThan,
+    LessThanOrEqual,
+    In,
+    And,
+    Or,
+)
 
 from adapta.storage.models.expression_dsl.filter_expression import (
     FilterField,
     FilterExpression,
     compile_expression,
 )
+from adapta.storage.models.expression_dsl.iceberg_filter_expression import IcebergFilterExpression
 from adapta.storage.models.expression_dsl.trino_filter_expression import TrinoFilterExpression
 from adapta.storage.models.expression_dsl.arrow_filter_expression import ArrowFilterExpression
 from adapta.storage.models.expression_dsl.astra_filter_expression import AstraFilterExpression
@@ -31,61 +43,70 @@ TEST_ENTITY_SCHEMA: TestEntity = PythonSchemaEntity(TestEntity)
 
 
 @pytest.mark.parametrize(
-    "filter_expr, pyarrow_expected_expr, astra_expected_expr, trino_expected_expr",
+    "filter_expr, pyarrow_expected_expr, astra_expected_expr, trino_expected_expr, iceberg_expected_expr",
     [
         (
             FilterField(TEST_ENTITY_SCHEMA.col_a) == "test",
             (pyarrow_field("col_a") == "test"),
             [{"col_a": "test"}],
             "col_a = 'test'",
+            EqualTo("col_a", "test"),
         ),
         (
             FilterField(TEST_ENTITY_SCHEMA.col_a) >= "test",
             (pyarrow_field("col_a") >= "test"),
             [{"col_a__gte": "test"}],
             "col_a >= 'test'",
+            GreaterThanOrEqual("col_a", "test"),
         ),
         (
             FilterField(TEST_ENTITY_SCHEMA.col_a) > "test",
             (pyarrow_field("col_a") > "test"),
             [{"col_a__gt": "test"}],
             "col_a > 'test'",
+            GreaterThan("col_a", "test"),
         ),
         (
             FilterField(TEST_ENTITY_SCHEMA.col_a) < "test",
             (pyarrow_field("col_a") < "test"),
             [{"col_a__lt": "test"}],
             "col_a < 'test'",
+            LessThan("col_a", "test"),
         ),
         (
             FilterField(TEST_ENTITY_SCHEMA.col_a) <= "test",
             (pyarrow_field("col_a") <= "test"),
             [{"col_a__lte": "test"}],
             "col_a <= 'test'",
+            LessThanOrEqual("col_a", "test"),
         ),
         (
             FilterField(TEST_ENTITY_SCHEMA.col_a).isin(["val1", "val2"]),
             (pyarrow_field("col_a").isin(["val1", "val2"])),
             [{"col_a__in": ["val1", "val2"]}],
             "col_a IN ('val1', 'val2')",
+            In("col_a", ["val1", "val2"]),
         ),
         (
             (FilterField(TEST_ENTITY_SCHEMA.col_a) == "test") & (FilterField(TEST_ENTITY_SCHEMA.col_b) == "other"),
             (pyarrow_field("col_a") == "test") & (pyarrow_field("col_b") == "other"),
             [{"col_a": "test", "col_b": "other"}],
             "(col_a = 'test' AND col_b = 'other')",
+            And(EqualTo("col_a", "test"), EqualTo("col_b", "other")),
         ),
         (
             (FilterField(TEST_ENTITY_SCHEMA.col_a) == "test") & (FilterField(TEST_ENTITY_SCHEMA.col_c).isin([1, 2, 3])),
             ((pyarrow_field("col_a") == "test") & (pyarrow_field("col_c").isin([1, 2, 3]))),
             [{"col_a": "test", "col_c__in": [1, 2, 3]}],
             "(col_a = 'test' AND col_c IN (1, 2, 3))",
+            And(EqualTo("col_a", "test"), In("col_c", [1, 2, 3])),
         ),
         (
             (FilterField(TEST_ENTITY_SCHEMA.col_a) == "test") | (FilterField(TEST_ENTITY_SCHEMA.col_b) == "other"),
             (pyarrow_field("col_a") == "test") | (pyarrow_field("col_b") == "other"),
             [{"col_a": "test"}, {"col_b": "other"}],
             "(col_a = 'test' OR col_b = 'other')",
+            Or(EqualTo("col_a", "test"), EqualTo("col_b", "other")),
         ),
         (
             (FilterField(TEST_ENTITY_SCHEMA.col_a) == "test")
@@ -94,6 +115,7 @@ TEST_ENTITY_SCHEMA: TestEntity = PythonSchemaEntity(TestEntity)
             ((pyarrow_field("col_a") == "test") | (pyarrow_field("col_b") == "other") | (pyarrow_field("col_c") == 1)),
             [{"col_a": "test"}, {"col_b": "other"}, {"col_c": 1}],
             "((col_a = 'test' OR col_b = 'other') OR col_c = 1)",
+            Or(Or(EqualTo("col_a", "test"), EqualTo("col_b", "other")), EqualTo("col_c", 1)),
         ),
         (
             ((FilterField(TEST_ENTITY_SCHEMA.col_a) == "test") | (FilterField(TEST_ENTITY_SCHEMA.col_b) == "other"))
@@ -101,6 +123,7 @@ TEST_ENTITY_SCHEMA: TestEntity = PythonSchemaEntity(TestEntity)
             ((pyarrow_field("col_a") == "test") | (pyarrow_field("col_b") == "other")) & (pyarrow_field("col_c") == 1),
             [{"col_a": "test", "col_c": 1}, {"col_b": "other", "col_c": 1}],
             "((col_a = 'test' OR col_b = 'other') AND col_c = 1)",
+            And(Or(EqualTo("col_a", "test"), EqualTo("col_b", "other")), EqualTo("col_c", 1)),
         ),
         (
             (FilterField(TEST_ENTITY_SCHEMA.col_a) == "test") & (FilterField(TEST_ENTITY_SCHEMA.col_c) == 1)
@@ -108,6 +131,7 @@ TEST_ENTITY_SCHEMA: TestEntity = PythonSchemaEntity(TestEntity)
             ((pyarrow_field("col_a") == "test") & (pyarrow_field("col_c") == 1) | (pyarrow_field("col_b") == "other")),
             [{"col_a": "test", "col_c": 1}, {"col_b": "other"}],
             "((col_a = 'test' AND col_c = 1) OR col_b = 'other')",
+            Or(And(EqualTo("col_a", "test"), EqualTo("col_c", 1)), EqualTo("col_b", "other")),
         ),
         (
             (
@@ -122,6 +146,10 @@ TEST_ENTITY_SCHEMA: TestEntity = PythonSchemaEntity(TestEntity)
             ),
             ([{"col_a": "test", "col_c": 1}, {"col_b": "other", "col_c": 2}, {"col_b": "other", "col_d__in": [1, 2]}]),
             "((col_a = 'test' AND col_c = 1) OR (col_b = 'other' AND (col_c = 2 OR col_d IN (1, 2))))",
+            Or(
+                And(EqualTo("col_a", "test"), EqualTo("col_c", 1)),
+                And(EqualTo("col_b", "other"), Or(EqualTo("col_c", 2), In("col_d", [1, 2]))),
+            ),
         ),
     ],
 )
@@ -130,10 +158,12 @@ def test_generic_filtering(
     pyarrow_expected_expr: pc.Expression,
     astra_expected_expr: dict[str, Any],
     trino_expected_expr: str,
+    iceberg_expected_expr: BooleanExpression,
 ):
     assert compile_expression(filter_expr, ArrowFilterExpression).equals(pyarrow_expected_expr)
     assert compile_expression(filter_expr, AstraFilterExpression) == astra_expected_expr
     assert compile_expression(filter_expr, TrinoFilterExpression) == trino_expected_expr
+    assert compile_expression(filter_expr, IcebergFilterExpression) == iceberg_expected_expr
 
 
 @pytest.mark.parametrize(
