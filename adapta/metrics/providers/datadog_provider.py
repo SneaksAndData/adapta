@@ -105,7 +105,7 @@ class DatadogMetricsProvider(MetricsProvider):
         statsd.decrement(metric=metric_name, tags=convert_datadog_tags(tags))
 
     def count(self, metric_name: str, metric_value: int, tags: dict[str, str] | None = None) -> None:
-        raise NotImplementedError
+        statsd.increment(metric=metric_name, value=metric_value, tags=convert_datadog_tags(tags))
 
     def gauge(
         self,
