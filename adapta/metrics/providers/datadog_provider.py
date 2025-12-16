@@ -25,7 +25,7 @@ from datadog import initialize, statsd, api
 from datadog_api_client.v1.model.metric_metadata import MetricMetadata
 
 from adapta.metrics._base import MetricsProvider
-from adapta.utils import convert_datadog_tags
+from adapta.utils import convert_datadog_tags, doze
 
 
 class EventAlertType(Enum):
@@ -74,18 +74,42 @@ class DatadogMetricsProvider(MetricsProvider):
         )
 
     @classmethod
-    def uds(cls, metric_namespace: str, fixed_tags: dict[str, str] = None, debug=False):
+    def uds(
+        cls,
+        metric_namespace: str,
+        fixed_tags: dict[str, str] = None,
+        debug=False,
+        wait_for_socket_timeout_seconds: int = 0,
+    ):
         """
         Enables sending metrics over UDS (Unix Domain Socket).
         You must have dsdsocket path mounted on your system in order to use this mode.
         Refer to https://docs.datadoghq.com/developers/dogstatsd/unix_socket/?tab=kubernetes
+
+        For most scenarios, wait_for_socket_timeout does not need to be specified. However, if you are not seeing metrics in DD, you might have an issue with socket file not available at the time your application runs.
+        In order to ensure you always start with DSD socket ready, specify wait_for_socket_timeout.
         """
-        return cls(
+        assert wait_for_socket_timeout_seconds >= 0, "Socket file wait timeout must be equal to or greater than 0"
+        socket_path = os.getenv("PROTEUS__DD_STATSD_SOCKET_PATH") or "/var/run/datadog/dsd.socket"
+        wait_time = 0
+        provider = cls(
             metric_namespace=metric_namespace,
             fixed_tags=fixed_tags,
             debug=debug,
-            statsd_socket_path=os.getenv("PROTEUS__DD_STATSD_SOCKET_PATH") or "/var/run/datadog/dsd.socket",
+            statsd_socket_path=socket_path,
         )
+
+        if wait_for_socket_timeout_seconds > 0:
+            while wait_time < wait_for_socket_timeout_seconds:
+                doze(1)
+                wait_time += 1
+                if os.path.exists(socket_path):
+                    return provider
+
+            raise RuntimeError(f"UDS socket not found after {wait_time} seconds")
+
+        # skip DSD await if timeout is set to 0
+        return provider
 
     def update_metric_metadata(self, metric_name: str, metric_metadata: MetricMetadata) -> None:
         """
