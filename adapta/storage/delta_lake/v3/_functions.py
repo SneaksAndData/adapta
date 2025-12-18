@@ -97,9 +97,7 @@ def load(  # pylint: disable=R0913
 
     if batch_size:
         if limit is not None:
-            pyarrow_table: Table = pyarrow_ds.filter(row_filter).head(
-                limit, columns=columns, batch_size=batch_size
-            )
+            pyarrow_table: Table = pyarrow_ds.filter(row_filter).head(limit, columns=columns, batch_size=batch_size)
         else:
             pyarrow_table: Table = pyarrow_ds.to_table(filter=row_filter, columns=columns, batch_size=batch_size)
 
