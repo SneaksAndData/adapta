@@ -9,20 +9,23 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.event.issue.pull_request && github.event.comment.body == 'create_package' && github.event.issue.state == 'open' }}
     steps:
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.11.x'
           architecture: 'x64'
-      - uses: actions/checkout@v3
+
+      - uses: actions/checkout@v5
         with:
           ref: refs/pull/${{github.event.issue.number}}/merge
           fetch-depth: 0
+
       - name: Install Poetry and dependencies
-        uses: SneaksAndData/github-actions/install_poetry@v0.1.7
+        uses: SneaksAndData/github-actions/install_poetry@v0.1.11
         with:
           skip_dependencies: true
+
       - name: Create package
-        uses: SneaksAndData/github-actions/create_package@v0.1.7
+        uses: SneaksAndData/github-actions/create_package@v0.1.11
         with:
           public_package_index_token: ${{ secrets.PYPI_API_TOKEN }}
           package_name: adapta
