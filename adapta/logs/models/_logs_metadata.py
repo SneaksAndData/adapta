@@ -2,7 +2,7 @@
 Models for log messages
 """
 
-#  Copyright (c) 2023-2024. ECCO Sneaks & Data
+#  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ Models for log messages
 #
 
 from dataclasses import dataclass
-from typing import Optional, Dict
 
 
 @dataclass
@@ -28,6 +27,6 @@ class CompositeLogMetadata:
     """
 
     template: str
-    diagnostics: Optional[str] = None
-    tags: Optional[Dict[str, str]] = None
-    fields: Optional[Dict[str, str]] = None
+    diagnostics: str | None = None
+    tags: dict[str, str] | None = None
+    fields: dict[str, str] | None = None

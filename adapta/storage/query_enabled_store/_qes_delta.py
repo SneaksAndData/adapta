@@ -4,7 +4,8 @@
 import re
 from dataclasses import dataclass
 from pydoc import locate
-from typing import final, Union, Iterator, Optional, Type
+from typing import final
+from collections.abc import Iterator
 
 from dataclasses_json import DataClassJsonMixin
 
@@ -27,10 +28,10 @@ class DeltaCredential(DataClassJsonMixin):
     """
 
     auth_client_class: str
-    auth_client_credentials_class: Optional[str] = None
+    auth_client_credentials_class: str | None = None
 
-    auth_client: Optional[AuthenticationClient] = None
-    auth_client_credentials: Optional[Type] = None
+    auth_client: AuthenticationClient | None = None
+    auth_client_credentials: type | None = None
 
     def __post_init__(self):
         if not self.auth_client_class:
@@ -76,8 +77,8 @@ class DeltaQueryEnabledStore(QueryEnabledStore[DeltaCredential, DeltaSettings]):
         filter_expression: Expression,
         columns: list[str],
         options: dict[QueryEnabledStoreOptions, any] | None = None,
-        limit: Optional[int] = None,
-    ) -> Union[MetaFrame, Iterator[MetaFrame]]:
+        limit: int | None = None,
+    ) -> MetaFrame | Iterator[MetaFrame]:
         return load(
             auth_client=self.credentials.auth_client(credentials=self.credentials.auth_client_credentials()),
             path=path,
@@ -87,5 +88,5 @@ class DeltaQueryEnabledStore(QueryEnabledStore[DeltaCredential, DeltaSettings]):
             timeout=options.get(QueryEnabledStoreOptions.TIMEOUT, None),
         )
 
-    def _apply_query(self, query: str) -> Union[MetaFrame, Iterator[MetaFrame]]:
+    def _apply_query(self, query: str) -> MetaFrame | Iterator[MetaFrame]:
         raise NotImplementedError("Text queries are not supported by Delta QES")

@@ -1,5 +1,3 @@
-from typing import Type, Union
-
 import pytest
 
 from adapta.storage.query_enabled_store import (
@@ -7,6 +5,7 @@ from adapta.storage.query_enabled_store import (
     DeltaQueryEnabledStore,
     AstraQueryEnabledStore,
     LocalQueryEnabledStore,
+    TrinoQueryEnabledStore,
 )
 
 
@@ -61,11 +60,21 @@ from adapta.storage.query_enabled_store import (
             "qes://engine=LOCAL;plaintext_credentials={};settings={}",
             LocalQueryEnabledStore,
         ),
+        (
+            'qes://engine=TRINO;plaintext_credentials={"oauth2_username": "test"};settings={"host": "tester", "port": 443}',
+            TrinoQueryEnabledStore,
+        ),
+        (
+            'qes://engine=adapta.storage.query_enabled_store.TrinoQueryEnabledStore;plaintext_credentials={"oauth2_username": "test"};settings={"host": "tester", "port": "443"}',
+            TrinoQueryEnabledStore,
+        ),
+        (
+            'qes://engine=TRINO;plaintext_credentials={"oauth2_username": "test"};settings={"host": "tester"}',
+            TrinoQueryEnabledStore,
+        ),
     ],
 )
-def test_query_store_instantiation(
-    connection_string: str, expected_store_type: Union[Type[QueryEnabledStore], Exception]
-):
+def test_query_store_instantiation(connection_string: str, expected_store_type: type[QueryEnabledStore] | Exception):
     try:
         store = QueryEnabledStore.from_string(connection_string, lazy_init=True)
         assert isinstance(store, expected_store_type)

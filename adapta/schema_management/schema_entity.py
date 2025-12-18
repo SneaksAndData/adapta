@@ -1,4 +1,4 @@
-#  Copyright (c) 2023-2024. ECCO Sneaks & Data
+#  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -18,13 +18,13 @@
 """
 
 from dataclasses import Field
-from typing import Union, Any, List
+from typing import Any
 
 
 class PythonSchemaEntity:
     """Entity used to override getattr to provide schema hints"""
 
-    def __init__(self, underlying_type: Union[Any, List[Field]]) -> None:
+    def __init__(self, underlying_type: Any | list[Field]) -> None:
         for field_name in underlying_type.__dataclass_fields__:
             self.__setattr__(field_name, field_name)
 

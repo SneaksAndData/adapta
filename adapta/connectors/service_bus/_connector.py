@@ -1,7 +1,7 @@
 """
     Connector for Azure Service Bus.
 """
-#  Copyright (c) 2023-2024. ECCO Sneaks & Data
+#  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 #  limitations under the License.
 #
 
-from typing import Optional
 import os
 from azure.servicebus import (
     ServiceBusSender,
@@ -31,7 +30,7 @@ class AzureServiceBusConnector:
     Connector for Azure Service Bus.
     """
 
-    def __init__(self, conn_str: Optional[str] = None, queue_name: Optional[str] = None):
+    def __init__(self, conn_str: str | None = None, queue_name: str | None = None):
         self.service_bus_client: ServiceBusClient = ServiceBusClient.from_connection_string(
             conn_str=conn_str if conn_str is not None else os.environ["SERVICE_BUS_CONNECTION_STRING"],
             transport_type=TransportType.Amqp,

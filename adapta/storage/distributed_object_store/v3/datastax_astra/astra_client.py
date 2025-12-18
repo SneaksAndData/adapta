@@ -2,7 +2,7 @@
  DataStax Astra client driver.
 """
 
-#  Copyright (c) 2023-2024. ECCO Sneaks & Data
+#  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -28,7 +28,8 @@ import typing
 from uuid import uuid4
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict
-from typing import Optional, Dict, TypeVar, Callable, Type, List, Any, Union
+from typing import TypeVar, Any
+from collections.abc import Callable
 
 from polars.polars import ComputeError
 
@@ -51,6 +52,7 @@ from cassandra.cluster import (  # pylint: disable=E0611
     ExecutionProfile,
     EXEC_PROFILE_DEFAULT,
     _NOT_SET,
+    DefaultConnection,
 )
 from cassandra.cqlengine.connection import set_session
 from cassandra.cqlengine.models import Model
@@ -99,10 +101,10 @@ class AstraClient:
     def __init__(
         self,
         client_name: str,
-        keyspace: Optional[str] = None,
-        secure_connect_bundle_bytes: Optional[str] = None,
-        client_id: Optional[str] = None,
-        client_secret: Optional[str] = None,
+        keyspace: str | None = None,
+        secure_connect_bundle_bytes: str | None = None,
+        client_id: str | None = None,
+        client_secret: str | None = None,
         reconnect_base_delay_ms=1000,
         reconnect_max_delay_ms=5000,
         socket_connection_timeout_ms=5000,
@@ -112,6 +114,7 @@ class AstraClient:
         log_transient_errors=True,
         metadata_fetch_timeout_s=30,
         protocol_version=_NOT_SET,
+        connection_class=DefaultConnection,
     ):
         self._secure_connect_bundle_bytes = secure_connect_bundle_bytes or os.getenv("PROTEUS__ASTRA_BUNDLE_BYTES")
         self._client_id = client_id or os.getenv("PROTEUS__ASTRA_CLIENT_ID")
@@ -119,7 +122,8 @@ class AstraClient:
         self._keyspace = keyspace
         self._tmp_bundle_path = os.path.join(tempfile.gettempdir(), ".astra")
         self._client_name = client_name
-        self._session: Optional[Session] = None
+        self._session: Session | None = None
+        self._cluster: Cluster | None = None
         self._reconnect_base_delay_ms = reconnect_base_delay_ms
         self._reconnect_max_delay_ms = reconnect_max_delay_ms
         self._socket_connection_timeout = socket_connection_timeout_ms
@@ -131,6 +135,7 @@ class AstraClient:
         self._transient_error_max_wait_s = transient_error_max_wait_s
         self._metadata_fetch_timeout_s = metadata_fetch_timeout_s
         self._protocol_version = protocol_version
+        self._connection_class = connection_class
         if log_transient_errors:
             logging.getLogger("backoff").addHandler(logging.StreamHandler())
 
@@ -159,7 +164,8 @@ class AstraClient:
         )
 
         # https://docs.datastax.com/en/developer/python-driver/3.28/getting_started/
-        self._session = Cluster(
+        self._cluster = Cluster(
+            connection_class=self._connection_class,
             execution_profiles={EXEC_PROFILE_DEFAULT: profile},
             cloud=cloud_config,
             auth_provider=auth_provider,
@@ -176,7 +182,9 @@ class AstraClient:
             ]
             if platform.system().lower() != "darwin"
             else [(IPPROTO_TCP, TCP_NODELAY, 1)],
-        ).connect(self._keyspace)
+        )
+
+        self._session = self._cluster.connect(self._keyspace)
 
         set_session(self._session)
 
@@ -187,7 +195,9 @@ class AstraClient:
         Disconnect from the database and destroy the session.
         """
         self._session.shutdown()
+        self._cluster.shutdown()
         self._session = None
+        self._cluster = None
 
     def __enter__(self) -> "AstraClient":
         """
@@ -211,7 +221,7 @@ class AstraClient:
             keyspaces=None, keyspace=self._keyspace, table=table_name
         )
 
-    def get_entity(self, table_name: str) -> Dict:
+    def get_entity(self, table_name: str) -> dict:
         """
         Reads a single row from a table as dictionary
         https://docs.datastax.com/en/developer/python-driver/3.28/cqlengine/queryset/
@@ -222,7 +232,7 @@ class AstraClient:
         named_table = NamedTable(self._keyspace, table_name)
         return named_table.objects[0]
 
-    def get_entities_from_query(self, query: str, mapper: Callable[[Dict], TModel]) -> MetaFrame:
+    def get_entities_from_query(self, query: str, mapper: Callable[[dict], TModel]) -> MetaFrame:
         """
         Maps query result to a MetaFrame using custom mapper
 
@@ -237,18 +247,18 @@ class AstraClient:
 
     def filter_entities(
         self,
-        model_class: Type[TModel],
-        key_column_filter_values: Union[Expression, List[Dict[str, Any]]],
-        keyspace: Optional[str] = None,
-        table_name: Optional[str] = None,
-        select_columns: Optional[List[str]] = None,
-        primary_keys: Optional[List[str]] = None,
-        partition_keys: Optional[List[str]] = None,
-        custom_indexes: Optional[List[str]] = None,
+        model_class: type[TModel],
+        key_column_filter_values: Expression | list[dict[str, Any]],
+        keyspace: str | None = None,
+        table_name: str | None = None,
+        select_columns: list[str] | None = None,
+        primary_keys: list[str] | None = None,
+        partition_keys: list[str] | None = None,
+        custom_indexes: list[str] | None = None,
         deduplicate=False,
-        num_threads: Optional[int] = None,
+        num_threads: int | None = None,
         options: dict[QueryEnabledStoreOptions, any] = None,
-        limit: Optional[int] = None,
+        limit: int | None = None,
     ) -> MetaFrame:
         """
         Run a filter query on the entity of type TModel backed by table `table_name`.
@@ -288,7 +298,7 @@ class AstraClient:
             max_time=self._transient_error_max_wait_s,
             raise_on_giveup=True,
         )
-        def apply(model: Type[Model], key_column_filter: Dict[str, Any], columns_to_select: Optional[List[str]]):
+        def apply(model: type[Model], key_column_filter: dict[str, Any], columns_to_select: list[str] | None):
             model = model.filter(**key_column_filter).limit(limit)
             if columns_to_select:
                 return model.only(select_columns)
@@ -310,7 +320,7 @@ class AstraClient:
                 return polars.DataFrame(x, schema=select_columns, infer_schema_length=None)
 
         def to_frame(
-            model: Type[Model], key_column_filter: Dict[str, Any], columns_to_select: Optional[List[str]]
+            model: type[Model], key_column_filter: dict[str, Any], columns_to_select: list[str] | None
         ) -> MetaFrame:
             return MetaFrame(
                 [dict(v.items()) for v in list(apply(model, key_column_filter, columns_to_select))],
@@ -404,7 +414,7 @@ class AstraClient:
         """
         self._session.execute(f"ALTER TABLE {self._keyspace}.{table_name} with {option_name}={option_value};")
 
-    def delete_entity(self, entity: TModel, table_name: Optional[str] = None, keyspace: Optional[str] = None) -> None:
+    def delete_entity(self, entity: TModel, table_name: str | None = None, keyspace: str | None = None) -> None:
         """
          Delete an entity from Astra table
 
@@ -423,27 +433,27 @@ class AstraClient:
             max_time=self._transient_error_max_wait_s,
             raise_on_giveup=True,
         )
-        def _delete_entity(model_class: Type[Model], key_filter: Dict):
+        def _delete_entity(model_class: type[Model], key_filter: dict):
             model_class.filter(**key_filter).delete()
 
-        cassandra_model = get_mapper(
-            data_model=Type[entity],
+        cassandra_mapper = get_mapper(
+            data_model=type(entity),
             table_name=table_name,
             keyspace=keyspace,
-        ).map()
+        )
 
         _delete_entity(
-            model_class=cassandra_model,
-            key_filter={key: getattr(entity, key) for key in cassandra_model.primary_keys},
+            model_class=cassandra_mapper.map(),
+            key_filter={key: getattr(entity, key) for key in cassandra_mapper.primary_keys},
         )
 
     def upsert_entity(
         self,
         entity: TModel,
-        keyspace: Optional[str] = None,
-        table_name: Optional[str] = None,
+        keyspace: str | None = None,
+        table_name: str | None = None,
         client_rate_limit: str = "1000 per second",
-        time_to_live: Optional[int] = None,
+        time_to_live: int | None = None,
     ) -> None:
         """
          Inserts a record into existing table.
@@ -476,13 +486,13 @@ class AstraClient:
 
     def upsert_batch(
         self,
-        entities: List[dict],
-        entity_type: Type[TModel],
-        keyspace: Optional[str] = None,
-        table_name: Optional[str] = None,
+        entities: list[dict],
+        entity_type: type[TModel],
+        keyspace: str | None = None,
+        table_name: str | None = None,
         batch_size=1000,
         client_rate_limit: str = "1000 per second",
-        time_to_live: Optional[int] = None,
+        time_to_live: int | None = None,
     ) -> None:
         """
          Inserts a batch into existing table.
@@ -504,7 +514,7 @@ class AstraClient:
             raise_on_giveup=True,
         )
         @rate_limit(limit=client_rate_limit)
-        def _save_entities(model_class: Type[Model], values: List[dict], ttl: int):
+        def _save_entities(model_class: type[Model], values: list[dict], ttl: int):
             with BatchQuery(batch_type=BatchType.UNLOGGED) as upsert_batch:
                 for value in values:
                     model_class.batch(upsert_batch).ttl(ttl).create(**value)
@@ -524,11 +534,11 @@ class AstraClient:
 
     def ann_search(
         self,
-        entity_type: Type[TModel],
+        entity_type: type[TModel],
         vector_to_match: list[float],
         similarity_function: SimilarityFunction = SimilarityFunction.COSINE,
-        key_column_filter_values: Optional[Union[Expression, List[Dict[str, Any]]]] = None,
-        table_name: Optional[str] = None,
+        key_column_filter_values: Expression | list[dict[str, Any]] | None = None,
+        table_name: str | None = None,
         return_vector: bool = False,
         num_results=1,
     ) -> MetaFrame:

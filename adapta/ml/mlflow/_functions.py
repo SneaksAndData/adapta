@@ -1,5 +1,5 @@
 """Mlflow python model module"""
-#  Copyright (c) 2023-2024. ECCO Sneaks & Data
+#  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ import configparser
 import importlib
 import pathlib
 import tempfile
-from typing import Optional, Dict, Any, Literal
+from typing import Any, Literal
 
 import mlflow
 from mlflow.pyfunc import PythonModel
@@ -39,27 +39,29 @@ class _MlflowMachineLearningModel(PythonModel):
         class_ = getattr(module, config["model"]["class_name"])
         self.model = class_.load_model(context.artifacts["model"])  # pylint: disable=W0201
 
-    def predict(self, context, model_input, params: Optional[Dict[str, Any]] = None):
+    def predict(self, context, model_input, params: dict[str, Any] | None = None):
         return self.model.predict(**model_input)
 
-    def predict_stream(self, context, model_input, params: Optional[Dict[str, Any]] = None):
+    def predict_stream(self, context, model_input, params: dict[str, Any] | None = None):
         raise NotImplementedError("Predict stream is not currently supported")
 
 
+# pylint: disable = too-many-locals
 def register_mlflow_model(
     model: MachineLearningModel,
     mlflow_client: MlflowBasicClient,
     model_name: str,
     experiment: str,
-    run_name: Optional[str] = None,
-    run_id: Optional[str] = None,
-    transition_to_stage: Optional[Literal["staging", "production"]] = None,
-    parent_run_id: Optional[str] = None,
-    version_alias: Optional[str] = None,
-    metrics: Optional[Dict[str, float]] = None,
-    model_params: Optional[Dict[str, Any]] = None,
-    artifacts_to_log: Optional[Dict[str, str]] = None,
-    model_tags: Optional[Dict[str, str]] = None,
+    run_name: str | None = None,
+    run_id: str | None = None,
+    transition_to_stage: Literal["staging", "production"] | None = None,
+    parent_run_id: str | None = None,
+    version_alias: str | None = None,
+    metrics: dict[str, float] | None = None,
+    model_params: dict[str, Any] | None = None,
+    artifacts_to_log: dict[str, str] | None = None,
+    run_tags: dict[str, str] | None = None,
+    model_version_tags: dict[str, str] | None = None,
 ) -> str:
     """Registers mlflow model
 
@@ -75,7 +77,8 @@ def register_mlflow_model(
     :param metrics: Metrics to log
     :param model_params: Model hyperparameters to log
     :param artifacts_to_log: Additional artifacts to log
-    :param model_tags: Tags to log
+    :param run_tags: Tags to log in the experiment run
+    :param model_version_tags: Tags to log for specific model version
 
     :return: Run id of the newly created run for registering the model.
     If run_id is provided, it will be the same as run_id
@@ -121,13 +124,17 @@ def register_mlflow_model(
         if model_params is not None:
             mlflow.log_params(model_params)
 
-        if model_tags is not None:
-            mlflow.set_tags(model_tags)
+        if run_tags is not None:
+            mlflow.set_tags(run_tags)
 
         version = mlflow_client.get_latest_model_version(model_name).version
 
         if version_alias is not None:
             mlflow_client.set_model_alias(model_name=model_name, alias=version_alias, model_version=version)
+
+        if model_version_tags is not None:
+            for tag_key, tag_value in model_version_tags.items():
+                mlflow_client.set_model_version_tag(name=model_name, version=version, key=tag_key, value=tag_value)
 
         if transition_to_stage is not None:
             mlflow_client.set_model_stage(

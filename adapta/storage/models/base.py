@@ -1,7 +1,7 @@
 """
  Base class representing file system path.
 """
-#  Copyright (c) 2023-2024. ECCO Sneaks & Data
+#  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 
 from abc import abstractmethod, ABC
 from enum import Enum
+from typing import Self
 
 
 class DataProtocols(Enum):
@@ -31,6 +32,7 @@ class DataProtocols(Enum):
     HIVE = "hive"
     ASTRA = "astra"
     S3 = "s3"
+    TRINO = "trino"
 
 
 class DataPath(ABC):
@@ -86,3 +88,9 @@ class DataPath(ABC):
          Returns valid Delta-RS (https://github.com/delta-io/delta-rs) path from this class.
         :return:
         """
+
+    def __add__(self, other: Self) -> Self:
+        """
+        Concatenate two DataPaths into a new DataPath.
+        """
+        return self.from_hdfs_path("/".join([self.to_hdfs_path(), other.path]))

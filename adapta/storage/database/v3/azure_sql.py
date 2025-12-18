@@ -2,7 +2,7 @@
  ODBC client extension for Azure SQL.
 """
 
-#  Copyright (c) 2023-2024. ECCO Sneaks & Data
+#  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
-
-from typing import Optional
 
 from sqlalchemy import text
 
@@ -38,9 +36,9 @@ class AzureSqlClient(OdbcClient):
         host_name: str,
         user_name: str,
         password: str,
-        database: Optional[str] = None,
-        port: Optional[int] = 1433,
-        database_type: Optional[DatabaseType] = DatabaseType.SQL_SERVER_ODBC,
+        database: str | None = None,
+        port: int | None = 1433,
+        database_type: DatabaseType | None = DatabaseType.SQL_SERVER_ODBC,
     ):
         """
           Creates an instance of an Azure SQL ODBC client.
@@ -69,7 +67,7 @@ class AzureSqlClient(OdbcClient):
         """
         return get_current_objective(self)
 
-    def scale_instance(self, target_objective="HS_Gen4_8", max_wait_time: Optional[int] = 180) -> bool:
+    def scale_instance(self, target_objective="HS_Gen4_8", max_wait_time: int | None = 180) -> bool:
         """
           Scales up/down the connected database.
 

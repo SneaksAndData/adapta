@@ -2,7 +2,7 @@
  Models used by Astra DB when working with storage.
 """
 
-#  Copyright (c) 2023-2024. ECCO Sneaks & Data
+#  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@
 import re
 from dataclasses import dataclass
 from pydoc import locate
-from typing import Optional, TypeVar, Type
+from typing import TypeVar
 
 from adapta.storage.models.base import DataPath, DataProtocols
 
@@ -45,7 +45,7 @@ class AstraPath(DataPath):
 
     keyspace: str
     table: str
-    model_class_name: Optional[str] = None
+    model_class_name: str | None = None
     protocol: str = DataProtocols.ASTRA.value
 
     @classmethod
@@ -63,7 +63,7 @@ class AstraPath(DataPath):
     def to_delta_rs_path(self) -> str:
         raise NotImplementedError
 
-    def model_class(self) -> Optional[Type[TModel]]:
+    def model_class(self) -> type[TModel] | None:
         """
         Locates and returns model class name.
         """

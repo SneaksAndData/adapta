@@ -3,7 +3,7 @@
 """
 import ctypes
 
-#  Copyright (c) 2023-2024. ECCO Sneaks & Data
+#  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ from abc import ABC
 from contextlib import contextmanager
 from threading import Thread
 from time import sleep
-from typing import Any
+from typing import Any, TextIO
 
 from adapta.logs._internal import MetadataLogger, from_log_level
 from adapta.logs._logger_interface import LoggerInterface
@@ -65,11 +65,46 @@ class _InternalLogger(LoggerInterface, ABC):
 
         return fixed_args
 
+    def _get_format_args(self, **kwargs) -> tuple[dict, dict]:
+        base_args = self._get_fixed_args()
+        duplicates = {}
+        for arg_name, arg_value in kwargs.items():
+            if arg_name in base_args:
+                duplicates[arg_name] = arg_value
+            else:
+                base_args[arg_name] = arg_value
+
+        return base_args, duplicates
+
     def _get_template(self, template) -> str:
         return (
             self._fixed_template_delimiter.join([template, ", ".join(self._fixed_template.keys())])
             if self._fixed_template
             else template
+        )
+
+    def _log_malformed_template(
+        self,
+        logger: MetadataLogger,
+        duplicates: dict[str, str],
+        tags: dict[str, str] = None,
+        **kwargs,
+    ) -> None:
+        dup_template = " ".join(
+            [
+                "Duplicated log properties provided:",
+                ", ".join(map(lambda key: "".join(["{", key, "}"]), duplicates.keys())),
+            ]
+        )
+        logger.log_with_metadata(
+            logging.WARN,
+            msg=dup_template.format(**duplicates),
+            template=dup_template,
+            tags=(tags or {}) | self._global_tags,
+            diagnostics=None,
+            stack_info=False,
+            exception=None,
+            metadata_fields=self._get_metadata_fields(kwargs),
         )
 
     def _meta_info(
@@ -88,7 +123,8 @@ class _InternalLogger(LoggerInterface, ABC):
         :param kwargs: Templated arguments (key=value).
         :return:
         """
-        msg = self._get_template(template).format(**self._get_fixed_args(), **kwargs)
+        log_args, duplicates = self._get_format_args(**kwargs)
+        msg = self._get_template(template).format(**log_args)
         logger.log_with_metadata(
             logging.INFO,
             msg=msg,
@@ -99,6 +135,8 @@ class _InternalLogger(LoggerInterface, ABC):
             exception=None,
             metadata_fields=self._get_metadata_fields(kwargs),
         )
+        if len(duplicates) > 0:
+            self._log_malformed_template(logger, duplicates, tags, **kwargs)
 
     def _meta_warning(
         self,
@@ -118,7 +156,8 @@ class _InternalLogger(LoggerInterface, ABC):
         :param kwargs: Templated arguments (key=value).
         :return:
         """
-        msg = self._get_template(template).format(**self._get_fixed_args(), **kwargs)
+        log_args, duplicates = self._get_format_args(**kwargs)
+        msg = self._get_template(template).format(**log_args)
         logger.log_with_metadata(
             logging.WARN,
             msg=msg,
@@ -129,6 +168,8 @@ class _InternalLogger(LoggerInterface, ABC):
             exception=exception,
             metadata_fields=self._get_metadata_fields(kwargs),
         )
+        if len(duplicates) > 0:
+            self._log_malformed_template(logger, duplicates, tags, **kwargs)
 
     def _meta_error(
         self,
@@ -148,7 +189,8 @@ class _InternalLogger(LoggerInterface, ABC):
         :param kwargs: Templated arguments (key=value).
         :return:
         """
-        msg = self._get_template(template).format(**self._get_fixed_args(), **kwargs)
+        log_args, duplicates = self._get_format_args(**kwargs)
+        msg = self._get_template(template).format(**log_args)
         logger.log_with_metadata(
             logging.ERROR,
             msg=msg,
@@ -159,6 +201,8 @@ class _InternalLogger(LoggerInterface, ABC):
             exception=exception,
             metadata_fields=self._get_metadata_fields(kwargs),
         )
+        if len(duplicates) > 0:
+            self._log_malformed_template(logger, duplicates, tags, **kwargs)
 
     def _meta_debug(
         self,
@@ -179,7 +223,8 @@ class _InternalLogger(LoggerInterface, ABC):
         :param kwargs: Templated arguments (key=value).
         :return:
         """
-        msg = self._get_template(template).format(**self._get_fixed_args(), **kwargs)
+        log_args, duplicates = self._get_format_args(**kwargs)
+        msg = self._get_template(template).format(**log_args)
         logger.log_with_metadata(
             logging.DEBUG,
             msg=msg,
@@ -190,6 +235,8 @@ class _InternalLogger(LoggerInterface, ABC):
             exception=exception,
             metadata_fields=self._get_metadata_fields(kwargs),
         )
+        if len(duplicates) > 0:
+            self._log_malformed_template(logger, duplicates, tags, **kwargs)
 
     def _log_redirect_message(
         self,
@@ -255,20 +302,23 @@ class _InternalLogger(LoggerInterface, ABC):
         pos: int,
         tmp_symlink: bytes,
         logger: MetadataLogger,
+        channel: TextIO,
         tags: dict[str, str] | None = None,
         log_level: LogLevel | None = None,
     ) -> int:
-        sys.stdout.flush()
-        with open(tmp_symlink, "r", encoding="utf-8") as output:
+        channel.flush()
+        with open(tmp_symlink, encoding="utf-8") as output:
             output.seek(pos)
             for line in output.readlines():
-                self._log_redirect_message(
-                    logger,
-                    base_template="Redirected output: {message}",
-                    message=line,
-                    tags=(tags or {}) | self._global_tags,
-                    log_level=log_level,
-                )
+                clean_line = line.strip("\n")
+                if clean_line:
+                    self._log_redirect_message(
+                        logger,
+                        base_template="Redirected output: {message}",
+                        message=clean_line,
+                        tags=(tags or {}) | self._global_tags,
+                        log_level=log_level,
+                    )
             return output.tell()
 
     def _handle_unsupported_redirect(
@@ -309,6 +359,7 @@ class _InternalLogger(LoggerInterface, ABC):
                     logger=logger,
                     tags=(tags or {}) | self._global_tags,
                     log_level=log_level,
+                    channel=sys.stdout,
                 )
                 start_position_err = self._flush_and_log(
                     pos=start_position_err,
@@ -316,6 +367,7 @@ class _InternalLogger(LoggerInterface, ABC):
                     logger=logger,
                     tags=(tags or {}) | self._global_tags,
                     log_level=log_level,
+                    channel=sys.stderr,
                 )
                 sleep(0.1)
 
@@ -325,12 +377,14 @@ class _InternalLogger(LoggerInterface, ABC):
                 logger=logger,
                 tags=(tags or {}) | self._global_tags,
                 log_level=log_level,
+                channel=sys.stdout,
             ), self._flush_and_log(
                 pos=start_position_err,
                 tmp_symlink=tmp_symlink_err,
                 logger=logger,
                 tags=(tags or {}) | self._global_tags,
                 log_level=log_level,
+                channel=sys.stderr,
             )
 
         self._handle_unsupported_redirect(tags)

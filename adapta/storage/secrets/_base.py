@@ -2,7 +2,7 @@
  Abstraction for secret storage operations.
 """
 
-#  Copyright (c) 2023-2024. ECCO Sneaks & Data
+#  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -18,7 +18,8 @@
 #
 
 from abc import ABC, abstractmethod
-from typing import Union, Dict, Iterable, Any
+from typing import Any
+from collections.abc import Iterable
 
 from adapta.security.clients import AuthenticationClient
 
@@ -32,7 +33,7 @@ class SecretStorageClient(ABC):
         self._base_client = base_client
 
     @abstractmethod
-    def read_secret(self, storage_name: str, secret_name: str) -> Union[bytes, str, Dict[str, str]]:
+    def read_secret(self, storage_name: str, secret_name: str) -> bytes | str | dict[str, str]:
         """
           Reads a secret from the specified storage.
 
@@ -46,7 +47,7 @@ class SecretStorageClient(ABC):
         self,
         storage_name: str,
         secret_name: str,
-        secret_value: Union[str, Dict[str, str]],
+        secret_value: str | dict[str, str],
         b64_encode=False,
     ) -> None:
         """

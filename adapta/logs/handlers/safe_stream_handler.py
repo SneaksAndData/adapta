@@ -1,7 +1,7 @@
 """
 Logging handler for Stdout that does not create duplicates if stdout redirection is used
 """
-#  Copyright (c) 2023-2024. ECCO Sneaks & Data
+#  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import sys
 from io import TextIOWrapper
 from logging import StreamHandler
 
-from typing import IO, Optional
+from typing import IO
 
 
 class SafeStreamHandler(StreamHandler):
@@ -29,12 +29,12 @@ class SafeStreamHandler(StreamHandler):
     Logging handler for Stdout that does not create duplicates if stdout redirection is used
     """
 
-    def __init__(self, stream: Optional[IO] = None):
+    def __init__(self, stream: IO | None = None):
         """
         Crates new instance
         :param stream: underlying file-like object. If sys.stdout is passed here, it will be reopened
         """
-        self.stream: Optional[IO] = None
+        self.stream: IO | None = None
         self._need_close = False
         if stream is sys.stdout:
             duplicate = os.dup(stream.fileno())

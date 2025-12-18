@@ -1,7 +1,7 @@
 """
   Models used for inter-process communication in data processing applications.
 """
-#  Copyright (c) 2023-2024. ECCO Sneaks & Data
+#  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 #
 
 from dataclasses import dataclass
-from typing import Optional, List, Iterable
+from typing import Iterable
 
 from dataclasses_json import DataClassJsonMixin
 
@@ -27,6 +27,7 @@ from adapta.storage.models.aws import S3Path
 from adapta.storage.models.base import DataPath
 from adapta.storage.models.azure import AdlsGen2Path, WasbPath
 from adapta.storage.models.local import LocalPath
+from adapta.storage.models.trino import TrinoPath
 
 
 @dataclass(frozen=True)
@@ -45,7 +46,7 @@ class DataSocket(DataClassJsonMixin):
     data_format: str
 
     # optional partitions that exist in the data (read-in, write-out)
-    data_partitions: Optional[List[str]] = None
+    data_partitions: list[str] | None = None
 
     def __post_init__(self):
         assert (
@@ -53,8 +54,8 @@ class DataSocket(DataClassJsonMixin):
         ), "Fields alias, data_path and data_format must have a value provided to instantiate a DataSocket."
 
     def parse_data_path(
-        self, candidates: Iterable[DataPath] = (AdlsGen2Path, LocalPath, WasbPath, AstraPath, S3Path)
-    ) -> Optional[DataPath]:
+        self, candidates: Iterable[type[DataPath]] = (AdlsGen2Path, LocalPath, WasbPath, AstraPath, S3Path, TrinoPath)
+    ) -> DataPath | None:
         """
           Attempts to convert this socket's data path to one of the known DataPath types.
 
@@ -80,7 +81,7 @@ class DataSocket(DataClassJsonMixin):
         return cls(alias=vals[0], data_path=vals[1], data_format=vals[2])
 
     @staticmethod
-    def find(sockets: List["DataSocket"], alias: str) -> "DataSocket":
+    def find(sockets: list["DataSocket"], alias: str) -> "DataSocket":
         """Fetches a data socket from a list of sockets.
         :param sockets: List of sockets
         :param alias: Alias to look up

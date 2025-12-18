@@ -1,7 +1,7 @@
 """
  Models used by Azure Client when working with storage.
 """
-#  Copyright (c) 2023-2024. ECCO Sneaks & Data
+#  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 #
 
 from dataclasses import dataclass
-from typing import Union
 
 from adapta.storage.models.base import DataPath, DataProtocols
 
@@ -136,7 +135,7 @@ class WasbPath(DataPath):
         return cls(account=adls_path.account, container=adls_path.container, path=adls_path.path)
 
 
-def cast_path(blob_path: DataPath) -> Union[AdlsGen2Path, WasbPath]:
+def cast_path(blob_path: DataPath) -> AdlsGen2Path | WasbPath:
     """
      Type cast from DataPath to one of Azure paths.
 

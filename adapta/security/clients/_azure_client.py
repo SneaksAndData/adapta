@@ -1,7 +1,7 @@
 """
  Azure Cloud implementation of AuthenticationClient.
 """
-#  Copyright (c) 2023-2024. ECCO Sneaks & Data
+#  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -20,7 +20,8 @@ import os
 
 import logging
 
-from typing import Optional, List, Dict, Tuple, Union, Callable
+from collections.abc import Callable
+from typing import Self
 
 from adlfs import AzureBlobFileSystem
 from azure.mgmt.storage.v2021_08_01.models import StorageAccountKey, StorageAccount
@@ -51,7 +52,7 @@ class AzureClient(AuthenticationClient):
     Azure Credentials provider for various Azure resources.
     """
 
-    def __init__(self, *, subscription_id: Optional[str] = None, default_log_level=logging.ERROR, **_):
+    def __init__(self, *, subscription_id: str | None = None, default_log_level=logging.ERROR, **_):
         super().__init__(**_)
         self.subscription_id = subscription_id
 
@@ -65,7 +66,7 @@ class AzureClient(AuthenticationClient):
         logger.setLevel(default_log_level)
 
     @classmethod
-    def from_base_client(cls, client: AuthenticationClient) -> Optional["AzureClient"]:
+    def from_base_client(cls, client: AuthenticationClient) -> Self | None:
         """
          Safe casts AuthenticationClient to AzureClient if type checks out.
 
@@ -80,7 +81,7 @@ class AzureClient(AuthenticationClient):
     def _get_default_token(self):
         return _get_azure_credentials().get_token("https://management.core.windows.net/.default").token
 
-    def get_access_token(self, scope: Optional[str] = None) -> str:
+    def get_access_token(self, scope: str | None = None) -> str:
         if scope:
             return _get_azure_credentials().get_token(scope).token
         return self._get_default_token()
@@ -91,7 +92,7 @@ class AzureClient(AuthenticationClient):
         :return:
         """
 
-    def connect_storage(self, path: DataPath, set_env: bool = False) -> Optional[Dict]:
+    def connect_storage(self, path: DataPath, set_env: bool = False) -> dict | None:
         def get_resource_group(account: StorageAccount) -> str:
             return account.id.split("/")[account.id.split("/").index("resourceGroups") + 1]
 
@@ -99,7 +100,7 @@ class AzureClient(AuthenticationClient):
             path, (AdlsGen2Path, WasbPath)
         ), "Only adapta.storage.models.azure.AdlsGen2Path or with adapta.storage.models.azure.WasbPath are supported"
 
-        adls_path: Union[AdlsGen2Path, WasbPath] = path
+        adls_path: AdlsGen2Path | WasbPath = path
 
         # rely on mapped env vars, if they exist
         if f"PROTEUS__{adls_path.account.upper()}_AZURE_STORAGE_ACCOUNT_KEY" in os.environ:
@@ -128,7 +129,7 @@ class AzureClient(AuthenticationClient):
             # Auto discover through ARM if env vars are not present for the target account
             storage_client = StorageManagementClient(_get_azure_credentials(), self.subscription_id)
 
-            accounts: List[Tuple[str, str]] = list(
+            accounts: list[tuple[str, str]] = list(
                 map(
                     lambda result: (get_resource_group(result), result.name),
                     storage_client.storage_accounts.list(),
@@ -137,7 +138,7 @@ class AzureClient(AuthenticationClient):
 
             for rg, account in accounts:  # pylint: disable=C0103
                 if adls_path.account == account:
-                    keys: List[StorageAccountKey] = storage_client.storage_accounts.list_keys(
+                    keys: list[StorageAccountKey] = storage_client.storage_accounts.list_keys(
                         resource_group_name=rg, account_name=account
                     ).keys
 
@@ -155,8 +156,8 @@ class AzureClient(AuthenticationClient):
     def get_credentials(self) -> DefaultAzureCredential:
         return _get_azure_credentials()
 
-    def get_pyarrow_filesystem(self, path: DataPath, connection_options: Optional[Dict[str, str]] = None) -> FileSystem:
-        def select_file_system(options: Optional[Dict[str, str]], account_name: str) -> AzureBlobFileSystem:
+    def get_pyarrow_filesystem(self, path: DataPath, connection_options: dict[str, str] | None = None) -> FileSystem:
+        def select_file_system(options: dict[str, str] | None, account_name: str) -> AzureBlobFileSystem:
             if not options and "PROTEUS__USE_AZURE_CREDENTIAL" in os.environ:
                 return AzureBlobFileSystem(account_name=account_name, anon=False)
 
@@ -198,7 +199,7 @@ class AzureClient(AuthenticationClient):
             path.to_hdfs_path(), PyFileSystem(FSSpecHandler(select_file_system(connection_options, path.account)))
         )
 
-    def initialize_session(self, session_callable: Optional[Callable[[], None]] = None) -> "AzureClient":
+    def initialize_session(self, session_callable: Callable[[], None] | None = None) -> "AzureClient":
         """
          Not used in Azure.
         :return:

@@ -1,7 +1,7 @@
 """
  Metrics integration abstraction.
 """
-#  Copyright (c) 2023-2024. ECCO Sneaks & Data
+#  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 #
 
 from abc import ABC, abstractmethod
-from typing import Dict, Optional
 
 
 class MetricsProvider(ABC):
@@ -26,7 +25,7 @@ class MetricsProvider(ABC):
     """
 
     @abstractmethod
-    def increment(self, metric_name: str, tags: Optional[Dict[str, str]] = None) -> None:
+    def increment(self, metric_name: str, tags: dict[str, str] | None = None) -> None:
         """
 
         :param metric_name:
@@ -35,7 +34,7 @@ class MetricsProvider(ABC):
         """
 
     @abstractmethod
-    def decrement(self, metric_name: str, tags: Optional[Dict[str, str]] = None) -> None:
+    def decrement(self, metric_name: str, tags: dict[str, str] | None = None) -> None:
         """
 
         :param metric_name:
@@ -44,17 +43,7 @@ class MetricsProvider(ABC):
         """
 
     @abstractmethod
-    def count(self, metric_name: str, metric_value: int, tags: Optional[Dict[str, str]] = None) -> None:
-        """
-
-        :param metric_name:
-        :param metric_value:
-        :param tags:
-        :return:
-        """
-
-    @abstractmethod
-    def gauge(self, metric_name: str, metric_value: float, tags: Optional[Dict[str, str]] = None) -> None:
+    def count(self, metric_name: str, metric_value: int, tags: dict[str, str] | None = None) -> None:
         """
 
         :param metric_name:
@@ -64,7 +53,7 @@ class MetricsProvider(ABC):
         """
 
     @abstractmethod
-    def set(self, metric_name: str, metric_value: float, tags: Optional[Dict[str, str]] = None) -> None:
+    def gauge(self, metric_name: str, metric_value: float, tags: dict[str, str] | None = None) -> None:
         """
 
         :param metric_name:
@@ -74,7 +63,17 @@ class MetricsProvider(ABC):
         """
 
     @abstractmethod
-    def histogram(self, metric_name: str, metric_value: float, tags: Optional[Dict[str, str]] = None) -> None:
+    def set(self, metric_name: str, metric_value: float, tags: dict[str, str] | None = None) -> None:
+        """
+
+        :param metric_name:
+        :param metric_value:
+        :param tags:
+        :return:
+        """
+
+    @abstractmethod
+    def histogram(self, metric_name: str, metric_value: float, tags: dict[str, str] | None = None) -> None:
         """
 
         :param metric_name:
@@ -87,13 +86,13 @@ class MetricsProvider(ABC):
         self,
         title: str,
         message: str,
-        alert_type: Optional[str] = None,
-        aggregation_key: Optional[str] = None,
-        source_type_name: Optional[str] = None,
-        date_happened: Optional[int] = None,
-        priority: Optional[str] = None,
-        tags: Optional[Optional[Dict[str, str]]] = None,
-        hostname: Optional[str] = None,
+        alert_type: str | None = None,
+        aggregation_key: str | None = None,
+        source_type_name: str | None = None,
+        date_happened: int | None = None,
+        priority: str | None = None,
+        tags: dict[str, str] | None | None = None,
+        hostname: str | None = None,
     ) -> None:
         """
           Send an event to statsd.

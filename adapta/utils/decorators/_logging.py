@@ -1,6 +1,6 @@
 """ Module for common decorator methods. """
 from functools import wraps
-from typing import Optional, Dict, Any
+from typing import Any
 
 from adapta.logs import SemanticLogger
 from adapta.logs._async_logger import _AsyncLogger
@@ -59,7 +59,7 @@ def run_time_metrics_async(
     metric_name: str,
     tag_function_name: bool = False,
     on_finish_message_template="Method {method_name} finished in {elapsed:.2f}s seconds",
-    template_args: Optional[dict[str, Any]] = None,
+    template_args: dict[str, Any] | None = None,
 ):
     """
     Decorator that records runtime of decorated method to logging source and metrics_provider.
@@ -75,7 +75,7 @@ def run_time_metrics_async(
         async def inner_runtime_decorator(
             metrics_provider: MetricsProvider,
             logger: _AsyncLogger,
-            metric_tags: Optional[Dict[str, str]] = None,
+            metric_tags: dict[str, str] | None = None,
             **kwargs,
         ):
             metric_tags = (metric_tags or {}) | ({"function_name": str(func.__qualname__)} if tag_function_name else {})

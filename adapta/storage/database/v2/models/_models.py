@@ -2,7 +2,7 @@
 """
   Models for relational database clients.
 """
-#  Copyright (c) 2023-2024. ECCO Sneaks & Data
+#  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict
 
 
 @dataclass
@@ -29,7 +28,7 @@ class SqlAlchemyDialect:
     """
 
     dialect: str
-    driver: Dict[str, str]
+    driver: dict[str, str]
 
 
 class DatabaseType(Enum):

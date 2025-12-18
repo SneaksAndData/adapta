@@ -1,7 +1,7 @@
 """
  Import index.
 """
-#  Copyright (c) 2023-2024. ECCO Sneaks & Data
+#  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -20,3 +20,8 @@ from adapta.storage.query_enabled_store._models import *
 from adapta.storage.query_enabled_store._qes_astra import *
 from adapta.storage.query_enabled_store._qes_delta import *
 from adapta.storage.query_enabled_store._qes_local import *
+
+try:
+    from adapta.storage.query_enabled_store._qes_trino import *
+except (ImportError, ModuleNotFoundError) as ex:
+    print(f"Failed to import from adapta.storage.query_enabled_store._qes_trino: {ex}")

@@ -1,4 +1,4 @@
-#  Copyright (c) 2023-2024. ECCO Sneaks & Data
+#  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ import uuid
 import pandas as pd
 
 from adapta.storage.blob.local_storage_client import LocalStorageClient
-from adapta.storage.models.format import DictJsonSerializationFormat, DataFrameParquetSerializationFormat
+from adapta.storage.models.formatters import PandasDataFrameParquetSerializationFormat, DictJsonSerializationFormat
 from adapta.storage.models.local import LocalPath
 
 
@@ -78,7 +78,7 @@ def test_read_blobs():
     local_storage.save_data_as_blob(
         data=dataframe,
         blob_path=LocalPath(f"/tmp/{test_base}/files/3_4.parquet"),
-        serialization_format=DataFrameParquetSerializationFormat,
+        serialization_format=PandasDataFrameParquetSerializationFormat,
     )
 
     files = list(
@@ -92,7 +92,7 @@ def test_read_blobs():
     parquet_from_file = pd.concat(
         local_storage.read_blobs(
             blob_path=LocalPath(f"/tmp/{test_base}/files/3_4.parquet"),
-            serialization_format=DataFrameParquetSerializationFormat,
+            serialization_format=PandasDataFrameParquetSerializationFormat,
         )
     )
 
@@ -100,7 +100,8 @@ def test_read_blobs():
 
     parquet_from_dir = pd.concat(
         local_storage.read_blobs(
-            blob_path=LocalPath(f"/tmp/{test_base}/files/"), serialization_format=DataFrameParquetSerializationFormat
+            blob_path=LocalPath(f"/tmp/{test_base}/files/"),
+            serialization_format=PandasDataFrameParquetSerializationFormat,
         )
     )
 

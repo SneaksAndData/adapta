@@ -1,9 +1,10 @@
 """
     Models for generating filter expressions for PyArrow and Astra.
 """
+import datetime
 import math
 from abc import ABC, abstractmethod
-from typing import final, Any, TypeVar, Generic, Type, Tuple, Union
+from typing import final, Any, TypeVar, Generic, Self
 from enum import Enum
 import pyarrow.compute
 from pyarrow.dataset import field as pyarrow_field
@@ -139,8 +140,8 @@ class Expression:
 
     def __init__(
         self,
-        left_operand: Union["Expression", FilterField],
-        right_operand: Union["Expression", Any, list],
+        left_operand: Self | FilterField,
+        right_operand: Self | Any | list,
         operation: FilterExpressionOperation,
     ):
         assert (isinstance(left_operand, Expression) and isinstance(right_operand, Expression)) or (
@@ -325,7 +326,7 @@ class ArrowFilterExpression(FilterExpression[pyarrow.compute.Expression]):
         field_values: Any,
         filter_operation: FilterExpressionOperation,
         separator: str = ",",
-    ) -> Tuple[pyarrow.compute.Expression, Any]:
+    ) -> tuple[pyarrow.compute.Expression, Any]:
         """
         Handle nested types in PyArrow filter expressions.
 
@@ -394,7 +395,47 @@ class ArrowFilterExpression(FilterExpression[pyarrow.compute.Expression]):
         return filter_operation.value["arrow"](compiled_result_a, compiled_result_b)
 
 
-def compile_expression(expression: Expression, target: Type[FilterExpression[TCompileResult]]) -> TCompileResult:
+class TrinoFilterExpression(FilterExpression[str]):
+    """
+    A concrete implementation of the 'FilterExpression' abstract class for Trino SQL.
+    Compiles filter expressions into Trino-compatible SQL WHERE clause fragments.
+    """
+
+    def _compile_base_case(self, field_name: str, field_values: Any, operation: FilterExpressionOperation) -> str:
+        # Map EQ to '=' for Trino
+        if operation == FilterExpressionOperation.EQ:
+            return f"{field_name} = {self._format_value(field_values)}"
+
+        # Handle IN as a series of ORs for Trino
+        if operation == FilterExpressionOperation.IN:
+            if not isinstance(field_values, list):
+                raise ValueError("IN operation requires a list of values")
+            return f"{field_name} IN ({', '.join(self._format_value(v) for v in field_values)})"
+        # Handle other operations
+        op_str = operation.to_string()
+        return f"{field_name} {op_str} {self._format_value(field_values)}"
+
+    def _combine_results(
+        self, compiled_result_a: str, compiled_result_b: str, operation: FilterExpressionOperation
+    ) -> str:
+        op_str = operation.to_string()
+        return f"({compiled_result_a} {op_str} {compiled_result_b})"
+
+    @staticmethod
+    def _format_value(value: Any) -> str:
+        # Format value for SQL: quote strings, leave numbers as is and return NULL for None
+        if isinstance(value, str):
+            return f"'{value}'"
+        if isinstance(value, datetime.datetime):
+            return f"TIMESTAMP '{value}'"
+        if isinstance(value, datetime.date):
+            return f"DATE '{value}'"
+        if value is None:
+            return "NULL"
+        return str(value)
+
+
+def compile_expression(expression: Expression, target: type[FilterExpression[TCompileResult]]) -> TCompileResult:
     """
     Compiles a filter expression using the specified target implementation.
     """

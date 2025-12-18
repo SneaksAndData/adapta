@@ -1,7 +1,7 @@
 """
  Storage Client implementation for Azure Cloud.
 """
-#  Copyright (c) 2023-2024. ECCO Sneaks & Data
+#  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -21,7 +21,8 @@ from datetime import datetime, timedelta
 from functools import partial
 import signal
 from threading import Thread
-from typing import Union, Optional, Dict, Type, TypeVar, Iterator, List, Callable, final
+from typing import TypeVar, final
+from collections.abc import Iterator, Callable
 
 from azure.core.paging import ItemPaged
 from azure.storage.blob import (
@@ -32,6 +33,7 @@ from azure.storage.blob import (
     BlobProperties,
     ExponentialRetry,
     ContainerClient,
+    BlobLeaseClient,
 )
 
 from adapta.storage.blob.base import StorageClient
@@ -51,7 +53,7 @@ class AzureStorageClient(StorageClient):
     Azure Storage (Blob and ADLS) Client.
     """
 
-    def __init__(self, *, base_client: AzureClient, path: Union[AdlsGen2Path, WasbPath], implicit_login=True):
+    def __init__(self, *, base_client: AzureClient, path: AdlsGen2Path | WasbPath, implicit_login=True):
         super().__init__(base_client=base_client)
 
         # overrides default ExponentialRetry
@@ -69,18 +71,32 @@ class AzureStorageClient(StorageClient):
             self._storage_options = None
         else:
             self._storage_options = self._base_client.connect_storage(path)
-            connection_string = (
-                f"DefaultEndpointsProtocol=https;"
-                f"AccountName={self._storage_options['AZURE_STORAGE_ACCOUNT_NAME']};"
-                f"AccountKey={self._storage_options['AZURE_STORAGE_ACCOUNT_KEY']};"
-                f"BlobEndpoint=https://{self._storage_options['AZURE_STORAGE_ACCOUNT_NAME']}.blob.core.windows.net/;"
+            blob_endpoint = (
+                f"BlobEndpoint=https://{self._storage_options['AZURE_STORAGE_ACCOUNT_NAME']}.blob.core.windows.net/"
             )
+            endpoint_protocol = "DefaultEndpointsProtocol=https"
+
+            if "ADAPTA__AZURE_STORAGE_BLOB_ENDPOINT" in os.environ:
+                blob_endpoint = f'BlobEndpoint={os.environ["ADAPTA__AZURE_STORAGE_BLOB_ENDPOINT"]}'
+
+            if "ADAPTA__AZURE_STORAGE_DEFAULT_PROTOCOL" in os.environ:
+                endpoint_protocol = f"DefaultEndpointsProtocol={os.environ['ADAPTA__AZURE_STORAGE_DEFAULT_PROTOCOL']}"
+
+            connection_string = ";".join(
+                [
+                    endpoint_protocol,
+                    f"AccountName={self._storage_options['AZURE_STORAGE_ACCOUNT_NAME']}",
+                    f"AccountKey={self._storage_options['AZURE_STORAGE_ACCOUNT_KEY']}",
+                    blob_endpoint,
+                ]
+            )
+
             self._blob_service_client: BlobServiceClient = BlobServiceClient.from_connection_string(
                 connection_string, retry_policy=retry_policy
             )
 
     @classmethod
-    def create(cls, auth: AzureClient, endpoint_url: Optional[str] = None):
+    def create(cls, auth: AzureClient, endpoint_url: str | None = None):
         """
          Not used in Azure.
         :return:
@@ -120,8 +136,8 @@ class AzureStorageClient(StorageClient):
         self,
         data: T,
         blob_path: DataPath,
-        serialization_format: Type[SerializationFormat[T]],
-        metadata: Optional[Dict[str, str]] = None,
+        serialization_format: type[SerializationFormat[T]],
+        metadata: dict[str, str] | None = None,
         overwrite: bool = False,
     ) -> None:
         bytes_ = serialization_format().serialize(data)
@@ -158,7 +174,7 @@ class AzureStorageClient(StorageClient):
     def blob_exists(self, blob_path: DataPath) -> bool:
         return self._get_blob_client(blob_path).exists()
 
-    def _list_blobs(self, blob_path: DataPath) -> (ItemPaged[BlobProperties], Union[AdlsGen2Path, WasbPath]):
+    def _list_blobs(self, blob_path: DataPath) -> (ItemPaged[BlobProperties], AdlsGen2Path | WasbPath):
         azure_path = cast_path(blob_path)
 
         return (
@@ -169,8 +185,8 @@ class AzureStorageClient(StorageClient):
     def read_blobs(
         self,
         blob_path: DataPath,
-        serialization_format: Type[SerializationFormat[T]],
-        filter_predicate: Optional[Callable[[BlobProperties], bool]] = None,
+        serialization_format: type[SerializationFormat[T]],
+        filter_predicate: Callable[[BlobProperties], bool] | None = None,
     ) -> Iterator[T]:
         blobs_on_path, azure_path = self._list_blobs(blob_path)
 
@@ -210,8 +226,8 @@ class AzureStorageClient(StorageClient):
         self,
         blob_path: DataPath,
         local_path: str,
-        threads: Optional[int] = None,
-        filter_predicate: Optional[Callable[[BlobProperties], bool]] = None,
+        threads: int | None = None,
+        filter_predicate: Callable[[BlobProperties], bool] | None = None,
     ) -> None:
         def download_blob(blob: BlobProperties, container: str) -> None:
             write_path = os.path.join(local_path, blob.name)
@@ -228,7 +244,7 @@ class AzureStorageClient(StorageClient):
                         .readall()
                     )
 
-        def download_blob_list(blob_list: List[BlobProperties], container: str) -> None:
+        def download_blob_list(blob_list: list[BlobProperties], container: str) -> None:
             for blob_from_list in blob_list:
                 if blob_from_list:
                     download_blob(blob_from_list, container)
@@ -250,7 +266,7 @@ class AzureStorageClient(StorageClient):
             for blob_dir in blob_dirs:
                 os.makedirs(os.path.join(local_path, blob_dir.name), exist_ok=True)
 
-            blob_lists: List[List[BlobProperties]] = chunk_list(blob_files, threads)
+            blob_lists: list[list[BlobProperties]] = chunk_list(blob_files, threads)
             thread_list = [
                 Thread(target=download_blob_list, args=(blob_list, azure_path.container)) for blob_list in blob_lists
             ]
@@ -262,7 +278,7 @@ class AzureStorageClient(StorageClient):
     def list_blobs(
         self,
         blob_path: DataPath,
-        filter_predicate: Optional[Callable[[BlobProperties], bool]] = lambda blob: blob.size != 0,  # Skip folders
+        filter_predicate: Callable[[BlobProperties], bool] | None = lambda blob: blob.size != 0,  # Skip folders
     ) -> Iterator[DataPath]:
         blobs_on_path, azure_path = self._list_blobs(blob_path)
 
@@ -274,11 +290,48 @@ class AzureStorageClient(StorageClient):
                     path=blob.name,
                 )
 
+    def list_matching_prefixes(
+        self, blob_path: DataPath, delimiter: str = "/", timeout_seconds: int = 3600
+    ) -> Iterator[DataPath]:
+        """
+        List blobs in accordance with a hierarchy, as delimited by the specified delimiter character.
+        For example, calling list_matching_prefixes(AldsGen2Path.from_hdfs_path(path), delimiter="/"),
+        where path=abfss://c@a.dfs.core.windows.net/my/pre will return:
+        abfss://c@a.dfs.core.windows.net/my/pre1
+        abfss://c@a.dfs.core.windows.net/my/preadad
+        abfss://c@a.dfs.core.windows.net/my/preeqweq
+
+        but will not return abfss://c@a.dfs.core.windows.net/my/pre1/pre2
+        """
+        azure_path = cast_path(blob_path)
+        for prefix in self._get_container_client(azure_path).walk_blobs(
+            name_starts_with=blob_path.path,
+            delimiter=delimiter,
+            timeout=timeout_seconds,
+        ):
+            yield AdlsGen2Path(
+                account=azure_path.account,
+                container=azure_path.container,
+                path=prefix.name,
+            )
+
     def delete_blob(
         self,
         blob_path: DataPath,
     ) -> None:
         azure_path = cast_path(blob_path)
+
+        self._get_container_client(azure_path).delete_blob(blob_path.path)
+
+    def delete_leased_blob(self, blob_path: DataPath) -> None:
+        """
+        Azure specific deletion that takes care of a leased blob
+        """
+        azure_path = cast_path(blob_path)
+        blob_client = self._get_blob_client(azure_path)
+
+        if blob_client.get_blob_properties().lease.state == "leased":
+            BlobLeaseClient(blob_client).break_lease()
 
         self._get_container_client(azure_path).delete_blob(blob_path.path)
 

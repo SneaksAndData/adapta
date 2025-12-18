@@ -1,7 +1,7 @@
 """
  Amazon Web Services implementation of AuthenticationClient.
 """
-#  Copyright (c) 2023-2024. ECCO Sneaks & Data
+#  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -16,7 +16,8 @@
 #  limitations under the License.
 #
 
-from typing import Optional, Dict, final, Callable
+from typing import final, Self
+from collections.abc import Callable
 
 import boto3
 from boto3.session import Session
@@ -33,7 +34,7 @@ class AwsClient(AuthenticationClient):
     AWS Credentials provider for various AWS resources.
     """
 
-    def __init__(self, credentials: Optional[AccessKeyCredentials] = None, allow_http: bool = False):
+    def __init__(self, credentials: AccessKeyCredentials | None = None, allow_http: bool = False):
         super().__init__()
         self._session = None
         self._credentials = credentials
@@ -47,7 +48,7 @@ class AwsClient(AuthenticationClient):
         return self._session
 
     @classmethod
-    def from_base_client(cls, client: AuthenticationClient) -> Optional["AwsClient"]:
+    def from_base_client(cls, client: AuthenticationClient) -> Self | None:
         """
          Safe casts AuthenticationClient to AwsClient if type checks out.
 
@@ -56,18 +57,18 @@ class AwsClient(AuthenticationClient):
         """
         return client if isinstance(client, AwsClient) else None
 
-    def get_credentials(self) -> Optional[AccessKeyCredentials]:
+    def get_credentials(self) -> AccessKeyCredentials | None:
         """
         Returns configured credentials (if any)
         """
         return self._credentials
 
-    def get_access_token(self, scope: Optional[str] = None) -> str:
+    def get_access_token(self, scope: str | None = None) -> str:
         """
         Not used in AWS.
         """
 
-    def connect_storage(self, path: DataPath, set_env: bool = False) -> Optional[Dict]:
+    def connect_storage(self, path: DataPath, set_env: bool = False) -> dict | None:
         """
         Configures the necessary storage options to be used to connect the AWS client for Delta Lake operations.
         :return: All need storage options to set up Delta Lake storage client.
@@ -86,13 +87,13 @@ class AwsClient(AuthenticationClient):
         :return:
         """
 
-    def get_pyarrow_filesystem(self, path: DataPath, connection_options: Optional[Dict[str, str]] = None) -> FileSystem:
+    def get_pyarrow_filesystem(self, path: DataPath, connection_options: dict[str, str] | None = None) -> FileSystem:
         """
         Not supported in AwsClient.
         :return:
         """
 
-    def initialize_session(self, session_callable: Optional[Callable[[], Session]] = None) -> "AwsClient":
+    def initialize_session(self, session_callable: Callable[[], Session] | None = None) -> "AwsClient":
         """
         Initializes the session by custom session function or a default one if no function is provided."
         :return: AwsClient with established session.

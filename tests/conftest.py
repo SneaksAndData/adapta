@@ -1,4 +1,4 @@
-#  Copyright (c) 2023-2024. ECCO Sneaks & Data
+#  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -34,11 +34,10 @@ def sqlite():
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope="session", autouse=True)
 def restore_logger_class():
     _class = logging.getLoggerClass()
     yield
-    pass
     logging.setLoggerClass(_class)
 
 
@@ -55,10 +54,12 @@ def set_env():
     }
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def datadog_handler():  # only for async method (mocker does not work there)
     class MockDataDogApiHandler(DataDogApiHandler):
         def _flush(self) -> None:
             pass
 
-    return MockDataDogApiHandler()
+    handler = MockDataDogApiHandler()
+    yield handler
+    handler._buffer = []

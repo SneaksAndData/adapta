@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from typing import Optional, Union
 
 import numpy as np
 import pytest
@@ -10,8 +9,8 @@ from adapta.schema_management.schema_entity import PythonSchemaEntity
 @dataclass
 class TestSchema:
     col_a: str
-    col_b: Optional[Union[float, str]]
-    col_c: Union[int, str]
+    col_b: float | str | None
+    col_c: int | str
     col_d: object
 
 

@@ -1,7 +1,7 @@
 """
  Models used by Astra DB when working with storage.
 """
-#  Copyright (c) 2023-2024. ECCO Sneaks & Data
+#  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -15,19 +15,19 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
-
-from typing import Iterable, Optional
+from typing import Iterable
 
 from adapta.storage.models.astra import AstraPath
 from adapta.storage.models.aws import S3Path
 from adapta.storage.models.azure import AdlsGen2Path, WasbPath
 from adapta.storage.models.base import DataPath
 from adapta.storage.models.local import LocalPath
+from adapta.storage.models.trino import TrinoPath
 
 
 def parse_data_path(
-    path: str, candidates: Iterable[DataPath] = (AdlsGen2Path, LocalPath, WasbPath, AstraPath, S3Path)
-) -> Optional[DataPath]:
+    path: str, candidates: Iterable[type[DataPath]] = (AdlsGen2Path, LocalPath, WasbPath, AstraPath, S3Path, TrinoPath)
+) -> DataPath | None:
     """
       Attempts to convert a string path to one of the known DataPath types.
 

@@ -1,4 +1,4 @@
-#  Copyright (c) 2023-2024. ECCO Sneaks & Data
+#  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
 
 import pathlib
 import zlib
+from copy import deepcopy
 from unittest.mock import patch, MagicMock, ANY, call
 
 import pandas
@@ -25,7 +26,7 @@ from adapta.security.clients import LocalClient
 from adapta.storage.models.local import LocalPath
 from adapta.storage.delta_lake.v3 import load, load_cached, get_cache_key
 from adapta.storage.cache import KeyValueCache
-from adapta.storage.models.format import DataFrameParquetSerializationFormat
+from adapta.storage.models.formatters import PandasDataFrameParquetSerializationFormat
 
 from pyarrow.dataset import field as pyarrow_field
 
@@ -63,24 +64,24 @@ def test_delta_batch_load(get_client_and_path):
     client, data_path = get_client_and_path
     table = list(load(client, data_path, batch_size=10))
 
-    assert isinstance(table[0].to_pandas(), pandas.DataFrame)
-    assert isinstance(table[0].to_polars(), polars.DataFrame)
+    assert isinstance(deepcopy(table[0]).to_pandas(), pandas.DataFrame)
+    assert isinstance(deepcopy(table[0]).to_polars(), polars.DataFrame)
 
 
 def test_delta_filter(get_client_and_path):
     client, data_path = get_client_and_path
     table = load(client, data_path, row_filter=(pyarrow_field("A") == "b"))
 
-    assert len(table.to_pandas()) == 0
-    assert len(table.to_polars()) == 0
+    assert len(deepcopy(table).to_pandas()) == 0
+    assert len(deepcopy(table).to_polars()) == 0
 
 
 def test_column_project(get_client_and_path):
     client, data_path = get_client_and_path
     table = load(client, data_path, columns=["B"])
 
-    assert len(table.to_pandas().columns.to_list()) == 1
-    assert len(table.to_polars().columns) == 1
+    assert len(deepcopy(table).to_pandas().columns.to_list()) == 1
+    assert len(deepcopy(table).to_polars().columns) == 1
 
 
 def test_delta_load_with_partitions(get_client_and_path_partitioned):
@@ -98,7 +99,9 @@ def test_delta_load_cached(mock_cache: MagicMock, get_client_and_path):
 
     cache.exists.return_value = True
     cache.get.return_value = {
-        b"0": zlib.compress(DataFrameParquetSerializationFormat().serialize(pandas.DataFrame([{"a": 1, "b": 2}]))),
+        b"0": zlib.compress(
+            PandasDataFrameParquetSerializationFormat().serialize(pandas.DataFrame([{"a": 1, "b": 2}]))
+        ),
         b"completed": 1,
     }
 

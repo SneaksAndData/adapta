@@ -1,7 +1,7 @@
 """
  Models for Astra DB.
 """
-#  Copyright (c) 2023-2024. ECCO Sneaks & Data
+#  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@
 import re
 
 from enum import Enum
-from typing import Optional, Union, List, Dict, Any
+from typing import Any
 
 from adapta.storage.models.filter_expression import (
     Expression,
@@ -58,7 +58,7 @@ class VectorSearchQuery:
         vector: list[float],
         field_name: str,
         num_results=1,
-        key_column_filter_values: Optional[Union[Expression, List[Dict[str, Any]]]] = None,
+        key_column_filter_values: Expression | list[dict[str, Any]] | None = None,
     ):
         self._sim_func = sim_func
         self._vector = vector

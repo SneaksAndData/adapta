@@ -6,7 +6,7 @@
 import os
 import re
 from types import TracebackType
-from typing import List, Optional, Dict
+from typing import Self
 from warnings import warn
 
 from pandas import DataFrame
@@ -45,8 +45,8 @@ class SnowflakeClient:
             min_log_level=LogLevel.INFO,
             is_default=True,
         ),
-        password: Optional[str] = None,
-        role: Optional[str] = None,
+        password: str | None = None,
+        role: str | None = None,
     ):
         warn(
             "You are using version 2 of the SnowflakeClient class. "
@@ -63,7 +63,7 @@ class SnowflakeClient:
         self._role = role
         self._conn = None
 
-    def __enter__(self) -> Optional["SnowflakeClient"]:
+    def __enter__(self) -> Self | None:
         """
         Enters the context manager and establishes a connection to the Snowflake database.
         :return: The SnowflakeClient instance, or None if there was an error connecting to the database.
@@ -86,9 +86,9 @@ class SnowflakeClient:
 
     def __exit__(
         self,
-        exc_type: Optional[type[BaseException]] = None,
-        exc_val: Optional[BaseException] = None,
-        exc_tb: Optional[TracebackType] = None,
+        exc_type: type[BaseException] | None = None,
+        exc_val: BaseException | None = None,
+        exc_tb: TracebackType | None = None,
     ) -> None:
         """
         Exits the context manager and closes the database connection.
@@ -101,7 +101,7 @@ class SnowflakeClient:
         if exc_val is not None:
             self._logger.error(f"An error occurred while closing the database connection: {exc_val}")
 
-    def query(self, query: str, fetch_pandas: bool = True) -> Optional[DataFrame]:
+    def query(self, query: str, fetch_pandas: bool = True) -> DataFrame | None:
         """
         Executes the given SQL query and returns the result as a Pandas DataFrame.
 
@@ -154,10 +154,10 @@ class SnowflakeClient:
         schema: str,
         table: str,
         refresh_metadata_only: bool = False,
-        path: Optional[AdlsGen2Path] = None,
-        table_schema: Optional[Dict[str, str]] = None,
-        partition_columns: Optional[List[str]] = None,
-        storage_integration: Optional[str] = None,
+        path: AdlsGen2Path | None = None,
+        table_schema: dict[str, str] | None = None,
+        partition_columns: list[str] | None = None,
+        storage_integration: str | None = None,
     ) -> None:
         """
         Creates delta table as external table in Snowflake

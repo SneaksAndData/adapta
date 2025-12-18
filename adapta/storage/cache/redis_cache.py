@@ -1,7 +1,7 @@
 """
   Key-value cache based on Redis.
 """
-#  Copyright (c) 2023-2024. ECCO Sneaks & Data
+#  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@
 import os
 import ssl
 from datetime import timedelta
-from typing import Any, List, Optional
+from typing import Any
 
 import redis
 from redis import default_backoff
@@ -65,13 +65,13 @@ class RedisCache(KeyValueCache):
                 ssl=True,
             )
 
-    def multi_exists(self, keys: List[str]) -> bool:
+    def multi_exists(self, keys: list[str]) -> bool:
         return self._redis.exists(*keys) == len(keys)
 
     def evict(self, key: str) -> None:
         self._redis.delete(key)
 
-    def exists(self, key: str, attribute: Optional[str] = None) -> bool:
+    def exists(self, key: str, attribute: str | None = None) -> bool:
         if not attribute:
             return self._redis.exists(key) == 1
 
@@ -83,7 +83,7 @@ class RedisCache(KeyValueCache):
 
         return self._redis.hgetall(key)
 
-    def multi_get(self, keys: List[str]) -> List[Any]:
+    def multi_get(self, keys: list[str]) -> list[Any]:
         return self._redis.mget(keys)
 
     def set(

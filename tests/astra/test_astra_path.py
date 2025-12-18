@@ -1,4 +1,4 @@
-#  Copyright (c) 2023-2024. ECCO Sneaks & Data
+#  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,7 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
-from typing import Optional
 
 import pytest
 from adapta.storage.models.astra import AstraPath
@@ -32,7 +31,7 @@ from adapta.storage.models.astra import AstraPath
         ("astra1+my_lib.my_package.MyModel://my_keyspace@tablename1", None, None, None),
     ],
 )
-def test_from_hdfs_path_valid(path: str, expected_keyspace: str, expected_table: str, expected_class: Optional[str]):
+def test_from_hdfs_path_valid(path: str, expected_keyspace: str, expected_table: str, expected_class: str | None):
     astra_path = None
     try:
         astra_path = AstraPath.from_hdfs_path(path)

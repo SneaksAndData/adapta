@@ -2,7 +2,7 @@
 """
  Operations on Delta Lake tables.
 """
-#  Copyright (c) 2023-2024. ECCO Sneaks & Data
+#  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@
 import datetime
 import hashlib
 import zlib
-from typing import Optional, Union, Iterator, List, Iterable, Tuple
+from collections.abc import Iterator, Iterable
 from warnings import warn
 
 from pandas import DataFrame, concat
@@ -34,20 +34,20 @@ from adapta.security.clients._base import AuthenticationClient
 from adapta.storage.models.base import DataPath
 from adapta.storage.delta_lake.v2._models import DeltaTransaction
 from adapta.storage.cache import KeyValueCache
-from adapta.storage.models.format import DataFrameParquetSerializationFormat
+from adapta.storage.models.formatters import PandasDataFrameParquetSerializationFormat
 from adapta.storage.models.filter_expression import Expression, ArrowFilterExpression, compile_expression
 
 
 def load(  # pylint: disable=R0913
     auth_client: AuthenticationClient,
     path: DataPath,
-    version: Optional[int] = None,
-    timestamp: Optional[datetime.datetime] = None,
-    row_filter: Optional[Union[Expression, pyarrow.compute.Expression]] = None,
-    columns: Optional[List[str]] = None,
-    batch_size: Optional[int] = None,
-    partition_filter_expressions: Optional[List[Tuple]] = None,
-) -> Union[DeltaTable, DataFrame, Iterator[DataFrame]]:
+    version: int | None = None,
+    timestamp: datetime.datetime | None = None,
+    row_filter: Expression | pyarrow.compute.Expression | None = None,
+    columns: list[str] | None = None,
+    batch_size: int | None = None,
+    partition_filter_expressions: list[tuple] | None = None,
+) -> DeltaTable | DataFrame | Iterator[DataFrame]:
     """
      Loads Delta Lake table from Azure or AWS storage and converts it to a pandas dataframe.
 
@@ -106,7 +106,7 @@ def load(  # pylint: disable=R0913
     return pyarrow_table.to_pandas(timestamp_as_object=True)
 
 
-def history(auth_client: AuthenticationClient, path: DataPath, limit: Optional[int] = 1) -> Iterable[DeltaTransaction]:
+def history(auth_client: AuthenticationClient, path: DataPath, limit: int | None = 1) -> Iterable[DeltaTransaction]:
     """
       Returns transaction history for the table under path.
 
@@ -124,10 +124,10 @@ def get_cache_key(
     auth_client: AuthenticationClient,
     path: DataPath,
     batch_size=1000,
-    version: Optional[int] = None,
-    row_filter: Optional[Expression] = None,
-    columns: Optional[List[str]] = None,
-    partition_filter_expressions: Optional[List[Tuple]] = None,
+    version: int | None = None,
+    row_filter: Expression | None = None,
+    columns: list[str] | None = None,
+    partition_filter_expressions: list[tuple] | None = None,
 ) -> str:
     """
       Returns a cache key for the path and data read arguments
@@ -172,13 +172,13 @@ def load_cached(  # pylint: disable=R0913
     auth_client: AuthenticationClient,
     path: DataPath,
     cache: KeyValueCache,
-    cache_expires_after: Optional[datetime.timedelta] = datetime.timedelta(hours=1),
+    cache_expires_after: datetime.timedelta | None = datetime.timedelta(hours=1),
     batch_size=1000,
-    version: Optional[int] = None,
-    row_filter: Optional[Expression] = None,
-    columns: Optional[List[str]] = None,
-    partition_filter_expressions: Optional[List[Tuple]] = None,
-    logger: Optional[SemanticLogger] = None,
+    version: int | None = None,
+    row_filter: Expression | None = None,
+    columns: list[str] | None = None,
+    partition_filter_expressions: list[tuple] | None = None,
+    logger: SemanticLogger | None = None,
 ) -> DataFrame:
     """
      Loads Delta Lake table from an external cache and converts it to a single pandas dataframe (after applying column projections and row filters).
@@ -233,7 +233,7 @@ def load_cached(  # pylint: disable=R0913
         try:
             return concat(
                 [
-                    DataFrameParquetSerializationFormat().deserialize(zlib.decompress(cached_batch))
+                    PandasDataFrameParquetSerializationFormat().deserialize(zlib.decompress(cached_batch))
                     for batch_key, cached_batch in cache.get(cache_key, is_map=True).items()
                     if batch_key != b"completed"
                 ]
@@ -271,7 +271,7 @@ def load_cached(  # pylint: disable=R0913
             cache.include(
                 key=cache_key,
                 attribute=str(batch_index),
-                value=zlib.compress(DataFrameParquetSerializationFormat().serialize(batch)),
+                value=zlib.compress(PandasDataFrameParquetSerializationFormat().serialize(batch)),
             )
             for batch_index, batch in enumerate(data)
         ],
