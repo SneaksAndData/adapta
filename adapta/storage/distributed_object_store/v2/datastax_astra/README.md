@@ -74,12 +74,14 @@ insert into tmp.test_entity_new (col_a, col_b, col_c) VALUES ('something2', 'spe
 ```
 
 2. Create field expressions and apply them
+
 ```python
-from adapta.storage.models.filter_expression import FilterField
+from adapta.storage.models.expression_dsl.filter_expression import FilterField
 from adapta.storage.distributed_object_store.datastax_astra.astra_client import AstraClient
 from adapta.schema_management.schema_entity import PythonSchemaEntity
 
 from dataclasses import dataclass, field
+
 
 @dataclass
 class TestEntityNew:
@@ -98,8 +100,11 @@ SCHEMA: TestEntityNew = PythonSchemaEntity(TestEntityNew)
 # Create generic filters
 simple_filter = FilterField(SCHEMA.col_a) == "something1"
 combined_filter = (FilterField(SCHEMA.col_a) == "something1") & (FilterField(SCHEMA.col_b) == "else")
-combined_filter_with_collection = (FilterField(SCHEMA.col_a) == "something1") & (FilterField(SCHEMA.col_b).isin(['else', 'nonexistent']))
-complex_filter_with_collection = ((FilterField(SCHEMA.col_a) == "something1") & (FilterField(SCHEMA.col_b).isin(["else", "special"])) & (FilterField(SCHEMA.col_c) == 123))
+combined_filter_with_collection = (FilterField(SCHEMA.col_a) == "something1") & (
+    FilterField(SCHEMA.col_b).isin(['else', 'nonexistent']))
+complex_filter_with_collection = (
+            (FilterField(SCHEMA.col_a) == "something1") & (FilterField(SCHEMA.col_b).isin(["else", "special"])) & (
+                FilterField(SCHEMA.col_c) == 123))
 
 # Apply the filters for Astra
 with AstraClient(
@@ -111,12 +116,12 @@ with AstraClient(
 ) as ac:
     # Filter expressions are compiled into specific target, in this case Astra filters, in filter_entities method
     print(ac.filter_entities(TestEntityNew, simple_filter))
-    
+
     # simple filter field == value    
     #         col_a      col_b  col_c      col_d
     # 0  something1  different    456  [1, 2, 3]
     # 1  something1       else    123     [1, 2]    
-    
+
     print(ac.filter_entities(TestEntityNew, combined_filter))
 
     #         col_a col_b  col_c   col_d
@@ -127,9 +132,9 @@ with AstraClient(
     #         col_a col_b  col_c
     # 0  something1  else    123
 
-   print(ac.filter_entities(TestEntityNew, complex_filter_with_collection))
-    #         col_a col_b  col_c
-    # 0  something1  else    123
+print(ac.filter_entities(TestEntityNew, complex_filter_with_collection))
+#         col_a col_b  col_c
+# 0  something1  else    123
   ```
 
 ## Using the Vector Search

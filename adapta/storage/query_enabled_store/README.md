@@ -25,7 +25,7 @@ Now, initialize a QES object from that connection and read some data:
 import os
 from adapta.storage.query_enabled_store import QueryEnabledStore
 from adapta.storage.models.azure import AdlsGen2Path
-from adapta.storage.models.filter_expression import FilterField
+from adapta.storage.models.expression_dsl.filter_expression import FilterField
 
 # use implicit auth for Azure (for simplicity - check AzureClient documentation for more options)
 os.environ["PROTEUS__USE_AZURE_CREDENTIAL"] = "1"

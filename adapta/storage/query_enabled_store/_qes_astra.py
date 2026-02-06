@@ -13,7 +13,7 @@ from adapta._version import __version__
 from adapta.storage.distributed_object_store.v3.datastax_astra import AstraClient
 from adapta.storage.models.astra import AstraPath
 from adapta.storage.models.base import DataPath
-from adapta.storage.models.filter_expression import Expression
+from adapta.storage.models.expression_dsl.filter_expression import Expression
 
 from adapta.storage.query_enabled_store._models import (
     QueryEnabledStore,
