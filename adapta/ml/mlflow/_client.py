@@ -137,6 +137,30 @@ class MlflowBasicClient:
             version=model_version,
         )
 
+    def delete_model_alias(self, model_name: str, alias: str):
+        """
+        inherited the deletion of model alias in Mlflow
+        :param model_name: model name
+        :param alias: alias name
+        """
+        self._client.delete_registered_model_alias(
+            name=model_name,
+            alias=alias,
+        )
+
+    def transition_model_alias(
+        self, model_name: str, old_alias: str, new_alias: str, model_version: str | None
+    ) -> None:
+        """
+        Mimics transition for model alias in Mlflow
+        :param model_name: model name
+        :param old_alias: old alias name
+        :param new_alias: new alias name
+        :param model_version: version of model
+        """
+        self.delete_model_alias(model_name=model_name, alias=old_alias)
+        self.set_model_alias(model_name=model_name, alias=new_alias, model_version=model_version)
+
     def set_model_version_tag(
         self,
         name: str,
