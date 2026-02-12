@@ -163,21 +163,34 @@ class MlflowBasicClient:
 
     def set_model_version_tag(
         self,
-        name: str,
-        version: str | None = None,
+        model_name: str,
+        model_version: str | None = None,
         key: str = None,
         value: Any = None,
         stage: str | None = None,
     ) -> None:
         """
         inherited the setting model version tag in Mlflow
-        :param name: Registered model name.
-        :param version: Registered model version.
+        :param model_name: Registered model name.
+        :param model_version: Registered model version.
         :param key: Tag key to log. key is required.
         :param value: Tag value to log. value is required.
         :param stage: Registered model stage.
         """
-        self._client.set_model_version_tag(name=name, version=version, key=key, value=value, stage=stage)
+        self._client.set_model_version_tag(name=model_name, version=model_version, key=key, value=value, stage=stage)
+
+    def set_model_description(self, model_name: str, model_version: str, new_description: str):
+        """
+        inherited the updating model description in Mlflow
+        :param model_name: Registered model name.
+        :param model_version: Registered model version.
+        :param new_description: Description for the model at models section in mlflow.
+        """
+        self._client.update_model_version(
+            name=model_name,
+            version=model_version,
+            description=new_description,
+        )
 
     def log_dict(self, artifact: dict, artifact_path: str, run_id: str):
         """
