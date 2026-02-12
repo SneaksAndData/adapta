@@ -134,7 +134,7 @@ def register_mlflow_model(
 
         if model_version_tags is not None:
             for tag_key, tag_value in model_version_tags.items():
-                mlflow_client.set_model_version_tag(name=model_name, version=version, key=tag_key, value=tag_value)
+                mlflow_client.set_model_version_tag(model_name=model_name, model_version=version, key=tag_key, value=tag_value)
 
         if transition_to_stage is not None:
             mlflow_client.set_model_stage(
