@@ -55,6 +55,7 @@ class DataDogApiHandler(Handler):
         max_flush_retry_time=30,
         ignore_flush_failure=True,
         fixed_tags: dict[str, str] | None = None,
+        attach_interrupt_handlers=True,
     ):
         """
           Creates a handler than can upload log records to DataDog index.
@@ -68,6 +69,8 @@ class DataDogApiHandler(Handler):
         :param fixed_tags: Static key-value pairs to be applied as tags for each log message.
           Some keys will be added if not present in this dictionary:
             - environment: Environment sending logs. If not provided, will be inferred depending on the actual runtime.
+        :param attach_interrupt_handlers: Whether to attach handlers to application interrupt signals to ensure
+        buffered logs are flushed before application termination.
         """
         super().__init__()
         assert os.getenv(
@@ -95,7 +98,8 @@ class DataDogApiHandler(Handler):
         self._configuration = configuration
 
         # send records even if an application is interrupted
-        self._attach_interrupt_handlers()
+        if attach_interrupt_handlers:
+            self._attach_interrupt_handlers()
 
         # environment tag is inferred from kubernetes context name, if one exists
         self._fixed_tags = fixed_tags or {}
