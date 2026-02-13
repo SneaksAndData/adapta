@@ -70,7 +70,8 @@ class DataDogApiHandler(Handler):
           Some keys will be added if not present in this dictionary:
             - environment: Environment sending logs. If not provided, will be inferred depending on the actual runtime.
         :param attach_interrupt_handlers: Whether to attach handlers to application interrupt signals to ensure
-        buffered logs are flushed before application termination.
+        buffered logs are flushed before application termination. Disabling this can e.g. be applicable in environments
+        where code is not running on main thread (e.g. in Streamlit).
         """
         super().__init__()
         assert os.getenv(
