@@ -1,7 +1,12 @@
 """
 Module for serializing and deserializing polars DataFrames in various formats.
 """
+
+from dataclasses import is_dataclass, fields
+from datetime import date, datetime
 import io
+from typing import Any, List, get_args, get_origin
+import typing
 
 import polars
 
@@ -238,3 +243,54 @@ class PolarsDataFrameExcelSerializationFormatWithFileFormat(PolarsDataFrameExcel
     """
 
     append_file_format_extension = True
+
+
+def get_polars_schema(dataclass: Any) -> dict[str, polars.DataType]:
+
+    return {f.name: _map_type(f.type) for f in fields(dataclass)}
+
+
+def _map_type(dtype: Any) -> polars.DataType:
+    DTYPE_MAPPING = {
+        str: polars.String,
+        int: polars.Int64,
+        float: polars.Float64,
+        bool: polars.Boolean,
+        date: polars.Date,
+        datetime: polars.Datetime,
+    }
+    # Handle nested dataclasses which should be wrapped as struct
+    if is_dataclass(dtype):
+        return polars.Struct({f.name: _map_type(f.type) for f in fields(dtype)})
+
+    # Handle fields wrapped in Optional
+    if get_origin(dtype) == typing.Union:
+        return _map_type(get_args(dtype)[0])
+
+    if get_origin(dtype) == list:
+        return polars.List(_map_type(get_args(dtype)[0]))
+
+    return DTYPE_MAPPING[dtype]
+
+
+class PolarsDataFrameDataclassSerializationFormat(SerializationFormat[polars.DataFrame]):
+    """
+    Serializes dataframes as python dataclass.
+    """
+
+    def serialize(self, data: polars.DataFrame, dataclass: Any) -> List[Any]:
+        """
+        Serializes dataframe to bytes using parquet format.
+        :param data: Dataframe to serialize.
+        :return: Parquet serialized dataframe as byte array.
+        """
+        rows = [dataclass(**row) for row in data.to_dicts()]
+        return rows
+
+    def deserialize(self, data: List[Any], **kwargs) -> polars.DataFrame:
+        """
+        Deserializes dataframe from bytes using parquet format.
+        :param data: Dataframe to deserialize in parquet format as bytes.
+        :return: Deserialized dataframe.
+        """
+        return polars.DataFrame(data, schema=get_polars_schema(data[0]), **kwargs)
