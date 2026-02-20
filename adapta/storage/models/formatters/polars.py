@@ -252,10 +252,11 @@ class PolarsDataFrameSchemaBoundSerializationFormat(
     file_format = "parquet"
 
     def _serialize_with_schema(self, data: list[Any], schema: dict[str, polars.DataType], **kwargs) -> bytes:
-        """
-        Serializes dataframe to bytes using parquet format.
-        :param data: Dataframe to serialize.
-        :return: Parquet serialized dataframe as byte array.
+        """Serializes data to bytes given a format and schema.
+
+        :param data: Data to serialize.
+        :param schema: Schema to be used when serializing
+        :return: Serialized data as byte array.
         """
         buffer = io.BytesIO()
         out_dataframe = polars.DataFrame(data, schema=schema, **kwargs)
@@ -263,10 +264,11 @@ class PolarsDataFrameSchemaBoundSerializationFormat(
         return buffer.getvalue()
 
     def _deserialize_with_schema(self, data: bytes, schema: dict[str, polars.DataType], **_) -> polars.DataFrame:
-        """
-        Deserializes dataframe from bytes using parquet format.
-        :param data: Dataframe to deserialize in parquet format as bytes.
-        :return: Deserialized dataframe.
+        """Deserializes data from bytes given a format and schema.
+
+        :param data: Data to deserialize.
+        :param schema: Schema to be used when serializing
+        :return: Deserialized data.
         """
         return polars.read_parquet(io.BytesIO(data), schema=schema)
 
