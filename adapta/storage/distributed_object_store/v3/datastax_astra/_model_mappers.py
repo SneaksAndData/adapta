@@ -12,6 +12,7 @@ import pandera.polars
 from cassandra.cqlengine.models import Model
 from cassandra.cqlengine.columns import Column
 from cassandra.cqlengine import columns
+from operations_research_utils.dataclass_validation import AbstractORDataClass
 
 TModel = typing.TypeVar("TModel")  # pylint: disable=C0103
 
@@ -437,6 +438,68 @@ class PanderaPolarsMapper(CassandraModelMapper):
         return vector_columns[0]
 
 
+@typing.final
+class ORUtilsMapper(CassandraModelMapper):
+    """Maps Pandera Polars data models to Cassandra models."""
+
+    def __init__(
+        self,
+        data_model: type[AbstractORDataClass],
+        keyspace: str | None = None,
+        table_name: str | None = None,
+        primary_keys: list[str] | None = None,
+        partition_keys: list[str] | None = None,
+        custom_indexes: list[str] | None = None,
+    ):
+        super().__init__(
+            data_model=data_model,
+            keyspace=keyspace,
+            table_name=table_name,
+            primary_keys=primary_keys,
+            partition_keys=partition_keys,
+            custom_indexes=custom_indexes,
+        )
+        self._or_utils_data_model: AbstractORDataClass = data_model()
+
+    def _get_original_types(
+        self,
+        subset: list[str] | None = None,
+    ) -> dict[str, type]:
+        return self._or_utils_data_model.get_column_types()
+
+    @property
+    def column_names(self) -> list[str]:
+        return self._or_utils_data_model.get_columns()
+
+    @property
+    def table_name(self) -> str:
+        return self._table_name or self._snake_pattern.sub("_", self._data_model.__name__).lower()
+
+    @property
+    def primary_keys(self) -> list[str]:
+        return self._primary_keys or self._or_utils_data_model.get_primary_keys()
+
+    @property
+    def partition_keys(self) -> list[str]:
+        return self._partition_keys or self._or_utils_data_model.get_astra_partition_keys()
+
+    @property
+    def custom_indices(self) -> list[str]:
+        return self._custom_indexes or self._or_utils_data_model.get_astra_custom_index_keys()
+
+    @property
+    def vector_column(self) -> str:
+        vector_columns = self._or_utils_data_model.get_astra_vector_enabled_keys()
+
+        assert not len(vector_columns) > 1, (
+            f"Only a single vector column is allowed in data models. This model"
+            f" contains {len(vector_columns)} vector columns: {vector_columns}."
+        )
+        assert not len(vector_columns) < 1, "No vector column found in the data model"
+
+        return vector_columns[0]
+
+
 def get_mapper(
     data_model: type[TModel],
     keyspace: str | None = None,
@@ -458,6 +521,16 @@ def get_mapper(
 
     if issubclass(data_model, pandera.polars.DataFrameModel):
         return PanderaPolarsMapper(
+            data_model=data_model,
+            keyspace=keyspace,
+            table_name=table_name,
+            primary_keys=primary_keys,
+            partition_keys=partition_keys,
+            custom_indexes=custom_indexes,
+        )
+
+    if issubclass(data_model, AbstractORDataClass):
+        return ORUtilsMapper(
             data_model=data_model,
             keyspace=keyspace,
             table_name=table_name,

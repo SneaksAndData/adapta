@@ -5,6 +5,7 @@ import pytest
 import pandera.polars
 from cassandra.cqlengine import columns
 from cassandra.cqlengine.models import Model
+from operations_research_utils.dataclass_validation.dataclass.dataclass_core import AstraProperties
 from pandera.typing import Series
 
 from adapta.storage.distributed_object_store.v3.datastax_astra._model_mappers import (
@@ -12,7 +13,9 @@ from adapta.storage.distributed_object_store.v3.datastax_astra._model_mappers im
     CassandraModelMapper,
     get_mapper,
     PanderaPolarsMapper,
+    ORUtilsMapper,
 )
+from operations_research_utils.dataclass_validation import AbstractORDataClass, Field
 
 cols = {"text_column": columns.Text(primary_key=True)}
 
@@ -65,6 +68,47 @@ class PanderaPolarsModel(pandera.polars.DataFrameModel):
         name = "test_table"
 
 
+class ORUtilsDataClassModel(AbstractORDataClass):
+    first_name = Field(
+        display_name="First Name",
+        description="The first name of the individual.",
+        dtype=str,
+        primary_key=True,
+    )
+    country = Field(
+        display_name="Country",
+        description="The country of residence of the individual.",
+        dtype=str,
+        primary_key=True,
+        astra_properties=AstraProperties(partition_key=True),
+    )
+    last_name = Field(
+        display_name="Last Name",
+        description="The last name of the individual.",
+        dtype=str,
+    )
+    age = Field(
+        display_name="Age",
+        description="The age of the individual.",
+        dtype=int,
+    )
+    skills = Field(
+        display_name="Skills",
+        description="A mapping of skill names to proficiency levels for the individual.",
+        dtype=dict[str, str],
+    )
+    likes_cake = Field(
+        display_name="Likes Cake",
+        description="Indicator of whether the individual likes cake.",
+        dtype=bool,
+    )
+    nicknames = Field(
+        display_name="Nicknames",
+        description="A list of nicknames for the individual.",
+        dtype=list[str],
+    )
+
+
 @pytest.mark.parametrize(
     "data_model, Mapper, mapper_kwargs",
     [
@@ -76,6 +120,13 @@ class PanderaPolarsModel(pandera.polars.DataFrameModel):
         (DataclassModel, DataclassMapper, {"table_name": "test_table"}),
         (DataclassModel, DataclassMapper, {}),
         (PanderaPolarsModel, PanderaPolarsMapper, {}),
+        (ORUtilsDataClassModel, ORUtilsMapper, {}),
+        (ORUtilsDataClassModel, ORUtilsMapper, {"table_name": "test_table"}),
+        (
+            ORUtilsDataClassModel,
+            ORUtilsMapper,
+            {"primary_keys": ["first_name", "country"], "partition_keys": ["country"]},
+        ),
     ],
 )
 def test_cassandra_model_mapper(data_model, Mapper: type[CassandraModelMapper], mapper_kwargs: dict):
@@ -103,6 +154,7 @@ def test_cassandra_model_mapper(data_model, Mapper: type[CassandraModelMapper], 
         (DataclassModel, DataclassMapper),
         (DataclassModelWithoutMetadata, DataclassMapper),
         (PanderaPolarsModel, PanderaPolarsMapper),
+        (ORUtilsDataClassModel, ORUtilsMapper),
     ],
 )
 def test_model_mapper_factory(data_model, expected_mapper: type[CassandraModelMapper]):
