@@ -1,6 +1,7 @@
 """
 Serialization formats for saving data structures as blob.
 """
+
 #  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,7 +29,7 @@ class SerializationFormat(ABC, Generic[T]):
     """
 
     @abstractmethod
-    def serialize(self, data: T) -> bytes:
+    def serialize(self, data: T, **kwargs) -> bytes:
         """
         Serializes data to bytes given a format.
         :param data: Data to serialize.
@@ -36,7 +37,7 @@ class SerializationFormat(ABC, Generic[T]):
         """
 
     @abstractmethod
-    def deserialize(self, data: bytes) -> T:
+    def deserialize(self, data: bytes, **kwargs) -> T:
         """
         Deserializes data from bytes given a format.
         :param data: Data to deserialize.

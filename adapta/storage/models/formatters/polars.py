@@ -2,11 +2,8 @@
 Module for serializing and deserializing polars DataFrames in various formats.
 """
 
-from dataclasses import is_dataclass, fields
-from datetime import date, datetime
 import io
-from typing import Any, List, get_args, get_origin
-import typing
+from typing import Any
 
 import polars
 
@@ -20,7 +17,7 @@ class PolarsLazyFrameJsonSerializationFormat(SerializationFormat[polars.LazyFram
 
     file_format = "json"
 
-    def serialize(self, data: polars.LazyFrame) -> bytes:
+    def serialize(self, data: polars.LazyFrame, **_) -> bytes:
         """
         Serializes lazyframes to bytes using JSON format.
         :param data: LazyFrame to serialize.
@@ -28,7 +25,7 @@ class PolarsLazyFrameJsonSerializationFormat(SerializationFormat[polars.LazyFram
         """
         return data.collect().write_ndjson().encode(encoding="utf-8")
 
-    def deserialize(self, data: bytes) -> polars.LazyFrame:
+    def deserialize(self, data: bytes, **_) -> polars.LazyFrame:
         """
         Deserializes lazyframes from bytes using JSON format.
         :param data: LazyFrame to deserialize in JSON format as bytes.
@@ -52,7 +49,7 @@ class PolarsLazyFrameCsvSerializationFormat(SerializationFormat[polars.LazyFrame
 
     file_format = "csv"
 
-    def serialize(self, data: polars.LazyFrame) -> bytes:
+    def serialize(self, data: polars.LazyFrame, **_) -> bytes:
         """
         Serializes lazyframe to bytes using CSV format.
         :param data: Lazyframe to serialize.
@@ -61,7 +58,7 @@ class PolarsLazyFrameCsvSerializationFormat(SerializationFormat[polars.LazyFrame
 
         return data.collect().write_csv().encode(encoding="utf-8")
 
-    def deserialize(self, data: bytes) -> polars.LazyFrame:
+    def deserialize(self, data: bytes, **_) -> polars.LazyFrame:
         """
         Deserializes lazyframe from bytes using CSV format.
         :param data: LazyFrame to deserialize in CSV format as bytes.
@@ -85,7 +82,7 @@ class PolarsLazyFrameParquetSerializationFormat(SerializationFormat[polars.LazyF
 
     file_format = "parquet"
 
-    def serialize(self, data: polars.LazyFrame) -> bytes:
+    def serialize(self, data: polars.LazyFrame, **_) -> bytes:
         """
         Serializes lazyframe to bytes using parquet format.
         :param data: Lazyframe to serialize.
@@ -95,7 +92,7 @@ class PolarsLazyFrameParquetSerializationFormat(SerializationFormat[polars.LazyF
         data.collect().write_parquet(buffer)
         return buffer.getvalue()
 
-    def deserialize(self, data: bytes) -> polars.LazyFrame:
+    def deserialize(self, data: bytes, **_) -> polars.LazyFrame:
         """
         Deserializes lazyframe from bytes using parquet format.
         :param data: Lazyframe to deserialize in parquet format as bytes.
@@ -119,7 +116,7 @@ class PolarsDataFrameJsonSerializationFormat(SerializationFormat[polars.DataFram
 
     file_format = "json"
 
-    def serialize(self, data: polars.DataFrame) -> bytes:
+    def serialize(self, data: polars.DataFrame, **_) -> bytes:
         """
         Serializes dataframe to bytes using JSON format.
         :param data: Dataframe to serialize.
@@ -127,7 +124,7 @@ class PolarsDataFrameJsonSerializationFormat(SerializationFormat[polars.DataFram
         """
         return data.write_json().encode(encoding="utf-8")
 
-    def deserialize(self, data: bytes) -> polars.DataFrame:
+    def deserialize(self, data: bytes, **_) -> polars.DataFrame:
         """
         Deserializes dataframe from bytes using JSON format.
         :param data: Dataframe to deserialize in JSON format as bytes.
@@ -151,7 +148,7 @@ class PolarsDataFrameCsvSerializationFormat(SerializationFormat[polars.DataFrame
 
     file_format = "parquet"
 
-    def serialize(self, data: polars.DataFrame) -> bytes:
+    def serialize(self, data: polars.DataFrame, **_) -> bytes:
         """
         Serializes dataframe to bytes using CSV format.
         :param data: Dataframe to serialize.
@@ -160,7 +157,7 @@ class PolarsDataFrameCsvSerializationFormat(SerializationFormat[polars.DataFrame
 
         return data.write_csv().encode(encoding="utf-8")
 
-    def deserialize(self, data: bytes) -> polars.DataFrame:
+    def deserialize(self, data: bytes, **_) -> polars.DataFrame:
         """
         Deserializes dataframe from bytes using CSV format.
         :param data: Dataframe to deserialize in CSV format as bytes.
@@ -184,7 +181,7 @@ class PolarsDataFrameParquetSerializationFormat(SerializationFormat[polars.DataF
 
     file_format = "parquet"
 
-    def serialize(self, data: polars.DataFrame) -> bytes:
+    def serialize(self, data: polars.DataFrame, **_) -> bytes:
         """
         Serializes dataframe to bytes using parquet format.
         :param data: Dataframe to serialize.
@@ -194,7 +191,7 @@ class PolarsDataFrameParquetSerializationFormat(SerializationFormat[polars.DataF
         data.write_parquet(buffer)
         return buffer.getvalue()
 
-    def deserialize(self, data: bytes) -> polars.DataFrame:
+    def deserialize(self, data: bytes, **_) -> polars.DataFrame:
         """
         Deserializes dataframe from bytes using parquet format.
         :param data: Dataframe to deserialize in parquet format as bytes.
@@ -218,7 +215,7 @@ class PolarsDataFrameExcelSerializationFormat(SerializationFormat[polars.DataFra
 
     file_format = "xlsx"
 
-    def serialize(self, data: polars.DataFrame) -> bytes:
+    def serialize(self, data: polars.DataFrame, **_) -> bytes:
         """
         Serializes dataframe to bytes using Excel format.
         :param data: Dataframe to serialize.
@@ -228,7 +225,7 @@ class PolarsDataFrameExcelSerializationFormat(SerializationFormat[polars.DataFra
         data.write_excel(buffer)
         return buffer.getvalue()
 
-    def deserialize(self, data: bytes) -> polars.DataFrame:
+    def deserialize(self, data: bytes, **_) -> polars.DataFrame:
         """
         Deserializes dataframe from bytes using Excel format.
         :param data: Dataframe to deserialize in Excel format as bytes.
@@ -245,52 +242,36 @@ class PolarsDataFrameExcelSerializationFormatWithFileFormat(PolarsDataFrameExcel
     append_file_format_extension = True
 
 
-def get_polars_schema(dataclass: Any) -> dict[str, polars.DataType]:
-
-    return {f.name: _map_type(f.type) for f in fields(dataclass)}
-
-
-def _map_type(dtype: Any) -> polars.DataType:
-    DTYPE_MAPPING = {
-        str: polars.String,
-        int: polars.Int64,
-        float: polars.Float64,
-        bool: polars.Boolean,
-        date: polars.Date,
-        datetime: polars.Datetime,
-    }
-    # Handle nested dataclasses which should be wrapped as struct
-    if is_dataclass(dtype):
-        return polars.Struct({f.name: _map_type(f.type) for f in fields(dtype)})
-
-    # Handle fields wrapped in Optional
-    if get_origin(dtype) == typing.Union:
-        return _map_type(get_args(dtype)[0])
-
-    if get_origin(dtype) == list:
-        return polars.List(_map_type(get_args(dtype)[0]))
-
-    return DTYPE_MAPPING[dtype]
-
-
-class PolarsDataFrameDataclassSerializationFormat(SerializationFormat[polars.DataFrame]):
+class PolarsDataFrameSchemaBoundSerializationFormat(SerializationFormat[polars.DataFrame]):
     """
-    Serializes dataframes as python dataclass.
+    Serializes dataframes as parquet format with schema.
     """
 
-    def serialize(self, data: polars.DataFrame, dataclass: Any) -> List[Any]:
+    file_format = "parquet"
+
+    def serialize(self, data: list[Any], schema: dict[str, polars.DataType] = None, **kwargs) -> bytes:
         """
         Serializes dataframe to bytes using parquet format.
         :param data: Dataframe to serialize.
         :return: Parquet serialized dataframe as byte array.
         """
-        rows = [dataclass(**row) for row in data.to_dicts()]
-        return rows
+        buffer = io.BytesIO()
+        out_dataframe = polars.DataFrame(data, schema=schema, **kwargs)
+        out_dataframe.write_parquet(buffer)
+        return buffer.getvalue()
 
-    def deserialize(self, data: List[Any], **kwargs) -> polars.DataFrame:
+    def deserialize(self, data: bytes, **_) -> polars.DataFrame:
         """
         Deserializes dataframe from bytes using parquet format.
         :param data: Dataframe to deserialize in parquet format as bytes.
         :return: Deserialized dataframe.
         """
-        return polars.DataFrame(data, schema=get_polars_schema(data[0]), **kwargs)
+        return polars.read_parquet(io.BytesIO(data))
+
+
+class PolarsDataFrameSchemaBoundSerializationFormatWithFileFormat(PolarsDataFrameSchemaBoundSerializationFormat):
+    """
+    Serializes dataframes as parquet format with file format.
+    """
+
+    append_file_format_extension = True
