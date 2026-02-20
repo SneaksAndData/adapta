@@ -1,4 +1,5 @@
 """Serialization format for Pickle."""
+
 import pickle
 
 from adapta.storage.models.format import SerializationFormat, T
@@ -11,7 +12,7 @@ class PickleSerializationFormat(SerializationFormat[T]):
 
     file_format = "pkl"
 
-    def serialize(self, data: T) -> bytes:
+    def serialize(self, data: T, **_) -> bytes:
         """
         Serializes objects to bytes using pickle format.
         :param data: Object to serialize.
@@ -19,7 +20,7 @@ class PickleSerializationFormat(SerializationFormat[T]):
         """
         return pickle.dumps(data)
 
-    def deserialize(self, data: bytes) -> T:
+    def deserialize(self, data: bytes, **_) -> T:
         """
         Deserializes objects from bytes using pickle format.
         :param data: Object to deserialize in pickle format as bytes.
