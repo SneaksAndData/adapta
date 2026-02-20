@@ -85,8 +85,8 @@ class SchemaBoundSerializationFormat(SerializationFormat[Output], Generic[Output
     def _serialize_with_schema(self, data: Output, schema: Schema, **_) -> bytes:
         """"""
 
-    def deserialize(self, data: bytes, **_) -> Output:
-        pass
+    def deserialize(self, data: bytes, **kwargs) -> Output:
+        return self._deserialize_with_schema(data, **kwargs)
 
     @abstractmethod
     def _deserialize_with_schema(self, data: bytes, schema: Schema, **_) -> Output:
