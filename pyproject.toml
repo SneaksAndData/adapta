@@ -122,10 +122,6 @@ cryptography = "~36.0"
 black = "^23"
 pyupgrade = "^3"
 
-[[tool.poetry.source]]
-name = "custom_repo"
-url = "https://esd-code-artifact-production-497010676583.d.codeartifact.eu-central-1.amazonaws.com/pypi/esd-artifacts/simple/"
-
 [tool.black]
 line-length = 120
 
