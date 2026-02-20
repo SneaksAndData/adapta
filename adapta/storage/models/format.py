@@ -29,7 +29,7 @@ class SerializationFormat(ABC, Generic[T]):
     """
 
     @abstractmethod
-    def serialize(self, data: T, **kwargs) -> bytes:
+    def serialize(self, data: T) -> bytes:
         """
         Serializes data to bytes given a format.
         :param data: Data to serialize.
@@ -37,7 +37,7 @@ class SerializationFormat(ABC, Generic[T]):
         """
 
     @abstractmethod
-    def deserialize(self, data: bytes, **kwargs) -> T:
+    def deserialize(self, data: bytes) -> T:
         """
         Deserializes data from bytes given a format.
         :param data: Data to deserialize.
@@ -67,3 +67,27 @@ class SerializationFormat(ABC, Generic[T]):
         :return: File name for the serialized data.
         """
         return f"{output_name}.{self.file_format}" if self.append_file_format_extension else output_name
+
+
+Output = TypeVar("Output")
+Schema = TypeVar("Schema")
+
+
+class SchemaBoundSerializationFormat(SerializationFormat[Output, Schema]):
+    """
+    Abstract serialization format with schema
+    """
+
+    def serialize(self, data: Output, **kwargs) -> bytes:
+        return self._serialize_with_schema(data, **kwargs)
+
+    @abstractmethod
+    def _serialize_with_schema(self, data: Output, schema: Schema, **_) -> bytes:
+        """"""
+
+    def deserialize(self, data: bytes, **_) -> Output:
+        pass
+
+    @abstractmethod
+    def _deserialize_with_schema(self, data: bytes, schema: Schema, **_) -> Output:
+        """"""

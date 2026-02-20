@@ -12,7 +12,7 @@ class PickleSerializationFormat(SerializationFormat[T]):
 
     file_format = "pkl"
 
-    def serialize(self, data: T, **_) -> bytes:
+    def serialize(self, data: T) -> bytes:
         """
         Serializes objects to bytes using pickle format.
         :param data: Object to serialize.
@@ -20,7 +20,7 @@ class PickleSerializationFormat(SerializationFormat[T]):
         """
         return pickle.dumps(data)
 
-    def deserialize(self, data: bytes, **_) -> T:
+    def deserialize(self, data: bytes) -> T:
         """
         Deserializes objects from bytes using pickle format.
         :param data: Object to deserialize in pickle format as bytes.

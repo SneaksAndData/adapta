@@ -17,7 +17,7 @@ class PandasDataFrameJsonSerializationFormat(SerializationFormat[pandas.DataFram
 
     file_format = "json"
 
-    def serialize(self, data: pandas.DataFrame, **_) -> bytes:
+    def serialize(self, data: pandas.DataFrame) -> bytes:
         """
         Serializes dataframe to bytes using JSON format.
         :param data: Dataframe to serialize.
@@ -25,7 +25,7 @@ class PandasDataFrameJsonSerializationFormat(SerializationFormat[pandas.DataFram
         """
         return json.dumps(data.to_dict(orient="records")).encode(encoding="utf-8")
 
-    def deserialize(self, data: bytes, **_) -> pandas.DataFrame:
+    def deserialize(self, data: bytes) -> pandas.DataFrame:
         """
         Deserializes dataframe from bytes using JSON format.
         :param data: Dataframe to deserialize in JSON format as bytes.
@@ -49,7 +49,7 @@ class PandasDataFrameCsvSerializationFormat(SerializationFormat[pandas.DataFrame
 
     file_format = "csv"
 
-    def serialize(self, data: pandas.DataFrame, **_) -> bytes:
+    def serialize(self, data: pandas.DataFrame) -> bytes:
         """
         Serializes dataframe to bytes using CSV format.
         :param data: Dataframe to serialize.
@@ -57,7 +57,7 @@ class PandasDataFrameCsvSerializationFormat(SerializationFormat[pandas.DataFrame
         """
         return data.to_csv(index=False).encode(encoding="utf-8")
 
-    def deserialize(self, data: bytes, **_) -> pandas.DataFrame:
+    def deserialize(self, data: bytes) -> pandas.DataFrame:
         """
         Deserializes dataframe from bytes using CSV format.
         :param data: Dataframe to deserialize in CSV format as bytes.
@@ -81,7 +81,7 @@ class PandasDataFrameParquetSerializationFormat(SerializationFormat[pandas.DataF
 
     file_format = "parquet"
 
-    def serialize(self, data: pandas.DataFrame, **_) -> bytes:
+    def serialize(self, data: pandas.DataFrame) -> bytes:
         """
         Serializes dataframe to bytes using parquet format.
         :param data: Dataframe to serialize.
@@ -89,7 +89,7 @@ class PandasDataFrameParquetSerializationFormat(SerializationFormat[pandas.DataF
         """
         return data.to_parquet()
 
-    def deserialize(self, data: bytes, **_) -> pandas.DataFrame:
+    def deserialize(self, data: bytes) -> pandas.DataFrame:
         """
         Deserializes dataframe from bytes using parquet format.
         :param data: Dataframe to deserialize in parquet format as bytes.
@@ -113,7 +113,7 @@ class PandasDataFrameExcelSerializationFormat(SerializationFormat[pandas.DataFra
 
     file_format = "xlsx"
 
-    def serialize(self, data: pandas.DataFrame, **_) -> bytes:
+    def serialize(self, data: pandas.DataFrame) -> bytes:
         """
         Serializes dataframe to bytes using Excel format.
         :param data: Dataframe to serialize.
@@ -123,7 +123,7 @@ class PandasDataFrameExcelSerializationFormat(SerializationFormat[pandas.DataFra
         data.to_excel(buffer, index=False, engine="openpyxl")
         return buffer.getvalue()
 
-    def deserialize(self, data: bytes, **_) -> pandas.DataFrame:
+    def deserialize(self, data: bytes) -> pandas.DataFrame:
         """
         Deserializes dataframe from bytes using Excel format.
         :param data: Dataframe to deserialize in Excel format as bytes.

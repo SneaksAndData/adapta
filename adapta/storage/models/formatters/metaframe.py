@@ -18,7 +18,7 @@ class MetaFrameParquetSerializationFormat(SerializationFormat[MetaFrame]):
 
     file_format = "parquet"
 
-    def serialize(self, data: MetaFrame, **_) -> bytes:
+    def serialize(self, data: MetaFrame) -> bytes:
         """
         Serializes MetaFrame to bytes using parquet format.
         :param data: MetaFrame to serialize.
@@ -28,7 +28,7 @@ class MetaFrameParquetSerializationFormat(SerializationFormat[MetaFrame]):
         data.to_polars().write_parquet(bytes_object)
         return bytes_object.getvalue()
 
-    def deserialize(self, data: bytes, **_) -> MetaFrame:
+    def deserialize(self, data: bytes) -> MetaFrame:
         """
         Deserializes MetaFrame from bytes using parquet format.
         :param data: MetaFrame to deserialize in parquet format as bytes.

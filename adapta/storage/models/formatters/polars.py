@@ -7,7 +7,7 @@ from typing import Any
 
 import polars
 
-from adapta.storage.models.format import SerializationFormat
+from adapta.storage.models.format import SerializationFormat, SchemaBoundSerializationFormat
 
 
 class PolarsLazyFrameJsonSerializationFormat(SerializationFormat[polars.LazyFrame]):
@@ -242,14 +242,16 @@ class PolarsDataFrameExcelSerializationFormatWithFileFormat(PolarsDataFrameExcel
     append_file_format_extension = True
 
 
-class PolarsDataFrameSchemaBoundSerializationFormat(SerializationFormat[polars.DataFrame]):
+class PolarsDataFrameSchemaBoundSerializationFormat(
+    SchemaBoundSerializationFormat[polars.DataFrame, dict[str, polars.DataType]]
+):
     """
     Serializes dataframes as parquet format with schema.
     """
 
     file_format = "parquet"
 
-    def serialize(self, data: list[Any], schema: dict[str, polars.DataType] = None, **kwargs) -> bytes:
+    def _serialize_with_schema(self, data: list[Any], schema: dict[str, polars.DataType], **kwargs) -> bytes:
         """
         Serializes dataframe to bytes using parquet format.
         :param data: Dataframe to serialize.
@@ -260,13 +262,13 @@ class PolarsDataFrameSchemaBoundSerializationFormat(SerializationFormat[polars.D
         out_dataframe.write_parquet(buffer)
         return buffer.getvalue()
 
-    def deserialize(self, data: bytes, **_) -> polars.DataFrame:
+    def _deserialize_with_schema(self, data: bytes, schema: dict[str, polars.DataType], **_) -> polars.DataFrame:
         """
         Deserializes dataframe from bytes using parquet format.
         :param data: Dataframe to deserialize in parquet format as bytes.
         :return: Deserialized dataframe.
         """
-        return polars.read_parquet(io.BytesIO(data))
+        return polars.read_parquet(io.BytesIO(data), schema=schema)
 
 
 class PolarsDataFrameSchemaBoundSerializationFormatWithFileFormat(PolarsDataFrameSchemaBoundSerializationFormat):
