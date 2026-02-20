@@ -12,7 +12,7 @@ import pandera.polars
 from cassandra.cqlengine.models import Model
 from cassandra.cqlengine.columns import Column
 from cassandra.cqlengine import columns
-from operations_research_utils.dataclass_validation import AbstractORDataClass
+from adapta.dataclass_validation import AbstractDataClass
 
 TModel = typing.TypeVar("TModel")  # pylint: disable=C0103
 
@@ -439,12 +439,12 @@ class PanderaPolarsMapper(CassandraModelMapper):
 
 
 @typing.final
-class ORUtilsMapper(CassandraModelMapper):
-    """Maps Pandera Polars data models to Cassandra models."""
+class AdaptaUtilsMapper(CassandraModelMapper):
+    """Maps Adapta data models to Cassandra models."""
 
     def __init__(
         self,
-        data_model: type[AbstractORDataClass],
+        data_model: type[AbstractDataClass],
         keyspace: str | None = None,
         table_name: str | None = None,
         primary_keys: list[str] | None = None,
@@ -459,7 +459,7 @@ class ORUtilsMapper(CassandraModelMapper):
             partition_keys=partition_keys,
             custom_indexes=custom_indexes,
         )
-        self._or_utils_data_model: AbstractORDataClass = data_model()
+        self._or_utils_data_model: AbstractDataClass = data_model()
 
     def _get_original_types(
         self,
@@ -529,8 +529,8 @@ def get_mapper(
             custom_indexes=custom_indexes,
         )
 
-    if issubclass(data_model, AbstractORDataClass):
-        return ORUtilsMapper(
+    if issubclass(data_model, AbstractDataClass):
+        return AdaptaUtilsMapper(
             data_model=data_model,
             keyspace=keyspace,
             table_name=table_name,

@@ -5,7 +5,6 @@ import pytest
 import pandera.polars
 from cassandra.cqlengine import columns
 from cassandra.cqlengine.models import Model
-from operations_research_utils.dataclass_validation.dataclass.dataclass_core import AstraProperties
 from pandera.typing import Series
 
 from adapta.storage.distributed_object_store.v3.datastax_astra._model_mappers import (
@@ -13,9 +12,9 @@ from adapta.storage.distributed_object_store.v3.datastax_astra._model_mappers im
     CassandraModelMapper,
     get_mapper,
     PanderaPolarsMapper,
-    ORUtilsMapper,
+    AdaptaUtilsMapper,
 )
-from operations_research_utils.dataclass_validation import AbstractORDataClass, Field
+from adapta.dataclass_validation import AbstractDataClass, Field, AstraProperties
 
 cols = {"text_column": columns.Text(primary_key=True)}
 
@@ -68,7 +67,7 @@ class PanderaPolarsModel(pandera.polars.DataFrameModel):
         name = "test_table"
 
 
-class ORUtilsDataClassModel(AbstractORDataClass):
+class AdaptaDataClassModel(AbstractDataClass):
     first_name = Field(
         display_name="First Name",
         description="The first name of the individual.",
@@ -120,11 +119,11 @@ class ORUtilsDataClassModel(AbstractORDataClass):
         (DataclassModel, DataclassMapper, {"table_name": "test_table"}),
         (DataclassModel, DataclassMapper, {}),
         (PanderaPolarsModel, PanderaPolarsMapper, {}),
-        (ORUtilsDataClassModel, ORUtilsMapper, {}),
-        (ORUtilsDataClassModel, ORUtilsMapper, {"table_name": "test_table"}),
+        (AdaptaDataClassModel, AdaptaUtilsMapper, {}),
+        (AdaptaDataClassModel, AdaptaUtilsMapper, {"table_name": "test_table"}),
         (
-            ORUtilsDataClassModel,
-            ORUtilsMapper,
+            AdaptaDataClassModel,
+            AdaptaUtilsMapper,
             {"primary_keys": ["first_name", "country"], "partition_keys": ["country"]},
         ),
     ],
@@ -154,7 +153,7 @@ def test_cassandra_model_mapper(data_model, Mapper: type[CassandraModelMapper], 
         (DataclassModel, DataclassMapper),
         (DataclassModelWithoutMetadata, DataclassMapper),
         (PanderaPolarsModel, PanderaPolarsMapper),
-        (ORUtilsDataClassModel, ORUtilsMapper),
+        (AdaptaDataClassModel, AdaptaUtilsMapper),
     ],
 )
 def test_model_mapper_factory(data_model, expected_mapper: type[CassandraModelMapper]):
