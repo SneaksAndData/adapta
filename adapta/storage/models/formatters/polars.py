@@ -1,11 +1,13 @@
 """
 Module for serializing and deserializing polars DataFrames in various formats.
 """
+
 import io
+from typing import Any
 
 import polars
 
-from adapta.storage.models.format import SerializationFormat
+from adapta.storage.models.format import SerializationFormat, SchemaBoundSerializationFormat
 
 
 class PolarsLazyFrameJsonSerializationFormat(SerializationFormat[polars.LazyFrame]):
@@ -235,6 +237,45 @@ class PolarsDataFrameExcelSerializationFormat(SerializationFormat[polars.DataFra
 class PolarsDataFrameExcelSerializationFormatWithFileFormat(PolarsDataFrameExcelSerializationFormat):
     """
     Serializes dataframes as Excel (.xlsx) format with file format.
+    """
+
+    append_file_format_extension = True
+
+
+class PolarsDataFrameSchemaBoundSerializationFormat(
+    SchemaBoundSerializationFormat[polars.DataFrame, dict[str, polars.DataType]]
+):
+    """
+    Serializes dataframes as parquet format with schema.
+    """
+
+    file_format = "parquet"
+
+    def _serialize_with_schema(self, data: list[Any], schema: dict[str, polars.DataType], **kwargs) -> bytes:
+        """Serializes data to bytes given a format and schema.
+
+        :param data: Data to serialize.
+        :param schema: Schema to be used when serializing
+        :return: Serialized data as byte array.
+        """
+        buffer = io.BytesIO()
+        out_dataframe = polars.DataFrame(data, schema=schema, **kwargs)
+        out_dataframe.write_parquet(buffer)
+        return buffer.getvalue()
+
+    def _deserialize_with_schema(self, data: bytes, schema: dict[str, polars.DataType], **_) -> polars.DataFrame:
+        """Deserializes data from bytes given a format and schema.
+
+        :param data: Data to deserialize.
+        :param schema: Schema to be used when serializing
+        :return: Deserialized data.
+        """
+        return polars.read_parquet(io.BytesIO(data), schema=schema)
+
+
+class PolarsDataFrameSchemaBoundSerializationFormatWithFileFormat(PolarsDataFrameSchemaBoundSerializationFormat):
+    """
+    Serializes dataframes as parquet format with file format.
     """
 
     append_file_format_extension = True
