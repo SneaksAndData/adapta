@@ -3,7 +3,7 @@ from datetime import date, datetime
 from typing import Optional
 
 import polars
-from adapta.storage.models.formatters.polars import get_polars_schema
+from adapta.utils.polars import get_polars_schema
 
 
 def test_polars_schema():
