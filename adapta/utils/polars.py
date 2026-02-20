@@ -22,7 +22,7 @@ def get_polars_schema(data_class: Any) -> dict[str, polars.DataType]:
         >>>     name: str
         >>>     age: int
         >>> get_polars_schema(MyData)
-        {'name': pl.Utf8, 'age': pl.Int64}
+        {'name': pl.String, 'age': pl.Int64}
 
     """
 
