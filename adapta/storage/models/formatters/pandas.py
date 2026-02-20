@@ -1,7 +1,6 @@
 """
 Module for serializing and deserializing pandas DataFrames in various formats.
 """
-
 import io
 import json
 

@@ -1,7 +1,6 @@
 """
 Module for serializing and deserializing Metaframe DataFrames in various formats.
 """
-
 import io
 
 import pandas

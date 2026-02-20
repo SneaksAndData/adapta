@@ -1,7 +1,6 @@
 """
 Module for serializing and deserializing dictionaries.
 """
-
 import json
 
 from adapta.storage.models.format import SerializationFormat
@@ -15,7 +14,7 @@ class DictJsonSerializationFormat(SerializationFormat[dict]):
 
     file_format = "json"
 
-    def serialize(self, data: dict, **_) -> bytes:
+    def serialize(self, data: dict) -> bytes:
         """
         Serializes dictionary to bytes using JSON format.
         :param data: Dictionary to serialize.
@@ -23,7 +22,7 @@ class DictJsonSerializationFormat(SerializationFormat[dict]):
         """
         return json.dumps(data).encode(encoding="utf-8")
 
-    def deserialize(self, data: bytes, **_) -> dict:
+    def deserialize(self, data: bytes) -> dict:
         """
         Deserializes dictionary from bytes using JSON format.
         :param data: Dictionary to deserialize in JSON format as bytes.
