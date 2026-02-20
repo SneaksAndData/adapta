@@ -1,3 +1,6 @@
+"""
+Abstract Data Class
+"""
 from copy import deepcopy
 
 import polars as pl

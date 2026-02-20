@@ -1,3 +1,6 @@
+"""
+Validation class for Polars DataFrames.
+"""
 import datetime
 
 import polars as pl

@@ -1,3 +1,6 @@
+"""
+Validation Class for validating data against a schema defined as an AbstractDataClass.
+"""
 from adapta.dataclass_validation.dataclass.dataclass_abstract import AbstractDataClass
 from adapta.dataclass_validation.validation.validation_utils import (
     ValidationResponse,

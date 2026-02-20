@@ -1,3 +1,6 @@
+"""
+Abstract Validation Class
+"""
 from abc import abstractmethod
 from typing import get_origin, get_args
 

@@ -1,3 +1,6 @@
+"""
+Core data class implementation for the adapta library
+"""
 from typing import final
 
 
