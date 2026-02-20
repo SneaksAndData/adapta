@@ -73,7 +73,7 @@ Output = TypeVar("Output")
 Schema = TypeVar("Schema")
 
 
-class SchemaBoundSerializationFormat(SerializationFormat[Output, Schema]):
+class SchemaBoundSerializationFormat(SerializationFormat[Output], Generic[Output, Schema]):
     """
     Abstract serialization format with schema
     """
