@@ -72,7 +72,7 @@ class TrinoQueryEnabledStore(QueryEnabledStore[TrinoCredential, TrinoSettings]):
         if not self._lazy:
             self._trino_client.disconnect()
 
-    def __init__(self, credentials: TrinoCredential, settings: TrinoSettings, lazy_init: bool):
+    def __init__(self, credentials: TrinoCredential, settings: TrinoSettings, lazy_init: bool = True):
         super().__init__(credentials, settings)
         self._trino_client = TrinoClient(
             host=self.settings.host,
@@ -98,25 +98,23 @@ class TrinoQueryEnabledStore(QueryEnabledStore[TrinoCredential, TrinoSettings]):
 
         if self._lazy:
             with self._trino_client as trino_client:
-                if QueryEnabledStoreOptions.BATCH_SIZE in options:
-                    return concat(
-                        trino_client.query(
-                            query=query,
-                            batch_size=options[QueryEnabledStoreOptions.BATCH_SIZE],
-                        )
+                return concat(
+                    trino_client.query(
+                        query=query,
+                        batch_size=options[QueryEnabledStoreOptions.BATCH_SIZE]
+                        if QueryEnabledStoreOptions.BATCH_SIZE in options
+                        else None,
                     )
-
-                return concat(trino_client.query(query=query))
-
-        if QueryEnabledStoreOptions.BATCH_SIZE in options:
-            return concat(
-                self._trino_client.query(
-                    query=query,
-                    batch_size=options[QueryEnabledStoreOptions.BATCH_SIZE],
                 )
-            )
 
-        return concat(self._trino_client.query(query=query))
+        return concat(
+            self._trino_client.query(
+                query=query,
+                batch_size=options[QueryEnabledStoreOptions.BATCH_SIZE]
+                if QueryEnabledStoreOptions.BATCH_SIZE in options
+                else None,
+            )
+        )
 
     def _apply_query(self, query: str) -> MetaFrame | Iterator[MetaFrame]:
         raise NotImplementedError("Text queries are not supported by Trino QES")

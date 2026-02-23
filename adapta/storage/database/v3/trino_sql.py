@@ -19,7 +19,7 @@
 
 import os
 from dataclasses import dataclass
-from typing import final, Optional
+from typing import final, Optional, Self
 from collections.abc import Iterator
 
 import sqlalchemy
@@ -133,6 +133,14 @@ class TrinoClient:
         """
         Establishes connection to Trino. This method is implicitly called when using the client as a context manager.
         """
+        if self._connection:
+            self._logger.info(
+                "Connection to {host}:{port} is already established.",
+                host=self._host,
+                port=self._port,
+            )
+            return
+
         self._connection = self._engine.connect()
 
     def disconnect(self) -> None:
@@ -147,15 +155,16 @@ class TrinoClient:
         self._engine.dispose()
         self._engine = None
 
-    def __enter__(self) -> Optional["TrinoClient"]:
-        if self._connection:
-            self._logger.warning(
-                "Connection to {host}:{port} is already established.", host=self._host, port=self._port
-            )
-            return self
-
+    def __enter__(self) -> Self:
         try:
-            self._connection = self._engine.connect()
+            if not self._connection:
+                self._connection = self._engine.connect()
+            else:
+                self._logger.info(
+                    "Connection to {host}:{port} is already established.",
+                    host=self._host,
+                    port=self._port,
+                )
             return self
         except SQLAlchemyError as ex:
             self._logger.error(
@@ -166,13 +175,27 @@ class TrinoClient:
             )
             return None
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        if self._connection:
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        try:
             self._connection.close()
-        if self._engine:
+        except SQLAlchemyError as ex:
+            self._logger.warning(
+                "Error closing connection to {host}:{port}",
+                host=self._host,
+                port=self._port,
+                exception=ex,
+            )
+        try:
             self._engine.dispose()
+        except SQLAlchemyError as ex:
+            self._logger.warning(
+                "Error disposing engine for {host}:{port}",
+                host=self._host,
+                port=self._port,
+                exception=ex,
+            )
 
-    def query(self, query: str, batch_size: int = 1000) -> Iterator[MetaFrame]:
+    def query(self, query: str, batch_size: int | None = 1000) -> Iterator[MetaFrame]:
         """
         Executes a Trino DML query and converts the result into a Pandas dataframe.
 
