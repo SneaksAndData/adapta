@@ -19,7 +19,7 @@
 
 import os
 from dataclasses import dataclass
-from typing import final, Optional
+from typing import final, Self
 from collections.abc import Iterator
 
 import sqlalchemy
@@ -57,6 +57,8 @@ class TrinoClient:
         catalog: str | None = None,
         port: int | None = 443,
         oauth2_username: str | None = None,
+        username: str | None = None,
+        password: str | None = None,
         credentials_provider: tuple[TrinoConnectionSecret, SecretStorageClient] | None = None,
         logger: SemanticLogger = SemanticLogger().add_log_source(
             log_source_name="adapta-trino-client",
@@ -70,12 +72,17 @@ class TrinoClient:
           - via OAuth2 if oauth2_username or ADAPTA__TRINO_OAUTH2_USERNAME is provided
           - via external secret provider (Vault, Azure KeyVault, AWS Secrets Manager, etc.) if credentials_provider is provided
           - via plaintext username-password if ADAPTA__TRINO_USERNAME and ADAPTA__TRINO_PASSWORD are provided
+          - via plaintext username-password if username and password parameters are provided directly
 
         :param host: Trino Coordinator hostname, without protocol.
         :param catalog: Trino catalog.
         :param port: Trino connection port (443 default).
         :param oauth2_username: Optional username to use if authenticating with interactive OAuth2.
                Can also be provided via ADAPTA__TRINO_OAUTH2_USERNAME.
+        :param username: Optional username to use if authenticating with Basic Auth.
+               Can also be provided via ADAPTA__TRINO_USERNAME.
+        :param password: Optional password to use if authenticating with Basic Auth.
+               Can also be provided via ADAPTA__TRINO_PASSWORD.
         :param credentials_provider: Optional secret provider and auth secret details to use to read Basic Auth credentials.
         :param logger: CompositeLogger instance.
         """
@@ -83,13 +90,14 @@ class TrinoClient:
         self._host = host
         self._catalog = catalog
         self._port = port
-        if "ADAPTA__TRINO_USERNAME" in os.environ:
+
+        username = username or os.getenv("ADAPTA__TRINO_USERNAME", None)
+        if username:
+            password = password or os.getenv("ADAPTA__TRINO_PASSWORD", None)
             self._engine = create_engine(
-                f"trino://{os.getenv('ADAPTA__TRINO_USERNAME')}@{self._host}:{self._port}/{self._catalog or ''}",
+                f"trino://{username}@{self._host}:{self._port}/{self._catalog or ''}",
                 connect_args={
-                    "auth": BasicAuthentication(
-                        os.getenv("ADAPTA__TRINO_USERNAME"), os.getenv("ADAPTA__TRINO_PASSWORD")
-                    ),
+                    "auth": BasicAuthentication(username, password),
                     "http_scheme": "https",
                 },
             )
@@ -121,9 +129,35 @@ class TrinoClient:
         self._logger = logger
         self._connection: sqlalchemy.engine.Connection | None = None
 
-    def __enter__(self) -> Optional["TrinoClient"]:
+    def connect(self) -> None:
+        """
+        Establishes connection to Trino. This method is implicitly called when using the client as a context manager.
+        """
+        if self._connection:
+            self._logger.info(
+                "Connection to {host}:{port} is already established.",
+                host=self._host,
+                port=self._port,
+            )
+            return
+
+        self._connection = self._engine.connect()
+
+    def disconnect(self) -> None:
+        """
+        Closes the connection to Trino. This method is implicitly called when using the client as a context manager.
+        """
+
+        if self._connection:
+            self._connection.close()
+            self._connection = None
+
+        self._engine.dispose()
+        self._engine = None
+
+    def __enter__(self) -> Self:
         try:
-            self._connection = self._engine.connect()
+            self.connect()
             return self
         except SQLAlchemyError as ex:
             self._logger.error(
@@ -134,11 +168,27 @@ class TrinoClient:
             )
             return None
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self._connection.close()
-        self._engine.dispose()
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        try:
+            self._connection.close()
+        except SQLAlchemyError as ex:
+            self._logger.warning(
+                "Error closing connection to {host}:{port}",
+                host=self._host,
+                port=self._port,
+                exception=ex,
+            )
+        try:
+            self._engine.dispose()
+        except SQLAlchemyError as ex:
+            self._logger.warning(
+                "Error disposing engine for {host}:{port}",
+                host=self._host,
+                port=self._port,
+                exception=ex,
+            )
 
-    def query(self, query: str, batch_size: int = 1000) -> Iterator[MetaFrame]:
+    def query(self, query: str, batch_size: int | None = 1000) -> Iterator[MetaFrame]:
         """
         Executes a Trino DML query and converts the result into a Pandas dataframe.
 
