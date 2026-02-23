@@ -188,7 +188,7 @@ class TrinoClient:
                 exception=ex,
             )
 
-    def query(self, query: str, batch_size: int | None = 1000) -> Iterator[MetaFrame]:
+    def query(self, query: str, batch_size: int = 1000) -> Iterator[MetaFrame]:
         """
         Executes a Trino DML query and converts the result into a Pandas dataframe.
 
