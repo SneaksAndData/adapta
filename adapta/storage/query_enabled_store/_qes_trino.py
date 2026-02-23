@@ -11,11 +11,11 @@ from dataclasses_json import DataClassJsonMixin
 
 from adapta.storage.database.v3.trino_sql import TrinoClient
 from adapta.storage.models import TrinoPath
-from adapta.storage.models.filter_expression import (
+from adapta.storage.models.expression_dsl.filter_expression import (
     Expression,
     compile_expression,
-    TrinoFilterExpression,
 )
+from adapta.storage.models.expression_dsl.trino_filter_expression import TrinoFilterExpression
 from adapta.storage.query_enabled_store._models import (
     QueryEnabledStore,
     CONNECTION_STRING_REGEX,
