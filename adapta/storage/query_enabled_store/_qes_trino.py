@@ -100,7 +100,7 @@ class TrinoQueryEnabledStore(QueryEnabledStore[TrinoCredential, TrinoSettings]):
             query=self._build_query(
                 query=path.query, filter_expression=filter_expression, columns=columns, limit=limit
             ),
-            batch_size=options.get(QueryEnabledStoreOptions.BATCH_SIZE),
+            batch_size=options.get(QueryEnabledStoreOptions.BATCH_SIZE, 1000),
         )
 
         if self._lazy:
