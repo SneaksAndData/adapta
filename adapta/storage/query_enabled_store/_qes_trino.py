@@ -96,25 +96,32 @@ class TrinoQueryEnabledStore(QueryEnabledStore[TrinoCredential, TrinoSettings]):
     ) -> MetaFrame | Iterator[MetaFrame]:
         query = self._build_query(query=path.query, filter_expression=filter_expression, columns=columns, limit=limit)
 
+        batch_size = (
+            options[QueryEnabledStoreOptions.BATCH_SIZE]
+            if options and QueryEnabledStoreOptions.BATCH_SIZE in options
+            else None
+        )
+
         if self._lazy:
             with self._trino_client as trino_client:
                 return concat(
                     trino_client.query(
                         query=query,
-                        batch_size=options[QueryEnabledStoreOptions.BATCH_SIZE]
-                        if QueryEnabledStoreOptions.BATCH_SIZE in options
-                        else None,
+                        batch_size=batch_size,
                     )
                 )
 
         return concat(
             self._trino_client.query(
                 query=query,
-                batch_size=options[QueryEnabledStoreOptions.BATCH_SIZE]
-                if QueryEnabledStoreOptions.BATCH_SIZE in options
-                else None,
+                batch_size=batch_size,
             )
         )
+
+    def _query_data(
+        self, client: TrinoClient, query: str, batch_size: int | None = None
+    ) -> MetaFrame | Iterator[MetaFrame]:
+        return concat(client.query(query=query, batch_size=batch_size))
 
     def _apply_query(self, query: str) -> MetaFrame | Iterator[MetaFrame]:
         raise NotImplementedError("Text queries are not supported by Trino QES")

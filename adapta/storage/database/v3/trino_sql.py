@@ -19,7 +19,7 @@
 
 import os
 from dataclasses import dataclass
-from typing import final, Optional, Self
+from typing import final, Self
 from collections.abc import Iterator
 
 import sqlalchemy
@@ -157,14 +157,7 @@ class TrinoClient:
 
     def __enter__(self) -> Self:
         try:
-            if not self._connection:
-                self._connection = self._engine.connect()
-            else:
-                self._logger.info(
-                    "Connection to {host}:{port} is already established.",
-                    host=self._host,
-                    port=self._port,
-                )
+            self.connect()
             return self
         except SQLAlchemyError as ex:
             self._logger.error(
