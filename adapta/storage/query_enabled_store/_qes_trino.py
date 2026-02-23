@@ -29,17 +29,19 @@ class TrinoCredential(DataClassJsonMixin):
     """
     Trino credential helper for QES.
 
-    Trino credentials can either be provided via the oauth2_username or via the following environment variables, which
-    is handled inside the TrinoClient:
-    - (ADAPTA__TRINO_USERNAME, ADAPTA__TRINO_PASSWORD)
+    Trino credentials can either be provided via the oauth2_username, or through (username, password) pair.
 
     Currently, we don't support the credentials_provider option of the TrinoClient.
     """
 
     oauth2_username: str | None = None
+    username: str | None = None
+    password: str | None = None
 
     def __post_init__(self):
         self.oauth2_username = self.oauth2_username or os.getenv("ADAPTA__TRINO_OAUTH2_USERNAME")
+        self.username = self.username or os.getenv("ADAPTA__TRINO_USERNAME")
+        self.password = self.password or os.getenv("ADAPTA__TRINO_PASSWORD")
 
 
 @dataclass
@@ -67,15 +69,22 @@ class TrinoQueryEnabledStore(QueryEnabledStore[TrinoCredential, TrinoSettings]):
     """
 
     def close(self) -> None:
-        pass
+        if not self._lazy:
+            self._trino_client.disconnect()
 
-    def __init__(self, credentials: TrinoCredential, settings: TrinoSettings):
+    def __init__(self, credentials: TrinoCredential, settings: TrinoSettings, lazy_init: bool):
         super().__init__(credentials, settings)
         self._trino_client = TrinoClient(
             host=self.settings.host,
             port=self.settings.port,
             oauth2_username=self.credentials.oauth2_username,
+            username=self.credentials.username,
+            password=self.credentials.password,
         )
+
+        self._lazy = lazy_init
+        if not lazy_init:
+            self._trino_client.connect()
 
     def _apply_filter(
         self,
@@ -87,18 +96,27 @@ class TrinoQueryEnabledStore(QueryEnabledStore[TrinoCredential, TrinoSettings]):
     ) -> MetaFrame | Iterator[MetaFrame]:
         query = self._build_query(query=path.query, filter_expression=filter_expression, columns=columns, limit=limit)
 
-        with self._trino_client as trino_client:
-            if QueryEnabledStoreOptions.BATCH_SIZE in options:
-                data = concat(
-                    trino_client.query(
-                        query=query,
-                        batch_size=options[QueryEnabledStoreOptions.BATCH_SIZE],
+        if self._lazy:
+            with self._trino_client as trino_client:
+                if QueryEnabledStoreOptions.BATCH_SIZE in options:
+                    return concat(
+                        trino_client.query(
+                            query=query,
+                            batch_size=options[QueryEnabledStoreOptions.BATCH_SIZE],
+                        )
                     )
-                )
-            else:
-                data = concat(trino_client.query(query=query))
 
-        return data
+                return concat(trino_client.query(query=query))
+
+        if QueryEnabledStoreOptions.BATCH_SIZE in options:
+            return concat(
+                self._trino_client.query(
+                    query=query,
+                    batch_size=options[QueryEnabledStoreOptions.BATCH_SIZE],
+                )
+            )
+
+        return concat(self._trino_client.query(query=query))
 
     def _apply_query(self, query: str) -> MetaFrame | Iterator[MetaFrame]:
         raise NotImplementedError("Text queries are not supported by Trino QES")
@@ -111,6 +129,7 @@ class TrinoQueryEnabledStore(QueryEnabledStore[TrinoCredential, TrinoSettings]):
         return cls(
             credentials=TrinoCredential.from_json(credentials),
             settings=TrinoSettings.from_json(settings),
+            lazy_init=lazy_init,
         )
 
     @staticmethod
