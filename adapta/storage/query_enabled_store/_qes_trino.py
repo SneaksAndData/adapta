@@ -4,6 +4,7 @@
 import os
 import re
 from dataclasses import dataclass
+from functools import partial
 from typing import final
 from collections.abc import Iterator
 
@@ -94,34 +95,19 @@ class TrinoQueryEnabledStore(QueryEnabledStore[TrinoCredential, TrinoSettings]):
         options: dict[QueryEnabledStoreOptions, any] | None = None,
         limit: int | None = None,
     ) -> MetaFrame | Iterator[MetaFrame]:
-        query = self._build_query(query=path.query, filter_expression=filter_expression, columns=columns, limit=limit)
-
-        batch_size = (
-            options[QueryEnabledStoreOptions.BATCH_SIZE]
-            if options and QueryEnabledStoreOptions.BATCH_SIZE in options
-            else None
+        query_fn = partial(
+            self._trino_client.query,
+            query=self._build_query(
+                query=path.query, filter_expression=filter_expression, columns=columns, limit=limit
+            ),
+            batch_size=options.get(QueryEnabledStoreOptions.BATCH_SIZE),
         )
 
         if self._lazy:
-            with self._trino_client as trino_client:
-                return concat(
-                    trino_client.query(
-                        query=query,
-                        batch_size=batch_size,
-                    )
-                )
+            with self._trino_client:
+                return concat(query_fn())
 
-        return concat(
-            self._trino_client.query(
-                query=query,
-                batch_size=batch_size,
-            )
-        )
-
-    def _query_data(
-        self, client: TrinoClient, query: str, batch_size: int | None = None
-    ) -> MetaFrame | Iterator[MetaFrame]:
-        return concat(client.query(query=query, batch_size=batch_size))
+        return concat(query_fn())
 
     def _apply_query(self, query: str) -> MetaFrame | Iterator[MetaFrame]:
         raise NotImplementedError("Text queries are not supported by Trino QES")
