@@ -43,7 +43,7 @@ class PolarsValidationClass(AbstractValidationClass):
     def _validate_primary_keys(self, **kwargs) -> None:
         primary_keys = self._schema.get_primary_keys()
         if primary_keys and len(self._data) != len(self._data.select(primary_keys).unique()):
-            self._failed_validations = [
+            self._failed_validations += [
                 "Duplicated primary key(s) found. Please ensure primary key(s) are unique. This is the provided "
                 f"primary key(s): {primary_keys}"
             ]
