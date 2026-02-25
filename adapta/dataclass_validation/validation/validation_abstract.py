@@ -209,7 +209,6 @@ class AbstractValidationClass:
                     f"Column '{field_name}' does not satisfy the greater than or equal to constraint. It should "
                     f"be greater than {field.checks.ge_value}."
                 ]
-                self._failed_validation_columns += [field_name]
 
     def _validate_le_value(self) -> None:
         for field_name, field in self._schema.get_le_value_fields().items():
@@ -220,7 +219,6 @@ class AbstractValidationClass:
                     f"Column '{field_name}' does not satisfy the less than or equal to constraint. It should "
                     f"be less than {field.checks.le_value}."
                 ]
-                self._failed_validation_columns += [field_name]
 
     def _validate_value_not_missing(self) -> None:
         """
@@ -233,7 +231,6 @@ class AbstractValidationClass:
                 self._failed_validations += [
                     f"Column '{field_name}' does not allow missing values but contains missing values."
                 ]
-                self._failed_validation_columns += [field_name]
 
     def _set_failed_validations(self) -> None:
         self._add_missing_fields()
