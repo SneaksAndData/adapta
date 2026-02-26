@@ -82,4 +82,4 @@ class AbstractDataClass(CoreDataClass):
 
         validation_class.coerce_data_types(should_raise=True)
 
-        return validation_class.get_data()
+        return validation_class.get_data_for_columns()

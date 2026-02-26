@@ -89,6 +89,7 @@ class AbstractValidationClass:
                     self._failed_validations += [
                         f"Column '{field_name}' has incorrect type. Expected {expected_dtype}, got {current_dtype}"
                     ]
+                    self._failed_validation_columns += [field_name]
 
     @abstractmethod
     def _get_dataframe_columns(self) -> list[str]:
