@@ -35,13 +35,19 @@ class AbstractDataClass(CoreDataClass):
 
         return validation_response
 
-    def validate_and_collect_data(self, data: any, settings: list[str] = None, add_missing_settings_columns: bool = False) -> ValidationResponse:
+    def validate_and_collect_data(
+        self, data: any, settings: list[str] = None, add_missing_settings_columns: bool = False
+    ) -> ValidationResponse:
         """
         Method for validating the data against the schema.
         This method returns a ValidationResponse object containing the results of the validation.
         This method DOES NOT raise an exception if the validation fails, but collects them.
         """
-        return self._validate_single_data(data=data, settings=settings if settings is not None else [], add_missing_settings_columns=add_missing_settings_columns)
+        return self._validate_single_data(
+            data=data,
+            settings=settings if settings is not None else [],
+            add_missing_settings_columns=add_missing_settings_columns,
+        )
 
     def validate_data(self, data: any, settings: list[str] = None, add_missing_settings_columns: bool = False) -> any:
         """

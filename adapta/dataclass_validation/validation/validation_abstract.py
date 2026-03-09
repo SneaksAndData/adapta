@@ -239,7 +239,9 @@ class AbstractValidationClass:
                 ]
 
     def _set_failed_validations(self) -> None:
+        self._add_missing_fields()
         self._validate_missing_fields()
+
         if len(self._failed_validations) > 0:
             return
 
@@ -252,8 +254,6 @@ class AbstractValidationClass:
         self._validate_ge_value()
         self._validate_le_value()
         self._validate_value_not_missing()
-
-        self._add_missing_fields()
 
     def validate(self) -> ValidationResponse:
         """
