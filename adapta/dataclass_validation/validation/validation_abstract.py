@@ -13,12 +13,13 @@ class AbstractValidationClass:
     Abstract Validation Class
     """
 
-    def __init__(self, data: any, schema: CoreDataClass, settings: list[str]):
+    def __init__(self, data: any, schema: CoreDataClass, settings: list[str], add_missing_settings_fields: bool):
         self._data = data
         self._schema = schema
         self._settings = settings
         self._required_fields = schema.get_required_fields(settings=settings)
         self._allowed_adding_missing_fields = schema.get_allowed_fields_to_add()
+        self._add_missing_settings_fields = add_missing_settings_fields
         self._failed_validations = []
         self._failed_validation_columns = []
 
@@ -46,7 +47,10 @@ class AbstractValidationClass:
             for missing_field in missing_fields:
                 field = self._schema.get_fields()[missing_field]
                 required_by_settings = [setting for setting in field.required_by_settings if setting in self._settings]
-                if required_by_settings:
+
+                if self._add_missing_settings_fields and required_by_settings:
+                    self._add_column(column_name=missing_field, dtype=field.dtype)
+                elif required_by_settings:
                     self._failed_validations += [
                         f"Missing required column: {missing_field} (required by settings: {required_by_settings})"
                     ]
@@ -165,6 +169,7 @@ class AbstractValidationClass:
             if field_name not in self._get_dataframe_columns():
                 self._add_column(column_name=field_name, dtype=field.dtype)
 
+
     @abstractmethod
     def _are_values_ge(self, column_name: str, ge_value: float) -> bool:
         """
@@ -233,8 +238,6 @@ class AbstractValidationClass:
                 ]
 
     def _set_failed_validations(self) -> None:
-        self._add_missing_fields()
-
         self._validate_missing_fields()
         if len(self._failed_validations) > 0:
             return
@@ -248,6 +251,8 @@ class AbstractValidationClass:
         self._validate_ge_value()
         self._validate_le_value()
         self._validate_value_not_missing()
+
+        self._add_missing_fields()
 
     def validate(self) -> ValidationResponse:
         """

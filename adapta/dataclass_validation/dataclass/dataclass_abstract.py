@@ -18,7 +18,7 @@ class AbstractDataClass(CoreDataClass):
     Abstract Data Class
     """
 
-    def _validate_single_data(self, data: any, settings: list[str]) -> ValidationResponse:
+    def _validate_single_data(self, data: any, settings: list[str], add_missing_settings_columns: bool) -> ValidationResponse:
         """
         Method for validating the data against the schema.
         """
@@ -28,6 +28,7 @@ class AbstractDataClass(CoreDataClass):
                 data=data,
                 schema=self,
                 settings=settings,
+                add_missing_settings_fields=add_missing_settings_columns
             ).validate()
 
         if validation_response is None:
@@ -43,13 +44,13 @@ class AbstractDataClass(CoreDataClass):
         """
         return self._validate_single_data(data=data, settings=settings if settings is not None else [])
 
-    def validate_data(self, data: any, settings: list[str] = None) -> any:
+    def validate_data(self, data: any, settings: list[str] = None, add_missing_settings_columns: bool = False) -> any:
         """
         Method for validating the data against the schema.
         This method returns the updated data if the validation is successful.
         This method RAISES an exception if the validation fails.
         """
-        validation_response = self._validate_single_data(data=data, settings=settings if settings is not None else [])
+        validation_response = self._validate_single_data(data=data, settings=settings if settings is not None else [], add_missing_settings_columns = add_missing_settings_columns)
 
         raise_failed_validations(failed_validations=[validation_response])
 

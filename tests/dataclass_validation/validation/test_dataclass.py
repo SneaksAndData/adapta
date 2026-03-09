@@ -72,6 +72,12 @@ def test__get_required_fields__expected():
 
     assert list(TEST_SCHEMA.get_required_fields(settings=["setting_1"]).keys()) == ["column_1", "column_2"]
 
+def test__get_fields_not_required_by_settings__expected():
+    """
+    Tests that the get_fields_not_required_by_settings method from AbstractDataClass returns the expected fields.
+    """
+    assert list(TEST_SCHEMA.get_fields_not_required_by_settings(settings=["setting_1"]).keys()) == ["column_3", "column_4"]
+
 
 def test__get_primary_keys__expected():
     """
