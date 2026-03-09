@@ -13,7 +13,9 @@ class AbstractValidationClass:
     Abstract Validation Class
     """
 
-    def __init__(self, data: any, schema: CoreDataClass, settings: list[str], add_missing_settings_fields: bool = False):
+    def __init__(
+        self, data: any, schema: CoreDataClass, settings: list[str], add_missing_settings_fields: bool = False
+    ):
         self._data = data
         self._schema = schema
         self._settings = settings
@@ -168,7 +170,6 @@ class AbstractValidationClass:
         for field_name, field in self._allowed_adding_missing_fields.items():
             if field_name not in self._get_dataframe_columns():
                 self._add_column(column_name=field_name, dtype=field.dtype)
-
 
     @abstractmethod
     def _are_values_ge(self, column_name: str, ge_value: float) -> bool:
