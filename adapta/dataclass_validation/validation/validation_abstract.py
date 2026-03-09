@@ -13,7 +13,7 @@ class AbstractValidationClass:
     Abstract Validation Class
     """
 
-    def __init__(self, data: any, schema: CoreDataClass, settings: list[str], add_missing_settings_fields: bool):
+    def __init__(self, data: any, schema: CoreDataClass, settings: list[str], add_missing_settings_fields: bool = False):
         self._data = data
         self._schema = schema
         self._settings = settings
