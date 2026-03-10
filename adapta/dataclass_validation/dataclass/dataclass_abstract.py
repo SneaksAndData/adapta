@@ -18,16 +18,16 @@ class AbstractDataClass(CoreDataClass):
     Abstract Data Class
     """
 
-    def _validate_single_data(self, data: any, settings: list[str]) -> ValidationResponse:
+    def _validate_single_data(
+        self, data: any, settings: list[str], add_non_required_fields: bool
+    ) -> ValidationResponse:
         """
         Method for validating the data against the schema.
         """
         validation_response = None
         if isinstance(data, pl.DataFrame):
             validation_response = PolarsValidationClass(
-                data=data,
-                schema=self,
-                settings=settings,
+                data=data, schema=self, settings=settings, add_non_required_fields=add_non_required_fields
             ).validate()
 
         if validation_response is None:
@@ -35,21 +35,31 @@ class AbstractDataClass(CoreDataClass):
 
         return validation_response
 
-    def validate_and_collect_data(self, data: any, settings: list[str] = None) -> ValidationResponse:
+    def validate_and_collect_data(
+        self, data: any, settings: list[str] = None, add_non_required_fields: bool = False
+    ) -> ValidationResponse:
         """
         Method for validating the data against the schema.
         This method returns a ValidationResponse object containing the results of the validation.
         This method DOES NOT raise an exception if the validation fails, but collects them.
         """
-        return self._validate_single_data(data=data, settings=settings if settings is not None else [])
+        return self._validate_single_data(
+            data=data,
+            settings=settings if settings is not None else [],
+            add_non_required_fields=add_non_required_fields,
+        )
 
-    def validate_data(self, data: any, settings: list[str] = None) -> any:
+    def validate_data(self, data: any, settings: list[str] = None, add_non_required_fields: bool = False) -> any:
         """
         Method for validating the data against the schema.
         This method returns the updated data if the validation is successful.
         This method RAISES an exception if the validation fails.
         """
-        validation_response = self._validate_single_data(data=data, settings=settings if settings is not None else [])
+        validation_response = self._validate_single_data(
+            data=data,
+            settings=settings if settings is not None else [],
+            add_non_required_fields=add_non_required_fields,
+        )
 
         raise_failed_validations(failed_validations=[validation_response])
 
