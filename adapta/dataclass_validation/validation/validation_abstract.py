@@ -247,7 +247,7 @@ class AbstractValidationClass:
         self._add_missing_fields()
         self._validate_missing_fields()
         if self._non_required_fields_should_be_added:
-            self._non_required_fields_should_be_added()
+            self._add_non_required_fields()
 
         if len(self._failed_validations) > 0:
             return
