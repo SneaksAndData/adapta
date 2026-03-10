@@ -13,15 +13,13 @@ class AbstractValidationClass:
     Abstract Validation Class
     """
 
-    def __init__(
-        self, data: any, schema: CoreDataClass, settings: list[str], add_missing_settings_fields: bool = False
-    ):
+    def __init__(self, data: any, schema: CoreDataClass, settings: list[str], add_non_required_fields: bool = False):
         self._data = data
         self._schema = schema
         self._settings = settings
         self._required_fields = schema.get_required_fields(settings=settings)
         self._allowed_adding_missing_fields = schema.get_allowed_fields_to_add()
-        self._add_missing_settings_fields = add_missing_settings_fields
+        self._non_required_fields_should_be_added = add_non_required_fields
         self._failed_validations = []
         self._failed_validation_columns = []
 
@@ -50,9 +48,7 @@ class AbstractValidationClass:
                 field = self._schema.get_fields()[missing_field]
                 required_by_settings = [setting for setting in field.required_by_settings if setting in self._settings]
 
-                if self._add_missing_settings_fields and required_by_settings:
-                    self._add_column(column_name=missing_field, dtype=field.dtype)
-                elif required_by_settings:
+                if required_by_settings:
                     self._failed_validations += [
                         f"Missing required column: {missing_field} (required by settings: {required_by_settings})"
                     ]
@@ -171,6 +167,15 @@ class AbstractValidationClass:
             if field_name not in self._get_dataframe_columns():
                 self._add_column(column_name=field_name, dtype=field.dtype)
 
+    def _add_non_required_fields(self) -> None:
+        """Adds non-required missing fields to the dataframe."""
+        non_required_missing_fields = (
+            set(self._schema.get_fields()) - set(self._required_fields) - set(self._get_dataframe_columns())
+        )
+        for field_name in non_required_missing_fields:
+            field = self._schema.get_fields()[field_name]
+            self._add_column(column_name=field_name, dtype=field.dtype)
+
     @abstractmethod
     def _are_values_ge(self, column_name: str, ge_value: float) -> bool:
         """
@@ -241,6 +246,8 @@ class AbstractValidationClass:
     def _set_failed_validations(self) -> None:
         self._add_missing_fields()
         self._validate_missing_fields()
+        if self._non_required_fields_should_be_added:
+            self._non_required_fields_should_be_added()
 
         if len(self._failed_validations) > 0:
             return
