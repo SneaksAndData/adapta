@@ -30,6 +30,7 @@ class Checks:
         self.ge_value_tolerance = ge_value_tolerance
         self.le_value_tolerance = le_value_tolerance
 
+
 @final
 class AstraProperties:
     """
