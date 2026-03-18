@@ -177,15 +177,17 @@ class AbstractValidationClass:
             self._add_column(column_name=field_name, dtype=field.dtype)
 
     @abstractmethod
-    def _are_values_ge(self, column_name: str, ge_value: float) -> bool:
+    def _are_values_ge(self, column_name: str, ge_value: float, tolerance: float) -> bool:
         """
-        Abstract method to check if a column has values greater than or equal to a specified value.
+        Abstract method to check if a column has values greater than or equal to a specified value,
+        fixing values within tolerance to the bound.
         """
 
     @abstractmethod
-    def _are_values_le(self, column_name: str, le_value: float) -> bool:
+    def _are_values_le(self, column_name: str, le_value: float, tolerance: float) -> bool:
         """
-        Abstract method to check if a value is less than or equal to a specified value.
+        Abstract method to check if a value is less than or equal to a specified value,
+        fixing values within tolerance to the bound.
         """
 
     @abstractmethod
@@ -214,7 +216,7 @@ class AbstractValidationClass:
     def _validate_ge_value(self) -> None:
         for field_name, field in self._schema.get_ge_value_fields().items():
             if self._should_validate_field(field_name=field_name) and not self._are_values_ge(
-                column_name=field_name, ge_value=field.checks.ge_value
+                column_name=field_name, ge_value=field.checks.ge_value, tolerance=field.checks.ge_value_tolerance
             ):
                 self._failed_validations += [
                     f"Column '{field_name}' does not satisfy the greater than or equal to constraint. It should "
@@ -224,7 +226,7 @@ class AbstractValidationClass:
     def _validate_le_value(self) -> None:
         for field_name, field in self._schema.get_le_value_fields().items():
             if self._should_validate_field(field_name=field_name) and not self._are_values_le(
-                column_name=field_name, le_value=field.checks.le_value
+                column_name=field_name, le_value=field.checks.le_value, tolerance=field.checks.le_value_tolerance
             ):
                 self._failed_validations += [
                     f"Column '{field_name}' does not satisfy the less than or equal to constraint. It should "

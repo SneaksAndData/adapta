@@ -10,15 +10,25 @@ class Checks:
     Check class to perform additional checks on fields.
     1. ge_value: Greater than or equal to constraint for the field (default is None).
     2. le_value: Less than or equal to constraint for the field (default is None).
+    3. ge_value_tolerance: Tolerance for ge_value constraint (default is 0.0001).
+    4. le_value_tolerance: Tolerance for le_value constraint (default is 0.0001).
     """
 
     def __init__(
         self,
         ge_value: float = None,
         le_value: float = None,
+        ge_value_tolerance: float = 0.0001,
+        le_value_tolerance: float = 0.0001,
     ):
         self.ge_value = ge_value
         self.le_value = le_value
+        if ge_value_tolerance is None:
+            raise ValueError("Tolerance values cannot be None. Please provide a float value for tolerance.")
+        if le_value_tolerance is None:
+            raise ValueError("Tolerance values cannot be None. Please provide a float value for tolerance.")
+        self.ge_value_tolerance = ge_value_tolerance
+        self.le_value_tolerance = le_value_tolerance
 
 
 @final
