@@ -23,9 +23,12 @@ class Checks:
     ):
         self.ge_value = ge_value
         self.le_value = le_value
+        if ge_value_tolerance is None:
+            raise ValueError("Tolerance values cannot be None. Please provide a float value for tolerance.")
+        if le_value_tolerance is None:
+            raise ValueError("Tolerance values cannot be None. Please provide a float value for tolerance.")
         self.ge_value_tolerance = ge_value_tolerance
         self.le_value_tolerance = le_value_tolerance
-
 
 @final
 class AstraProperties:
