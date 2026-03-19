@@ -60,24 +60,24 @@ class PolarsValidationClass(AbstractValidationClass):
     def _cast_column(self, column_name: str, dtype: pl.DataType) -> None:
         self._data = self._data.with_columns(pl.col(column_name).cast(dtype).alias(column_name))
 
-    def _are_values_ge(self, column_name: str, ge_value: float, tolerance: float) -> float |:
+    def _are_values_ge(self, column_name: str, ge_value: float, tolerance: float) -> float | None:
         within_tolerance = (pl.col(column_name) >= ge_value - tolerance) & (pl.col(column_name) < ge_value)
         self._data = self._data.with_columns(
             pl.when(within_tolerance).then(ge_value).otherwise(pl.col(column_name)).alias(column_name)
         )
         failed = self._data.filter(pl.col(column_name) < ge_value)
         if failed.is_empty():
-            return True
+            return None
         return failed[column_name].min()
 
-    def _are_values_le(self, column_name: str, le_value: float, tolerance: float) -> bool | float:
+    def _are_values_le(self, column_name: str, le_value: float, tolerance: float) -> float | None:
         within_tolerance = (pl.col(column_name) <= le_value + tolerance) & (pl.col(column_name) > le_value)
         self._data = self._data.with_columns(
             pl.when(within_tolerance).then(le_value).otherwise(pl.col(column_name)).alias(column_name)
         )
         failed = self._data.filter(pl.col(column_name) > le_value)
         if failed.is_empty():
-            return True
+            return None
         return failed[column_name].max()
 
     def _are_values_not_missing(self, column_name: str) -> bool:

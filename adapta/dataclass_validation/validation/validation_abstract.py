@@ -180,7 +180,7 @@ class AbstractValidationClass:
     def _are_values_ge(self, column_name: str, ge_value: float, tolerance: float) -> float | None:
         """
         Abstract method to check if a column has values greater than or equal to a specified value,
-        fixing values within tolerance to the bound. Returns True if all values satisfy the condition, otherwise
+        fixing values within tolerance to the bound. Returns None if all values satisfy the condition, otherwise
         returns the minimum value that fails the condition.
         """
 
@@ -188,7 +188,7 @@ class AbstractValidationClass:
     def _are_values_le(self, column_name: str, le_value: float, tolerance: float) -> float | None:
         """
         Abstract method to check if a value is less than or equal to a specified value,
-        fixing values within tolerance to the bound. Returns True if all values satisfy the condition, otherwise
+        fixing values within tolerance to the bound. Returns None if all values satisfy the condition, otherwise
         returns the maximum value that fails the condition.
         """
 
@@ -221,7 +221,7 @@ class AbstractValidationClass:
                 result = self._are_values_ge(
                     column_name=field_name, ge_value=field.checks.ge_value, tolerance=field.checks.ge_value_tolerance
                 )
-                if result is not True:
+                if result is not None:
                     self._failed_validations += [
                         f"Column '{field_name}' does not satisfy the greater than or equal to constraint. "
                         f"It should be greater than {field.checks.ge_value}, but found minimum value {result}."
@@ -233,7 +233,7 @@ class AbstractValidationClass:
                 result = self._are_values_le(
                     column_name=field_name, le_value=field.checks.le_value, tolerance=field.checks.le_value_tolerance
                 )
-                if result is not True:
+                if result is not None:
                     self._failed_validations += [
                         f"Column '{field_name}' does not satisfy the less than or equal to constraint. "
                         f"It should be less than {field.checks.le_value}, but found maximum value {result}."
