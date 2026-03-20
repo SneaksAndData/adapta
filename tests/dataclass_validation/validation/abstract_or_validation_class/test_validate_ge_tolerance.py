@@ -146,7 +146,7 @@ class ErrorTestOutput:
             ErrorTestOutput(
                 expected_failed_validations=[
                     "Column 'inventory' does not satisfy the greater than or equal to constraint. "
-                    "It should be greater than 0.0.",
+                    "It should be greater than 0.0, but found minimum value -0.5.",
                 ],
             ),
             id="1) Default tolerance rejects value far below ge_value",
@@ -164,7 +164,7 @@ class ErrorTestOutput:
             ErrorTestOutput(
                 expected_failed_validations=[
                     "Column 'inventory' does not satisfy the greater than or equal to constraint. "
-                    "It should be greater than 0.0.",
+                    "It should be greater than 0.0, but found minimum value -1e-05.",
                 ],
             ),
             id="2) Zero tolerance rejects any value below ge_value",

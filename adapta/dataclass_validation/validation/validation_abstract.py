@@ -177,17 +177,19 @@ class AbstractValidationClass:
             self._add_column(column_name=field_name, dtype=field.dtype)
 
     @abstractmethod
-    def _are_values_ge(self, column_name: str, ge_value: float, tolerance: float) -> bool:
+    def _are_values_ge(self, column_name: str, ge_value: float, tolerance: float) -> float | None:
         """
         Abstract method to check if a column has values greater than or equal to a specified value,
-        fixing values within tolerance to the bound.
+        fixing values within tolerance to the bound. Returns None if all values satisfy the condition, otherwise
+        returns the minimum value that fails the condition.
         """
 
     @abstractmethod
-    def _are_values_le(self, column_name: str, le_value: float, tolerance: float) -> bool:
+    def _are_values_le(self, column_name: str, le_value: float, tolerance: float) -> float | None:
         """
         Abstract method to check if a value is less than or equal to a specified value,
-        fixing values within tolerance to the bound.
+        fixing values within tolerance to the bound. Returns None if all values satisfy the condition, otherwise
+        returns the maximum value that fails the condition.
         """
 
     @abstractmethod
@@ -215,23 +217,27 @@ class AbstractValidationClass:
 
     def _validate_ge_value(self) -> None:
         for field_name, field in self._schema.get_ge_value_fields().items():
-            if self._should_validate_field(field_name=field_name) and not self._are_values_ge(
-                column_name=field_name, ge_value=field.checks.ge_value, tolerance=field.checks.ge_value_tolerance
-            ):
-                self._failed_validations += [
-                    f"Column '{field_name}' does not satisfy the greater than or equal to constraint. It should "
-                    f"be greater than {field.checks.ge_value}."
-                ]
+            if self._should_validate_field(field_name=field_name):
+                result = self._are_values_ge(
+                    column_name=field_name, ge_value=field.checks.ge_value, tolerance=field.checks.ge_value_tolerance
+                )
+                if result is not None:
+                    self._failed_validations += [
+                        f"Column '{field_name}' does not satisfy the greater than or equal to constraint. "
+                        f"It should be greater than {field.checks.ge_value}, but found minimum value {result}."
+                    ]
 
     def _validate_le_value(self) -> None:
         for field_name, field in self._schema.get_le_value_fields().items():
-            if self._should_validate_field(field_name=field_name) and not self._are_values_le(
-                column_name=field_name, le_value=field.checks.le_value, tolerance=field.checks.le_value_tolerance
-            ):
-                self._failed_validations += [
-                    f"Column '{field_name}' does not satisfy the less than or equal to constraint. It should "
-                    f"be less than {field.checks.le_value}."
-                ]
+            if self._should_validate_field(field_name=field_name):
+                result = self._are_values_le(
+                    column_name=field_name, le_value=field.checks.le_value, tolerance=field.checks.le_value_tolerance
+                )
+                if result is not None:
+                    self._failed_validations += [
+                        f"Column '{field_name}' does not satisfy the less than or equal to constraint. "
+                        f"It should be less than {field.checks.le_value}, but found maximum value {result}."
+                    ]
 
     def _validate_value_not_missing(self) -> None:
         """

@@ -146,7 +146,7 @@ class ErrorTestOutput:
             ErrorTestOutput(
                 expected_failed_validations=[
                     "Column 'capacity' does not satisfy the less than or equal to constraint. "
-                    "It should be less than 100.0.",
+                    "It should be less than 100.0, but found maximum value 100.5.",
                 ],
             ),
             id="1) Default tolerance rejects value far above le_value",
@@ -164,7 +164,7 @@ class ErrorTestOutput:
             ErrorTestOutput(
                 expected_failed_validations=[
                     "Column 'capacity' does not satisfy the less than or equal to constraint. "
-                    "It should be less than 100.0.",
+                    "It should be less than 100.0, but found maximum value 100.00001.",
                 ],
             ),
             id="2) Zero tolerance rejects any value above le_value",
