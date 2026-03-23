@@ -154,7 +154,7 @@ class MlflowBasicClient:
         )
 
     def transition_model_alias(
-            self, model_name: str, old_alias: str, new_alias: str, model_version: str | None
+        self, model_name: str, old_alias: str, new_alias: str, model_version: str | None
     ) -> None:
         """
         Mimics transition for model alias in Mlflow
@@ -167,12 +167,12 @@ class MlflowBasicClient:
         self.set_model_alias(model_name=model_name, alias=new_alias, model_version=model_version)
 
     def set_model_version_tag(
-            self,
-            model_name: str,
-            model_version: str | None = None,
-            key: str = None,
-            value: Any = None,
-            stage: str | None = None,
+        self,
+        model_name: str,
+        model_version: str | None = None,
+        key: str = None,
+        value: Any = None,
+        stage: str | None = None,
     ) -> None:
         """
         inherited the setting model version tag in Mlflow
@@ -218,10 +218,10 @@ class MlflowBasicClient:
         self._client.log_metric(run_id=run_id, key=metric_name, value=metric_value)
 
     def create_run(
-            self,
-            experiment_name: str,
-            run_name: str,
-            tags: dict[str, Any] | None = None,
+        self,
+        experiment_name: str,
+        run_name: str,
+        tags: dict[str, Any] | None = None,
     ) -> str:
         """
         inherited the creating run in Mlflow
