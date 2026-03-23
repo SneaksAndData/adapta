@@ -34,14 +34,31 @@ class MlflowBasicClient:
     Mlflow operations scoped to MlflowClient API.
     """
 
-    def __init__(self, tracking_server_uri: str):
-        assert os.environ.get("MLFLOW_TRACKING_USERNAME") and os.environ.get(
-            "MLFLOW_TRACKING_PASSWORD"
-        ), "Both MLFLOW_TRACKING_USERNAME and MLFLOW_TRACKING_PASSWORD must be set to access MLFlow Tracking Server"
+    def __init__(self, tracking_server_uri: str, username: str = None, password: str = None):
+        self._resolve_credentials(username=username, password=password)
 
         mlflow.set_tracking_uri(tracking_server_uri)
         self._tracking_server_uri = tracking_server_uri
         self._client = MlflowClient()
+
+    @staticmethod
+    def _resolve_credentials(username: str | None, password: str | None) -> None:
+        """
+        Overwrite the environment variables for tracking username and tracking password if both are provided as
+        arguments. If only one of them is provided, an assertion error will occur.
+        If both are provided as environment variables, keep them as is.
+        """
+        assert not (
+            (username is None) + (password is None) == 1
+        ), "Both password and username must be set to access MLFlow Tracking Server, you only provided one of them."
+
+        if username and password:
+            os.environ["MLFLOW_TRACKING_USERNAME"] = username
+            os.environ["MLFLOW_TRACKING_PASSWORD"] = password
+
+        assert os.environ.get("MLFLOW_TRACKING_USERNAME") and os.environ.get(
+            "MLFLOW_TRACKING_PASSWORD"
+        ), "Both MLFLOW_TRACKING_USERNAME and MLFLOW_TRACKING_PASSWORD must be set to access MLFlow Tracking Server"
 
     @property
     def tracking_server_uri(self) -> str:
