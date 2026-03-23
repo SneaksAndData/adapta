@@ -71,6 +71,10 @@ data = pl.DataFrame(
             pl.col("string_column").is_in(["Polars"]),
             FilterField("string_column").isin(["Polars"]),
         ),
+        (
+            pl.col("string_column") != "Polars",
+            FilterField("string_column") != "Polars",
+        ),
         (None, None),
     ],
 )
