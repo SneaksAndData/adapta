@@ -42,10 +42,11 @@ class MlflowBasicClient:
         self._client = MlflowClient()
 
     @staticmethod
-    def _resolve_credentials(username: str | None, password: str | None):
+    def _resolve_credentials(username: str | None, password: str | None) -> None:
         """
-        Overwrite the environment variables for tracking username and tracking password if both are provided
-        if none or one provided, it will use the environment variables if any are defined.
+        Overwrite the environment variables for tracking username and tracking password if both are provided as
+        arguments. If only one of them is provided, an assertion error will occur.
+        If both are provided as environment variables, keep them as is.
         """
         assert not (
             (username is None) + (password is None) == 1
