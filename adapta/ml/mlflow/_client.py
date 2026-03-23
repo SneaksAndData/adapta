@@ -34,7 +34,12 @@ class MlflowBasicClient:
     Mlflow operations scoped to MlflowClient API.
     """
 
-    def __init__(self, tracking_server_uri: str):
+    def __init__(self, tracking_server_uri: str, username: str | None, password: str | None):
+        if username:
+            os.environ["MLFLOW_TRACKING_USERNAME"] = username
+        if password:
+            os.environ["MLFLOW_TRACKING_PASSWORD"] = password
+
         assert os.environ.get("MLFLOW_TRACKING_USERNAME") and os.environ.get(
             "MLFLOW_TRACKING_PASSWORD"
         ), "Both MLFLOW_TRACKING_USERNAME and MLFLOW_TRACKING_PASSWORD must be set to access MLFlow Tracking Server"
@@ -149,7 +154,7 @@ class MlflowBasicClient:
         )
 
     def transition_model_alias(
-        self, model_name: str, old_alias: str, new_alias: str, model_version: str | None
+            self, model_name: str, old_alias: str, new_alias: str, model_version: str | None
     ) -> None:
         """
         Mimics transition for model alias in Mlflow
@@ -162,12 +167,12 @@ class MlflowBasicClient:
         self.set_model_alias(model_name=model_name, alias=new_alias, model_version=model_version)
 
     def set_model_version_tag(
-        self,
-        model_name: str,
-        model_version: str | None = None,
-        key: str = None,
-        value: Any = None,
-        stage: str | None = None,
+            self,
+            model_name: str,
+            model_version: str | None = None,
+            key: str = None,
+            value: Any = None,
+            stage: str | None = None,
     ) -> None:
         """
         inherited the setting model version tag in Mlflow
@@ -213,10 +218,10 @@ class MlflowBasicClient:
         self._client.log_metric(run_id=run_id, key=metric_name, value=metric_value)
 
     def create_run(
-        self,
-        experiment_name: str,
-        run_name: str,
-        tags: dict[str, Any] | None = None,
+            self,
+            experiment_name: str,
+            run_name: str,
+            tags: dict[str, Any] | None = None,
     ) -> str:
         """
         inherited the creating run in Mlflow
