@@ -82,6 +82,7 @@ class FilterExpressionOperation(Enum):
             FilterExpressionOperation.LE: "<=",
             FilterExpressionOperation.EQ: "==",
             FilterExpressionOperation.IN: "IN",
+            FilterExpressionOperation.NE: "!=",
         }
         if self not in operation_strings:
             raise ValueError(f"Operation {self} not recognized")

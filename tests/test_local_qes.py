@@ -75,6 +75,10 @@ data = pl.DataFrame(
             pl.col("string_column") != "Polars",
             FilterField("string_column") != "Polars",
         ),
+        (
+            (pl.col("string_column") != "Polars") & (pl.col("integer_column") != 10),
+            (FilterField("string_column") != "Polars") & (FilterField("integer_column") != 10),
+        ),
         (None, None),
     ],
 )
