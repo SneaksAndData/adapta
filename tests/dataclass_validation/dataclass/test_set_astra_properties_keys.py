@@ -1,7 +1,6 @@
 import pytest
 
-from adapta.dataclass_validation import Field, AbstractDataClass
-from adapta.dataclass_validation.dataclass.dataclass_core import AstraProperties
+from adapta.dataclass_validation import Field, AbstractDataClass, AstraProperties
 
 
 class DataClassWithField(AbstractDataClass):
