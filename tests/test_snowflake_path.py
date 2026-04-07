@@ -23,11 +23,24 @@ def test_from_hdfs_path():
     assert path.schema == "schema"
     assert path.table == "table"
 
+@pytest.mark.parametrize("bad_path", [
+    "snowflake://only_two/parts",
+    "snowflake://too/many/parts/here",
+    "s3://wrong/protocol/entirely",
+    "snowflake://",
+])
+def test_from_hdfs_path_invalid(bad_path):
+    with pytest.raises(AssertionError):
+        SnowflakePath.from_hdfs_path(bad_path)
+
 
 def test_to_hdfs_path():
     path = SnowflakePath("database", "schema", "table").to_hdfs_path()
     assert path == "snowflake://database/schema/table"
 
+def test_fully_qualified_name():
+    path = SnowflakePath.from_hdfs_path("snowflake://datalake_production/performance_product/sku")
+    assert path.fully_qualified_name == '"datalake_production"."performance_product"."sku"'
 
 
 

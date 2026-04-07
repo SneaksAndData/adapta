@@ -55,5 +55,9 @@ class SnowflakePath(DataPath):
     def to_hdfs_path(self) -> str:
         return f"snowflake://{self.database}/{self.schema}/{self.table}"
 
+    @property
+    def fully_qualified_name(self) -> str:
+        return f'"{self.database}"."{self.schema}"."{self.table}"'
+
     def to_delta_rs_path(self) -> str:
         raise NotImplementedError
