@@ -57,6 +57,7 @@ class SnowflakePath(DataPath):
 
     @property
     def fully_qualified_name(self) -> str:
+        """Combine database, schema and table into fully qualified name"""
         return f'"{self.database}"."{self.schema}"."{self.table}"'
 
     def to_delta_rs_path(self) -> str:

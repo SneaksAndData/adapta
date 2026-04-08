@@ -55,7 +55,16 @@ class DataSocket(DataClassJsonMixin):
         ), "Fields alias, data_path and data_format must have a value provided to instantiate a DataSocket."
 
     def parse_data_path(
-        self, candidates: Iterable[type[DataPath]] = (AdlsGen2Path, LocalPath, WasbPath, AstraPath, S3Path, TrinoPath, SnowflakePath)
+        self,
+        candidates: Iterable[type[DataPath]] = (
+            AdlsGen2Path,
+            LocalPath,
+            WasbPath,
+            AstraPath,
+            S3Path,
+            TrinoPath,
+            SnowflakePath,
+        ),
     ) -> DataPath | None:
         """
           Attempts to convert this socket's data path to one of the known DataPath types.

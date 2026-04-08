@@ -27,7 +27,16 @@ from adapta.storage.models.snowflake import SnowflakePath
 
 
 def parse_data_path(
-    path: str, candidates: Iterable[type[DataPath]] = (AdlsGen2Path, LocalPath, WasbPath, AstraPath, S3Path, TrinoPath, SnowflakePath)
+    path: str,
+    candidates: Iterable[type[DataPath]] = (
+        AdlsGen2Path,
+        LocalPath,
+        WasbPath,
+        AstraPath,
+        S3Path,
+        TrinoPath,
+        SnowflakePath,
+    ),
 ) -> DataPath | None:
     """
       Attempts to convert a string path to one of the known DataPath types.

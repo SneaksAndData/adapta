@@ -70,7 +70,12 @@ class FilterExpressionOperation(Enum):
         "trino": "!=",
         "snowflake": "!=",
     }
-    IN = {"arrow": pyarrow.compute.Expression.isin, "astra": "__in", "trino": "IN", "snowflake": "IN",}
+    IN = {
+        "arrow": pyarrow.compute.Expression.isin,
+        "astra": "__in",
+        "trino": "IN",
+        "snowflake": "IN",
+    }
 
     def to_string(self):
         """
@@ -476,6 +481,7 @@ class TrinoFilterExpression(FilterExpression[str]):
             return "NULL"
         return str(value)
 
+
 @final
 class SnowflakeFilterExpression(FilterExpression[str]):
     """
@@ -511,6 +517,7 @@ class SnowflakeFilterExpression(FilterExpression[str]):
         if value is None:
             return "NULL"
         return str(value)
+
 
 def compile_expression(expression: Expression, target: type[FilterExpression[TCompileResult]]) -> TCompileResult:
     """

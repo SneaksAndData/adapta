@@ -25,12 +25,16 @@ def test_from_hdfs_path():
     assert path.schema == "myschema"
     assert path.table == "mytable"
 
-@pytest.mark.parametrize("bad_path", [
-    "snowflake://only_two/parts",
-    "snowflake://too/many/parts/here",
-    "s3://wrong/protocol/entirely",
-    "snowflake://",
-])
+
+@pytest.mark.parametrize(
+    "bad_path",
+    [
+        "snowflake://only_two/parts",
+        "snowflake://too/many/parts/here",
+        "s3://wrong/protocol/entirely",
+        "snowflake://",
+    ],
+)
 def test_from_hdfs_path_invalid(bad_path):
     with pytest.raises(AssertionError):
         SnowflakePath.from_hdfs_path(bad_path)
@@ -40,9 +44,11 @@ def test_to_hdfs_path():
     path = SnowflakePath("database", "schema", "table").to_hdfs_path()
     assert path == "snowflake://database/schema/table"
 
+
 def test_fully_qualified_name():
     path = SnowflakePath.from_hdfs_path("snowflake://mydb/myschema/mytable")
     assert path.fully_qualified_name == '"mydb"."myschema"."mytable"'
+
 
 def test_parse_data_path_returns_snowflake_path():
     result = parse_data_path("snowflake://mydb/myschema/mytable")
@@ -50,6 +56,7 @@ def test_parse_data_path_returns_snowflake_path():
     assert result.database == "mydb"
     assert result.schema == "myschema"
     assert result.table == "mytable"
+
 
 def test_datasocket_parse_data_path_snowflake():
     socket = DataSocket(alias="test", data_path="snowflake://mydb/myschema/mytable", data_format="snowflake")

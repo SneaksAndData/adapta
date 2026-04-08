@@ -1,5 +1,5 @@
 """
- QES implementations for Trino.
+ QES implementations for Snowflake.
 """
 import os
 import re
@@ -51,12 +51,10 @@ class SnowflakeSettings(DataClassJsonMixin):
     warehouse: str | None = None
 
     def __post_init__(self):
-        self.account = self.account or os.getenv("ADAPTA__SNOWFLAKE_ACOUNT")
+        self.account = self.account or os.getenv("ADAPTA__SNOWFLAKE_ACCOUNT")
         if not self.account:
-            raise RuntimeError(
-                "Snowflake account not provided."
-            )
-        self.warehouse = self.warehouse or int(os.getenv("ADAPTA__SNOWFLAKE_WAREHOUASE", "AIRFLOW"))
+            raise RuntimeError("Snowflake account not provided.")
+        self.warehouse = self.warehouse or os.getenv("ADAPTA__SNOWFLAKE_WAREHOUSE", "AIRFLOW")
 
 
 @final
@@ -68,10 +66,14 @@ class SnowflakeQueryEnabledStore(QueryEnabledStore[SnowflakeCredential, Snowflak
     """
 
     def close(self) -> None:
-        if not self._lazy:
-            self.snowflake_client.disconnect()
+        pass
 
-    def __init__(self, credentials: SnowflakeCredential, settings: SnowflakeSettings, lazy_init: bool = True):
+    def __init__(
+        self,
+        credentials: SnowflakeCredential,
+        settings: SnowflakeSettings,
+        lazy_init: bool = True,  # pylint: disable=W0613
+    ):
         super().__init__(credentials, settings)
         self._snowflake_client = SnowflakeClient(
             user=self.credentials.user,
@@ -79,10 +81,6 @@ class SnowflakeQueryEnabledStore(QueryEnabledStore[SnowflakeCredential, Snowflak
             warehouse=self.settings.warehouse,
             password=self.credentials.password,
         )
-
-        self._lazy = lazy_init
-        if not lazy_init:
-            self._snowflake_client.connect()
 
     def _apply_filter(
         self,
@@ -95,16 +93,13 @@ class SnowflakeQueryEnabledStore(QueryEnabledStore[SnowflakeCredential, Snowflak
         query_fn = partial(
             self._snowflake_client.query,
             query=self._build_query(
-                query=path.query, filter_expression=filter_expression, columns=columns, limit=limit
+                table_fqn=path.fully_qualified_name, filter_expression=filter_expression, columns=columns, limit=limit
             ),
             batch_size=options.get(QueryEnabledStoreOptions.BATCH_SIZE, 1000),
         )
 
-        if self._lazy:
-            with self._snowflake_client:
-                return concat(query_fn())
-
-        return concat(query_fn())
+        with self._snowflake_client:
+            return concat(query_fn())
 
     def _apply_query(self, query: str) -> MetaFrame | Iterator[MetaFrame]:
         raise NotImplementedError("Text queries are not supported by Snowflake QES")
@@ -126,15 +121,14 @@ class SnowflakeQueryEnabledStore(QueryEnabledStore[SnowflakeCredential, Snowflak
         Build the final query by applying the filter expression, selected columns, and limit to the base query.
         """
 
-        if filter_expression or columns or limit:
-            columns_to_select = ", ".join(columns) if columns else "*"
-            query = f"SELECT {columns_to_select} FROM {table_fqn}"
+        columns_to_select = ", ".join(columns) if columns else "*"
+        query = f"SELECT {columns_to_select} FROM {table_fqn}"
 
-            if filter_expression:
-                compiled_expression = compile_expression(expression=filter_expression, target=SnowflakeFilterExpression)
-                query = f"{query} WHERE {compiled_expression}"
+        if filter_expression:
+            compiled_expression = compile_expression(expression=filter_expression, target=SnowflakeFilterExpression)
+            query = f"{query} WHERE {compiled_expression}"
 
-            if limit:
-                query = f"{query} LIMIT {limit}"
+        if limit:
+            query = f"{query} LIMIT {limit}"
 
         return query
