@@ -15,13 +15,15 @@
 import pytest
 
 from adapta.storage.models.snowflake import SnowflakePath
+from adapta.storage.models import parse_data_path
+from adapta.process_communication import DataSocket
 
 
 def test_from_hdfs_path():
-    path = SnowflakePath.from_hdfs_path("snowflake://database/schema/table")
-    assert path.database == "database"
-    assert path.schema == "schema"
-    assert path.table == "table"
+    path = SnowflakePath.from_hdfs_path("snowflake://mydb/myschema/mytable")
+    assert path.database == "mydb"
+    assert path.schema == "myschema"
+    assert path.table == "mytable"
 
 @pytest.mark.parametrize("bad_path", [
     "snowflake://only_two/parts",
@@ -39,8 +41,18 @@ def test_to_hdfs_path():
     assert path == "snowflake://database/schema/table"
 
 def test_fully_qualified_name():
-    path = SnowflakePath.from_hdfs_path("snowflake://datalake_production/performance_product/sku")
-    assert path.fully_qualified_name == '"datalake_production"."performance_product"."sku"'
+    path = SnowflakePath.from_hdfs_path("snowflake://mydb/myschema/mytable")
+    assert path.fully_qualified_name == '"mydb"."myschema"."mytable"'
 
+def test_parse_data_path_returns_snowflake_path():
+    result = parse_data_path("snowflake://mydb/myschema/mytable")
+    assert isinstance(result, SnowflakePath)
+    assert result.database == "mydb"
+    assert result.schema == "myschema"
+    assert result.table == "mytable"
 
-
+def test_datasocket_parse_data_path_snowflake():
+    socket = DataSocket(alias="test", data_path="snowflake://mydb/myschema/mytable", data_format="snowflake")
+    result = socket.parse_data_path()
+    assert isinstance(result, SnowflakePath)
+    assert result.database == "mydb"

@@ -25,3 +25,8 @@ try:
     from adapta.storage.query_enabled_store._qes_trino import *
 except (ImportError, ModuleNotFoundError) as ex:
     print(f"Failed to import from adapta.storage.query_enabled_store._qes_trino: {ex}")
+
+try:
+    from adapta.storage.query_enabled_store._qes_snowflake import *
+except (ImportError, ModuleNotFoundError) as ex:
+    print(f"Failed to import from adapta.storage.query_enabled_store._qes_snowflake: {ex}")

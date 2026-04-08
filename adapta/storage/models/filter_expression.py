@@ -26,43 +26,51 @@ class FilterExpressionOperation(Enum):
             left_expr | right_expr for left_expr in left_exprs for right_expr in right_exprs
         ],
         "trino": "AND",
+        "snowflake": "AND",
     }
     OR = {
         "arrow": pyarrow.compute.Expression.__or__,
         "astra": lambda left_exprs, right_exprs: left_exprs + right_exprs,
         "trino": "OR",
+        "snowflake": "OR",
     }
     GT = {
         "arrow": pyarrow.compute.Expression.__gt__,
         "astra": "__gt",
         "trino": ">",
+        "snowflake": ">",
     }
     GE = {
         "arrow": pyarrow.compute.Expression.__ge__,
         "astra": "__gte",
         "trino": ">=",
+        "snowflake": ">=",
     }
     LT = {
         "arrow": pyarrow.compute.Expression.__lt__,
         "astra": "__lt",
         "trino": "<",
+        "snowflake": "<",
     }
     LE = {
         "arrow": pyarrow.compute.Expression.__le__,
         "astra": "__lte",
         "trino": "<=",
+        "snowflake": "<=",
     }
     EQ = {
         "arrow": pyarrow.compute.Expression.__eq__,
         "astra": "",
         "trino": "=",
+        "snowflake": "=",
     }
     NE = {
         "arrow": pyarrow.compute.Expression.__ne__,
         "astra": "__ne",
         "trino": "!=",
+        "snowflake": "!=",
     }
-    IN = {"arrow": pyarrow.compute.Expression.isin, "astra": "__in", "trino": "IN"}
+    IN = {"arrow": pyarrow.compute.Expression.isin, "astra": "__in", "trino": "IN", "snowflake": "IN",}
 
     def to_string(self):
         """
@@ -468,6 +476,41 @@ class TrinoFilterExpression(FilterExpression[str]):
             return "NULL"
         return str(value)
 
+@final
+class SnowflakeFilterExpression(FilterExpression[str]):
+    """
+    A concrete implementation of the 'FilterExpression' abstract class for Snowflake SQL.
+    Compiles filter expressions into Snowflake-compatible SQL WHERE clause fragments.
+    """
+
+    def _compile_base_case(self, field_name: str, field_values: Any, operation: FilterExpressionOperation) -> str:
+        # Handle IN as a series of ORs for Snowflake
+        if operation == FilterExpressionOperation.IN:
+            if not isinstance(field_values, list):
+                raise ValueError("IN operation requires a list of values")
+            return f"{field_name} IN ({', '.join(self._format_value(v) for v in field_values)})"
+        # Handle other operations
+        op_str = operation.value["snowflake"]
+        return f"{field_name} {op_str} {self._format_value(field_values)}"
+
+    def _combine_results(
+        self, compiled_result_a: str, compiled_result_b: str, operation: FilterExpressionOperation
+    ) -> str:
+        op_str = operation.value["snowflake"]
+        return f"({compiled_result_a} {op_str} {compiled_result_b})"
+
+    @staticmethod
+    def _format_value(value: Any) -> str:
+        # Format value for SQL: quote strings, leave numbers as is and return NULL for None
+        if isinstance(value, str):
+            return f"'{value}'"
+        if isinstance(value, datetime.datetime):
+            return f"TIMESTAMP '{value}'"
+        if isinstance(value, datetime.date):
+            return f"DATE '{value}'"
+        if value is None:
+            return "NULL"
+        return str(value)
 
 def compile_expression(expression: Expression, target: type[FilterExpression[TCompileResult]]) -> TCompileResult:
     """

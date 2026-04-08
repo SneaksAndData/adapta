@@ -6,6 +6,7 @@ from adapta.storage.query_enabled_store import (
     AstraQueryEnabledStore,
     LocalQueryEnabledStore,
     TrinoQueryEnabledStore,
+    SnowflakeQueryEnabledStore,
 )
 
 
@@ -71,6 +72,14 @@ from adapta.storage.query_enabled_store import (
         (
             'qes://engine=TRINO;plaintext_credentials={"oauth2_username": "test"};settings={"host": "tester"}',
             TrinoQueryEnabledStore,
+        ),
+        (
+            'qes://engine=adapta.storage.query_enabled_store.SnowflakeQueryEnabledStore;plaintext_credentials={"user": "test"};settings={"account": "xy12345", "warehouse": "COMPUTE_WH"}',
+            SnowflakeQueryEnabledStore,
+        ),
+        (
+            'qes://engine=SNOWFLAKE;plaintext_credentials={"user": "test"};settings={"account": "xy12345", "warehouse": "COMPUTE_WH"}',
+            SnowflakeQueryEnabledStore,
         ),
     ],
 )

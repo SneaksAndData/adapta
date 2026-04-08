@@ -28,6 +28,7 @@ from adapta.storage.models.base import DataPath
 from adapta.storage.models.azure import AdlsGen2Path, WasbPath
 from adapta.storage.models.local import LocalPath
 from adapta.storage.models.trino import TrinoPath
+from adapta.storage.models.snowflake import SnowflakePath
 
 
 @dataclass(frozen=True)
@@ -54,7 +55,7 @@ class DataSocket(DataClassJsonMixin):
         ), "Fields alias, data_path and data_format must have a value provided to instantiate a DataSocket."
 
     def parse_data_path(
-        self, candidates: Iterable[type[DataPath]] = (AdlsGen2Path, LocalPath, WasbPath, AstraPath, S3Path, TrinoPath)
+        self, candidates: Iterable[type[DataPath]] = (AdlsGen2Path, LocalPath, WasbPath, AstraPath, S3Path, TrinoPath, SnowflakePath)
     ) -> DataPath | None:
         """
           Attempts to convert this socket's data path to one of the known DataPath types.
