@@ -27,9 +27,10 @@ def test_build_query_no_filter_no_limit():
     )
     assert query == 'SELECT col1, col2 FROM "db"."schema"."tbl"'
 
+
 def test_from_connection_string_snowflake_parses_payload():
     connection_string = (
-        'qes://engine=SNOWFLAKE;'
+        "qes://engine=SNOWFLAKE;"
         'plaintext_credentials={"user":"alice","password":"secret"};'
         'settings={"account":"xy12345","warehouse":"COMPUTE_WH","role":"ANALYST"}'
     )

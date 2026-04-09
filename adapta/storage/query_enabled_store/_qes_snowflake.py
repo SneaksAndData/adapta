@@ -22,7 +22,7 @@ from adapta.storage.query_enabled_store._models import (
     CONNECTION_STRING_REGEX,
 )
 from adapta.storage.models.enum import QueryEnabledStoreOptions
-from adapta.utils.metaframe import MetaFrame, concat
+from adapta.utils.metaframe import MetaFrame
 
 
 @dataclass
@@ -49,7 +49,7 @@ class SnowflakeSettings(DataClassJsonMixin):
 
     account: str | None = None
     warehouse: str | None = None
-    role: str | None = None,
+    role: str | None = (None,)
 
     def __post_init__(self):
         self.account = self.account or os.getenv("ADAPTA__SNOWFLAKE_ACCOUNT")
@@ -108,7 +108,7 @@ class SnowflakeQueryEnabledStore(QueryEnabledStore[SnowflakeCredential, Snowflak
 
     @classmethod
     def _from_connection_string(
-        cls, connection_string: str, lazy_init: bool = False # pylint: disable=W0613
+        cls, connection_string: str, lazy_init: bool = False  # pylint: disable=W0613
     ) -> "QueryEnabledStore[SnowflakeCredential, SnowflakeSettings]":
         _, credentials, settings = re.findall(re.compile(CONNECTION_STRING_REGEX), connection_string)[0]
         return cls(
