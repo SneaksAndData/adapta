@@ -78,7 +78,7 @@ from adapta.storage.query_enabled_store import (
             SnowflakeQueryEnabledStore,
         ),
         (
-            'qes://engine=SNOWFLAKE;plaintext_credentials={"user": "test"};settings={"account": "xy12345", "warehouse": "COMPUTE_WH"}',
+            'qes://engine=SNOWFLAKE;plaintext_credentials={"user": "test", "password": "pword"};settings={"account": "xy12345", "warehouse": "COMPUTE_WH", "role": "ANALYST"}',
             SnowflakeQueryEnabledStore,
         ),
     ],

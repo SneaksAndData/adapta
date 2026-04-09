@@ -49,12 +49,14 @@ class SnowflakeSettings(DataClassJsonMixin):
 
     account: str | None = None
     warehouse: str | None = None
+    role: str | None = None,
 
     def __post_init__(self):
         self.account = self.account or os.getenv("ADAPTA__SNOWFLAKE_ACCOUNT")
         if not self.account:
             raise RuntimeError("Snowflake account not provided.")
         self.warehouse = self.warehouse or os.getenv("ADAPTA__SNOWFLAKE_WAREHOUSE", "AIRFLOW")
+        self.role = self.role or os.getenv("ADAPTA__SNOWFLAKE_ROLE", "ADVANCED_ANALYST")
 
 
 @final
@@ -80,6 +82,7 @@ class SnowflakeQueryEnabledStore(QueryEnabledStore[SnowflakeCredential, Snowflak
             account=self.settings.account,
             warehouse=self.settings.warehouse,
             password=self.credentials.password,
+            role=self.settings.role,
         )
 
     def _apply_filter(
@@ -95,24 +98,22 @@ class SnowflakeQueryEnabledStore(QueryEnabledStore[SnowflakeCredential, Snowflak
             query=self._build_query(
                 table_fqn=path.fully_qualified_name, filter_expression=filter_expression, columns=columns, limit=limit
             ),
-            batch_size=options.get(QueryEnabledStoreOptions.BATCH_SIZE, 1000),
         )
 
         with self._snowflake_client:
-            return concat(query_fn())
+            return query_fn()
 
     def _apply_query(self, query: str) -> MetaFrame | Iterator[MetaFrame]:
         raise NotImplementedError("Text queries are not supported by Snowflake QES")
 
     @classmethod
     def _from_connection_string(
-        cls, connection_string: str, lazy_init: bool = False
+        cls, connection_string: str, lazy_init: bool = False # pylint: disable=W0613
     ) -> "QueryEnabledStore[SnowflakeCredential, SnowflakeSettings]":
         _, credentials, settings = re.findall(re.compile(CONNECTION_STRING_REGEX), connection_string)[0]
         return cls(
             credentials=SnowflakeCredential.from_json(credentials),
             settings=SnowflakeSettings.from_json(settings),
-            lazy_init=lazy_init,
         )
 
     @staticmethod

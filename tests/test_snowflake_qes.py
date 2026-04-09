@@ -26,3 +26,19 @@ def test_build_query_no_filter_no_limit():
         limit=None,
     )
     assert query == 'SELECT col1, col2 FROM "db"."schema"."tbl"'
+
+def test_from_connection_string_snowflake_parses_payload():
+    connection_string = (
+        'qes://engine=SNOWFLAKE;'
+        'plaintext_credentials={"user":"alice","password":"secret"};'
+        'settings={"account":"xy12345","warehouse":"COMPUTE_WH","role":"ANALYST"}'
+    )
+
+    store = SnowflakeQueryEnabledStore._from_connection_string(connection_string)
+
+    assert isinstance(store, SnowflakeQueryEnabledStore)
+    assert store.credentials.user == "alice"
+    assert store.credentials.password == "secret"
+    assert store.settings.account == "xy12345"
+    assert store.settings.warehouse == "COMPUTE_WH"
+    assert store.settings.role == "ANALYST"
