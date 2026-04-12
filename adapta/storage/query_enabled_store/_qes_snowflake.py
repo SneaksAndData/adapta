@@ -126,9 +126,7 @@ class SnowflakeQueryEnabledStore(QueryEnabledStore[SnowflakeCredential, Snowflak
         )
 
     @staticmethod
-    def _build_query(
-        inner_query: str, filter_expression: Expression, columns: list[str], limit: int | None
-    ) -> str:
+    def _build_query(inner_query: str, filter_expression: Expression, columns: list[str], limit: int | None) -> str:
         """
         Build the final SQL from ``SnowflakePath.query`` (same composition rules as Trino QES).
 
