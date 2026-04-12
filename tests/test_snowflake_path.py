@@ -18,48 +18,40 @@ from adapta.storage.models.snowflake import SnowflakePath
 from adapta.storage.models import parse_data_path
 from adapta.process_communication import DataSocket
 
-
-def test_from_hdfs_path():
-    path = SnowflakePath.from_hdfs_path("snowflake://mydb/myschema/mytable")
-    assert path.database == "mydb"
-    assert path.schema == "myschema"
-    assert path.table == "mytable"
+_TABLE_SELECT = 'SELECT * FROM "mydb"."myschema"."mytable"'
+_HDFS_TABLE = f"snowflake://{_TABLE_SELECT}"
+_BAD_PATH = "s3://wrong/protocol/entirely"
 
 
-@pytest.mark.parametrize(
-    "bad_path",
-    [
-        "snowflake://only_two/parts",
-        "snowflake://too/many/parts/here",
-        "s3://wrong/protocol/entirely",
-        "snowflake://",
-    ],
-)
-def test_from_hdfs_path_invalid(bad_path):
+def test_from_hdfs_path_sql_body():
+    path = SnowflakePath.from_hdfs_path('snowflake://SELECT a, b FROM "db"."sch"."t" JOIN other o ON t.id = o.id')
+    assert path.query == 'SELECT a, b FROM "db"."sch"."t" JOIN other o ON t.id = o.id'
+
+
+def test_from_hdfs_path_table_select_uri():
+    path = SnowflakePath.from_hdfs_path(_HDFS_TABLE)
+    assert path.query == _TABLE_SELECT
+
+
+def test_from_hdfs_path_invalid():
     with pytest.raises(AssertionError):
-        SnowflakePath.from_hdfs_path(bad_path)
+        SnowflakePath.from_hdfs_path(_BAD_PATH)
 
 
-def test_to_hdfs_path():
-    path = SnowflakePath("database", "schema", "table").to_hdfs_path()
-    assert path == "snowflake://database/schema/table"
-
-
-def test_fully_qualified_name():
-    path = SnowflakePath.from_hdfs_path("snowflake://mydb/myschema/mytable")
-    assert path.fully_qualified_name == '"mydb"."myschema"."mytable"'
+def test_to_hdfs_path_not_implemented():
+    path = SnowflakePath.from_hdfs_path(_HDFS_TABLE)
+    with pytest.raises(NotImplementedError):
+        path.to_hdfs_path()
 
 
 def test_parse_data_path_returns_snowflake_path():
-    result = parse_data_path("snowflake://mydb/myschema/mytable")
+    result = parse_data_path(_HDFS_TABLE)
     assert isinstance(result, SnowflakePath)
-    assert result.database == "mydb"
-    assert result.schema == "myschema"
-    assert result.table == "mytable"
+    assert result.query == _TABLE_SELECT
 
 
 def test_datasocket_parse_data_path_snowflake():
-    socket = DataSocket(alias="test", data_path="snowflake://mydb/myschema/mytable", data_format="snowflake")
+    socket = DataSocket(alias="test", data_path=_HDFS_TABLE, data_format="snowflake")
     result = socket.parse_data_path()
     assert isinstance(result, SnowflakePath)
-    assert result.database == "mydb"
+    assert result.query == _TABLE_SELECT

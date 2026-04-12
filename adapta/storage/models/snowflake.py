@@ -16,7 +16,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
-import re
+
 from dataclasses import dataclass
 from typing import TypeVar
 
@@ -31,9 +31,7 @@ class SnowflakePath(DataPath):
     Path wrapper for Snowflake.
     """
 
-    database: str
-    schema: str
-    table: str
+    query: str
     protocol: str = DataProtocols.SNOWFLAKE.value
 
     def to_uri(self) -> str:
@@ -48,17 +46,11 @@ class SnowflakePath(DataPath):
 
     @classmethod
     def from_hdfs_path(cls, hdfs_path: str) -> "SnowflakePath":
-        match = re.match(r"^snowflake://([^/]+)/([^/]+)/([^/]+)$", hdfs_path)
-        assert match, f"Invalid Snowflake path: {hdfs_path}"
-        return cls(database=match.group(1), schema=match.group(2), table=match.group(3))
+        assert hdfs_path.startswith("snowflake://"), "HDFS Snowflake path should start with snowflake://"
+        return cls(query=hdfs_path.removeprefix("snowflake://"))
 
     def to_hdfs_path(self) -> str:
-        return f"snowflake://{self.database}/{self.schema}/{self.table}"
-
-    @property
-    def fully_qualified_name(self) -> str:
-        """Combine database, schema and table into fully qualified name"""
-        return f'"{self.database}"."{self.schema}"."{self.table}"'
+        raise NotImplementedError
 
     def to_delta_rs_path(self) -> str:
         raise NotImplementedError

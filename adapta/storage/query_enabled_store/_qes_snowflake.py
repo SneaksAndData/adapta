@@ -49,14 +49,16 @@ class SnowflakeSettings(DataClassJsonMixin):
 
     account: str | None = None
     warehouse: str | None = None
-    role: str | None = (None,)
+    role: str | None = None
 
     def __post_init__(self):
         self.account = self.account or os.getenv("ADAPTA__SNOWFLAKE_ACCOUNT")
         if not self.account:
             raise RuntimeError("Snowflake account not provided.")
-        self.warehouse = self.warehouse or os.getenv("ADAPTA__SNOWFLAKE_WAREHOUSE", "AIRFLOW")
-        self.role = self.role or os.getenv("ADAPTA__SNOWFLAKE_ROLE", "ADVANCED_ANALYST")
+        self.warehouse = self.warehouse or os.getenv("ADAPTA__SNOWFLAKE_WAREHOUSE")
+        if not self.warehouse:
+            raise RuntimeError("Snowflake warehouse not provided. Required by Adapta SnowflakeClient.")
+        self.role = self.role or os.getenv("ADAPTA__SNOWFLAKE_ROLE")
 
 
 @final
@@ -68,13 +70,14 @@ class SnowflakeQueryEnabledStore(QueryEnabledStore[SnowflakeCredential, Snowflak
     """
 
     def close(self) -> None:
-        pass
+        if not self._lazy:
+            self._snowflake_client.disconnect()
 
     def __init__(
         self,
         credentials: SnowflakeCredential,
         settings: SnowflakeSettings,
-        lazy_init: bool = True,  # pylint: disable=W0613
+        lazy_init: bool = True,
     ):
         super().__init__(credentials, settings)
         self._snowflake_client = SnowflakeClient(
@@ -84,6 +87,9 @@ class SnowflakeQueryEnabledStore(QueryEnabledStore[SnowflakeCredential, Snowflak
             password=self.credentials.password,
             role=self.settings.role,
         )
+        self._lazy = lazy_init
+        if not lazy_init:
+            self._snowflake_client.connect()
 
     def _apply_filter(
         self,
@@ -96,40 +102,50 @@ class SnowflakeQueryEnabledStore(QueryEnabledStore[SnowflakeCredential, Snowflak
         query_fn = partial(
             self._snowflake_client.query,
             query=self._build_query(
-                table_fqn=path.fully_qualified_name, filter_expression=filter_expression, columns=columns, limit=limit
+                inner_query=path.query, filter_expression=filter_expression, columns=columns, limit=limit
             ),
         )
 
-        with self._snowflake_client:
-            return query_fn()
+        if self._lazy:
+            with self._snowflake_client:
+                return query_fn()
+        return query_fn()
 
     def _apply_query(self, query: str) -> MetaFrame | Iterator[MetaFrame]:
         raise NotImplementedError("Text queries are not supported by Snowflake QES")
 
     @classmethod
     def _from_connection_string(
-        cls, connection_string: str, lazy_init: bool = False  # pylint: disable=W0613
+        cls, connection_string: str, lazy_init: bool = False
     ) -> "QueryEnabledStore[SnowflakeCredential, SnowflakeSettings]":
         _, credentials, settings = re.findall(re.compile(CONNECTION_STRING_REGEX), connection_string)[0]
         return cls(
             credentials=SnowflakeCredential.from_json(credentials),
             settings=SnowflakeSettings.from_json(settings),
+            lazy_init=lazy_init,
         )
 
     @staticmethod
-    def _build_query(table_fqn: str, filter_expression: Expression, columns: list[str], limit: int | None) -> str:
+    def _build_query(
+        inner_query: str, filter_expression: Expression, columns: list[str], limit: int | None
+    ) -> str:
         """
-        Build the final query by applying the filter expression, selected columns, and limit to the base query.
+        Build the final SQL from ``SnowflakePath.query`` (same composition rules as Trino QES).
+
+        If there is no filter, column projection, or limit, ``inner_query`` is returned unchanged.
+        Otherwise it is wrapped as ``SELECT ... FROM (inner_query) WHERE ... LIMIT ...``.
         """
 
-        columns_to_select = ", ".join(columns) if columns else "*"
-        query = f"SELECT {columns_to_select} FROM {table_fqn}"
+        query = inner_query
+        if filter_expression or columns or limit:
+            columns_to_select = ", ".join(columns) if columns else "*"
+            query = f"SELECT {columns_to_select} FROM ({inner_query})"
 
-        if filter_expression:
-            compiled_expression = compile_expression(expression=filter_expression, target=SnowflakeFilterExpression)
-            query = f"{query} WHERE {compiled_expression}"
+            if filter_expression:
+                compiled_expression = compile_expression(expression=filter_expression, target=SnowflakeFilterExpression)
+                query = f"{query} WHERE {compiled_expression}"
 
-        if limit:
-            query = f"{query} LIMIT {limit}"
+            if limit:
+                query = f"{query} LIMIT {limit}"
 
         return query

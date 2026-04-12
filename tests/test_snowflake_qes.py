@@ -17,15 +17,37 @@ from adapta.storage.models.snowflake import SnowflakePath
 from adapta.storage.query_enabled_store._qes_snowflake import SnowflakeQueryEnabledStore
 
 
-def test_build_query_no_filter_no_limit():
-    path = SnowflakePath.from_hdfs_path("snowflake://db/schema/tbl")
+def test_build_query_columns_wraps_inner_select():
+    path = SnowflakePath.from_hdfs_path('snowflake://SELECT * FROM "db"."schema"."tbl"')
     query = SnowflakeQueryEnabledStore._build_query(
-        table_fqn=path.fully_qualified_name,
+        inner_query=path.query,
         filter_expression=None,
         columns=["col1", "col2"],
         limit=None,
     )
-    assert query == 'SELECT col1, col2 FROM "db"."schema"."tbl"'
+    assert query == 'SELECT col1, col2 FROM (SELECT * FROM "db"."schema"."tbl")'
+
+
+def test_build_query_pass_through_when_no_projection_filter_limit():
+    inner = 'SELECT * FROM "db"."schema"."tbl"'
+    query = SnowflakeQueryEnabledStore._build_query(
+        inner_query=inner,
+        filter_expression=None,
+        columns=[],
+        limit=None,
+    )
+    assert query == inner
+
+
+def test_build_query_join_inner_wrapped_with_limit():
+    inner = 'SELECT a.x FROM "d"."s"."t1" a JOIN "d"."s"."t2" b ON a.id = b.id'
+    query = SnowflakeQueryEnabledStore._build_query(
+        inner_query=inner,
+        filter_expression=None,
+        columns=[],
+        limit=100,
+    )
+    assert query == f"SELECT * FROM ({inner}) LIMIT 100"
 
 
 def test_from_connection_string_snowflake_parses_payload():
@@ -35,7 +57,7 @@ def test_from_connection_string_snowflake_parses_payload():
         'settings={"account":"xy12345","warehouse":"COMPUTE_WH","role":"ANALYST"}'
     )
 
-    store = SnowflakeQueryEnabledStore._from_connection_string(connection_string)
+    store = SnowflakeQueryEnabledStore._from_connection_string(connection_string, lazy_init=True)
 
     assert isinstance(store, SnowflakeQueryEnabledStore)
     assert store.credentials.user == "alice"

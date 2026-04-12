@@ -56,11 +56,17 @@ class SnowflakeClient:
         self._role = role
         self._conn = None
 
-    def __enter__(self) -> Self | None:
+    def connect(self) -> Self | None:
         """
-        Enters the context manager and establishes a connection to the Snowflake database.
-        :return: The SnowflakeClient instance, or None if there was an error connecting to the database.
+        Establishes a connection to Snowflake. Also used by the context manager on enter.
         """
+        if self._conn is not None:
+            self._logger.info(
+                "Connection to {account} for {user} is already established.",
+                account=self._account,
+                user=self._user,
+            )
+            return self
         try:
             self._conn = snowflake.connector.connect(
                 user=self._user,
@@ -77,6 +83,21 @@ class SnowflakeClient:
             )
             return None
 
+    def disconnect(self) -> None:
+        """
+        Closes the Snowflake connection if one is open.
+        """
+        if self._conn is not None:
+            self._conn.close()
+            self._conn = None
+
+    def __enter__(self) -> Self | None:
+        """
+        Enters the context manager and establishes a connection to the Snowflake database.
+        :return: The SnowflakeClient instance, or None if there was an error connecting to the database.
+        """
+        return self.connect()
+
     def __exit__(
         self,
         exc_type: type[BaseException] | None = None,
@@ -90,7 +111,7 @@ class SnowflakeClient:
         :param exc_val: The value of the exception that was raised, if any.
         :param exc_tb: The traceback of the exception that was raised, if any.
         """
-        self._conn.close()
+        self.disconnect()
         if exc_val is not None:
             self._logger.error(f"An error occurred while closing the database connection: {exc_val}")
 
