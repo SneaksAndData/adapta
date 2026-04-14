@@ -243,6 +243,7 @@ class AstraClient:
             [mapper(entity) for entity in self._session.execute(query)],
             convert_to_polars=polars.DataFrame,
             convert_to_pandas=pandas.DataFrame,
+            convert_to_polars_lazy=polars.LazyFrame,
         )
 
     def filter_entities(
@@ -319,6 +320,13 @@ class AstraClient:
                 # Catches errors related to incorrect schema inference and tries again with unlimited schema inference length
                 return polars.DataFrame(x, schema=select_columns, infer_schema_length=None)
 
+        def convert_to_polars_lazy(x: list[dict]) -> polars.LazyFrame:
+            try:
+                return polars.LazyFrame(x, schema=select_columns)
+            except ComputeError:
+                # Catches errors related to incorrect schema inference and tries again with unlimited schema inference length
+                return polars.LazyFrame(x, schema=select_columns, infer_schema_length=None)
+
         def to_frame(
             model: type[Model], key_column_filter: dict[str, Any], columns_to_select: list[str] | None
         ) -> MetaFrame:
@@ -326,6 +334,7 @@ class AstraClient:
                 [dict(v.items()) for v in list(apply(model, key_column_filter, columns_to_select))],
                 convert_to_polars=convert_to_polars,
                 convert_to_pandas=lambda x: pandas.DataFrame(x, columns=select_columns),
+                convert_to_polars_lazy=polars.LazyFrame,
             )
 
         assert (
@@ -384,6 +393,9 @@ class AstraClient:
                         convert_to_pandas=(lambda x: pandas.DataFrame(x, columns=select_columns))
                         if not deduplicate
                         else (lambda x: pandas.DataFrame(x, columns=select_columns).drop_duplicates()),
+                        convert_to_polars_lazy=convert_to_polars_lazy
+                        if not deduplicate
+                        else (lambda x: convert_to_polars_lazy(x).unique()),
                     )
                     for key_column_filter in compiled_filter_values
                 ],
@@ -401,7 +413,10 @@ class AstraClient:
         :param: query: A CQL query to run.
         """
         return MetaFrame(
-            self._session.execute(query), convert_to_polars=polars.DataFrame, convert_to_pandas=pandas.DataFrame
+            self._session.execute(query),
+            convert_to_polars=polars.DataFrame,
+            convert_to_pandas=pandas.DataFrame,
+            convert_to_polars_lazy=polars.LazyFrame,
         )
 
     def set_table_option(self, table_name: str, option_name: str, option_value: str) -> None:
@@ -565,5 +580,8 @@ class AstraClient:
         )
 
         return MetaFrame(
-            self._session.execute(str(query)), convert_to_polars=polars.DataFrame, convert_to_pandas=pandas.DataFrame
+            self._session.execute(str(query)),
+            convert_to_polars=polars.DataFrame,
+            convert_to_pandas=pandas.DataFrame,
+            convert_to_polars_lazy=polars.LazyFrame,
         )
