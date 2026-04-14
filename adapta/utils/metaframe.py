@@ -54,9 +54,9 @@ class MetaFrame:
     @classmethod
     def from_pandas(
         cls,
-            data: pandas.DataFrame,
-            convert_to_polars: Callable[[any], polars.DataFrame] | None = None,
-            convert_to_polars_lazy: Callable[[any], polars.LazyFrame] | None = None
+        data: pandas.DataFrame,
+        convert_to_polars: Callable[[any], polars.DataFrame] | None = None,
+        convert_to_polars_lazy: Callable[[any], polars.LazyFrame] | None = None,
     ) -> "MetaFrame":
         """
         Create a MetaFrame from a pandas DataFrame.
@@ -76,9 +76,9 @@ class MetaFrame:
     @classmethod
     def from_polars(
         cls,
-            data: polars.DataFrame,
-            convert_to_polars_lazy: Callable[[any], pandas.DataFrame] | None = None,
-            convert_to_pandas: Callable[[any], pandas.DataFrame] | None = None
+        data: polars.DataFrame,
+        convert_to_polars_lazy: Callable[[any], pandas.DataFrame] | None = None,
+        convert_to_pandas: Callable[[any], pandas.DataFrame] | None = None,
     ) -> "MetaFrame":
         """
         Create a MetaFrame from a Polars DataFrame.
@@ -97,9 +97,9 @@ class MetaFrame:
     @classmethod
     def from_polars_lazy(
         cls,
-            data: polars.LazyFrame,
-            convert_to_pandas: Callable[[any], pandas.DataFrame] | None = None,
-            convert_to_polars: Callable[[any], pandas.DataFrame] | None = None
+        data: polars.LazyFrame,
+        convert_to_pandas: Callable[[any], pandas.DataFrame] | None = None,
+        convert_to_polars: Callable[[any], pandas.DataFrame] | None = None,
     ) -> "MetaFrame":
         """
         Create a MetaFrame from a Polars DataFrame.
@@ -142,7 +142,7 @@ class MetaFrame:
     def _check_if_materialized(self) -> None:
         if self._materialized:
             raise RuntimeError(
-                "MetaFrame has already been materialized. You can only call 'to_pandas' or 'to_polars' once."
+                "MetaFrame has already been materialized. You can only call 'to_pandas', 'to_polars', or 'to_polars_lazy' once."
             )
 
         self._materialized = True
