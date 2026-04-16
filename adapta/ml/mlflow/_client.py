@@ -17,6 +17,7 @@
 #
 
 import os
+from configparser import ConfigParser
 from pathlib import Path
 from typing import Any, Self
 
@@ -68,17 +69,14 @@ class MlflowBasicClient:
         credentials_file_location = user_home / ".mlflow"
         credentials_file_path = credentials_file_location / "credentials"
         os.makedirs(credentials_file_location, exist_ok=True)
+        credentials_file_parser = ConfigParser()
+        credentials_file_parser["mlflow"] = {"mlflow_tracking_username": username, "mlflow_tracking_password": password}
         # remove existing file if present
         if os.path.exists(credentials_file_path):
             os.remove(credentials_file_path)
 
         with open(credentials_file_location / "credentials", "w") as credentials_file:
-            credentials_file.write(
-                f"""
-[mlflow]
-mlflow_tracking_username = {username}
-mlflow_tracking_password = {password}"""
-            )
+            credentials_file_parser.write(credentials_file)
         return cls(tracking_server_uri=tracking_server_uri)._initialize()
 
     @property
