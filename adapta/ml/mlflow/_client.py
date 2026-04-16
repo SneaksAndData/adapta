@@ -72,11 +72,8 @@ class MlflowBasicClient:
         os.makedirs(credentials_file_location, exist_ok=True)
         credentials_file_parser = ConfigParser()
         credentials_file_parser["mlflow"] = {"mlflow_tracking_username": username, "mlflow_tracking_password": password}
-        # remove existing file if present
-        if os.path.exists(credentials_file_path):
-            os.remove(credentials_file_path)
 
-        with open(credentials_file_location / "credentials", "w", encoding="utf-8") as credentials_file:
+        with open(credentials_file_path, "w", encoding="utf-8") as credentials_file:
             credentials_file_parser.write(credentials_file)
         return cls(tracking_server_uri=tracking_server_uri)._initialize()
 
