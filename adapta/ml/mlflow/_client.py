@@ -78,7 +78,12 @@ class MlflowBasicClient:
 
         with open(credentials_file_path, "w", encoding="utf-8") as credentials_file:
             credentials_file_parser.write(credentials_file)
-        return cls(tracking_server_uri=tracking_server_uri)._initialize()
+
+        # initialize and remove stored file
+        client = cls(tracking_server_uri=tracking_server_uri)._initialize()
+        os.remove(credentials_file_path)
+
+        return client
 
     @property
     def tracking_server_uri(self) -> str:
