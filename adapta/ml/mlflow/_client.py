@@ -17,7 +17,9 @@
 #
 
 import os
-from typing import Any
+from configparser import RawConfigParser
+from pathlib import Path
+from typing import Any, Self
 
 import mlflow
 from mlflow.entities.model_registry import ModelVersion
@@ -35,13 +37,53 @@ class MlflowBasicClient:
     """
 
     def __init__(self, tracking_server_uri: str):
+        self._tracking_server_uri = tracking_server_uri
+        self._client: MlflowClient | None = None
+
+    def _initialize(self) -> Self:
+        mlflow.set_tracking_uri(self._tracking_server_uri)
+        self._client = MlflowClient()
+        return self
+
+    @classmethod
+    def from_environment_credentials(cls, tracking_server_uri: str) -> Self:
+        """
+        Creates an instance of MlflowBasicClient using credentials from environment variables
+        https://mlflow.org/docs/latest/self-hosting/security/basic-http-auth/#using-environment-variables
+        """
         assert os.environ.get("MLFLOW_TRACKING_USERNAME") and os.environ.get(
             "MLFLOW_TRACKING_PASSWORD"
         ), "Both MLFLOW_TRACKING_USERNAME and MLFLOW_TRACKING_PASSWORD must be set to access MLFlow Tracking Server"
 
-        mlflow.set_tracking_uri(tracking_server_uri)
-        self._tracking_server_uri = tracking_server_uri
-        self._client = MlflowClient()
+        return cls(tracking_server_uri=tracking_server_uri)._initialize()
+
+    @classmethod
+    def from_static_credentials(cls, tracking_server_uri: str, username: str, password: str) -> Self:
+        """
+        Creates an instance of MlflowBasicClient using credentials file generated from user-provided credentials
+        https://mlflow.org/docs/latest/self-hosting/security/basic-http-auth/#using-credentials-file
+
+        Use this method when you need to provision clients dynamically, or when working with multiple MLFlow instances.
+        This method is not thread-safe. Always call it from the main thread.
+        """
+        user_home = Path.home()
+        credentials_file_location = user_home / ".mlflow"
+        credentials_file_path = credentials_file_location / "credentials"
+        os.makedirs(credentials_file_location, exist_ok=True)
+        credentials_file_parser = RawConfigParser()
+        credentials_file_parser["mlflow"] = {
+            "mlflow_tracking_username": username,
+            "mlflow_tracking_password": password.replace("%", "%%"),
+        }
+
+        with open(credentials_file_path, "w", encoding="utf-8") as credentials_file:
+            credentials_file_parser.write(credentials_file)
+
+        # initialize and remove stored file
+        client = cls(tracking_server_uri=tracking_server_uri)._initialize()
+        os.remove(credentials_file_path)
+
+        return client
 
     @property
     def tracking_server_uri(self) -> str:
