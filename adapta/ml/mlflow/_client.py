@@ -38,6 +38,7 @@ class MlflowBasicClient:
 
     def __init__(self, tracking_server_uri: str):
         self._tracking_server_uri = tracking_server_uri
+        self._client: MlflowClient | None = None
 
     def _initialize(self) -> Self:
         mlflow.set_tracking_uri(self._tracking_server_uri)
@@ -75,7 +76,7 @@ class MlflowBasicClient:
         if os.path.exists(credentials_file_path):
             os.remove(credentials_file_path)
 
-        with open(credentials_file_location / "credentials", "w") as credentials_file:
+        with open(credentials_file_location / "credentials", "w", encoding="utf-8") as credentials_file:
             credentials_file_parser.write(credentials_file)
         return cls(tracking_server_uri=tracking_server_uri)._initialize()
 
