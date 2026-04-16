@@ -17,7 +17,7 @@
 #
 
 import os
-from configparser import ConfigParser
+from configparser import RawConfigParser
 from pathlib import Path
 from typing import Any, Self
 
@@ -70,8 +70,11 @@ class MlflowBasicClient:
         credentials_file_location = user_home / ".mlflow"
         credentials_file_path = credentials_file_location / "credentials"
         os.makedirs(credentials_file_location, exist_ok=True)
-        credentials_file_parser = ConfigParser()
-        credentials_file_parser["mlflow"] = {"mlflow_tracking_username": username, "mlflow_tracking_password": password}
+        credentials_file_parser = RawConfigParser()
+        credentials_file_parser["mlflow"] = {
+            "mlflow_tracking_username": username,
+            "mlflow_tracking_password": password.replace("%", "%%"),
+        }
 
         with open(credentials_file_path, "w", encoding="utf-8") as credentials_file:
             credentials_file_parser.write(credentials_file)
