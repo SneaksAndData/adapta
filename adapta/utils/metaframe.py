@@ -42,33 +42,43 @@ class MetaFrame:
         self,
         data: any,
         convert_to_polars: Callable[[any], polars.DataFrame],
+        convert_to_polars_lazy: Callable[[any], polars.LazyFrame],
         convert_to_pandas: Callable[[any], pandas.DataFrame],
     ):
         self._materialized = False
         self._data = data
         self._convert_to_polars = convert_to_polars
+        self._convert_to_polars_lazy = convert_to_polars_lazy
         self._convert_to_pandas = convert_to_pandas
 
     @classmethod
     def from_pandas(
-        cls, data: pandas.DataFrame, convert_to_polars: Callable[[any], polars.DataFrame] | None = None
+        cls,
+        data: pandas.DataFrame,
+        convert_to_polars: Callable[[any], polars.DataFrame] | None = None,
+        convert_to_polars_lazy: Callable[[any], polars.LazyFrame] | None = None,
     ) -> "MetaFrame":
         """
         Create a MetaFrame from a pandas DataFrame.
 
         :param data: Pandas DataFrame
         :param convert_to_polars: Override default function to convert to polars DataFrame
+        :param convert_to_polars_lazy: Override default function to convert to polars LazyFrame
         :return: MetaFrame
         """
         return cls(
             data=data,
             convert_to_polars=convert_to_polars or polars.DataFrame,
+            convert_to_polars_lazy=convert_to_polars_lazy or polars.LazyFrame,
             convert_to_pandas=lambda x: x,
         )
 
     @classmethod
     def from_polars(
-        cls, data: polars.DataFrame, convert_to_pandas: Callable[[any], pandas.DataFrame] | None = None
+        cls,
+        data: polars.DataFrame,
+        convert_to_polars_lazy: Callable[[any], pandas.DataFrame] | None = None,
+        convert_to_pandas: Callable[[any], pandas.DataFrame] | None = None,
     ) -> "MetaFrame":
         """
         Create a MetaFrame from a Polars DataFrame.
@@ -80,7 +90,30 @@ class MetaFrame:
         return cls(
             data=data,
             convert_to_polars=lambda x: x,
+            convert_to_polars_lazy=convert_to_polars_lazy or (lambda x: x.lazy()),
             convert_to_pandas=convert_to_pandas or (lambda x: x.to_pandas()),
+        )
+
+    @classmethod
+    def from_polars_lazy(
+        cls,
+        data: polars.LazyFrame,
+        convert_to_pandas: Callable[[any], pandas.DataFrame] | None = None,
+        convert_to_polars: Callable[[any], pandas.DataFrame] | None = None,
+    ) -> "MetaFrame":
+        """
+        Create a MetaFrame from a Polars DataFrame.
+
+        :param data: Polars DataFrame
+        :param convert_to_pandas: Override default function to convert to pandas DataFrame
+        :param convert_to_polars: Override default function to convert to polars DataFrame
+        :return: MetaFrame
+        """
+        return cls(
+            data=data,
+            convert_to_polars_lazy=lambda x: x,
+            convert_to_polars=convert_to_polars or (lambda x: x.collect()),
+            convert_to_pandas=convert_to_pandas or (lambda x: x.collect().to_pandas()),
         )
 
     @classmethod
@@ -88,6 +121,7 @@ class MetaFrame:
         cls,
         data: pyarrow.Table,
         convert_to_polars: Callable[[any], polars.DataFrame] | None = None,
+        convert_to_polars_lazy: Callable[[any], polars.LazyFrame] | None = None,
         convert_to_pandas: Callable[[any], pandas.DataFrame] | None = None,
     ) -> "MetaFrame":
         """
@@ -101,13 +135,14 @@ class MetaFrame:
         return cls(
             data=data,
             convert_to_polars=convert_to_polars or polars.from_arrow,
+            convert_to_polars_lazy=convert_to_polars_lazy or (lambda x: polars.from_arrow(x).lazy()),
             convert_to_pandas=convert_to_pandas or (lambda x: x.to_pandas()),
         )
 
     def _check_if_materialized(self) -> None:
         if self._materialized:
             raise RuntimeError(
-                "MetaFrame has already been materialized. You can only call 'to_pandas' or 'to_polars' once."
+                "MetaFrame has already been materialized. You can only call 'to_pandas', 'to_polars', or 'to_polars_lazy' once."
             )
 
         self._materialized = True
@@ -126,6 +161,13 @@ class MetaFrame:
         self._check_if_materialized()
         return self._convert_to_polars(self._data)
 
+    def to_polars_lazy(self) -> polars.LazyFrame:
+        """
+        Convert the MetaFrame to a Polars LazyFrame.
+        """
+        self._check_if_materialized()
+        return self._convert_to_polars_lazy(self._data)
+
 
 def concat(dataframes: Iterable[MetaFrame], options: Iterable[MetaFrameOptions] | None = None) -> MetaFrame:
     """
@@ -141,6 +183,7 @@ def concat(dataframes: Iterable[MetaFrame], options: Iterable[MetaFrameOptions] 
         return MetaFrame(
             data=[],
             convert_to_polars=lambda _: polars.DataFrame(),
+            convert_to_polars_lazy=lambda _: polars.LazyFrame(),
             convert_to_pandas=lambda _: pandas.DataFrame(),
         )
 
@@ -153,6 +196,15 @@ def concat(dataframes: Iterable[MetaFrame], options: Iterable[MetaFrameOptions] 
         data=dataframes,
         convert_to_polars=lambda data: polars.concat(
             map(lambda df: df.to_polars(), data),
+            **{
+                k: v
+                for options_object in options
+                for k, v in options_object.kwargs.items()
+                if isinstance(options_object, PolarsOptions)
+            }
+        ),
+        convert_to_polars_lazy=lambda data: polars.concat(
+            map(lambda df: df.to_polars_lazy(), data),
             **{
                 k: v
                 for options_object in options
