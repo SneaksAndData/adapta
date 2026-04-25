@@ -9,6 +9,7 @@ from typing import Self
 
 import snowflake.connector
 
+from cryptography.hazmat.primitives import serialization
 from snowflake.connector.errors import DatabaseError, ProgrammingError
 
 from adapta.logs.models import LogLevel
@@ -17,6 +18,25 @@ from adapta.storage.models import S3Path, DataPath
 
 from adapta.storage.models.azure import AdlsGen2Path
 from adapta.utils.metaframe import MetaFrame
+
+
+def _coerce_private_key_to_der(private_key: bytes, passphrase: str | None) -> bytes:
+    """
+    Snowflake's ``snowflake.connector.connect(private_key=...)`` expects DER bytes.
+    Accept PEM (encrypted or not) and convert to DER on the fly so callers can hand
+    us either format. DER input is returned unchanged.
+    """
+    if private_key.lstrip().startswith(b"-----BEGIN"):
+        loaded = serialization.load_pem_private_key(
+            private_key,
+            password=passphrase.encode("utf-8") if passphrase else None,
+        )
+        return loaded.private_bytes(
+            encoding=serialization.Encoding.DER,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption(),
+        )
+    return private_key
 
 
 class SnowflakeClient:
@@ -46,15 +66,28 @@ class SnowflakeClient:
         ),
         password: str | None = None,
         role: str | None = None,
+        private_key: bytes | None = None,
+        private_key_file: str | None = None,
+        private_key_file_pwd: str | None = None,
     ):
         self._user = user
         self._account = account
         self._warehouse = warehouse
-        self._authenticator = "snowflake" if password else authenticator
         self._logger = logger
         self._password = password
         self._role = role
         self._conn = None
+
+        if private_key is not None or private_key_file is not None:
+            self._authenticator = "SNOWFLAKE_JWT"
+        elif password:
+            self._authenticator = "snowflake"
+        else:
+            self._authenticator = authenticator
+
+        self._private_key = private_key
+        self._private_key_file = private_key_file
+        self._private_key_file_pwd = private_key_file_pwd
 
     def connect(self) -> Self | None:
         """
@@ -68,20 +101,35 @@ class SnowflakeClient:
             )
             return self
         try:
-            self._conn = snowflake.connector.connect(
-                user=self._user,
-                account=self._account,
-                password=self._password,
-                warehouse=self._warehouse,
-                authenticator=self._authenticator,
-                role=self._role,
-            )
+            connect_kwargs: dict[str, object] = {
+                "user": self._user,
+                "account": self._account,
+                "warehouse": self._warehouse,
+                "authenticator": self._authenticator,
+            }
+            if self._password is not None:
+                connect_kwargs["password"] = self._password
+            if self._role is not None:
+                connect_kwargs["role"] = self._role
+            if self._private_key is not None:
+                connect_kwargs["private_key"] = _coerce_private_key_to_der(
+                    self._private_key, self._private_key_file_pwd
+                )
+            if self._private_key_file is not None:
+                connect_kwargs["private_key_file"] = self._private_key_file
+            if self._private_key_file_pwd is not None:
+                connect_kwargs["private_key_file_pwd"] = self._private_key_file_pwd
+
+            self._conn = snowflake.connector.connect(**connect_kwargs)
             return self
         except DatabaseError as ex:
             self._logger.error(
-                "Error connecting to {account} for {user}", account=self._account, user=self._user, exception=ex
+                "Error connecting to {account} for {user}",
+                account=self._account,
+                user=self._user,
+                exception=ex,
             )
-            return None
+        return None
 
     def disconnect(self) -> None:
         """

@@ -3,12 +3,12 @@
 """
 import os
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import partial
 from typing import final
 from collections.abc import Iterator
 
-from dataclasses_json import DataClassJsonMixin
+from dataclasses_json import DataClassJsonMixin, config
 
 from adapta.storage.database.v3.snowflake_sql import SnowflakeClient
 from adapta.storage.models import SnowflakePath
@@ -30,15 +30,44 @@ class SnowflakeCredential(DataClassJsonMixin):
     """
     Snowflake credential helper for QES.
 
-    Snowflake credentials can either be provided via browser SSO, or through (username, password) pair.
+    Supports:
+      1) browser SSO (no user/password/key fields set),
+      2) (username, password) pair,
+      3) key-pair auth via ``private_key_file`` (+ optional ``private_key_file_pwd``)
+        or a raw ``private_key`` byte string.
+
+    Any unset field falls back to the matching environment variable:
+      * ``ADAPTA__SNOWFLAKE_USER``
+      * ``ADAPTA__SNOWFLAKE_PASSWORD``
+      * ``ADAPTA__SNOWFLAKE_PRIVATE_KEY_FILE``
+      * ``ADAPTA__SNOWFLAKE_PRIVATE_KEY_FILE_PWD``
+      * ``ADAPTA__SNOWFLAKE_PRIVATE_KEY`` (raw PEM bytes, utf-8 decoded if string)
     """
 
     user: str | None = None
     password: str | None = None
+    private_key_file: str | None = None
+    private_key_file_pwd: str | None = None
+    # ``dataclasses_json`` cannot decode ``bytes`` from a JSON string by default
+    # (it tries ``bytes(<str>)``), so we provide an explicit decoder that turns
+    # an incoming PEM string into UTF-8 bytes and leaves ``None``/``bytes`` alone.
+    private_key: bytes | None = field(
+        default=None,
+        metadata=config(decoder=lambda v: v.encode("utf-8") if isinstance(v, str) else v),
+    )
 
     def __post_init__(self):
         self.user = self.user or os.getenv("ADAPTA__SNOWFLAKE_USER")
         self.password = self.password or os.getenv("ADAPTA__SNOWFLAKE_PASSWORD")
+        self.private_key_file = self.private_key_file or os.getenv("ADAPTA__SNOWFLAKE_PRIVATE_KEY_FILE")
+        self.private_key_file_pwd = self.private_key_file_pwd or os.getenv("ADAPTA__SNOWFLAKE_PRIVATE_KEY_FILE_PWD")
+
+        if self.private_key is None:
+            env_key = os.getenv("ADAPTA__SNOWFLAKE_PRIVATE_KEY")
+            if env_key is not None:
+                self.private_key = env_key.encode("utf-8")
+        elif isinstance(self.private_key, str):
+            self.private_key = self.private_key.encode("utf-8")
 
 
 @dataclass
@@ -86,6 +115,9 @@ class SnowflakeQueryEnabledStore(QueryEnabledStore[SnowflakeCredential, Snowflak
             warehouse=self.settings.warehouse,
             password=self.credentials.password,
             role=self.settings.role,
+            private_key=self.credentials.private_key,
+            private_key_file=self.credentials.private_key_file,
+            private_key_file_pwd=self.credentials.private_key_file_pwd,
         )
         self._lazy = lazy_init
         if not lazy_init:
