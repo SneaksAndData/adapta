@@ -305,6 +305,42 @@ class AbstractValidationClass:
                     f"Column '{field_name}' does not allow missing values but contains missing values."
                 ]
 
+    @abstractmethod
+    def _get_invalid_enum_members(
+        self, column_name: str, enum_members: list, dtype: type, allow_missing_values: bool
+    ) -> list:
+        """
+        Abstract method to find column values that are not valid enum members.
+
+        :param column_name: The name of the column to check.
+        :param enum_members: The list of enum member values for the column.
+        :param dtype: The Python type of the field, used to filter enum members to matching types.
+        :param allow_missing_values: Whether null values are allowed for the column. If True, nulls are excluded
+            from the check. If False, nulls are treated as invalid enum members.
+        :return: A list of invalid values found in the column.
+        """
+
+    def _validate_enum_members(self) -> None:
+        """
+        Validate that column values belong to the set of allowed enum member values.
+        """
+        for field_name, field in self._schema.get_enum_fields().items():
+            if field.enum is None:
+                continue
+            if self._should_validate_field(field_name=field_name):
+                enum_member_values = [member.value for member in field.enum]
+                invalid_values = self._get_invalid_enum_members(
+                    column_name=field_name,
+                    enum_members=enum_member_values,
+                    dtype=field.dtype,
+                    allow_missing_values=field.allow_missing_values,
+                )
+                if invalid_values:
+                    self._failed_validations += [
+                        f"Column '{field_name}' contains values that are not members of "
+                        f"{field.enum.__name__}. Invalid values found: {invalid_values}"
+                    ]
+
     def _set_failed_validations(self) -> None:
         self._add_missing_fields()
         self._validate_missing_fields()
@@ -323,6 +359,7 @@ class AbstractValidationClass:
         self._validate_ge_value()
         self._validate_le_value()
         self._validate_value_not_missing()
+        self._validate_enum_members()
 
     def validate(self) -> ValidationResponse:
         """
