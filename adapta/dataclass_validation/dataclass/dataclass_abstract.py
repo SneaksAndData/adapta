@@ -2,6 +2,7 @@
 Abstract Data Class
 """
 from copy import deepcopy
+from typing import Any
 
 import polars as pl
 
@@ -19,7 +20,7 @@ class AbstractDataClass(CoreDataClass):
     """
 
     def _validate_single_data(
-        self, data: any, settings: list[str], add_non_required_fields: bool
+        self, data: Any, settings: list[str], add_non_required_fields: bool
     ) -> ValidationResponse:
         """
         Method for validating the data against the schema.
@@ -36,7 +37,7 @@ class AbstractDataClass(CoreDataClass):
         return validation_response
 
     def validate_and_collect_data(
-        self, data: any, settings: list[str] = None, add_non_required_fields: bool = False
+        self, data: Any, settings: list[str] = None, add_non_required_fields: bool = False
     ) -> ValidationResponse:
         """
         Method for validating the data against the schema.
@@ -49,7 +50,7 @@ class AbstractDataClass(CoreDataClass):
             add_non_required_fields=add_non_required_fields,
         )
 
-    def validate_data(self, data: any, settings: list[str] = None, add_non_required_fields: bool = False) -> any:
+    def validate_data(self, data: Any, settings: list[str] = None, add_non_required_fields: bool = False) -> Any:
         """
         Method for validating the data against the schema.
         This method returns the updated data if the validation is successful.
@@ -72,7 +73,7 @@ class AbstractDataClass(CoreDataClass):
 
         return pl.DataFrame(schema=self.get_column_types())
 
-    def coerce_and_select_columns(self, data: any, coerce_all: bool = True) -> any:
+    def coerce_and_select_columns(self, data: Any, coerce_all: bool = True) -> Any:
         """
         Coerce the input data to match the schema and select only the columns defined in the schema.
         """

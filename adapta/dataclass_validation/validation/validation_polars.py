@@ -2,6 +2,7 @@
 Validation class for Polars DataFrames.
 """
 import datetime
+from typing import Any
 
 import polars as pl
 
@@ -48,7 +49,7 @@ class PolarsValidationClass(AbstractValidationClass):
                 f"primary key(s): {primary_keys}"
             ]
 
-    def _get_column_dtype(self, column_name: str) -> any:
+    def _get_column_dtype(self, column_name: str) -> Any:
         return self._data[column_name].dtype
 
     def _get_dataframe_columns(self) -> list[str]:

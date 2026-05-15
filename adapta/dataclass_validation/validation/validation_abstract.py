@@ -2,7 +2,7 @@
 Abstract Validation Class
 """
 from abc import abstractmethod
-from typing import get_origin, get_args
+from typing import Any, get_origin, get_args
 
 from adapta.dataclass_validation.dataclass.dataclass_core import CoreDataClass, Field
 from adapta.dataclass_validation.validation.validation_utils import ValidationResponse
@@ -13,7 +13,7 @@ class AbstractValidationClass:
     Abstract Validation Class
     """
 
-    def __init__(self, data: any, schema: CoreDataClass, settings: list[str], add_non_required_fields: bool = False):
+    def __init__(self, data: Any, schema: CoreDataClass, settings: list[str], add_non_required_fields: bool = False):
         self._data = data
         self._schema = schema
         self._settings = settings
@@ -61,7 +61,7 @@ class AbstractValidationClass:
         Abstract method for validating primary keys.
         """
 
-    def _get_expected_dtypes(self, dtype: type) -> any:
+    def _get_expected_dtypes(self, dtype: type) -> Any:
         """
         Method to get the expected data types for the fields. If the type is a list, we use recursion to get the
         expected type.
@@ -100,7 +100,7 @@ class AbstractValidationClass:
         """
 
     @abstractmethod
-    def _get_column_dtype(self, column_name: str) -> any:
+    def _get_column_dtype(self, column_name: str) -> Any:
         """
         Abstract method to get the data type of a specific column.
         """
@@ -112,7 +112,7 @@ class AbstractValidationClass:
         """
 
     @abstractmethod
-    def _cast_column(self, column_name: str, dtype: any) -> None:
+    def _cast_column(self, column_name: str, dtype: Any) -> None:
         """
         Abstract method for casting a column to a specific type.
         """
@@ -307,7 +307,7 @@ class AbstractValidationClass:
 
     @abstractmethod
     def _get_invalid_enum_members(
-        self, column_name: str, enum_members: list, dtype: type, allow_missing_values: bool
+        self, column_name: str, enum_members: list[Any], dtype: type, allow_missing_values: bool
     ) -> list:
         """
         Abstract method to find column values that are not valid enum members.
@@ -325,8 +325,6 @@ class AbstractValidationClass:
         Validate that column values belong to the set of allowed enum member values.
         """
         for field_name, field in self._schema.get_enum_fields().items():
-            if field.enum is None:
-                continue
             if self._should_validate_field(field_name=field_name):
                 enum_member_values = [member.value for member in field.enum]
                 invalid_values = self._get_invalid_enum_members(
@@ -374,20 +372,20 @@ class AbstractValidationClass:
             failed_validations=self._failed_validations,
         )
 
-    def get_data(self) -> any:
+    def get_data(self) -> Any:
         """
         Get the data for all columns
         """
         return self._data
 
     @abstractmethod
-    def get_data_for_columns(self) -> any:
+    def get_data_for_columns(self) -> Any:
         """
         Get the data and select all columns.
         """
 
     @abstractmethod
-    def get_data_for_required_columns(self) -> any:
+    def get_data_for_required_columns(self) -> Any:
         """
         Get the data and select required columns.
         """
