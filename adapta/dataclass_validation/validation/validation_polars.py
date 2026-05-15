@@ -61,9 +61,13 @@ class PolarsValidationClass(AbstractValidationClass):
         self._data = self._data.with_columns(pl.col(column_name).cast(dtype).alias(column_name))
 
     def _are_values_ge(self, column_name: str, ge_value: float, tolerance: float) -> float | None:
+        column_dtype = self._data[column_name].dtype
         within_tolerance = (pl.col(column_name) >= ge_value - tolerance) & (pl.col(column_name) < ge_value)
         self._data = self._data.with_columns(
-            pl.when(within_tolerance).then(ge_value).otherwise(pl.col(column_name)).alias(column_name)
+            pl.when(within_tolerance)
+            .then(pl.lit(ge_value).cast(column_dtype))
+            .otherwise(pl.col(column_name))
+            .alias(column_name)
         )
         failed = self._data.filter(pl.col(column_name) < ge_value)
         if failed.is_empty():
@@ -71,9 +75,13 @@ class PolarsValidationClass(AbstractValidationClass):
         return failed[column_name].min()
 
     def _are_values_le(self, column_name: str, le_value: float, tolerance: float) -> float | None:
+        column_dtype = self._data[column_name].dtype
         within_tolerance = (pl.col(column_name) <= le_value + tolerance) & (pl.col(column_name) > le_value)
         self._data = self._data.with_columns(
-            pl.when(within_tolerance).then(le_value).otherwise(pl.col(column_name)).alias(column_name)
+            pl.when(within_tolerance)
+            .then(pl.lit(le_value).cast(column_dtype))
+            .otherwise(pl.col(column_name))
+            .alias(column_name)
         )
         failed = self._data.filter(pl.col(column_name) > le_value)
         if failed.is_empty():
@@ -82,6 +90,52 @@ class PolarsValidationClass(AbstractValidationClass):
 
     def _are_values_not_missing(self, column_name: str) -> bool:
         return self._data.filter(pl.col(column_name).is_null()).is_empty()
+
+    def _are_list_values_ge(self, column_name: str, ge_value: float, tolerance: float) -> float | None:
+        """
+        Check if all elements within a list column are greater than or equal to the specified value,
+        fixing values within tolerance to the bound.
+
+        :param column_name: The name of the list column to check.
+        :param ge_value: The minimum allowed value.
+        :param tolerance: The tolerance for values near the bound.
+        :return: None if all values pass, otherwise the minimum failing value.
+        """
+        inner_dtype = self._data[column_name].dtype.inner
+        within_tolerance = (pl.element() >= ge_value - tolerance) & (pl.element() < ge_value)
+        self._data = self._data.with_columns(
+            pl.col(column_name)
+            .list.eval(pl.when(within_tolerance).then(pl.lit(ge_value).cast(inner_dtype)).otherwise(pl.element()))
+            .alias(column_name)
+        )
+        min_per_row = self._data.select(pl.col(column_name).list.min().alias(column_name))
+        failed = min_per_row.filter(pl.col(column_name) < ge_value)
+        if failed.is_empty():
+            return None
+        return failed[column_name].min()
+
+    def _are_list_values_le(self, column_name: str, le_value: float, tolerance: float) -> float | None:
+        """
+        Check if all elements within a list column are less than or equal to the specified value,
+        fixing values within tolerance to the bound.
+
+        :param column_name: The name of the list column to check.
+        :param le_value: The maximum allowed value.
+        :param tolerance: The tolerance for values near the bound.
+        :return: None if all values pass, otherwise the maximum failing value.
+        """
+        inner_dtype = self._data[column_name].dtype.inner
+        within_tolerance = (pl.element() <= le_value + tolerance) & (pl.element() > le_value)
+        self._data = self._data.with_columns(
+            pl.col(column_name)
+            .list.eval(pl.when(within_tolerance).then(pl.lit(le_value).cast(inner_dtype)).otherwise(pl.element()))
+            .alias(column_name)
+        )
+        max_per_row = self._data.select(pl.col(column_name).list.max().alias(column_name))
+        failed = max_per_row.filter(pl.col(column_name) > le_value)
+        if failed.is_empty():
+            return None
+        return failed[column_name].max()
 
     def get_data_for_columns(self) -> pl.DataFrame:
         """

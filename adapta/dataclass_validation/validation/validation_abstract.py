@@ -4,7 +4,7 @@ Abstract Validation Class
 from abc import abstractmethod
 from typing import get_origin, get_args
 
-from adapta.dataclass_validation.dataclass.dataclass_core import CoreDataClass
+from adapta.dataclass_validation.dataclass.dataclass_core import CoreDataClass, Field
 from adapta.dataclass_validation.validation.validation_utils import ValidationResponse
 
 
@@ -198,6 +198,42 @@ class AbstractValidationClass:
         Abstract method to check if a value is not missing.
         """
 
+    @staticmethod
+    def _is_list_numeric_field(field: Field) -> bool:
+        """
+        Check if a field's dtype is a list of numeric types (list[int] or list[float]).
+
+        :param field: The field to check.
+        :return: True if the field dtype is list[int] or list[float].
+        """
+        return get_origin(field.dtype) is list and get_args(field.dtype)[0] in (int, float)
+
+    @abstractmethod
+    def _are_list_values_ge(self, column_name: str, ge_value: float, tolerance: float) -> float | None:
+        """
+        Abstract method to check if all elements within a list column satisfy the greater than or equal
+        to constraint, fixing values within tolerance to the bound. Returns None if all values satisfy
+        the condition, otherwise returns the minimum value that fails the condition.
+
+        :param column_name: The name of the list column to check.
+        :param ge_value: The minimum allowed value.
+        :param tolerance: The tolerance for values near the bound.
+        :return: None if all values pass, otherwise the minimum failing value.
+        """
+
+    @abstractmethod
+    def _are_list_values_le(self, column_name: str, le_value: float, tolerance: float) -> float | None:
+        """
+        Abstract method to check if all elements within a list column satisfy the less than or equal
+        to constraint, fixing values within tolerance to the bound. Returns None if all values satisfy
+        the condition, otherwise returns the maximum value that fails the condition.
+
+        :param column_name: The name of the list column to check.
+        :param le_value: The maximum allowed value.
+        :param tolerance: The tolerance for values near the bound.
+        :return: None if all values pass, otherwise the maximum failing value.
+        """
+
     def _should_validate_field(self, field_name: str) -> bool:
         """
         Method to check if a field should be validated.
@@ -218,9 +254,18 @@ class AbstractValidationClass:
     def _validate_ge_value(self) -> None:
         for field_name, field in self._schema.get_ge_value_fields().items():
             if self._should_validate_field(field_name=field_name):
-                result = self._are_values_ge(
-                    column_name=field_name, ge_value=field.checks.ge_value, tolerance=field.checks.ge_value_tolerance
-                )
+                if self._is_list_numeric_field(field=field):
+                    result = self._are_list_values_ge(
+                        column_name=field_name,
+                        ge_value=field.checks.ge_value,
+                        tolerance=field.checks.ge_value_tolerance,
+                    )
+                else:
+                    result = self._are_values_ge(
+                        column_name=field_name,
+                        ge_value=field.checks.ge_value,
+                        tolerance=field.checks.ge_value_tolerance,
+                    )
                 if result is not None:
                     self._failed_validations += [
                         f"Column '{field_name}' does not satisfy the greater than or equal to constraint. "
@@ -230,9 +275,18 @@ class AbstractValidationClass:
     def _validate_le_value(self) -> None:
         for field_name, field in self._schema.get_le_value_fields().items():
             if self._should_validate_field(field_name=field_name):
-                result = self._are_values_le(
-                    column_name=field_name, le_value=field.checks.le_value, tolerance=field.checks.le_value_tolerance
-                )
+                if self._is_list_numeric_field(field=field):
+                    result = self._are_list_values_le(
+                        column_name=field_name,
+                        le_value=field.checks.le_value,
+                        tolerance=field.checks.le_value_tolerance,
+                    )
+                else:
+                    result = self._are_values_le(
+                        column_name=field_name,
+                        le_value=field.checks.le_value,
+                        tolerance=field.checks.le_value_tolerance,
+                    )
                 if result is not None:
                     self._failed_validations += [
                         f"Column '{field_name}' does not satisfy the less than or equal to constraint. "
