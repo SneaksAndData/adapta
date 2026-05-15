@@ -93,9 +93,11 @@ class Field:
         self.allow_missing_values = allow_missing_values
         self.astra_properties = astra_properties
 
-        if self.checks is not None and self.dtype not in [int, float]:
+        if self.checks is not None and self.dtype not in [int, float, list[int], list[float]]:
             if self.checks.le_value is not None or self.checks.ge_value is not None:
-                raise ValueError("Field checks can only be applied to numeric fields (int or float).")
+                raise ValueError(
+                    "Field checks can only be applied to numeric fields (int, float, list[int], list[float])."
+                )
 
         if self.primary_key and self.allow_missing_values:
             raise ValueError("Primary keys cannot allow missing values.")
