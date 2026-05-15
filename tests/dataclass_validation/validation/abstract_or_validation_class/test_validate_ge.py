@@ -55,7 +55,7 @@ class TestOutput:
             ),
             TestOutput(
                 expected_failed_validations=[
-                    "Column 'column_2' does not satisfy the greater than or equal to constraint. It should be greater than 3.0, but found minimum value 1.0.",
+                    "Column 'column_2' does not satisfy the greater than or equal to constraint. It should be greater than 3.0, but found minimum value 1.",
                     "Column 'column_3' does not satisfy the greater than or equal to constraint. It should be greater than 3.0, but found minimum value 1.0.",
                 ]
             ),

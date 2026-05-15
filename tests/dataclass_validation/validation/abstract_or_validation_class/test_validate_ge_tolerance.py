@@ -42,6 +42,24 @@ GE_TOLERANCE_SCHEMA = GeToleranceDataClass()
 GE_ZERO_TOLERANCE_SCHEMA = GeZeroToleranceDataClass()
 
 
+class GeIntToleranceDataClass(AbstractDataClass):
+    primary_column = Field(
+        display_name="Primary Column",
+        description="Primary key column.",
+        dtype=str,
+        primary_key=True,
+    )
+    inventory = Field(
+        display_name="Inventory",
+        description="Inventory value with integer tolerance.",
+        dtype=int,
+        checks=Checks(ge_value=0.0, ge_value_tolerance=2.0),
+    )
+
+
+GE_INT_TOLERANCE_SCHEMA = GeIntToleranceDataClass()
+
+
 @dataclass
 class TestInput:
     schema: AbstractDataClass
@@ -96,6 +114,26 @@ class TestOutput:
             ),
             id="2) Fix only the value within tolerance while keeping valid values unchanged",
         ),
+        pytest.param(
+            TestInput(
+                schema=GE_INT_TOLERANCE_SCHEMA,
+                data=pl.DataFrame(
+                    {
+                        "primary_column": ["customer_1", "customer_2"],
+                        "inventory": pl.Series([-1, 5], dtype=pl.Int64),
+                    }
+                ),
+            ),
+            TestOutput(
+                expected_data=pl.DataFrame(
+                    {
+                        "primary_column": ["customer_1", "customer_2"],
+                        "inventory": pl.Series([0, 5], dtype=pl.Int64),
+                    }
+                ),
+            ),
+            id="3) Clamps integer column within tolerance preserving Int64 dtype",
+        ),
     ],
 )
 def test__validate_ge_tolerance__unit_test(inputs: TestInput, expected: TestOutput):
@@ -104,6 +142,7 @@ def test__validate_ge_tolerance__unit_test(inputs: TestInput, expected: TestOutp
 
     * 1) Default tolerance clamps value within tolerance to the bound.
     * 2) Clamps only the value within tolerance while keeping valid values unchanged.
+    * 3) Clamps integer column within tolerance preserving Int64 dtype.
     """
     # Arrange
     validation_class = PolarsValidationClass(
