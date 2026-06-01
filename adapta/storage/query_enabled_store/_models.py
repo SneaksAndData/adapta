@@ -45,6 +45,7 @@ class BundledQueryEnabledStores(Enum):
     ASTRA = "adapta.storage.query_enabled_store.AstraQueryEnabledStore"
     LOCAL = "adapta.storage.query_enabled_store.LocalQueryEnabledStore"
     TRINO = "adapta.storage.query_enabled_store.TrinoQueryEnabledStore"
+    ICEBERG = "adapta.storage.query_enabled_store.IcebergQueryEnabledStore"
 
 
 BUNDLED_STORES = {store.name: store.value for store in BundledQueryEnabledStores}

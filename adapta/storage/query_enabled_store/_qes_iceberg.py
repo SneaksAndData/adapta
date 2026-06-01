@@ -26,8 +26,10 @@ class IcebergCredential(DataClassJsonMixin):
     Credential helper for Iceberg QES.
     """
 
-    def __init__(self):
-        self._catalog_config = IcebergRestCatalogConfig.from_environment()
+    oauth_enabled: bool
+
+    def __post_init__(self):
+        self._catalog_config = IcebergRestCatalogConfig.from_environment(oauth2_enabled=self.oauth_enabled)
 
     @property
     def catalog_config(self) -> IcebergRestCatalogConfig:
