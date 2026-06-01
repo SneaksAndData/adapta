@@ -1,7 +1,7 @@
 """Iceberg reader (via REST Catalog)"""
 from typing import Iterator
 
-from pyiceberg.catalog import load_catalog
+from pyiceberg.catalog import Catalog, load_catalog
 from pyiceberg.table import ALWAYS_TRUE
 
 from adapta.storage.iceberg.v1._models import IcebergRestCatalogConfig
@@ -10,10 +10,24 @@ from adapta.storage.models.expression_dsl.iceberg_filter_expression import Icebe
 from adapta.utils.metaframe import MetaFrame
 
 
+def get_default_catalog(catalog_config: IcebergRestCatalogConfig) -> Catalog:
+    """
+    Loads a provided configuration as `default` Iceberg catalog
+    """
+    return load_catalog("default", **catalog_config.get_constructor_args)
+
+
+def get_catalog(name: str, catalog_config: IcebergRestCatalogConfig) -> Catalog:
+    """
+    Loads a provided configuration as named catalog, using a provided name.
+    """
+    return load_catalog(name, **catalog_config.get_constructor_args)
+
+
 def load_using_catalog(
     schema: str,
     table_name: str,
-    catalog_config: IcebergRestCatalogConfig,
+    catalog: Catalog,
     row_filter: Expression | None = None,
     columns: tuple[str] | None = None,
     limit: int = None,
@@ -21,18 +35,17 @@ def load_using_catalog(
     lazy_read: bool = False,
 ) -> MetaFrame | Iterator[MetaFrame]:
     """
-    Loads an Iceberg table as Metaframe using storage path
+    Loads an Iceberg table as a Metaframe, using provided catalog connection
 
     :param schema: table schema name
     :param table_name: table name
-    :param catalog_config: Iceberg catalog config
+    :param catalog: Iceberg catalog to use
     :param row_filter: Filter expression to be applied to a scan
     :param columns: Columns to return. If empty, all columns are returned.
     :param limit: Maximum number of rows to return. If empty, all rows are returned.
     :param version_id: Iceberg table version. If empty, reads the latest version,
     :param lazy_read: If true, returns Polars (LazyFrame) only convertable Metaframe
     """
-    catalog = load_catalog("default", **catalog_config.get_constructor_args)
     row_filter_expression = None
 
     if row_filter:

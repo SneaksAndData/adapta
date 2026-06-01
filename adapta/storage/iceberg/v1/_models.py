@@ -50,6 +50,17 @@ class IcebergRestCatalogConfig:
         """
         return cls(uri, warehouse, oauth2config)
 
+    @classmethod
+    def from_environment(cls) -> Self:
+        """
+        Constructs this config using data from environment variables only
+        """
+        return cls(
+            uri=os.environ["ADAPTA__ICEBERG_REST_CATALOG_URI"],
+            warehouse=os.environ["ADAPTA__ICEBERG_REST_CATALOG_WAREHOUSE"],
+            oauth2config=IcebergRestOAuth2Config.from_environment(),
+        )
+
     @property
     def get_constructor_args(self) -> dict:
         """

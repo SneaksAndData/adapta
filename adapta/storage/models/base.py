@@ -33,6 +33,7 @@ class DataProtocols(Enum):
     ASTRA = "astra"
     S3 = "s3"
     TRINO = "trino"
+    ICEBERG_REST = "iceberg_rest"
 
 
 class DataPath(ABC):
