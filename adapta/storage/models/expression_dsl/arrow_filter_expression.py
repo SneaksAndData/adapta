@@ -20,15 +20,15 @@ class ArrowFilterExpression(FilterExpression[pyarrow.compute.Expression]):
     """
 
     def _compile_base_case(
-        self, field_name: str, field_values: Any, filter_operation: FilterExpressionOperation
+        self, field_name: str, field_values: Any, operation: FilterExpressionOperation
     ) -> TCompileResult:
         field, field_values = self._handle_nested_types(
             pyarrow_field(field_name),
             field_values=field_values,
-            filter_operation=filter_operation,
+            filter_operation=operation,
         )
 
-        return filter_operation.value["arrow"](field, field_values)
+        return operation.value["arrow"](field, field_values)
 
     @staticmethod
     def _handle_nested_types(
@@ -100,6 +100,6 @@ class ArrowFilterExpression(FilterExpression[pyarrow.compute.Expression]):
         self,
         compiled_result_a: TCompileResult,
         compiled_result_b: TCompileResult,
-        filter_operation: FilterExpressionOperation,
+        operation: FilterExpressionOperation,
     ) -> TCompileResult:
-        return filter_operation.value["arrow"](compiled_result_a, compiled_result_b)
+        return operation.value["arrow"](compiled_result_a, compiled_result_b)

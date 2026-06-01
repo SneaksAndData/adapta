@@ -17,4 +17,4 @@
  Import index.
 """
 
-from adapta.storage.distributed_object_store.v2 import *
+from adapta.storage.distributed_object_store.v3 import *

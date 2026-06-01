@@ -4,7 +4,7 @@ from typing import Iterator
 from pyiceberg.catalog import load_catalog
 from pyiceberg.table import ALWAYS_TRUE
 
-from adapta.storage.iceberg.v1 import IcebergRestCatalogConfig
+from adapta.storage.iceberg.v1._models import IcebergRestCatalogConfig
 from adapta.storage.models.expression_dsl.filter_expression import compile_expression, Expression
 from adapta.storage.models.expression_dsl.iceberg_filter_expression import IcebergFilterExpression
 from adapta.utils.metaframe import MetaFrame
