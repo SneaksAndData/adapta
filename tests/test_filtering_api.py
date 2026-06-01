@@ -11,6 +11,7 @@ from pyiceberg.expressions import (
     In,
     And,
     Or,
+    NotEqualTo,
 )
 
 from adapta.storage.models.expression_dsl.filter_expression import (
@@ -156,6 +157,7 @@ TEST_ENTITY_SCHEMA: TestEntity = PythonSchemaEntity(TestEntity)
             (pyarrow_field("col_a") != "test"),
             [{"col_a__ne": "test"}],
             "col_a != 'test'",
+            NotEqualTo("col_a", "test"),
         ),
     ],
 )

@@ -61,13 +61,13 @@ LE_INT_TOLERANCE_SCHEMA = LeIntToleranceDataClass()
 
 
 @dataclass
-class TestInput:
+class LeToleranceInput:
     schema: AbstractDataClass
     data: pl.DataFrame
 
 
 @dataclass
-class TestOutput:
+class LeToleranceOutput:
     expected_data: pl.DataFrame
 
 
@@ -75,7 +75,7 @@ class TestOutput:
     ("inputs", "expected"),
     [
         pytest.param(
-            TestInput(
+            LeToleranceInput(
                 schema=LE_TOLERANCE_SCHEMA,
                 data=pl.DataFrame(
                     {
@@ -84,7 +84,7 @@ class TestOutput:
                     }
                 ),
             ),
-            TestOutput(
+            LeToleranceOutput(
                 expected_data=pl.DataFrame(
                     {
                         "primary_column": ["customer_1"],
@@ -95,7 +95,7 @@ class TestOutput:
             id="1) Default tolerance fixes value within tolerance to the bound",
         ),
         pytest.param(
-            TestInput(
+            LeToleranceInput(
                 schema=LE_TOLERANCE_SCHEMA,
                 data=pl.DataFrame(
                     {
@@ -104,7 +104,7 @@ class TestOutput:
                     }
                 ),
             ),
-            TestOutput(
+            LeToleranceOutput(
                 expected_data=pl.DataFrame(
                     {
                         "primary_column": ["customer_1", "customer_2"],
@@ -115,7 +115,7 @@ class TestOutput:
             id="2) Fixes only the value within tolerance while keeping valid values unchanged",
         ),
         pytest.param(
-            TestInput(
+            LeToleranceInput(
                 schema=LE_INT_TOLERANCE_SCHEMA,
                 data=pl.DataFrame(
                     {
@@ -124,7 +124,7 @@ class TestOutput:
                     }
                 ),
             ),
-            TestOutput(
+            LeToleranceOutput(
                 expected_data=pl.DataFrame(
                     {
                         "primary_column": ["customer_1", "customer_2"],
@@ -136,7 +136,7 @@ class TestOutput:
         ),
     ],
 )
-def test__validate_le_tolerance__unit_test(inputs: TestInput, expected: TestOutput):
+def test__validate_le_tolerance__unit_test(inputs: LeToleranceInput, expected: LeToleranceOutput):
     """
     Test le_value tolerance clamping behavior:
 
