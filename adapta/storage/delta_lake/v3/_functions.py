@@ -32,7 +32,8 @@ from adapta.storage.models.base import DataPath
 from adapta.storage.delta_lake.v3._models import DeltaTransaction
 from adapta.storage.cache import KeyValueCache
 from adapta.storage.models.formatters import MetaFrameParquetSerializationFormat
-from adapta.storage.models.filter_expression import Expression, ArrowFilterExpression, compile_expression
+from adapta.storage.models.expression_dsl.filter_expression import Expression, compile_expression
+from adapta.storage.models.expression_dsl.arrow_filter_expression import ArrowFilterExpression
 from adapta.utils.metaframe import MetaFrame, concat, PandasOptions
 
 

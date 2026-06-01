@@ -27,12 +27,16 @@ cassandra-driver = { version = "~3.29.1", optional = true }
 
 deltalake = { version = "^0.18.1", optional = true }
 
+pyiceberg = { version = "^0.11.1", optional = true }
+
+s3fs = { version = "^2025.10.0", optional = true}
+
 azure-identity = { version = "^1.7", optional = true }
-azure-storage-blob = { version = ">12.7.0,<=12.16.0", optional = true }
+azure-storage-blob = { version = ">=12.17.0,<=13", optional = true }
 azure-mgmt-storage = { version = "~19.1.0", optional = true }
 azure-keyvault-secrets = { version = "^4.3", optional = true }
 azure-servicebus = { version = "~7.6", optional = true }
-adlfs = { version = '~2024', optional = true }
+adlfs = { version = '~2025', optional = true }
 
 boto3 = { version = "^1.28.0", optional = true}
 botocore = { version = "^1.31", optional = true}
@@ -49,9 +53,9 @@ redis = { version = "~4.4.0", optional = true, extras = ['hiredis'] }
 
 hvac = { version = "~0.11.2", optional = true }
 
-fsspec = { version = "^2024" }
+fsspec = { version = "^2025" }
 
-trino = { version = "^0.330", optional = true, extras = ['sqlalchemy'] }
+trino = { version = "^0.337", optional = true, extras = ['sqlalchemy'] }
 
 snowflake-connector-python = { version = "^3.4.0", optional = true }
 
@@ -93,14 +97,25 @@ snowflake = [
     'snowflake-connector-python'
 ]
 
-storage = [
-    "deltalake",
+storage-delta = [
+    "deltalake"
+]
+
+storage-iceberg = [
+    "pyiceberg"
+]
+
+storage-cassandra = [
     "cassandra-driver"
 ]
 
 aws = [
     "boto3",
-    "botocore"
+    "botocore",
+]
+
+aws-fileio = [
+    "s3fs"
 ]
 
 excel = [
@@ -115,10 +130,11 @@ pytest-mock = "^3"
 pytest-xdist = "^3"
 pytest-asyncio = "^1"
 pytest-cov = "^6"
-pylint = "^3"
+pylint = "^4"
 cryptography = "~36.0"
 black = "^23"
 pyupgrade = "^3"
+pyarrow-stubs = "^20.0.0.20251215"
 
 [tool.black]
 line-length = 120

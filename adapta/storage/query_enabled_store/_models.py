@@ -25,7 +25,7 @@ from typing import TypeVar, Generic, final
 from collections.abc import Iterator
 
 from adapta.storage.models.base import DataPath
-from adapta.storage.models.filter_expression import Expression
+from adapta.storage.models.expression_dsl.filter_expression import Expression
 from adapta.storage.models.enum import QueryEnabledStoreOptions
 from adapta.utils.metaframe import MetaFrame
 
