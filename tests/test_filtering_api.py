@@ -151,6 +151,12 @@ TEST_ENTITY_SCHEMA: TestEntity = PythonSchemaEntity(TestEntity)
                 And(EqualTo("col_b", "other"), Or(EqualTo("col_c", 2), In("col_d", [1, 2]))),
             ),
         ),
+        (
+            FilterField(TEST_ENTITY_SCHEMA.col_a) != "test",
+            (pyarrow_field("col_a") != "test"),
+            [{"col_a__ne": "test"}],
+            "col_a != 'test'",
+        ),
     ],
 )
 def test_generic_filtering(

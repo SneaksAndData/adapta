@@ -1,6 +1,7 @@
 """
- Storage Client implementation for Azure Cloud.
+Storage Client implementation for Azure Cloud.
 """
+
 #  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,7 +22,7 @@ from datetime import datetime, timedelta
 from functools import partial
 import signal
 from threading import Thread
-from typing import TypeVar, final
+from typing import Any, TypeVar, final
 from collections.abc import Iterator, Callable
 
 from azure.core.paging import ItemPaged
@@ -62,9 +63,9 @@ class AzureStorageClient(StorageClient):
 
         if implicit_login:
             self._blob_service_client: BlobServiceClient = BlobServiceClient(
-                account_url=WasbPath.from_adls2_path(path).base_uri()
-                if isinstance(path, AdlsGen2Path)
-                else path.base_uri(),
+                account_url=(
+                    WasbPath.from_adls2_path(path).base_uri() if isinstance(path, AdlsGen2Path) else path.base_uri()
+                ),
                 credential=self._base_client.get_credentials(),
                 retry_policy=retry_policy,
             )
@@ -137,10 +138,11 @@ class AzureStorageClient(StorageClient):
         data: T,
         blob_path: DataPath,
         serialization_format: type[SerializationFormat[T]],
+        serialization_kwargs: dict[str, Any] | None = None,
         metadata: dict[str, str] | None = None,
         overwrite: bool = False,
     ) -> None:
-        bytes_ = serialization_format().serialize(data)
+        bytes_ = serialization_format().serialize(data, **(serialization_kwargs or {}))
         self._get_blob_client(blob_path).upload_blob(bytes_, metadata=metadata, overwrite=overwrite)
 
     def get_blob_uri(self, blob_path: DataPath, expires_in_seconds: float = 3600.0, **kwargs) -> str:

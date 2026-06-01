@@ -1,6 +1,7 @@
 """
 Serialization formats for saving data structures as blob.
 """
+
 #  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -66,3 +67,37 @@ class SerializationFormat(ABC, Generic[T]):
         :return: File name for the serialized data.
         """
         return f"{output_name}.{self.file_format}" if self.append_file_format_extension else output_name
+
+
+Output = TypeVar("Output")
+Schema = TypeVar("Schema")
+
+
+class SchemaBoundSerializationFormat(SerializationFormat[Output], Generic[Output, Schema]):
+    """
+    Abstract serialization format with schema
+    """
+
+    def serialize(self, data: Output, **kwargs) -> bytes:
+        return self._serialize_with_schema(data, **kwargs)
+
+    @abstractmethod
+    def _serialize_with_schema(self, data: Output, schema: Schema, **_) -> bytes:
+        """Serializes data to bytes given a format and schema.
+
+        :param data: Data to serialize.
+        :param schema: Schema to be used when serializing
+        :return: Serialized data as byte array.
+        """
+
+    def deserialize(self, data: bytes, **kwargs) -> Output:
+        return self._deserialize_with_schema(data, **kwargs)
+
+    @abstractmethod
+    def _deserialize_with_schema(self, data: bytes, schema: Schema, **_) -> Output:
+        """Deserializes data from bytes given a format and schema.
+
+        :param data: Data to deserialize.
+        :param schema: Schema to be used when serializing
+        :return: Deserialized data.
+        """

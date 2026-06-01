@@ -43,18 +43,21 @@ class SemanticLogger(_InternalLogger):
     def stop(self) -> None:
         pass
 
-    def __init__(self, fixed_template: dict[str, dict[str, str]] | None = None, fixed_template_delimiter=", "):
+    def __init__(
+        self,
+        fixed_template: dict[str, dict[str, str]] | None = None,
+        fixed_template_delimiter=", ",
+        global_tags: dict[str, str] | None = None,
+    ):
         """
           Creates a new instance of a SemanticLogger
 
         :param fixed_template: Additional template to append to message templates provided via logging methods.
         :param fixed_template_delimiter: Optional delimiter to use when appending fixed templates.
         """
-        super().__init__(fixed_template, fixed_template_delimiter)
+        super().__init__(fixed_template, fixed_template_delimiter, global_tags)
         self._loggers: dict[str, logging.Logger] = {}
         self._default_log_source = None
-        self._fixed_template = fixed_template
-        self._fixed_template_delimiter = fixed_template_delimiter
         logging.setLoggerClass(MetadataLogger)
 
     def add_log_source(

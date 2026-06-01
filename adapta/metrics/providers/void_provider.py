@@ -32,3 +32,6 @@ class VoidMetricsProvider(MetricsProvider):
 
     def histogram(self, metric_name: str, metric_value: float, tags: dict[str, str] | None = None) -> None:
         pass
+
+    def distribution(self, metric_name: str, metric_value: float, tags: dict[str, str] | None = None) -> None:
+        pass

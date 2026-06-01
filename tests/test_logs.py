@@ -155,7 +155,7 @@ def test_adapta_logger_replacement(datadog_handler: DataDogApiHandler, restore_l
         min_log_level=LogLevel.DEBUG,
         log_handlers=[datadog_handler],
     )
-    requests.get("https://example.com")
+    requests.get("https://example.com", verify=False)
 
     requests_log = logging.getLogger("urllib3")
     handler = [handler for handler in requests_log.handlers if isinstance(handler, DataDogApiHandler)][0]

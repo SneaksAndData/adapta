@@ -64,6 +64,12 @@ class FilterExpressionOperation(Enum):
         "trino": "=",
         "iceberg": pyiceberg.expressions.EqualTo,
     }
+    NE = {
+        "arrow": pyarrow.compute.Expression.__ne__,
+        "astra": "__ne",
+        "trino": "!=",
+        "iceberg": pyiceberg.expressions.NotEqualTo,
+    }
     IN = {"arrow": pyarrow.compute.Expression.isin, "astra": "__in", "trino": "IN", "iceberg": pyiceberg.expressions.In}
 
     def to_string(self):
@@ -84,6 +90,7 @@ class FilterExpressionOperation(Enum):
             FilterExpressionOperation.LE: "<=",
             FilterExpressionOperation.EQ: "==",
             FilterExpressionOperation.IN: "IN",
+            FilterExpressionOperation.NE: "!=",
         }
         if self not in operation_strings:
             raise ValueError(f"Operation {self} not recognized")
@@ -144,6 +151,12 @@ class FilterField:
         Generates a filter condition checking that field is equal to a value.
         """
         return Expression(left_operand=self, right_operand=values, operation=FilterExpressionOperation.EQ)
+
+    def __ne__(self, values: Any) -> "Expression":
+        """
+        Generates a filter condition checking that field is not equal to a value.
+        """
+        return Expression(left_operand=self, right_operand=values, operation=FilterExpressionOperation.NE)
 
     def __str__(self):
         """

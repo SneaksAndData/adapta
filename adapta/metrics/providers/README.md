@@ -4,17 +4,22 @@ An implementation of a `MetricsProvider` for Datadog platform.
 
 ## Usage
 
-Several environment variables must be set before you can use this provider:
+### UDP
+
+In order to utilize UDP transport for metrics, you must set the following env variables:
 
 ```shell
 export PROTEUS__DD_STATSD_HOST=datadog-statsd.datadog.svc.cluster.local
 export PROTEUS__DD_STATSD_PORT=8125
-export PROTEUS__DD_API_KEY=<api key>
-export PROTEUS__DD_APP_KEY=<app key>
-export PROTEUS__DD_API_HOST=api.datadoghq.eu
 ```
+Note that these are examples, actual service address might differ in your environment.
+It is also important for the environment you are running in to have datadog agent available on `PROTEUS__DD_STATSD_HOST` address, and for `PROTEUS__DD_STATSD_PORT` to be reachable - check firewall rules!
 
-It is also important for the environment you are running in to have datadog agent available on `PROTEUS__DD_STATSD_HOST` address. For our clusters it is always `datadog-statsd.datadog.svc.cluster.local` 
+### UDS
+
+For UDS you must ensure that Unix Domain Socket file is available on your host. It is best to follow the guide from [Datadog](https://docs.datadoghq.com/developers/dogstatsd/unix_socket/?tab=host), if you need that set up. In addition, note that UDS only becomes available at a certain point of agent boot sequence, hence it is advised to set non-zero `wait_for_socket_timeout_seconds`.
+
+By default, `/var/run/datadog/dsd.socket` path is used for the socket file. Use `PROTEUS__DD_STATSD_SOCKET_PATH` to override it, if needed.
 
 Reporting metrics:
 
@@ -23,7 +28,7 @@ import random
 from time import sleep
 from adapta.metrics.providers.datadog_provider import DatadogMetricsProvider
 
-provider = DatadogMetricsProvider(metric_namespace='test')
+provider = DatadogMetricsProvider.uds(metric_namespace='test', wait_for_socket_timeout_seconds=300)
 
 # report a gauge metric
 for i in range(0, 100):
