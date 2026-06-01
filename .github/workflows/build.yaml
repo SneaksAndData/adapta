@@ -28,6 +28,14 @@ jobs:
         uses: SneaksAndData/github-actions/install_poetry@v0.1.11
         with:
           install_extras: all
+
+      - name: Build the Docker Compose stack
+        run: docker compose up --quiet-pull -d
+
+      - name: Get Compose Logs
+        if: always()
+        run: docker compose logs
+
       - name: Unit test
         run: |
           set -euxo pipefail
