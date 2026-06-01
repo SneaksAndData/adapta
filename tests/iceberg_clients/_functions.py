@@ -10,6 +10,4 @@ def prepare_iceberg_table(
     """
     Writes a provided dataset to a table named {name}
     """
-    pandas.DataFrame(data).to_sql(
-        name=name, schema="iceberg.test", con=trino_test_connection, if_exists="replace", index=False
-    )
+    pandas.DataFrame(data).to_sql(name=name, schema="test", con=trino_test_connection, if_exists="replace", index=False)

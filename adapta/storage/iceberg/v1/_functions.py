@@ -33,7 +33,7 @@ def load_using_catalog(
     limit: int = None,
     version_id: str | None = None,
     lazy_read: bool = False,
-) -> MetaFrame | Iterator[MetaFrame]:
+) -> MetaFrame:
     """
     Loads an Iceberg table as a Metaframe, using provided catalog connection
 
