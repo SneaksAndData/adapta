@@ -4,7 +4,7 @@ from typing import Any
 
 import pandas
 import sqlalchemy
-from sqlalchemy import ARRAY, BIGINT
+from sqlalchemy import ARRAY, BIGINT, JSON
 
 
 def prepare_iceberg_table(
@@ -23,12 +23,19 @@ def prepare_iceberg_table(
     )
 
 
+def generate_random_string(string_length: int):
+    """
+    Generate a random string with alphanumeric characters.
+    """
+    pool = string.ascii_letters + string.digits
+    return "".join(random.choices(pool, k=string_length))
+
+
 def generate_random_strings(list_size: int, string_length: int):
     """
     Generate a list of random strings
     """
-    pool = string.ascii_letters + string.digits
-    return ["".join(random.choices(pool, k=string_length)) for _ in range(list_size)]
+    return [generate_random_string(string_length) for _ in range(list_size)]
 
 
 def get_input_data():
