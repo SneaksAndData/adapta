@@ -50,7 +50,7 @@ class IcebergSettings(DataClassJsonMixin):
 @final
 class IcebergQueryEnabledStore(QueryEnabledStore[IcebergCredential, IcebergSettings]):
     """
-    QES Client for Iceberg tables managed by REST catalog, using PyIceberg..
+    QES Client for Iceberg tables managed by REST catalog, using PyIceberg.
     """
 
     def __init__(self, credentials: IcebergCredential, settings: IcebergSettings):

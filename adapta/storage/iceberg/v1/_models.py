@@ -38,10 +38,10 @@ class IcebergRestCatalogConfig:
     Iceberg REST catalog connection configuration
     """
 
-    def __init__(self, uri: str, warehouse: str, oauth2config: IcebergRestOAuth2Config):
+    def __init__(self, uri: str, warehouse: str, oauth2_config: IcebergRestOAuth2Config | None = None):
         self._uri = uri
         self._warehouse = warehouse
-        self._oauth2config = oauth2config
+        self._oauth2config = oauth2_config
 
     @classmethod
     def create(cls, uri: str, warehouse: str, oauth2config: IcebergRestOAuth2Config) -> Self:
@@ -51,14 +51,14 @@ class IcebergRestCatalogConfig:
         return cls(uri, warehouse, oauth2config)
 
     @classmethod
-    def from_environment(cls) -> Self:
+    def from_environment(cls, oauth2_enabled: bool = True) -> Self:
         """
         Constructs this config using data from environment variables only
         """
         return cls(
             uri=os.environ["ADAPTA__ICEBERG_REST_CATALOG_URI"],
             warehouse=os.environ["ADAPTA__ICEBERG_REST_CATALOG_WAREHOUSE"],
-            oauth2config=IcebergRestOAuth2Config.from_environment(),
+            oauth2_config=IcebergRestOAuth2Config.from_environment() if oauth2_enabled else None,
         )
 
     @property
@@ -66,6 +66,14 @@ class IcebergRestCatalogConfig:
         """
         Generate arguments for `load_catalog`
         """
+        if self._oauth2config is None:
+            return {
+                "type": "rest",
+                "uri": self._uri,
+                "warehouse": self._warehouse,
+                "header.X-Iceberg-Access-Delegation": "vended-credentials",
+            }
+
         return {
             "type": "rest",
             "uri": self._uri,

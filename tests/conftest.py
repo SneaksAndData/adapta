@@ -23,6 +23,7 @@ from adapta.logs.models import LogLevel
 from adapta.logs import SemanticLogger
 from adapta.storage.database.v3.odbc import OdbcClient
 from adapta.storage.database.v3.models import DatabaseType
+from adapta.storage.database.v3.trino_sql import TrinoClient
 
 
 @pytest.fixture
@@ -51,6 +52,8 @@ def set_env():
         "PROTEUS__AWS_SECRET_ACCESS_KEY": "test",
         "PROTEUS__AWS_ACCESS_KEY_ID": "test",
         "PROTEUS__AWS_REGION": "test",
+        "ADAPTA__ICEBERG_REST_CATALOG_URI": "http://localhost:20001/catalog",
+        "ADAPTA__ICEBERG_REST_CATALOG_WAREHOUSE": "demo",
     }
 
 
@@ -63,3 +66,16 @@ def datadog_handler():  # only for async method (mocker does not work there)
     handler = MockDataDogApiHandler()
     yield handler
     handler._buffer = []
+
+
+@pytest.fixture(scope="function")
+def trino_test_connection():
+    trino_client = TrinoClient(
+        host="localhost",
+        catalog="iceberg",
+        port=8080,
+        insecure=True,
+    )
+    trino_client.connect()
+    yield trino_client._engine
+    trino_client.disconnect()
