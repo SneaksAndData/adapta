@@ -24,6 +24,7 @@ from adapta.logs import SemanticLogger
 from adapta.storage.database.v3.odbc import OdbcClient
 from adapta.storage.database.v3.models import DatabaseType
 from adapta.storage.database.v3.trino_sql import TrinoClient
+from adapta.storage.iceberg.v1 import get_default_catalog, IcebergRestCatalogConfig
 
 
 @pytest.fixture
@@ -79,3 +80,8 @@ def trino_test_connection():
     trino_client.connect()
     yield trino_client._engine
     trino_client.disconnect()
+
+
+@pytest.fixture(scope="function")
+def iceberg_catalog():
+    return get_default_catalog(IcebergRestCatalogConfig.from_environment(oauth2_enabled=False))
