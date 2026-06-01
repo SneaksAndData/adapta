@@ -1,3 +1,6 @@
+"""
+ Filter expression for PyArrow backends
+"""
 from typing import final, Any
 
 import pyarrow.compute

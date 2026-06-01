@@ -1,3 +1,6 @@
+"""
+ FilterExpression for Trino SQL.
+"""
 import datetime
 from typing import Any, final
 

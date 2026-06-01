@@ -1,3 +1,6 @@
+"""
+ Filter expression for AstraDB (Cassandra)
+"""
 import math
 from typing import final, Any
 

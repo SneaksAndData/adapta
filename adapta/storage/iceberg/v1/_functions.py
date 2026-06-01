@@ -1,3 +1,4 @@
+"""Iceberg reader (via REST Catalog)"""
 from typing import Iterator
 
 from pyiceberg.catalog import load_catalog
