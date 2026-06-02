@@ -65,6 +65,7 @@ class TrinoClient:
             min_log_level=LogLevel.INFO,
             is_default=True,
         ),
+        insecure: bool = False,
     ):
         """
          Initializes a SqlAlchemy Engine that will facilitate connections to Trino.
@@ -85,6 +86,7 @@ class TrinoClient:
                Can also be provided via ADAPTA__TRINO_PASSWORD.
         :param credentials_provider: Optional secret provider and auth secret details to use to read Basic Auth credentials.
         :param logger: CompositeLogger instance.
+        :param insecure: Insecure (http) connection to Trino. Use this only in CI.
         """
 
         self._host = host
@@ -119,6 +121,13 @@ class TrinoClient:
                         username, credentials_secret[credentials_provider[0].password_secret_key]
                     ),
                     "http_scheme": "https",
+                },
+            )
+        elif insecure:
+            self._engine = create_engine(
+                f"trino://dummy@{self._host}:{self._port}/{self._catalog or ''}",
+                connect_args={
+                    "http_scheme": "http",
                 },
             )
         else:

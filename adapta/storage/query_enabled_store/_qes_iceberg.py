@@ -26,8 +26,10 @@ class IcebergCredential(DataClassJsonMixin):
     Credential helper for Iceberg QES.
     """
 
-    def __init__(self):
-        self._catalog_config = IcebergRestCatalogConfig.from_environment()
+    oauth_enabled: bool
+
+    def __post_init__(self):
+        self._catalog_config = IcebergRestCatalogConfig.from_environment(oauth2_enabled=self.oauth_enabled)
 
     @property
     def catalog_config(self) -> IcebergRestCatalogConfig:
@@ -50,7 +52,7 @@ class IcebergSettings(DataClassJsonMixin):
 @final
 class IcebergQueryEnabledStore(QueryEnabledStore[IcebergCredential, IcebergSettings]):
     """
-    QES Client for Iceberg tables managed by REST catalog, using PyIceberg..
+    QES Client for Iceberg tables managed by REST catalog, using PyIceberg.
     """
 
     def __init__(self, credentials: IcebergCredential, settings: IcebergSettings):
@@ -83,6 +85,7 @@ class IcebergQueryEnabledStore(QueryEnabledStore[IcebergCredential, IcebergSetti
     ) -> MetaFrame | Iterator[MetaFrame]:
         return load_using_catalog(
             schema=path.schema,
+            row_filter=filter_expression,
             table_name=path.table,
             columns=columns if columns else None,
             limit=limit,

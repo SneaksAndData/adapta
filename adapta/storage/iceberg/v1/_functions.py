@@ -1,6 +1,8 @@
 """Iceberg reader (via REST Catalog)"""
-from typing import Iterator
+from typing import Literal
 
+import polars
+import pyarrow.dataset
 from pyiceberg.catalog import Catalog, load_catalog
 from pyiceberg.table import ALWAYS_TRUE
 
@@ -31,9 +33,9 @@ def load_using_catalog(
     row_filter: Expression | None = None,
     columns: tuple[str] | None = None,
     limit: int = None,
-    version_id: str | None = None,
+    version_id: int | None = None,
     lazy_read: bool = False,
-) -> MetaFrame | Iterator[MetaFrame]:
+) -> MetaFrame:
     """
     Loads an Iceberg table as a Metaframe, using provided catalog connection
 
@@ -53,15 +55,21 @@ def load_using_catalog(
 
     if lazy_read:
         return MetaFrame(
-            data=catalog.load_table(identifier=(schema, table_name)),
-            # use built-in DataScan converters
-            convert_to_polars=lambda v: v.to_polars(),
+            data=catalog.load_table(identifier=(schema, table_name))
+            .scan(
+                row_filter=row_filter_expression or ALWAYS_TRUE,
+                selected_fields=columns or ("*",),
+                limit=limit,
+                snapshot_id=version_id,
+            )
+            .to_arrow_batch_reader(),
+            convert_to_polars=lambda v: polars.scan_pyarrow_dataset(pyarrow.dataset.dataset(v)),
             convert_to_pandas=None,
         )
 
     scanner = catalog.load_table(identifier=(schema, table_name)).scan(
         row_filter=row_filter_expression or ALWAYS_TRUE,
-        selected_fields=columns or "*",
+        selected_fields=columns or ("*",),
         limit=limit,
         snapshot_id=version_id,
     )
@@ -71,4 +79,31 @@ def load_using_catalog(
         # use built-in DataScan converters
         convert_to_polars=lambda v: v.to_polars(),
         convert_to_pandas=lambda v: v.to_pandas(),
+    )
+
+
+def load_using_native_scan(
+    schema: str,
+    table_name: str,
+    catalog: Catalog,
+    version_id: int | None = None,
+    reader_override: Literal["native", "pyiceberg"] = "pyiceberg",  # only use 'native' for AWS S3 backends
+) -> MetaFrame:
+    """
+    Loads an Iceberg table as a Metaframe, using native Polars Scanner. Field filtering and row expressions are not supported.
+    This method relies on **UNSTABLE** API to ensure compatibility with S3 implementations outside AWS.
+    Use of `load_using_catalog` is recommended for production applications.
+    """
+    return MetaFrame(
+        data=catalog.load_table(identifier=(schema, table_name)),
+        # use built-in DataScan converters
+        convert_to_polars=lambda table: polars.scan_iceberg(
+            table,
+            # Polars documentation considers this an unstable parameter.
+            # In case lazyframe read fails, consider patching this to whatever will be supported
+            reader_override=reader_override,
+            snapshot_id=version_id,
+            storage_options=table.config,
+        ),
+        convert_to_pandas=None,
     )

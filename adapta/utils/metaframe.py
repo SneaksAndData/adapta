@@ -41,7 +41,7 @@ class MetaFrame:
     def __init__(
         self,
         data: any,
-        convert_to_polars: Callable[[any], polars.DataFrame],
+        convert_to_polars: Callable[[any], polars.DataFrame | polars.LazyFrame],
         convert_to_pandas: Callable[[any], pandas.DataFrame] | None,
     ):
         self._materialized = False
@@ -121,7 +121,7 @@ class MetaFrame:
             raise RuntimeError("Unsupported conversion for this MetaFrame: Pandas Dataframe")
         return self._convert_to_pandas(self._data)
 
-    def to_polars(self) -> polars.DataFrame:
+    def to_polars(self) -> polars.DataFrame | polars.LazyFrame:
         """
         Convert the MetaFrame to a Polars DataFrame.
         """
