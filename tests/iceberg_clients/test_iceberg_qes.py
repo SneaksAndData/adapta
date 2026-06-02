@@ -8,7 +8,7 @@ from adapta.storage.models.expression_dsl.filter_expression import FilterField, 
 from adapta.storage.query_enabled_store import IcebergQueryEnabledStore, IcebergSettings, IcebergCredential
 from tests.iceberg_clients._functions import get_input_data, prepare_iceberg_table
 
-_qes_input_data = get_input_data()
+_qes_input_data = get_input_data() | {"cold": [-1, 1, 2, -3, 0, 5, 6, 10, -5, 2]}
 _qes_input = polars.DataFrame(_qes_input_data)
 
 
@@ -21,6 +21,27 @@ _qes_input = polars.DataFrame(_qes_input_data)
             list(),
             None,
             _qes_input.filter(polars.col("cola").is_in([1, 2])),
+        ),
+        (
+            "equal",
+            FilterField("cola") == 5,
+            list(),
+            None,
+            _qes_input.filter(polars.col("cola") == 5),
+        ),
+        (
+            "two_expressions",
+            (FilterField("cola") > 5) & (FilterField("cold") > 0),
+            list(),
+            None,
+            _qes_input.filter((polars.col("cola") > 5) & (polars.col("cold") > 0)),
+        ),
+        (
+            "expression_and_column_selector",
+            FilterField("cola") > 5,
+            ["cola", "colb"],
+            None,
+            _qes_input.filter((polars.col("cola") > 5)).select(polars.col("cola"), polars.col("colb")),
         ),
     ],
 )
@@ -46,4 +67,4 @@ def test_iceberg_qes(
     )._init_catalog()
 
     data = store.open(parse_data_path(f"iceberg://test@{table_name}")).select(*column_selector).filter(expr).read()
-    assert_frame_equal(data.to_polars().sort("cola"), expected, check_column_order=False)
+    assert_frame_equal(data.to_polars().sort("cola"), expected.sort("cola"), check_column_order=False)
