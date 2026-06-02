@@ -85,6 +85,7 @@ class IcebergQueryEnabledStore(QueryEnabledStore[IcebergCredential, IcebergSetti
     ) -> MetaFrame | Iterator[MetaFrame]:
         return load_using_catalog(
             schema=path.schema,
+            row_filter=filter_expression,
             table_name=path.table,
             columns=columns if columns else None,
             limit=limit,
