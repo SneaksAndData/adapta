@@ -58,7 +58,7 @@ def load_using_catalog(
             data=catalog.load_table(identifier=(schema, table_name))
             .scan(
                 row_filter=row_filter_expression or ALWAYS_TRUE,
-                selected_fields=columns or ("*",)
+                selected_fields=columns or ("*",),
                 limit=limit,
                 snapshot_id=version_id,
             )
@@ -69,7 +69,7 @@ def load_using_catalog(
 
     scanner = catalog.load_table(identifier=(schema, table_name)).scan(
         row_filter=row_filter_expression or ALWAYS_TRUE,
-        selected_fields=columns or "*",
+        selected_fields=columns or ("*",),
         limit=limit,
         snapshot_id=version_id,
     )
