@@ -1,4 +1,5 @@
 """Iceberg reader (via REST Catalog)"""
+import os
 from typing import Literal
 
 import polars
@@ -53,21 +54,29 @@ def load_using_catalog(
     if row_filter:
         row_filter_expression = compile_expression(row_filter, IcebergFilterExpression)
 
+    table = catalog.load_table(identifier=(schema, table_name))
+    if "ADAPTA__ICEBERG_REST_CATALOG__S3_ENDPOINT_OVERRIDE" in os.environ:
+        # FileIO's endpoint is taken directly from the catalog response
+        # In case it differs from `s3.endpoint` set in catalog config, align them
+        # Note that when vended credentials are used, table.config will take preference over client setting
+        # thus endpoint is updated after catalog returns creds
+        # this is necessary if your S3 service has multiple endpoints and client doesn't have access to the one used by catalog
+        table.io.properties["s3.endpoint"] = os.environ["ADAPTA__ICEBERG_REST_CATALOG__S3_ENDPOINT_OVERRIDE"]
+        table.config["s3.endpoint"] = os.environ["ADAPTA__ICEBERG_REST_CATALOG__S3_ENDPOINT_OVERRIDE"]
+
     if lazy_read:
         return MetaFrame(
-            data=catalog.load_table(identifier=(schema, table_name))
-            .scan(
+            data=table.scan(
                 row_filter=row_filter_expression or ALWAYS_TRUE,
                 selected_fields=columns or ("*",),
                 limit=limit,
                 snapshot_id=version_id,
-            )
-            .to_arrow_batch_reader(),
+            ).to_arrow_batch_reader(),
             convert_to_polars=lambda v: polars.scan_pyarrow_dataset(pyarrow.dataset.dataset(v)),
             convert_to_pandas=None,
         )
 
-    scanner = catalog.load_table(identifier=(schema, table_name)).scan(
+    scanner = table.scan(
         row_filter=row_filter_expression or ALWAYS_TRUE,
         selected_fields=columns or ("*",),
         limit=limit,
