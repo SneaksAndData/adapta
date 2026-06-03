@@ -64,24 +64,19 @@ def load_using_catalog(
         table.io.properties["s3.endpoint"] = os.environ["ADAPTA__ICEBERG_REST_CATALOG__S3_ENDPOINT_OVERRIDE"]
         table.config["s3.endpoint"] = os.environ["ADAPTA__ICEBERG_REST_CATALOG__S3_ENDPOINT_OVERRIDE"]
 
-    if lazy_read:
-        return MetaFrame(
-            data=table.scan(
-                row_filter=row_filter_expression or ALWAYS_TRUE,
-                selected_fields=columns or ("*",),
-                limit=limit,
-                snapshot_id=version_id,
-            ).to_arrow_batch_reader(),
-            convert_to_polars=lambda v: polars.scan_pyarrow_dataset(pyarrow.dataset.dataset(v)),
-            convert_to_pandas=None,
-        )
-
     scanner = table.scan(
         row_filter=row_filter_expression or ALWAYS_TRUE,
         selected_fields=columns or ("*",),
         limit=limit,
         snapshot_id=version_id,
     )
+
+    if lazy_read:
+        return MetaFrame(
+            data=scanner.to_arrow_batch_reader(),
+            convert_to_polars=lambda v: polars.scan_pyarrow_dataset(pyarrow.dataset.dataset(v)),
+            convert_to_pandas=None,
+        )
 
     return MetaFrame(
         data=scanner,
