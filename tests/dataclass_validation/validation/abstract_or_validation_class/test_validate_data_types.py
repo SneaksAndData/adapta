@@ -45,7 +45,7 @@ def test__validate_data_types__expected_no_errors():
                 TEST_SCHEMA.column_5: [
                     {"name": "alice", "age": "30"},
                     {"city": "Seattle"},
-                ]
+                ],
             }
         ),
         schema=TEST_SCHEMA,
