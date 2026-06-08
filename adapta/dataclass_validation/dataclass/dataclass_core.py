@@ -1,6 +1,7 @@
 """
 Core data class implementation for the adapta library
 """
+from enum import Enum
 from typing import final
 
 
@@ -64,6 +65,8 @@ class Field:
         with None values with the correct dtype.
     9. checks: Check object to perform additional checks on the field (default is None).
     10. allow_missing_values: Whether missing values (e.g. None) are allowed (default is False).
+    11. enum: An optional Enum class whose member values define the allowed values for the field (default is None).
+        Only enum member values matching the field's dtype are enforced during validation.
     """
 
     # pylint: disable=too-many-arguments, too-many-instance-attributes
@@ -80,6 +83,7 @@ class Field:
         checks: Checks = None,
         allow_missing_values: bool = False,
         astra_properties: AstraProperties = None,
+        enum: type[Enum] = None,
     ):
         self.display_name = display_name
         self.description = description
@@ -92,6 +96,10 @@ class Field:
         self.checks = checks
         self.allow_missing_values = allow_missing_values
         self.astra_properties = astra_properties
+        self.enum = enum
+
+        if self.enum is not None and not (isinstance(self.enum, type) and issubclass(self.enum, Enum)):
+            raise ValueError("The 'enum' parameter must be an Enum class (not an instance).")
 
         if self.checks is not None and self.dtype not in [int, float, list[int], list[float]]:
             if self.checks.le_value is not None or self.checks.ge_value is not None:
@@ -130,6 +138,7 @@ class CoreDataClass:
         self._set_ge_value_fields()
         self._set_le_value_fields()
         self._set_not_allowed_missing_value_fields()
+        self._set_enum_fields()
         self._set_astra_properties_keys()
 
     def _set_fields(self) -> None:
@@ -240,6 +249,14 @@ class CoreDataClass:
             field_name: field for field_name, field in self.get_fields().items() if not field.allow_missing_values
         }
 
+    def _set_enum_fields(self) -> None:
+        """
+        Set the fields that have an enum constraint.
+        """
+        self._enum_fields = {
+            field_name: field for field_name, field in self.get_fields().items() if field.enum is not None
+        }
+
     def get_fields(self) -> dict[str, Field]:
         """
         Get the fields of the data class.
@@ -319,6 +336,12 @@ class CoreDataClass:
         Get the fields that do not allow missing values.
         """
         return self._not_allowed_missing_value_fields
+
+    def get_enum_fields(self) -> dict[str, Field]:
+        """
+        Get the fields that have an enum constraint.
+        """
+        return self._enum_fields
 
     def get_columns(self) -> list[str]:
         """

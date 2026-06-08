@@ -2,6 +2,7 @@
 Validation class for Polars DataFrames.
 """
 import datetime
+from typing import Any
 
 import polars as pl
 
@@ -49,7 +50,7 @@ class PolarsValidationClass(AbstractValidationClass):
                 f"primary key(s): {primary_keys}"
             ]
 
-    def _get_column_dtype(self, column_name: str) -> any:
+    def _get_column_dtype(self, column_name: str) -> Any:
         return self._data[column_name].dtype
 
     def _get_dataframe_columns(self) -> list[str]:
@@ -91,6 +92,28 @@ class PolarsValidationClass(AbstractValidationClass):
 
     def _are_values_not_missing(self, column_name: str) -> bool:
         return self._data.filter(pl.col(column_name).is_null()).is_empty()
+
+    def _get_invalid_enum_members(
+        self, column_name: str, enum_members: list, dtype: type, allow_missing_values: bool
+    ) -> list:
+        """
+        Find column values that are not valid enum members.
+
+        :param column_name: The name of the column to check.
+        :param enum_members: The list of enum member values for the column.
+        :param dtype: The Python type of the field, used to filter enum members to matching types.
+        :param allow_missing_values: Whether null values are allowed for the column. If True, nulls are excluded
+            from the check. If False, nulls are treated as invalid enum members.
+        :return: A list of invalid values found in the column, empty if all values are valid.
+        """
+        dtype_enum_members = [value for value in enum_members if isinstance(value, dtype)]
+        invalid_condition = ~pl.col(column_name).is_in(dtype_enum_members)
+        if allow_missing_values:
+            invalid_condition = invalid_condition & pl.col(column_name).is_not_null()
+        invalid = self._data.filter(invalid_condition)
+        if invalid.is_empty():
+            return []
+        return invalid[column_name].unique().to_list()
 
     def _are_list_values_ge(self, column_name: str, ge_value: float, tolerance: float) -> float | None:
         """

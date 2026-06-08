@@ -13,8 +13,5 @@
 #  limitations under the License.
 #
 
-"""
- Import index.
-"""
-from adapta.storage.distributed_object_store.v2.datastax_astra._models import *
-from adapta.storage.distributed_object_store.v2.datastax_astra.astra_client import *
+from adapta.storage.iceberg.v1._functions import *
+from adapta.storage.iceberg.v1._models import *
