@@ -28,7 +28,7 @@ class PolarsValidationClass(AbstractValidationClass):
 
     @property
     def _dtype_recursive_dtypes(self):
-        return {list: pl.List, dict: lambda: pl.Struct}
+        return {list: pl.List, dict: pl.Struct}
 
     @property
     def _allowed_casts(self):
