@@ -54,7 +54,7 @@ def test__validate_data_types__expected_no_errors():
                 TEST_SCHEMA.column_6: [
                     {"key1": "value1", "key2": 1},
                     {"key1": "value1", "key2": 1},
-                ]
+                ],
             }
         ),
         schema=TEST_SCHEMA,
