@@ -22,11 +22,12 @@ class PolarsValidationClass(AbstractValidationClass):
             bool: pl.Boolean,
             datetime.date: pl.Date,
             datetime.datetime: pl.Datetime,
+            dict: pl.Struct,
         }
 
     @property
     def _dtype_recursive_dtypes(self):
-        return {list: pl.List}
+        return {list: pl.List, dict: lambda: pl.Struct}
 
     @property
     def _allowed_casts(self):
