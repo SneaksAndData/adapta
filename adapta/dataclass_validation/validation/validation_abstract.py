@@ -72,8 +72,8 @@ class AbstractValidationClass:
         origin_dtype = get_origin(dtype)
         if origin_dtype in self._dtype_recursive_dtypes and origin_dtype == list:
             return self._dtype_recursive_dtypes[origin_dtype](self._get_expected_dtypes(dtype=get_args(dtype)[0]))
-        if origin_dtype in self._dtype_recursive_dtypes and origin_dtype == dict:
-            return self._dtype_recursive_dtypes[origin_dtype]()
+        if origin_dtype == dict:
+            return self._dtype_mapping[origin_dtype]
 
         raise TypeError(
             f"Unsupported data type: {dtype}. Supported types are: "
