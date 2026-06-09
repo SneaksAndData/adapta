@@ -92,16 +92,11 @@ def create_schema(fields_dict: dict):
                         "c4": Field(display_name="v4", description="d", dtype=list[bool], coerce=True),
                     }
                 ),
-                dataframe=pl.DataFrame(
-                    {
-                        "c1": [[]],
-                        "c2": [[]],
-                        "c3": [[]],
-                        "c4": [[]]
-                    }
-                ),
+                dataframe=pl.DataFrame({"c1": [[]], "c2": [[]], "c3": [[]], "c4": [[]]}),
             ),
-            TestOutput(expected_dtypes=[pl.List(pl.String), pl.List(pl.Int64), pl.List(pl.Float64), pl.List(pl.Boolean)]),
+            TestOutput(
+                expected_dtypes=[pl.List(pl.String), pl.List(pl.Int64), pl.List(pl.Float64), pl.List(pl.Boolean)]
+            ),
             id="Coerces empty List(Null) columns to List(String|Int64|Float64|Boolean)",
         ),
     ],
