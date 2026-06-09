@@ -40,6 +40,7 @@ class PolarsValidationClass(AbstractValidationClass):
             pl.Float32: [pl.Float64, pl.String],
             pl.Float64: [pl.String],
             pl.Boolean: [pl.Int64, pl.String],
+            pl.List(pl.Null): [pl.List(pl.String), pl.List(pl.Int64), pl.List(pl.Float64), pl.List(pl.Boolean)],
         }
 
     def _validate_primary_keys(self, **kwargs) -> None:

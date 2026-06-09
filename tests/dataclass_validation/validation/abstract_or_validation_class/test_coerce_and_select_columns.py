@@ -161,6 +161,39 @@ class TestOutput:
             TestOutput(expected_dtype=pl.String, expected_values=["true"]),
             id="Boolean to String",
         ),
+        # --- Empty Lists (Target: List(String), List(Int64), List(Float64)) ---
+        pytest.param(
+            TestInput(
+                target_field=Field(display_name="v", description="d", dtype=list[str]),
+                dataframe=pl.DataFrame({"v": [[]]}, schema={"v": pl.List(pl.Null)}),
+            ),
+            TestOutput(expected_dtype=pl.List(pl.String), expected_values=[[]]),
+            id="List(Null) to List(String)",
+        ),
+        pytest.param(
+            TestInput(
+                target_field=Field(display_name="v", description="d", dtype=list[int]),
+                dataframe=pl.DataFrame({"v": [[]]}, schema={"v": pl.List(pl.Null)}),
+            ),
+            TestOutput(expected_dtype=pl.List(pl.Int64), expected_values=[[]]),
+            id="List(Null) to List(Int64)",
+        ),
+        pytest.param(
+            TestInput(
+                target_field=Field(display_name="v", description="d", dtype=list[float]),
+                dataframe=pl.DataFrame({"v": [[]]}, schema={"v": pl.List(pl.Null)}),
+            ),
+            TestOutput(expected_dtype=pl.List(pl.Float64), expected_values=[[]]),
+            id="List(Null) to List(Float64)",
+        ),
+        pytest.param(
+            TestInput(
+                target_field=Field(display_name="v", description="d", dtype=list[bool]),
+                dataframe=pl.DataFrame({"v": [[]]}, schema={"v": pl.List(pl.Null)}),
+            ),
+            TestOutput(expected_dtype=pl.List(pl.Boolean), expected_values=[[]]),
+            id="List(Null) to List(Boolean)",
+        ),
     ],
 )
 def test__coerce_and_select_columns__casting_rules__unit_test(inputs: TestInput, expected: TestOutput):
@@ -208,7 +241,7 @@ def test__allowed_casts__convention_coverage():
         s_base = source_dtype if isinstance(source_dtype, type) else source_dtype.__class__
 
         target_py_type = test_input.target_field.dtype
-        target_dtype = validator._dtype_mapping.get(target_py_type, target_py_type)
+        target_dtype = validator._get_expected_dtypes(target_py_type)
         # Normalize target
         t_base = target_dtype if isinstance(target_dtype, type) else target_dtype.__class__
 
