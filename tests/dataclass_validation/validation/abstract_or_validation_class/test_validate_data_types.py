@@ -27,6 +27,16 @@ def test__validate_data_types__expected_no_errors():
             description="Description for column 4.",
             dtype=bool,
         )
+        column_5 = Field(
+            display_name="Column 5",
+            description="Description for column 5.",
+            dtype=dict,
+        )
+        column_6 = Field(
+            display_name="Column 6",
+            description="Description for column 6.",
+            dtype=dict[str, str | int],
+        )
 
     TEST_SCHEMA = TestDataClass()
 
@@ -37,6 +47,14 @@ def test__validate_data_types__expected_no_errors():
                 TEST_SCHEMA.column_2: pl.Series([1, 2], dtype=pl.Int64),
                 TEST_SCHEMA.column_3: pl.Series([1.0, 2.0], dtype=pl.Float64),
                 TEST_SCHEMA.column_4: [True, False],
+                TEST_SCHEMA.column_5: [
+                    {"name": "alice", "age": "30"},
+                    {"city": "Seattle"},
+                ],
+                TEST_SCHEMA.column_6: [
+                    {"key1": "value1", "key2": 1},
+                    {"key1": "value1", "key2": 1},
+                ],
             }
         ),
         schema=TEST_SCHEMA,
@@ -72,6 +90,11 @@ def test__validate_data_types__expected_errors():
             description="Description for column 4.",
             dtype=bool,
         )
+        column_5 = Field(
+            display_name="Column 5",
+            description="Description for column 5.",
+            dtype=dict,
+        )
 
     TEST_SCHEMA = TestDataClass()
 
@@ -82,6 +105,7 @@ def test__validate_data_types__expected_errors():
                 TEST_SCHEMA.column_2: ["value"],
                 TEST_SCHEMA.column_3: ["value"],
                 TEST_SCHEMA.column_4: ["value"],
+                TEST_SCHEMA.column_5: ["value"],
             }
         ),
         schema=TEST_SCHEMA,
@@ -95,4 +119,5 @@ def test__validate_data_types__expected_errors():
         "Column 'column_2' has incorrect type. Expected Int64, got String",
         "Column 'column_3' has incorrect type. Expected Float64, got String",
         "Column 'column_4' has incorrect type. Expected Boolean, got String",
+        "Column 'column_5' has incorrect type. Expected Struct, got String",
     ]

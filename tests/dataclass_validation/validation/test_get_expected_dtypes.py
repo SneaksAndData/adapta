@@ -13,6 +13,7 @@ from adapta.dataclass_validation.validation.validation_polars import PolarsValid
         (int, pl.Int64),
         (float, pl.Float64),
         (bool, pl.Boolean),
+        (dict, pl.Struct),
         (list[str], pl.List(pl.String)),
         (list[list[float]], pl.List(pl.List(pl.Float64))),
         (datetime.date, pl.Date),
@@ -45,7 +46,7 @@ def test__polars_get_expected_types__expected(dtype: type, expected_polars_dtype
 @pytest.mark.parametrize(
     "dtype",
     [
-        dict,
+        tuple,
     ],
 )
 def test__polars_get_expected_types__expected_errors(
