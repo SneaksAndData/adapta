@@ -98,8 +98,18 @@ def load_using_native_scan(
     This method relies on **UNSTABLE** API to ensure compatibility with S3 implementations outside AWS.
     Use of `load_using_catalog` is recommended for production applications.
     """
+    table = catalog.load_table(identifier=(schema, table_name))
+    if "ADAPTA__ICEBERG_REST_CATALOG__S3_ENDPOINT_OVERRIDE" in os.environ:
+        # FileIO's endpoint is taken directly from the catalog response
+        # In case it differs from `s3.endpoint` set in catalog config, align them
+        # Note that when vended credentials are used, table.config will take preference over client setting
+        # thus endpoint is updated after catalog returns creds
+        # this is necessary if your S3 service has multiple endpoints and client doesn't have access to the one used by catalog
+        table.io.properties["s3.endpoint"] = os.environ["ADAPTA__ICEBERG_REST_CATALOG__S3_ENDPOINT_OVERRIDE"]
+        table.config["s3.endpoint"] = os.environ["ADAPTA__ICEBERG_REST_CATALOG__S3_ENDPOINT_OVERRIDE"]
+
     return MetaFrame(
-        data=catalog.load_table(identifier=(schema, table_name)),
+        table,
         # use built-in DataScan converters
         convert_to_polars=lambda table: polars.scan_iceberg(
             table,
