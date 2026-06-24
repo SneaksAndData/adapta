@@ -30,10 +30,10 @@ jobs:
         env:
           PROJECT_NAME: adapta
         run: |
-          set -euxo pipefail
+          set -euo pipefail
           find "$PROJECT_NAME" -type f -name "*.py" | xargs poetry run pylint
 
       - name: Black
         run: |
-          set -euxo pipefail
+          set -euo pipefail
           poetry run black . --check --diff
