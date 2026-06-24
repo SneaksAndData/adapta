@@ -17,11 +17,25 @@
 #
 
 from adapta.storage.query_enabled_store._models import *
-from adapta.storage.query_enabled_store._qes_astra import *
-from adapta.storage.query_enabled_store._qes_delta import *
+
+try:
+    from adapta.storage.query_enabled_store._qes_astra import *
+except (ImportError, ModuleNotFoundError) as ex:
+    print(f"Query Enabled Store (Astra - Cassandra) not configured: {ex}")
+
+try:
+    from adapta.storage.query_enabled_store._qes_delta import *
+except (ImportError, ModuleNotFoundError) as ex:
+    print(f"Query Enabled Store (Delta RS) not configured: {ex}")
+
 from adapta.storage.query_enabled_store._qes_local import *
 
 try:
     from adapta.storage.query_enabled_store._qes_trino import *
 except (ImportError, ModuleNotFoundError) as ex:
-    print(f"Failed to import from adapta.storage.query_enabled_store._qes_trino: {ex}")
+    print(f"Query Enabled Store (Trino) not configured: {ex}")
+
+try:
+    from adapta.storage.query_enabled_store._qes_iceberg import *
+except (ImportError, ModuleNotFoundError) as ex:
+    print(f"Query Enabled Store (Iceberg) not configured: {ex}")

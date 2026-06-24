@@ -21,12 +21,22 @@ from adapta.storage.models.astra import AstraPath
 from adapta.storage.models.aws import S3Path
 from adapta.storage.models.azure import AdlsGen2Path, WasbPath
 from adapta.storage.models.base import DataPath
+from adapta.storage.models.iceberg import IcebergPath
 from adapta.storage.models.local import LocalPath
 from adapta.storage.models.trino import TrinoPath
 
 
 def parse_data_path(
-    path: str, candidates: Iterable[type[DataPath]] = (AdlsGen2Path, LocalPath, WasbPath, AstraPath, S3Path, TrinoPath)
+    path: str,
+    candidates: Iterable[type[DataPath]] = (
+        AdlsGen2Path,
+        LocalPath,
+        WasbPath,
+        AstraPath,
+        S3Path,
+        TrinoPath,
+        IcebergPath,
+    ),
 ) -> DataPath | None:
     """
       Attempts to convert a string path to one of the known DataPath types.

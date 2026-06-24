@@ -17,7 +17,9 @@
 #
 
 import os
-from typing import Any
+from configparser import RawConfigParser
+from pathlib import Path
+from typing import Any, Self
 
 import mlflow
 from mlflow.entities.model_registry import ModelVersion
@@ -35,13 +37,49 @@ class MlflowBasicClient:
     """
 
     def __init__(self, tracking_server_uri: str):
+        self._tracking_server_uri = tracking_server_uri
+        self._client: MlflowClient | None = None
+
+    def _initialize(self) -> Self:
+        mlflow.set_tracking_uri(self._tracking_server_uri)
+        self._client = MlflowClient()
+        return self
+
+    @classmethod
+    def from_environment_credentials(cls, tracking_server_uri: str) -> Self:
+        """
+        Creates an instance of MlflowBasicClient using credentials from environment variables
+        https://mlflow.org/docs/latest/self-hosting/security/basic-http-auth/#using-environment-variables
+        """
         assert os.environ.get("MLFLOW_TRACKING_USERNAME") and os.environ.get(
             "MLFLOW_TRACKING_PASSWORD"
         ), "Both MLFLOW_TRACKING_USERNAME and MLFLOW_TRACKING_PASSWORD must be set to access MLFlow Tracking Server"
 
-        mlflow.set_tracking_uri(tracking_server_uri)
-        self._tracking_server_uri = tracking_server_uri
-        self._client = MlflowClient()
+        return cls(tracking_server_uri=tracking_server_uri)._initialize()
+
+    @classmethod
+    def from_static_credentials(cls, tracking_server_uri: str, username: str, password: str) -> Self:
+        """
+        Creates an instance of MlflowBasicClient using credentials file generated from user-provided credentials
+        https://mlflow.org/docs/latest/self-hosting/security/basic-http-auth/#using-credentials-file
+
+        Use this method when you need to provision clients dynamically, or when working with multiple MLFlow instances.
+        This method is not thread-safe. Always call it from the main thread.
+        """
+        user_home = Path.home()
+        credentials_file_location = user_home / ".mlflow"
+        credentials_file_path = credentials_file_location / "credentials"
+        os.makedirs(credentials_file_location, exist_ok=True)
+        credentials_file_parser = RawConfigParser()
+        credentials_file_parser["mlflow"] = {
+            "mlflow_tracking_username": username,
+            "mlflow_tracking_password": password.replace("%", "%%"),
+        }
+
+        with open(credentials_file_path, "w", encoding="utf-8") as credentials_file:
+            credentials_file_parser.write(credentials_file)
+
+        return cls(tracking_server_uri=tracking_server_uri)._initialize()
 
     @property
     def tracking_server_uri(self) -> str:
@@ -137,23 +175,60 @@ class MlflowBasicClient:
             version=model_version,
         )
 
+    def delete_model_alias(self, model_name: str, alias: str):
+        """
+        inherited the deletion of model alias in Mlflow
+        :param model_name: model name
+        :param alias: alias name
+        """
+        self._client.delete_registered_model_alias(
+            name=model_name,
+            alias=alias,
+        )
+
+    def transition_model_alias(
+        self, model_name: str, old_alias: str, new_alias: str, model_version: str | None
+    ) -> None:
+        """
+        Mimics transition for model alias in Mlflow
+        :param model_name: model name
+        :param old_alias: old alias name
+        :param new_alias: new alias name
+        :param model_version: version of model
+        """
+        self.delete_model_alias(model_name=model_name, alias=old_alias)
+        self.set_model_alias(model_name=model_name, alias=new_alias, model_version=model_version)
+
     def set_model_version_tag(
         self,
-        name: str,
-        version: str | None = None,
+        model_name: str,
+        model_version: str | None = None,
         key: str = None,
         value: Any = None,
         stage: str | None = None,
     ) -> None:
         """
         inherited the setting model version tag in Mlflow
-        :param name: Registered model name.
-        :param version: Registered model version.
+        :param model_name: Registered model name.
+        :param model_version: Registered model version.
         :param key: Tag key to log. key is required.
         :param value: Tag value to log. value is required.
         :param stage: Registered model stage.
         """
-        self._client.set_model_version_tag(name=name, version=version, key=key, value=value, stage=stage)
+        self._client.set_model_version_tag(name=model_name, version=model_version, key=key, value=value, stage=stage)
+
+    def set_model_description(self, model_name: str, model_version: str, new_description: str):
+        """
+        inherited the updating model description in Mlflow
+        :param model_name: Registered model name.
+        :param model_version: Registered model version.
+        :param new_description: Description for the model at models section in mlflow.
+        """
+        self._client.update_model_version(
+            name=model_name,
+            version=model_version,
+            description=new_description,
+        )
 
     def log_dict(self, artifact: dict, artifact_path: str, run_id: str):
         """

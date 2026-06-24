@@ -1,5 +1,5 @@
 """
- Storage Client implementation for a regular filesystem.
+Storage Client implementation for a regular filesystem.
 """
 
 #  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
@@ -20,7 +20,7 @@
 import os.path
 import shutil
 
-from typing import final
+from typing import Any, final
 from collections.abc import Callable, Iterator
 
 from adapta.security.clients import LocalClient, AuthenticationClient
@@ -53,10 +53,11 @@ class LocalStorageClient(StorageClient):
         data: T,
         blob_path: DataPath,
         serialization_format: type[SerializationFormat[T]],
+        serialization_kwargs: dict[str, Any] | None = None,
         metadata: dict[str, str] | None = None,
         overwrite: bool = False,
     ) -> None:
-        bytes_ = serialization_format().serialize(data)
+        bytes_ = serialization_format().serialize(data, **(serialization_kwargs or {}))
         file_path = cast_path(blob_path).path
 
         os.makedirs(os.path.dirname(file_path), exist_ok=True)

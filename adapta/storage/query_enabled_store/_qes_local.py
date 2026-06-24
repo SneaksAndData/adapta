@@ -8,7 +8,8 @@ from dataclasses_json import DataClassJsonMixin
 from pyarrow.parquet import read_table
 
 from adapta.storage.models import DataPath
-from adapta.storage.models.filter_expression import Expression, compile_expression, ArrowFilterExpression
+from adapta.storage.models.expression_dsl.filter_expression import Expression, compile_expression
+from adapta.storage.models.expression_dsl.arrow_filter_expression import ArrowFilterExpression
 from adapta.storage.query_enabled_store._models import (
     QueryEnabledStore,
     CONNECTION_STRING_REGEX,

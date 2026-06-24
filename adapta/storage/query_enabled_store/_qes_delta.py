@@ -12,7 +12,7 @@ from dataclasses_json import DataClassJsonMixin
 from adapta.security.clients import AuthenticationClient
 from adapta.storage.delta_lake.v3 import load
 from adapta.storage.models.base import DataPath
-from adapta.storage.models.filter_expression import Expression
+from adapta.storage.models.expression_dsl.filter_expression import Expression
 from adapta.storage.query_enabled_store._models import (
     QueryEnabledStore,
     CONNECTION_STRING_REGEX,

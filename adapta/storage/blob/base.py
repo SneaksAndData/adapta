@@ -1,6 +1,7 @@
 """
- Abstraction for storage operations.
+Abstraction for storage operations.
 """
+
 #  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,7 +18,7 @@
 #
 
 from abc import ABC, abstractmethod
-from typing import TypeVar
+from typing import Any, TypeVar
 from collections.abc import Iterator, Callable
 
 from adapta.security.clients import AuthenticationClient
@@ -73,6 +74,7 @@ class StorageClient(ABC):
         data: T,
         blob_path: DataPath,
         serialization_format: type[SerializationFormat[T]],
+        serialization_kwargs: dict[str, Any] | None = None,
         metadata: dict[str, str] | None = None,
         overwrite: bool = False,
     ) -> None:

@@ -17,3 +17,4 @@ class QueryEnabledStoreOptions(Enum):
     CONCAT_OPTIONS = "concat_options"
     TIMEOUT = "timeout"
     BATCH_SIZE = "batch_size"
+    VERSION_ID = "version_id"

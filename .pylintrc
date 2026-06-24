@@ -4,9 +4,10 @@
 # can either give multiple identifier separated by comma (,) or put this option
 # multiple time (only on the command line, not in the configuration file where
 # it should appear only once).
-disable=W0212,R0903,C0301,R0902
+disable=W0212,R0903,C0301,R0902,C0114
 
 max-positional-arguments = 20
 max-args = 20
 max-locals = 20
 min-similarity-lines = 20
+generated-members=pyarrow.*

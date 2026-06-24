@@ -155,6 +155,14 @@ class DatadogMetricsProvider(MetricsProvider):
     ) -> None:
         statsd.histogram(metric=metric_name, value=metric_value, tags=convert_datadog_tags(tags))
 
+    def distribution(
+        self,
+        metric_name: str,
+        metric_value: int | float,
+        tags: dict[str, str] | None = None,
+    ) -> None:
+        statsd.distribution(metric=metric_name, value=metric_value, tags=convert_datadog_tags(tags))
+
     def event(
         self,
         title: str,

@@ -82,6 +82,16 @@ class MetricsProvider(ABC):
         :return:
         """
 
+    @abstractmethod
+    def distribution(self, metric_name: str, metric_value: float, tags: dict[str, str] | None = None) -> None:
+        """
+
+        :param metric_name:
+        :param metric_value:
+        :param tags:
+        :return:
+        """
+
     def event(
         self,
         title: str,

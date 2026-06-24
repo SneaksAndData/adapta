@@ -6,6 +6,7 @@ from adapta.storage.query_enabled_store import (
     AstraQueryEnabledStore,
     LocalQueryEnabledStore,
     TrinoQueryEnabledStore,
+    IcebergQueryEnabledStore,
 )
 
 
@@ -71,6 +72,18 @@ from adapta.storage.query_enabled_store import (
         (
             'qes://engine=TRINO;plaintext_credentials={"oauth2_username": "test"};settings={"host": "tester"}',
             TrinoQueryEnabledStore,
+        ),
+        (
+            'qes://engine=ICEBERG;plaintext_credentials={"oauth_enabled": false};settings={"lazy_read": false}',
+            IcebergQueryEnabledStore,
+        ),
+        (
+            'qes://engine=ICEBERG;plaintext_credentials={"oauth_enabled": true};settings={"lazy_read": false}',
+            RuntimeError,  # env vars not set
+        ),
+        (
+            'qes://engine=ICEBERG;plaintext_credentials={"oauth_enabled": false};settings={"lazy_read": true}',
+            IcebergQueryEnabledStore,
         ),
     ],
 )

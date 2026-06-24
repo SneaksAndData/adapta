@@ -126,7 +126,7 @@ class CassandraModelMapper(ABC):
         :return: Cassandra column type.
         """
         # pylint: disable=too-many-branches
-        if type_to_map is type(None):
+        if type_to_map is type(None):  # pylint: disable=unidiomatic-typecheck
             raise TypeError("NoneType cannot be mapped to any existing table column types")
         if type_to_map is bool:
             return (columns.Boolean,)

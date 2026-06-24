@@ -25,7 +25,7 @@ from typing import TypeVar, Generic, final
 from collections.abc import Iterator
 
 from adapta.storage.models.base import DataPath
-from adapta.storage.models.filter_expression import Expression
+from adapta.storage.models.expression_dsl.filter_expression import Expression
 from adapta.storage.models.enum import QueryEnabledStoreOptions
 from adapta.utils.metaframe import MetaFrame
 
@@ -45,6 +45,7 @@ class BundledQueryEnabledStores(Enum):
     ASTRA = "adapta.storage.query_enabled_store.AstraQueryEnabledStore"
     LOCAL = "adapta.storage.query_enabled_store.LocalQueryEnabledStore"
     TRINO = "adapta.storage.query_enabled_store.TrinoQueryEnabledStore"
+    ICEBERG = "adapta.storage.query_enabled_store.IcebergQueryEnabledStore"
 
 
 BUNDLED_STORES = {store.name: store.value for store in BundledQueryEnabledStores}

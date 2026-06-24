@@ -19,3 +19,6 @@ Please refer to the [module](adapta/storage/secrets/README.md) documentation for
 ## NoSql (Astra DB)
 
 Please refer to the [module](adapta/storage/distributed_object_store/v3/datastax_astra/README.md) documentation for examples.
+
+## Dataclass Validation framework
+Please refer to the [module](adapta/dataclass_validation/README.md) documentation for examples.

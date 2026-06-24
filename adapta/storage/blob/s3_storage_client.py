@@ -1,6 +1,7 @@
 """
- Storage Client implementation for AWS S3.
+Storage Client implementation for AWS S3.
 """
+
 #  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,7 +19,7 @@
 
 import os
 
-from typing import TypeVar, final
+from typing import Any, TypeVar, final
 from collections.abc import Callable, Iterator
 from boto3 import Session
 from botocore.config import Config
@@ -101,6 +102,7 @@ class S3StorageClient(StorageClient):
         data: T,
         blob_path: DataPath,
         serialization_format: type[SerializationFormat[T]],
+        serialization_kwargs: dict[str, Any] | None = None,
         metadata: dict[str, str] | None = None,
         overwrite: bool = False,
     ) -> None:
@@ -122,7 +124,7 @@ class S3StorageClient(StorageClient):
                 )
 
         s3_path = cast_path(blob_path)
-        bytes_ = serialization_format().serialize(data)
+        bytes_ = serialization_format().serialize(data, **(serialization_kwargs or {}))
         self._s3_resource.Bucket(s3_path.bucket).put_object(Key=s3_path.path, Body=bytes_)
 
     def delete_blob(self, blob_path: DataPath) -> None:

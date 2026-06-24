@@ -4,7 +4,7 @@ import polars as pl
 import pytest
 from adapta.storage.models import LocalPath
 from adapta.storage.models.enum import QueryEnabledStoreOptions
-from adapta.storage.models.filter_expression import FilterExpression, FilterField
+from adapta.storage.models.expression_dsl.filter_expression import FilterExpression, FilterField
 from adapta.storage.query_enabled_store import LocalQueryEnabledStore, LocalSettings, LocalCredential
 from adapta.utils.metaframe import MetaFrameOptions
 
@@ -70,6 +70,14 @@ data = pl.DataFrame(
         (
             pl.col("string_column").is_in(["Polars"]),
             FilterField("string_column").isin(["Polars"]),
+        ),
+        (
+            pl.col("string_column") != "Polars",
+            FilterField("string_column") != "Polars",
+        ),
+        (
+            (pl.col("string_column") != "Polars") & (pl.col("integer_column") != 10),
+            (FilterField("string_column") != "Polars") & (FilterField("integer_column") != 10),
         ),
         (None, None),
     ],
