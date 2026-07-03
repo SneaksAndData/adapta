@@ -9,13 +9,13 @@ jobs:
     if: ${{ github.ref == 'refs/heads/main' }}
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
 
       - name: Create Release
-        uses: SneaksAndData/github-actions/semver_release@v0.1.11
+        uses: SneaksAndData/github-actions/semver_release@6c8187f0d8c167a9410a76bed2e98409449ed495 # v0.1.11
         with:
           major_v: 4
           minor_v: 0
