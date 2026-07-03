@@ -18,6 +18,7 @@ jobs:
         with:
           ref: refs/pull/${{github.event.issue.number}}/merge
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Install Poetry and dependencies
         uses: SneaksAndData/github-actions/install_poetry@v0.1.11
