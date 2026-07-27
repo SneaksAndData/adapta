@@ -19,11 +19,20 @@ class ValidationClass:
         """
         self._failed_validations: [ValidationResponse] = []
 
-    def validate(self, validations: list[tuple[any, AbstractDataClass]], settings: list[str]) -> None:
+    def validate(
+        self,
+        validations: list[tuple[any, AbstractDataClass]],
+        settings: list[str],
+        add_non_required_fields: bool = False,
+    ) -> None:
         """
         Validate a list of dataframes against their corresponding schemas.
         """
         for data, schema in validations:
-            self._failed_validations += [schema.validate_and_collect_data(data=data, settings=settings)]
+            self._failed_validations += [
+                schema.validate_and_collect_data(
+                    data=data, settings=settings, add_non_required_fields=add_non_required_fields
+                )
+            ]
 
         raise_failed_validations(failed_validations=self._failed_validations)
