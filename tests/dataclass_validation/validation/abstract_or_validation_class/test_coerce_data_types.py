@@ -82,6 +82,23 @@ def create_schema(fields_dict: dict):
             TestOutput(expect_failure=True),
             id="Log failure instead of raising when should_raise is False",
         ),
+        pytest.param(
+            TestInput(
+                target_schema=create_schema(
+                    {
+                        "c1": Field(display_name="v1", description="d", dtype=list[str], coerce=True),
+                        "c2": Field(display_name="v2", description="d", dtype=list[int], coerce=True),
+                        "c3": Field(display_name="v3", description="d", dtype=list[float], coerce=True),
+                        "c4": Field(display_name="v4", description="d", dtype=list[bool], coerce=True),
+                    }
+                ),
+                dataframe=pl.DataFrame({"c1": [[]], "c2": [[]], "c3": [[]], "c4": [[]]}),
+            ),
+            TestOutput(
+                expected_dtypes=[pl.List(pl.String), pl.List(pl.Int64), pl.List(pl.Float64), pl.List(pl.Boolean)]
+            ),
+            id="Coerces empty List(Null) columns to List(String|Int64|Float64|Boolean)",
+        ),
     ],
 )
 def test__coerce_data_types__unit_test(inputs: TestInput, expected: TestOutput):
