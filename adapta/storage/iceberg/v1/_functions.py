@@ -1,13 +1,12 @@
 """Iceberg reader (via REST Catalog)"""
 import os
-from typing import Literal
+from typing import Literal, Any
 
 import polars
 import pyarrow.dataset
 import pyiceberg
-from pyarrow.lib import Table
+from pyarrow.lib import Table, Schema
 from pyiceberg.catalog import Catalog, load_catalog
-from pyiceberg.expressions import BooleanExpression
 from pyiceberg.table import ALWAYS_TRUE
 
 from adapta.storage.iceberg.v1._models import IcebergRestCatalogConfig
@@ -125,12 +124,18 @@ def load_using_native_scan(
         convert_to_pandas=None,
     )
 
+def collect_lazy_schema(data: polars.LazyFrame) -> Schema:
+    """
+     Read schema of a LazyFrame w/o materializing rows
+    """
+    polars_schema = data.collect_schema()
+    return polars.DataFrame(schema=polars_schema).to_arrow().schema
 
 def write_using_catalog(
-    schema: str,
+    schema_name: str,
     table_name: str,
     catalog: Catalog,
-    data: polars.DataFrame,
+    data: polars.DataFrame | polars.LazyFrame,
     write_chunk_size: int = 50_000,
     overwrite: bool = True,
 ) -> None:
@@ -139,17 +144,21 @@ def write_using_catalog(
     Data is written in chunks to regulate memory usage.
     """
 
-    def _get_table() -> pyiceberg.table.Table:
-        if catalog.table_exists(identifier=(schema, table_name)):
-            return catalog.load_table(identifier=(schema, table_name))
+    def _get_table(table_schema: Schema) -> pyiceberg.table.Table:
+        if catalog.table_exists(identifier=(schema_name, table_name)):
+            return catalog.load_table(identifier=(schema_name, table_name))
 
         return catalog.create_table(
-            identifier=(schema, table_name),
-            schema=arrow_tbl.schema,
+            identifier=(schema_name, table_name),
+            schema=table_schema,
         )
+    def _get_schema() -> Schema:
+        if isinstance(data, polars.DataFrame):
+            return data.to_arrow().schema
 
-    arrow_tbl: Table = data.to_arrow()
-    target_table: pyiceberg.table.Table = _get_table()
+        return collect_lazy_schema(data)
+
+    target_table: pyiceberg.table.Table = _get_table(_get_schema())
     if "ADAPTA__ICEBERG_REST_CATALOG__S3_ENDPOINT_OVERRIDE" in os.environ:
         # FileIO's endpoint is taken directly from the catalog response
         # In case it differs from `s3.endpoint` set in catalog config, align them
@@ -162,5 +171,6 @@ def write_using_catalog(
     with target_table.transaction() as write_tx:
         if overwrite:
             write_tx.delete(delete_filter=ALWAYS_TRUE)
-        for data_chunk in data.iter_slices(n_rows=write_chunk_size):
-            write_tx.append(data_chunk)
+        iterator = data.iter_slices(n_rows=write_chunk_size) if isinstance(data, polars.DataFrame) else data.collect_batches(chunk_size=write_chunk_size)
+        for data_chunk in iterator:
+            write_tx.append(data_chunk.to_arrow())
