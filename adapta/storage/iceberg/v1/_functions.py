@@ -4,7 +4,10 @@ from typing import Literal
 
 import polars
 import pyarrow.dataset
+import pyiceberg
+from pyarrow.lib import Table
 from pyiceberg.catalog import Catalog, load_catalog
+from pyiceberg.expressions import BooleanExpression
 from pyiceberg.table import ALWAYS_TRUE
 
 from adapta.storage.iceberg.v1._models import IcebergRestCatalogConfig
@@ -121,3 +124,43 @@ def load_using_native_scan(
         ),
         convert_to_pandas=None,
     )
+
+
+def write_using_catalog(
+    schema: str,
+    table_name: str,
+    catalog: Catalog,
+    data: polars.DataFrame,
+    write_chunk_size: int = 50_000,
+    overwrite: bool = True,
+) -> None:
+    """
+    Writes data to an Iceberg table from the provided Metaframe. Will create a table if it doesn't exist.
+    Data is written in chunks to regulate memory usage.
+    """
+
+    def _get_table() -> pyiceberg.table.Table:
+        if catalog.table_exists(identifier=(schema, table_name)):
+            return catalog.load_table(identifier=(schema, table_name))
+
+        return catalog.create_table(
+            identifier=(schema, table_name),
+            schema=arrow_tbl.schema,
+        )
+
+    arrow_tbl: Table = data.to_arrow()
+    target_table: pyiceberg.table.Table = _get_table()
+    if "ADAPTA__ICEBERG_REST_CATALOG__S3_ENDPOINT_OVERRIDE" in os.environ:
+        # FileIO's endpoint is taken directly from the catalog response
+        # In case it differs from `s3.endpoint` set in catalog config, align them
+        # Note that when vended credentials are used, table.config will take preference over client setting
+        # thus endpoint is updated after catalog returns creds
+        # this is necessary if your S3 service has multiple endpoints and client doesn't have access to the one used by catalog
+        target_table.io.properties["s3.endpoint"] = os.environ["ADAPTA__ICEBERG_REST_CATALOG__S3_ENDPOINT_OVERRIDE"]
+        target_table.config["s3.endpoint"] = os.environ["ADAPTA__ICEBERG_REST_CATALOG__S3_ENDPOINT_OVERRIDE"]
+
+    with target_table.transaction() as write_tx:
+        if overwrite:
+            write_tx.delete(delete_filter=ALWAYS_TRUE)
+        for data_chunk in data.iter_slices(n_rows=write_chunk_size):
+            write_tx.append(data_chunk)
