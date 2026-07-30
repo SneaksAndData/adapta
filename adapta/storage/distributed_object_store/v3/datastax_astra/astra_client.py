@@ -31,7 +31,7 @@ from dataclasses import asdict
 from typing import TypeVar, Any
 from collections.abc import Callable
 
-from polars.polars import ComputeError
+from polars.exceptions import ComputeError
 
 try:
     from _socket import IPPROTO_TCP, TCP_NODELAY, TCP_USER_TIMEOUT

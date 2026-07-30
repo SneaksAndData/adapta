@@ -1,11 +1,11 @@
 """Iceberg reader (via REST Catalog)"""
 import os
-from typing import Literal, Any
+from typing import Literal
 
 import polars
 import pyarrow.dataset
 import pyiceberg
-from pyarrow.lib import Table, Schema
+from pyarrow.lib import Schema
 from pyiceberg.catalog import Catalog, load_catalog
 from pyiceberg.table import ALWAYS_TRUE
 
