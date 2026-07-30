@@ -1,6 +1,7 @@
 import random
 
 import polars
+import pytest
 import sqlalchemy
 from polars.testing import assert_frame_equal
 from pyiceberg.catalog import Catalog
@@ -96,16 +97,18 @@ def test_map_read(trino_test_connection: sqlalchemy.engine.Engine, iceberg_catal
     assert_frame_equal(data.to_polars().sort("cola"), expected_pl.sort("cola"), check_column_order=False)
 
 
-def test_create_table_from_df(iceberg_catalog: Catalog):
+@pytest.mark.parametrize("lazy", [False, True])
+def test_create_table_from_df(iceberg_catalog: Catalog, lazy: bool):
     table_name = f"test_create_table_{generate_random_string(8)}".lower()
     input_data = get_input_data()
     df = polars.DataFrame(input_data)
+    data_to_write = df.lazy() if lazy else df
 
     write_using_catalog(
         schema_name="test",
         table_name=table_name,
         catalog=iceberg_catalog,
-        data=df,
+        data=data_to_write,
         overwrite=True,
     )
 
@@ -117,7 +120,8 @@ def test_create_table_from_df(iceberg_catalog: Catalog):
     assert_frame_equal(read_data.to_polars().sort("cola"), df.sort("cola"), check_column_order=False)
 
 
-def test_overwrite_table_with_df(iceberg_catalog: Catalog):
+@pytest.mark.parametrize("lazy", [False, True])
+def test_overwrite_table_with_df(iceberg_catalog: Catalog, lazy: bool):
     table_name = f"test_overwrite_table_{generate_random_string(8)}".lower()
     input_data1 = {
         "cola": [1, 2, 3],
@@ -125,12 +129,13 @@ def test_overwrite_table_with_df(iceberg_catalog: Catalog):
         "colc": [[1], [2], [3]],
     }
     df1 = polars.DataFrame(input_data1)
+    data1_to_write = df1.lazy() if lazy else df1
 
     write_using_catalog(
         schema_name="test",
         table_name=table_name,
         catalog=iceberg_catalog,
-        data=df1,
+        data=data1_to_write,
         overwrite=True,
     )
 
@@ -140,12 +145,13 @@ def test_overwrite_table_with_df(iceberg_catalog: Catalog):
         "colc": [[4], [5]],
     }
     df2 = polars.DataFrame(input_data2)
+    data2_to_write = df2.lazy() if lazy else df2
 
     write_using_catalog(
         schema_name="test",
         table_name=table_name,
         catalog=iceberg_catalog,
-        data=df2,
+        data=data2_to_write,
         overwrite=True,
     )
 
@@ -157,7 +163,8 @@ def test_overwrite_table_with_df(iceberg_catalog: Catalog):
     assert_frame_equal(read_data.to_polars().sort("cola"), df2.sort("cola"), check_column_order=False)
 
 
-def test_append_to_table(iceberg_catalog: Catalog):
+@pytest.mark.parametrize("lazy", [False, True])
+def test_append_to_table(iceberg_catalog: Catalog, lazy: bool):
     table_name = f"test_append_table_{generate_random_string(8)}".lower()
     input_data1 = {
         "cola": [1, 2],
@@ -165,12 +172,13 @@ def test_append_to_table(iceberg_catalog: Catalog):
         "colc": [[1], [2]],
     }
     df1 = polars.DataFrame(input_data1)
+    data1_to_write = df1.lazy() if lazy else df1
 
     write_using_catalog(
         schema_name="test",
         table_name=table_name,
         catalog=iceberg_catalog,
-        data=df1,
+        data=data1_to_write,
         overwrite=True,
     )
 
@@ -180,12 +188,13 @@ def test_append_to_table(iceberg_catalog: Catalog):
         "colc": [[3], [4]],
     }
     df2 = polars.DataFrame(input_data2)
+    data2_to_write = df2.lazy() if lazy else df2
 
     write_using_catalog(
         schema_name="test",
         table_name=table_name,
         catalog=iceberg_catalog,
-        data=df2,
+        data=data2_to_write,
         overwrite=False,
     )
 
