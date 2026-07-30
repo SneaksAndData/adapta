@@ -6,7 +6,7 @@ from polars.testing import assert_frame_equal
 from pyiceberg.catalog import Catalog
 from sqlalchemy import text
 
-from adapta.storage.iceberg.v1 import load_using_catalog
+from adapta.storage.iceberg.v1 import load_using_catalog, write_using_catalog
 from tests.iceberg_clients._functions import prepare_iceberg_table, get_input_data, generate_random_string
 
 
@@ -94,3 +94,106 @@ def test_map_read(trino_test_connection: sqlalchemy.engine.Engine, iceberg_catal
     )
 
     assert_frame_equal(data.to_polars().sort("cola"), expected_pl.sort("cola"), check_column_order=False)
+
+
+def test_create_table_from_df(iceberg_catalog: Catalog):
+    table_name = f"test_create_table_{generate_random_string(8)}".lower()
+    input_data = get_input_data()
+    df = polars.DataFrame(input_data)
+
+    write_using_catalog(
+        schema_name="test",
+        table_name=table_name,
+        catalog=iceberg_catalog,
+        data=df,
+        overwrite=True,
+    )
+
+    read_data = load_using_catalog(
+        schema="test",
+        table_name=table_name,
+        catalog=iceberg_catalog,
+    )
+    assert_frame_equal(read_data.to_polars().sort("cola"), df.sort("cola"), check_column_order=False)
+
+
+def test_overwrite_table_with_df(iceberg_catalog: Catalog):
+    table_name = f"test_overwrite_table_{generate_random_string(8)}".lower()
+    input_data1 = {
+        "cola": [1, 2, 3],
+        "colb": ["a", "b", "c"],
+        "colc": [[1], [2], [3]],
+    }
+    df1 = polars.DataFrame(input_data1)
+
+    write_using_catalog(
+        schema_name="test",
+        table_name=table_name,
+        catalog=iceberg_catalog,
+        data=df1,
+        overwrite=True,
+    )
+
+    input_data2 = {
+        "cola": [4, 5],
+        "colb": ["x", "y"],
+        "colc": [[4], [5]],
+    }
+    df2 = polars.DataFrame(input_data2)
+
+    write_using_catalog(
+        schema_name="test",
+        table_name=table_name,
+        catalog=iceberg_catalog,
+        data=df2,
+        overwrite=True,
+    )
+
+    read_data = load_using_catalog(
+        schema="test",
+        table_name=table_name,
+        catalog=iceberg_catalog,
+    )
+    assert_frame_equal(read_data.to_polars().sort("cola"), df2.sort("cola"), check_column_order=False)
+
+
+def test_append_to_table(iceberg_catalog: Catalog):
+    table_name = f"test_append_table_{generate_random_string(8)}".lower()
+    input_data1 = {
+        "cola": [1, 2],
+        "colb": ["a", "b"],
+        "colc": [[1], [2]],
+    }
+    df1 = polars.DataFrame(input_data1)
+
+    write_using_catalog(
+        schema_name="test",
+        table_name=table_name,
+        catalog=iceberg_catalog,
+        data=df1,
+        overwrite=True,
+    )
+
+    input_data2 = {
+        "cola": [3, 4],
+        "colb": ["c", "d"],
+        "colc": [[3], [4]],
+    }
+    df2 = polars.DataFrame(input_data2)
+
+    write_using_catalog(
+        schema_name="test",
+        table_name=table_name,
+        catalog=iceberg_catalog,
+        data=df2,
+        overwrite=False,
+    )
+
+    expected_df = polars.concat([df1, df2])
+
+    read_data = load_using_catalog(
+        schema="test",
+        table_name=table_name,
+        catalog=iceberg_catalog,
+    )
+    assert_frame_equal(read_data.to_polars().sort("cola"), expected_df.sort("cola"), check_column_order=False)
