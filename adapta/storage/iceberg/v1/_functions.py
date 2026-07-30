@@ -124,12 +124,14 @@ def load_using_native_scan(
         convert_to_pandas=None,
     )
 
+
 def collect_lazy_schema(data: polars.LazyFrame) -> Schema:
     """
-     Read schema of a LazyFrame w/o materializing rows
+    Read schema of a LazyFrame w/o materializing rows
     """
     polars_schema = data.collect_schema()
     return polars.DataFrame(schema=polars_schema).to_arrow().schema
+
 
 def write_using_catalog(
     schema_name: str,
@@ -142,6 +144,9 @@ def write_using_catalog(
     """
     Writes data to an Iceberg table from the provided Metaframe. Will create a table if it doesn't exist.
     Data is written in chunks to regulate memory usage.
+    Note when using S3 compatible storage: if you are getting checksum validation errors, add these two env variables:
+        os.environ["AWS_REQUEST_CHECKSUM_CALCULATION"] = "WHEN_REQUIRED"
+        os.environ["AWS_RESPONSE_CHECKSUM_VALIDATION"] = "WHEN_REQUIRED"
     """
 
     def _get_table(table_schema: Schema) -> pyiceberg.table.Table:
@@ -152,6 +157,7 @@ def write_using_catalog(
             identifier=(schema_name, table_name),
             schema=table_schema,
         )
+
     def _get_schema() -> Schema:
         if isinstance(data, polars.DataFrame):
             return data.to_arrow().schema
@@ -171,6 +177,10 @@ def write_using_catalog(
     with target_table.transaction() as write_tx:
         if overwrite:
             write_tx.delete(delete_filter=ALWAYS_TRUE)
-        iterator = data.iter_slices(n_rows=write_chunk_size) if isinstance(data, polars.DataFrame) else data.collect_batches(chunk_size=write_chunk_size)
+        iterator = (
+            data.iter_slices(n_rows=write_chunk_size)
+            if isinstance(data, polars.DataFrame)
+            else data.collect_batches(chunk_size=write_chunk_size)
+        )
         for data_chunk in iterator:
             write_tx.append(data_chunk.to_arrow())
