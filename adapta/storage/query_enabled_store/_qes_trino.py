@@ -105,9 +105,9 @@ class TrinoQueryEnabledStore(QueryEnabledStore[TrinoCredential, TrinoSettings]):
 
         if self._lazy:
             with self._trino_client:
-                return concat(query_fn())
+                return concat(query_fn(), options.get(QueryEnabledStoreOptions.CONCAT_OPTIONS, None))
 
-        return concat(query_fn())
+        return concat(query_fn(), options.get(QueryEnabledStoreOptions.CONCAT_OPTIONS, None))
 
     def _apply_query(self, query: str) -> MetaFrame | Iterator[MetaFrame]:
         raise NotImplementedError("Text queries are not supported by Trino QES")
