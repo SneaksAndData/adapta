@@ -21,9 +21,10 @@ import re
 from abc import ABC, abstractmethod
 from enum import Enum
 from pydoc import locate
-from typing import TypeVar, Generic, final
+from typing import TypeVar, Generic, final, Self, Any
 from collections.abc import Iterator
 
+from adapta.process_communication import DataSocket
 from adapta.storage.models.base import DataPath
 from adapta.storage.models.expression_dsl.filter_expression import Expression
 from adapta.storage.models.enum import QueryEnabledStoreOptions
@@ -80,6 +81,12 @@ class QueryEnabledStore(Generic[TCredential, TSettings], ABC):
         """
         return QueryConfigurationBuilder(self, path)
 
+    def open_for_write(self, path: DataPath, data: MetaFrame | Iterator[MetaFrame]) -> "PathWriterBuilder":
+        """
+        Construct a writer object for QES to proxy to the underlying store implementation.
+        """
+        return PathWriterBuilder(self, path, data)
+
     @abstractmethod
     def close(self) -> None:
         """
@@ -103,6 +110,12 @@ class QueryEnabledStore(Generic[TCredential, TSettings], ABC):
     def _apply_query(self, query: str) -> MetaFrame | Iterator[MetaFrame]:
         """
         Applies a plaintext query to this Store and returns the result in a MetaFrame
+        """
+
+    @abstractmethod
+    def _write(self, path: DataPath, data: MetaFrame | Iterator[MetaFrame], block_size: int, overwrite: bool) -> None:
+        """
+        Writes `data` to the provided path, using the underlying store implementation.
         """
 
     @classmethod
@@ -149,10 +162,10 @@ class QueryConfigurationBuilder:
         self._path = path
         self._filter_expression: Expression | None = None
         self._columns: list[str] = []
-        self._options: dict[QueryEnabledStoreOptions, any] = {}
+        self._options: dict[QueryEnabledStoreOptions, Any] = {}
         self._limit = None
 
-    def filter(self, filter_expression: Expression) -> "QueryConfigurationBuilder":
+    def filter(self, filter_expression: Expression) -> Self:
         """
         Use the provided expression when querying the underlying storage.
         """
@@ -161,14 +174,14 @@ class QueryConfigurationBuilder:
         )
         return self
 
-    def select(self, *columns: str) -> "QueryConfigurationBuilder":
+    def select(self, *columns: str) -> Self:
         """
         Request the underlying store to project the result onto the provided column set.
         """
         self._columns = list(columns)
         return self
 
-    def add_options(self, option_key: QueryEnabledStoreOptions, option_value: any) -> "QueryConfigurationBuilder":
+    def add_options(self, option_key: QueryEnabledStoreOptions, option_value: Any) -> Self:
         """
         Use the provided options when querying the underlying storage.
         """
@@ -176,7 +189,7 @@ class QueryConfigurationBuilder:
         self._options[option_key] = option_value
         return self
 
-    def limit(self, limit: int | None) -> "QueryConfigurationBuilder":
+    def limit(self, limit: int | None) -> Self:
         """
         Limit the number of results returned by the underlying store.
         """
@@ -194,3 +207,34 @@ class QueryConfigurationBuilder:
             options=self._options,
             limit=self._limit,
         )
+
+
+@final
+class PathWriterBuilder:
+    """
+    Builder-pattern support for writing via QES.
+    """
+
+    def __init__(self, store: QueryEnabledStore, path: DataPath, data: MetaFrame | Iterator[MetaFrame]):
+        self._store = store
+        self._path = path
+        self._data = data
+        self._overwrite = False
+        self._block_size = 50_000
+
+    def overwrite(self, overwrite: bool) -> Self:
+        """
+        Enable overwriting of the data in the target path.
+        """
+        self._overwrite = overwrite
+        return self
+
+    def block_size(self, block_size: int) -> Self:
+        """
+        Adjust block size for stores that support streaming writes. This setting is ignored if not supported.
+        """
+        self._block_size = block_size
+        return self
+
+    def write(self) -> None:
+        self._store._write(path=self._path, data=self._data, block_size=self._block_size, overwrite=self._overwrite)

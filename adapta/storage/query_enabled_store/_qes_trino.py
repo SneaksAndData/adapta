@@ -141,3 +141,6 @@ class TrinoQueryEnabledStore(QueryEnabledStore[TrinoCredential, TrinoSettings]):
                 query = f"{query} LIMIT {limit}"
 
         return query
+
+    def _write(self, path: TrinoPath, data: MetaFrame | Iterator[MetaFrame], block_size: int, overwrite: bool) -> None:
+        raise NotImplementedError("Writing not supported by this QES engine.")

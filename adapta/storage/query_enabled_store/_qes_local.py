@@ -1,20 +1,22 @@
 """Local Query Enabled Store (QES) for reading local files."""
+import os.path
 import re
+from collections.abc import Iterator
 from dataclasses import dataclass
 from typing import final
-from collections.abc import Iterator
 
 from dataclasses_json import DataClassJsonMixin
 from pyarrow.parquet import read_table
 
-from adapta.storage.models import DataPath
-from adapta.storage.models.expression_dsl.filter_expression import Expression, compile_expression
+from adapta.storage.models import LocalPath
+from adapta.storage.models.enum import QueryEnabledStoreOptions
 from adapta.storage.models.expression_dsl.arrow_filter_expression import ArrowFilterExpression
+from adapta.storage.models.expression_dsl.filter_expression import Expression, compile_expression
+from adapta.storage.models.formatters import MetaFrameParquetSerializationFormat
 from adapta.storage.query_enabled_store._models import (
     QueryEnabledStore,
     CONNECTION_STRING_REGEX,
 )
-from adapta.storage.models.enum import QueryEnabledStoreOptions
 from adapta.utils.metaframe import MetaFrame
 
 
@@ -54,7 +56,7 @@ class LocalQueryEnabledStore(QueryEnabledStore[LocalCredential, LocalSettings]):
 
     def _apply_filter(
         self,
-        path: DataPath,
+        path: LocalPath,
         filter_expression: Expression,
         columns: list[str],
         options: dict[QueryEnabledStoreOptions, any] | None = None,
@@ -80,3 +82,13 @@ class LocalQueryEnabledStore(QueryEnabledStore[LocalCredential, LocalSettings]):
         Local QES does not natively support SQL-like queries.
         """
         raise NotImplementedError("Text queries are currently not supported by Local QES")
+
+    def _write(self, path: LocalPath, data: MetaFrame | Iterator[MetaFrame], block_size: int, overwrite: bool) -> None:
+        if isinstance(data, Iterator):
+            for ix, metaframe in enumerate(data):
+                with open(os.path.join(path.path, f"_{ix}"), "wb") as f:
+                    f.write(MetaFrameParquetSerializationFormat().serialize(metaframe))
+            return
+
+        with open(path.path, "wb") as f:
+            f.write(MetaFrameParquetSerializationFormat().serialize(data))
