@@ -66,6 +66,9 @@ class AstraQueryEnabledStore(QueryEnabledStore[AstraCredential, AstraSettings]):
     QES Client for Astra DB (Cassandra).
     """
 
+    def _write(self, path: DataPath, data: MetaFrame | Iterator[MetaFrame], block_size: int, overwrite: bool) -> None:
+        raise NotImplementedError("Writing not supported by this QES engine.")
+
     def close(self) -> None:
         if not self._lazy:
             self._astra_client.disconnect()
