@@ -20,8 +20,9 @@
 import re
 from abc import ABC, abstractmethod
 from enum import Enum
+from functools import partial
 from pydoc import locate
-from typing import TypeVar, Generic, final, Self, Any
+from typing import TypeVar, Generic, final, Self, Any, Callable
 from collections.abc import Iterator
 
 from adapta.process_communication import DataSocket
@@ -34,6 +35,14 @@ TCredential = TypeVar("TCredential")  # pylint: disable=C0103
 TSettings = TypeVar("TSettings")  # pylint: disable=C0103
 
 CONNECTION_STRING_REGEX = r"^qes:\/\/engine=(.*?);plaintext_credentials=(.*?);settings=(.*?)$"
+
+@final
+class QueryEnabledStoreMode(Enum):
+    """
+     Defines data access mode for QES.
+    """
+    READ = "read"
+    WRITE = "write",
 
 
 @final
@@ -75,17 +84,16 @@ class QueryEnabledStore(Generic[TCredential, TSettings], ABC):
         """
         return self._settings
 
-    def open(self, path: DataPath) -> "QueryConfigurationBuilder":
+    def open(self, path: DataPath, access_mode: QueryEnabledStoreMode) -> "QueryEnabledStoreOperationBuilder":
         """
         Construct a reader object for QES to proxy to the underlying store implementation.
         """
-        return QueryConfigurationBuilder(self, path)
+        if access_mode == QueryEnabledStoreMode.READ:
+            return _QueryEnabledStoreReadBuilder.create(self, path)
+        if access_mode == QueryEnabledStoreMode.WRITE:
+            return _QueryEnabledStoreWriteBuilder.create(self, path)
 
-    def open_for_write(self, path: DataPath, data: MetaFrame | Iterator[MetaFrame]) -> "PathWriterBuilder":
-        """
-        Construct a writer object for QES to proxy to the underlying store implementation.
-        """
-        return PathWriterBuilder(self, path, data)
+        raise NotImplementedError(f"Unsupported access mode {access_mode.value}")
 
     @abstractmethod
     def close(self) -> None:
@@ -150,6 +158,93 @@ class QueryEnabledStore(Generic[TCredential, TSettings], ABC):
             )
         return class_object._from_connection_string(connection_string, lazy_init)
 
+
+class QueryEnabledStoreOperationBuilder(ABC):
+    def __init__(self, store: QueryEnabledStore, path: DataPath):
+        self._store = store
+        self._path = path
+
+    @abstractmethod
+    def _operation_parameters(self) -> dict[str, Any]:
+        """
+
+        """
+
+    @abstractmethod
+    def _operation_callable(self) -> Callable:
+        """
+
+        """
+
+    def execute(self):
+        return partial(self._operation_callable,
+                       **self._operation_parameters()
+                       )
+    @classmethod
+    def create(cls, store: QueryEnabledStore, path: DataPath) -> Self:
+        return cls(store, path)
+
+@final
+class _QueryEnabledStoreReadBuilder(QueryEnabledStoreOperationBuilder):
+    def __init__(self, store: QueryEnabledStore, path: DataPath):
+        super().__init__(store, path)
+
+        self._filter_expression: Expression | None = None
+        self._columns: list[str] = []
+        self._options: dict[QueryEnabledStoreOptions, Any] = {}
+        self._limit = None
+
+    def filter(self, filter_expression: Expression) -> Self:
+        """
+        Use the provided expression when querying the underlying storage.
+        """
+        self._filter_expression = (
+            filter_expression if self._filter_expression is None else self._filter_expression and filter_expression
+        )
+        return self
+
+    def _operation_parameters(self) -> dict[str, Any]:
+        return {
+            "path": self._path,
+            "filter_expression": self._filter_expression,
+        "columns": self._columns,
+        "options": self._options,
+        "limit": self._limit,
+        }
+
+    def _operation_callable(self, **kwargs) -> Callable:
+        return self._store._apply_filter
+
+@final
+class _QueryEnabledStoreWriteBuilder(QueryEnabledStoreOperationBuilder):
+    def __init__(self, store: QueryEnabledStore, path: DataPath):
+        super().__init__(store, path)
+
+        self._data: MetaFrame | Iterator[MetaFrame] | None = None
+        self._overwrite = False
+        self._block_size = 50_000
+
+    def data(self, value: MetaFrame | Iterator[MetaFrame]) -> Self:
+        self._data = value
+        return self
+
+    def overwrite(self, overwrite: bool) -> Self:
+        """
+        Enable overwriting of the data in the target path.
+        """
+        self._overwrite = overwrite
+        return self
+
+    def _operation_callable(self) -> Callable:
+        return self._store._write
+
+    def _operation_parameters(self) -> dict[str, Any]:
+        return {
+            "path": self._path,
+            "data": self._data,
+            "block_size": self._block_size,
+            "overwrite": self._overwrite
+        }
 
 @final
 class QueryConfigurationBuilder:
