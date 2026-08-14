@@ -11,7 +11,6 @@ from polars import DataFrame, LazyFrame
 from pyiceberg.catalog import Catalog
 
 from adapta.storage.iceberg.v1 import load_using_catalog, IcebergRestCatalogConfig, get_catalog, write_using_catalog
-from adapta.storage.models import DataPath
 from adapta.storage.models.enum import QueryEnabledStoreOptions
 from adapta.storage.models.expression_dsl.filter_expression import Expression
 from adapta.storage.models.iceberg import IcebergPath

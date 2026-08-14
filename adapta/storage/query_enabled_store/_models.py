@@ -223,6 +223,9 @@ class QueryEnabledStoreOperationBuilder(ABC):
 
     @classmethod
     def create(cls, store: QueryEnabledStore, path: DataPath) -> Self:
+        """
+        Create an instance of `QueryEnabledStoreOperationBuilder`.
+        """
         return cls(store, path)
 
 
@@ -239,10 +242,7 @@ class _QueryEnabledStoreReadBuilder(QueryEnabledStoreOperationBuilder):
             ]
         }
 
-    def __init__(self, store: QueryEnabledStore, path: DataPath):
-        super().__init__(store, path)
-
-    def _operation_callable(self, **kwargs) -> Callable:
+    def _operation_callable(self) -> Callable:
         return self._store._apply_filter
 
 
@@ -257,9 +257,6 @@ class _QueryEnabledStoreWriteBuilder(QueryEnabledStoreOperationBuilder):
                 QueryEnabledStoreBlockSizeParameter(50_000),
             ]
         }
-
-    def __init__(self, store: QueryEnabledStore, path: DataPath):
-        super().__init__(store, path)
 
     def _operation_callable(self) -> Callable:
         return self._store._write

@@ -26,28 +26,40 @@ from adapta.utils.metaframe import MetaFrame
 
 @final
 class QueryEnabledStoreDataParameter(QueryEnabledStoreWriteParameter):
+    """
+    Data to write.
+    """
+
     @property
     def name(self) -> str:
         return "data"
 
     @property
     def value(self) -> MetaFrame | Iterator[MetaFrame] | None:
-        return super()._value
+        return super().value
 
 
 @final
 class QueryEnabledStoreOverwriteParameter(QueryEnabledStoreWriteParameter):
+    """
+    Overwrite target or not.
+    """
+
     @property
     def name(self) -> str:
         return "overwrite"
 
     @property
     def value(self) -> bool:
-        return super()._value
+        return super().value
 
 
 @final
 class QueryEnabledStoreBlockSizeParameter(QueryEnabledStoreWriteParameter):
+    """
+    Block size for streaming writer.
+    """
+
     @property
     def name(self) -> str:
         return "block_size"

@@ -33,11 +33,14 @@ class QueryEnabledStoreOperationParameter(ABC):
     @property
     def name(self) -> str:
         """
-        Name of this parameter
+        Name of this parameter.
         """
 
     @property
     def value(self) -> Any:
+        """
+        Value of this parameter.
+        """
         return self._value
 
 
@@ -46,14 +49,8 @@ class QueryEnabledStoreReadParameter(QueryEnabledStoreOperationParameter, ABC):
     Base parameter class for query enabled store read operation parameters.
     """
 
-    def __init__(self, value: Any):
-        super().__init__(value)
-
 
 class QueryEnabledStoreWriteParameter(QueryEnabledStoreOperationParameter, ABC):
     """
     Base parameter class for query enabled store write operation parameters.
     """
-
-    def __init__(self, value: Any):
-        super().__init__(value)
