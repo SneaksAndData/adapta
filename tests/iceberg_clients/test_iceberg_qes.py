@@ -5,7 +5,14 @@ from polars.testing import assert_frame_equal
 
 from adapta.storage.models import parse_data_path
 from adapta.storage.models.expression_dsl.filter_expression import FilterField, Expression
-from adapta.storage.query_enabled_store import IcebergQueryEnabledStore, IcebergSettings, IcebergCredential
+from adapta.storage.query_enabled_store import (
+    IcebergQueryEnabledStore,
+    IcebergSettings,
+    IcebergCredential,
+    QueryEnabledStoreMode,
+    QueryEnabledStoreSelectParameter,
+    QueryEnabledStoreFilterParameter,
+)
 from tests.iceberg_clients._functions import get_input_data, prepare_iceberg_table
 
 _qes_input_data = get_input_data() | {"cold": [-1, 1, 2, -3, 0, 5, 6, 10, -5, 2]}
@@ -66,5 +73,12 @@ def test_iceberg_qes(
         credentials=IcebergCredential(oauth_enabled=False),
     )._init_catalog()
 
-    data = store.open(parse_data_path(f"iceberg://test@{table_name}")).select(*column_selector).filter(expr).read()
+    data = (
+        store.open(parse_data_path(f"iceberg://test@{table_name}"), access_mode=QueryEnabledStoreMode.READ)
+        .set_parameters(
+            QueryEnabledStoreSelectParameter(column_selector),
+            QueryEnabledStoreFilterParameter(expr),
+        )
+        .execute()
+    )
     assert_frame_equal(data.to_polars().sort("cola"), expected.sort("cola"), check_column_order=False)
