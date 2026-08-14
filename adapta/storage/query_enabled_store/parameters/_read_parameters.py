@@ -7,7 +7,6 @@ from adapta.storage.query_enabled_store.parameters._base import QueryEnabledStor
 
 @final
 class QueryEnabledStoreFilterParameter(QueryEnabledStoreReadParameter):
-
     @property
     def name(self) -> str:
         return "filter_expression"
@@ -15,6 +14,7 @@ class QueryEnabledStoreFilterParameter(QueryEnabledStoreReadParameter):
     @property
     def value(self) -> FilterExpression | None:
         return super()._value
+
 
 @final
 class QueryEnabledStoreSelectParameter(QueryEnabledStoreReadParameter):
@@ -26,6 +26,7 @@ class QueryEnabledStoreSelectParameter(QueryEnabledStoreReadParameter):
     def value(self) -> list[str]:
         return super()._value
 
+
 @final
 class QueryEnabledStoreReadOptionsParameter(QueryEnabledStoreReadParameter):
     @property
@@ -35,6 +36,7 @@ class QueryEnabledStoreReadOptionsParameter(QueryEnabledStoreReadParameter):
     @property
     def value(self) -> dict[QueryEnabledStoreOptions, Any]:
         return super()._value
+
 
 @final
 class QueryEnabledStoreLimitParameter(QueryEnabledStoreReadParameter):

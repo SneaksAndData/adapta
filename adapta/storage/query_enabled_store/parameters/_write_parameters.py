@@ -34,6 +34,7 @@ class QueryEnabledStoreDataParameter(QueryEnabledStoreWriteParameter):
     def value(self) -> MetaFrame | Iterator[MetaFrame] | None:
         return super()._value
 
+
 @final
 class QueryEnabledStoreOverwriteParameter(QueryEnabledStoreWriteParameter):
     @property
@@ -43,6 +44,7 @@ class QueryEnabledStoreOverwriteParameter(QueryEnabledStoreWriteParameter):
     @property
     def value(self) -> bool:
         return super()._value
+
 
 @final
 class QueryEnabledStoreBlockSizeParameter(QueryEnabledStoreWriteParameter):

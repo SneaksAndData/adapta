@@ -29,10 +29,17 @@ from adapta.storage.models.base import DataPath
 from adapta.storage.models.enum import QueryEnabledStoreOptions
 from adapta.storage.models.expression_dsl.filter_expression import Expression
 from adapta.storage.query_enabled_store.parameters import QueryEnabledStoreOperationParameter
-from adapta.storage.query_enabled_store.parameters import QueryEnabledStoreFilterParameter, \
-    QueryEnabledStoreSelectParameter, QueryEnabledStoreReadOptionsParameter, QueryEnabledStoreLimitParameter
-from adapta.storage.query_enabled_store.parameters import QueryEnabledStoreDataParameter, \
-    QueryEnabledStoreOverwriteParameter, QueryEnabledStoreBlockSizeParameter
+from adapta.storage.query_enabled_store.parameters import (
+    QueryEnabledStoreFilterParameter,
+    QueryEnabledStoreSelectParameter,
+    QueryEnabledStoreReadOptionsParameter,
+    QueryEnabledStoreLimitParameter,
+)
+from adapta.storage.query_enabled_store.parameters import (
+    QueryEnabledStoreDataParameter,
+    QueryEnabledStoreOverwriteParameter,
+    QueryEnabledStoreBlockSizeParameter,
+)
 from adapta.utils.metaframe import MetaFrame
 
 TCredential = TypeVar("TCredential")  # pylint: disable=C0103
@@ -40,13 +47,15 @@ TSettings = TypeVar("TSettings")  # pylint: disable=C0103
 
 CONNECTION_STRING_REGEX = r"^qes:\/\/engine=(.*?);plaintext_credentials=(.*?);settings=(.*?)$"
 
+
 @final
 class QueryEnabledStoreMode(Enum):
     """
-     Defines data access mode for QES.
+    Defines data access mode for QES.
     """
+
     READ = "read"
-    WRITE = "write",
+    WRITE = ("write",)
 
 
 @final
@@ -162,10 +171,12 @@ class QueryEnabledStore(Generic[TCredential, TSettings], ABC):
             )
         return class_object._from_connection_string(connection_string, lazy_init)
 
+
 class QueryEnabledStoreOperationBuilder(ABC):
     """
-     Base class for QES operation builders.
+    Base class for QES operation builders.
     """
+
     def __init__(self, store: QueryEnabledStore, path: DataPath):
         self._store = store
         self._path = path
@@ -174,18 +185,18 @@ class QueryEnabledStoreOperationBuilder(ABC):
     @abstractmethod
     def _set_accepted_parameters(self) -> dict[str, QueryEnabledStoreOperationParameter]:
         """
-         Define parameters supported by this builder.
+        Define parameters supported by this builder.
         """
 
     @abstractmethod
     def _operation_callable(self) -> Callable:
         """
-         Operation to map into `execute` with `_operation_parameters`.
+        Operation to map into `execute` with `_operation_parameters`.
         """
 
     def set_parameter(self, parameter: QueryEnabledStoreOperationParameter) -> Self:
         """
-         Set or update the provided parameter.
+        Set or update the provided parameter.
         """
         if parameter.name in self._operation_parameters:
             self._operation_parameters[parameter.name] = parameter
@@ -196,35 +207,39 @@ class QueryEnabledStoreOperationBuilder(ABC):
 
     def set_parameters(self, *parameters: QueryEnabledStoreOperationParameter) -> Self:
         """
-         Set or update the provided parameters.
+        Set or update the provided parameters.
         """
         for parameter in parameters:
             self.set_parameter(parameter)
 
         return self
 
-
     def execute(self):
         """
-         Build and execute the operation.
+        Build and execute the operation.
         """
-        return partial(self._operation_callable,
-                       **{parameter.name: parameter.value for _, parameter in self._operation_parameters.items()}
-                       )
+        return partial(
+            self._operation_callable,
+            **{parameter.name: parameter.value for _, parameter in self._operation_parameters.items()},
+        )
+
     @classmethod
     def create(cls, store: QueryEnabledStore, path: DataPath) -> Self:
         return cls(store, path)
 
+
 @final
 class _QueryEnabledStoreReadBuilder(QueryEnabledStoreOperationBuilder):
-
     def _set_accepted_parameters(self) -> dict[str, QueryEnabledStoreOperationParameter]:
-        return {parameter.name: parameter for parameter in [
-            QueryEnabledStoreFilterParameter(None),
-            QueryEnabledStoreSelectParameter([]),
-            QueryEnabledStoreReadOptionsParameter({}),
-            QueryEnabledStoreLimitParameter(None),
-        ]}
+        return {
+            parameter.name: parameter
+            for parameter in [
+                QueryEnabledStoreFilterParameter(None),
+                QueryEnabledStoreSelectParameter([]),
+                QueryEnabledStoreReadOptionsParameter({}),
+                QueryEnabledStoreLimitParameter(None),
+            ]
+        }
 
     def __init__(self, store: QueryEnabledStore, path: DataPath):
         super().__init__(store, path)
@@ -232,14 +247,18 @@ class _QueryEnabledStoreReadBuilder(QueryEnabledStoreOperationBuilder):
     def _operation_callable(self, **kwargs) -> Callable:
         return self._store._apply_filter
 
+
 @final
 class _QueryEnabledStoreWriteBuilder(QueryEnabledStoreOperationBuilder):
     def _set_accepted_parameters(self) -> dict[str, QueryEnabledStoreOperationParameter]:
-        return {parameter.name: parameter for parameter in [
-            QueryEnabledStoreDataParameter(None),
-            QueryEnabledStoreOverwriteParameter(True),
-            QueryEnabledStoreBlockSizeParameter(50_000),
-        ]}
+        return {
+            parameter.name: parameter
+            for parameter in [
+                QueryEnabledStoreDataParameter(None),
+                QueryEnabledStoreOverwriteParameter(True),
+                QueryEnabledStoreBlockSizeParameter(50_000),
+            ]
+        }
 
     def __init__(self, store: QueryEnabledStore, path: DataPath):
         super().__init__(store, path)
