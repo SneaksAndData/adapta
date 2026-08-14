@@ -217,9 +217,12 @@ class QueryEnabledStoreOperationBuilder(ABC):
         Build and execute the operation.
         """
         return partial(
-            self._operation_callable,
-            **{parameter.name: parameter.value for _, parameter in self._operation_parameters.items()},
-        )
+            self._operation_callable(),
+            **(
+                {parameter.name: parameter.value for _, parameter in self._operation_parameters.items()}
+                | {"path": self._path}
+            ),
+        )()
 
     @classmethod
     def create(cls, store: QueryEnabledStore, path: DataPath) -> Self:
