@@ -30,7 +30,7 @@ def suggest_store(socket: DataSocket) -> type[QueryEnabledStore] | None:
         return LocalQueryEnabledStore
     if isinstance(path_impl, AstraPath):
         return AstraQueryEnabledStore
-    if isinstance(path_impl, S3Path) or isinstance(path_impl, WasbPath) or isinstance(path_impl, AdlsGen2Path):
+    if isinstance(path_impl, (S3Path, WasbPath, AdlsGen2Path)):
         return DeltaQueryEnabledStore
     if isinstance(path_impl, TrinoPath):
         return TrinoQueryEnabledStore
