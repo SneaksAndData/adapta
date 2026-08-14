@@ -53,7 +53,7 @@ class QueryEnabledStoreMode(Enum):
     """
 
     READ = "read"
-    WRITE = ("write",)
+    WRITE = "write"
 
 
 @final
