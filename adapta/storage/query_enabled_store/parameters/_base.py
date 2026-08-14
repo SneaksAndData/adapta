@@ -33,7 +33,8 @@ class QueryEnabledStoreOperationParameter(ABC):
     @abstractmethod
     def name(self) -> str:
         """
-        Name of this parameter.
+        Name of this parameter. 
+        This is the parameter name passed to the operation callable.
         """
 
     @property
