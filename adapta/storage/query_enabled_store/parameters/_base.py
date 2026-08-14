@@ -29,14 +29,15 @@ class QueryEnabledStoreOperationParameter(ABC):
     def __init__(self, value: Any):
         self._value = value
 
-    @abstractmethod
     @property
+    @abstractmethod
     def name(self) -> str:
         """
         Name of this parameter.
         """
 
     @property
+    @abstractmethod
     def value(self) -> Any:
         """
         Value of this parameter.
