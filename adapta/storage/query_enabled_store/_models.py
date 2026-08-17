@@ -183,7 +183,7 @@ class QueryEnabledStoreOperationBuilder(ABC):
     @abstractmethod
     def _set_accepted_parameters(self) -> dict[str, QueryEnabledStoreOperationParameter]:
         """
-        Define parameters supported by this builder.
+        Define parameters supported by this builder. This method also sets default values in concrete implementations.
         """
 
     @abstractmethod
