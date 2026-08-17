@@ -25,18 +25,15 @@ from adapta.utils.metaframe import MetaFrame
 
 
 @final
-class QueryEnabledStoreDataParameter(QueryEnabledStoreWriteParameter[MetaFrame]):
+class QueryEnabledStoreDataParameter(QueryEnabledStoreWriteParameter[MetaFrame | Iterator[MetaFrame] | None]):
     """
     Data to write.
     """
 
     @property
     def name(self) -> str:
+        """See base class."""
         return "data"
-
-    @property
-    def value(self) -> MetaFrame | Iterator[MetaFrame] | None:
-        return super().value
 
 
 @final
@@ -47,11 +44,8 @@ class QueryEnabledStoreOverwriteParameter(QueryEnabledStoreWriteParameter[bool])
 
     @property
     def name(self) -> str:
+        """See base class."""
         return "overwrite"
-
-    @property
-    def value(self) -> bool:
-        return super().value
 
 
 @final
@@ -62,8 +56,5 @@ class QueryEnabledStoreBlockSizeParameter(QueryEnabledStoreWriteParameter[int]):
 
     @property
     def name(self) -> str:
+        """See base class."""
         return "block_size"
-
-    @property
-    def value(self) -> int:
-        return 50_0000

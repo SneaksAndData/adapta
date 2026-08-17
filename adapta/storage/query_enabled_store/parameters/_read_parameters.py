@@ -13,11 +13,8 @@ class QueryEnabledStoreFilterParameter(QueryEnabledStoreReadParameter[FilterExpr
 
     @property
     def name(self) -> str:
+        """See base class."""
         return "filter_expression"
-
-    @property
-    def value(self) -> FilterExpression | None:
-        return super().value
 
 
 @final
@@ -28,11 +25,8 @@ class QueryEnabledStoreSelectParameter(QueryEnabledStoreReadParameter[list[str]]
 
     @property
     def name(self) -> str:
+        """See base class."""
         return "columns"
-
-    @property
-    def value(self) -> list[str]:
-        return super().value
 
 
 @final
@@ -43,11 +37,8 @@ class QueryEnabledStoreReadOptionsParameter(QueryEnabledStoreReadParameter[dict[
 
     @property
     def name(self) -> str:
+        """See base class."""
         return "options"
-
-    @property
-    def value(self) -> dict[QueryEnabledStoreOptions, Any]:
-        return super().value
 
 
 @final
@@ -58,8 +49,5 @@ class QueryEnabledStoreLimitParameter(QueryEnabledStoreReadParameter[int | None]
 
     @property
     def name(self) -> str:
+        """See base class."""
         return "limit"
-
-    @property
-    def value(self) -> int | None:
-        return super().value
