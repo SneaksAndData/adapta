@@ -19,20 +19,41 @@
 
 import re
 from abc import ABC, abstractmethod
-from enum import Enum
-from pydoc import locate
-from typing import TypeVar, Generic, final
 from collections.abc import Iterator
+from enum import Enum
+from functools import partial
+from pydoc import locate
+from typing import TypeVar, Generic, final, Self, Callable
 
 from adapta.storage.models.base import DataPath
-from adapta.storage.models.expression_dsl.filter_expression import Expression
 from adapta.storage.models.enum import QueryEnabledStoreOptions
+from adapta.storage.models.expression_dsl.filter_expression import Expression
+from adapta.storage.query_enabled_store.parameters import (
+    QueryEnabledStoreDataParameter,
+    QueryEnabledStoreOverwriteParameter,
+    QueryEnabledStoreBlockSizeParameter,
+    QueryEnabledStoreOperationParameter,
+    QueryEnabledStoreFilterParameter,
+    QueryEnabledStoreSelectParameter,
+    QueryEnabledStoreReadOptionsParameter,
+    QueryEnabledStoreLimitParameter,
+)
 from adapta.utils.metaframe import MetaFrame
 
 TCredential = TypeVar("TCredential")  # pylint: disable=C0103
 TSettings = TypeVar("TSettings")  # pylint: disable=C0103
 
 CONNECTION_STRING_REGEX = r"^qes:\/\/engine=(.*?);plaintext_credentials=(.*?);settings=(.*?)$"
+
+
+@final
+class QueryEnabledStoreMode(Enum):
+    """
+    Defines data access mode for QES.
+    """
+
+    READ = "read"
+    WRITE = "write"
 
 
 @final
@@ -74,11 +95,16 @@ class QueryEnabledStore(Generic[TCredential, TSettings], ABC):
         """
         return self._settings
 
-    def open(self, path: DataPath) -> "QueryConfigurationBuilder":
+    def open(self, path: DataPath, access_mode: QueryEnabledStoreMode) -> "QueryEnabledStoreOperationBuilder":
         """
-        Construct a reader object for QES to proxy to the underlying store implementation.
+        Construct an operation builder for QES to proxy to the underlying store implementation.
         """
-        return QueryConfigurationBuilder(self, path)
+        if access_mode == QueryEnabledStoreMode.READ:
+            return _QueryEnabledStoreReadBuilder.create(self, path)
+        if access_mode == QueryEnabledStoreMode.WRITE:
+            return _QueryEnabledStoreWriteBuilder.create(self, path)
+
+        raise NotImplementedError(f"Unsupported access mode {access_mode.value}")
 
     @abstractmethod
     def close(self) -> None:
@@ -103,6 +129,12 @@ class QueryEnabledStore(Generic[TCredential, TSettings], ABC):
     def _apply_query(self, query: str) -> MetaFrame | Iterator[MetaFrame]:
         """
         Applies a plaintext query to this Store and returns the result in a MetaFrame
+        """
+
+    @abstractmethod
+    def _write(self, path: DataPath, data: MetaFrame | Iterator[MetaFrame], block_size: int, overwrite: bool) -> None:
+        """
+        Writes `data` to the provided path, using the underlying store implementation.
         """
 
     @classmethod
@@ -138,59 +170,96 @@ class QueryEnabledStore(Generic[TCredential, TSettings], ABC):
         return class_object._from_connection_string(connection_string, lazy_init)
 
 
-@final
-class QueryConfigurationBuilder:
+class QueryEnabledStoreOperationBuilder(ABC):
     """
-    Builder-pattern support for querying via QES.
+    Base class for QES operation builders.
     """
 
     def __init__(self, store: QueryEnabledStore, path: DataPath):
         self._store = store
         self._path = path
-        self._filter_expression: Expression | None = None
-        self._columns: list[str] = []
-        self._options: dict[QueryEnabledStoreOptions, any] = {}
-        self._limit = None
+        self._operation_parameters: dict[str, QueryEnabledStoreOperationParameter] = self._set_accepted_parameters()
 
-    def filter(self, filter_expression: Expression) -> "QueryConfigurationBuilder":
+    @abstractmethod
+    def _set_accepted_parameters(self) -> dict[str, QueryEnabledStoreOperationParameter]:
         """
-        Use the provided expression when querying the underlying storage.
+        Define parameters supported by this builder. This method also sets default values in concrete implementations.
         """
-        self._filter_expression = (
-            filter_expression if self._filter_expression is None else self._filter_expression and filter_expression
-        )
+
+    @abstractmethod
+    def _operation_callable(self) -> Callable:
+        """
+        Operation to map into `execute` with `_operation_parameters`.
+        """
+
+    def set_parameter(self, parameter: QueryEnabledStoreOperationParameter) -> Self:
+        """
+        Set or update the provided parameter.
+        """
+        if parameter.name in self._operation_parameters:
+            self._operation_parameters[parameter.name] = parameter
+        else:
+            raise ValueError(f"Parameter {parameter.name} is not supported by this builder.")
+
         return self
 
-    def select(self, *columns: str) -> "QueryConfigurationBuilder":
+    def set_parameters(self, *parameters: QueryEnabledStoreOperationParameter) -> Self:
         """
-        Request the underlying store to project the result onto the provided column set.
+        Set or update the provided parameters.
         """
-        self._columns = list(columns)
+        for parameter in parameters:
+            self.set_parameter(parameter)
+
         return self
 
-    def add_options(self, option_key: QueryEnabledStoreOptions, option_value: any) -> "QueryConfigurationBuilder":
+    def execute(self):
         """
-        Use the provided options when querying the underlying storage.
+        Build and execute the operation.
         """
+        return partial(
+            self._operation_callable(),
+            **(
+                {parameter.name: parameter.value for _, parameter in self._operation_parameters.items()}
+                | {"path": self._path}
+            ),
+        )()
 
-        self._options[option_key] = option_value
-        return self
+    @classmethod
+    def create(cls, store: QueryEnabledStore, path: DataPath) -> Self:
+        """
+        Create an instance of `QueryEnabledStoreOperationBuilder`.
+        """
+        return cls(store, path)
 
-    def limit(self, limit: int | None) -> "QueryConfigurationBuilder":
-        """
-        Limit the number of results returned by the underlying store.
-        """
-        self._limit = limit
-        return self
 
-    def read(self) -> MetaFrame | Iterator[MetaFrame]:
-        """
-        Execute the query on the underlying store.
-        """
-        return self._store._apply_filter(
-            path=self._path,
-            filter_expression=self._filter_expression,
-            columns=self._columns,
-            options=self._options,
-            limit=self._limit,
-        )
+@final
+class _QueryEnabledStoreReadBuilder(QueryEnabledStoreOperationBuilder):
+    def _set_accepted_parameters(self) -> dict[str, QueryEnabledStoreOperationParameter]:
+        return {
+            parameter.name: parameter
+            for parameter in [
+                QueryEnabledStoreFilterParameter(None),
+                QueryEnabledStoreSelectParameter([]),
+                QueryEnabledStoreReadOptionsParameter({}),
+                QueryEnabledStoreLimitParameter(None),
+            ]
+        }
+
+    def _operation_callable(self) -> Callable:
+        return self._store._apply_filter
+
+
+@final
+class _QueryEnabledStoreWriteBuilder(QueryEnabledStoreOperationBuilder):
+    def _set_accepted_parameters(self) -> dict[str, QueryEnabledStoreOperationParameter]:
+        return {
+            parameter.name: parameter
+            for parameter in [
+                QueryEnabledStoreDataParameter(None),
+                QueryEnabledStoreOverwriteParameter(True),
+                QueryEnabledStoreBlockSizeParameter(50_000),
+            ]
+        }
+
+    def _operation_callable(self) -> Callable:
+        return self._store._write

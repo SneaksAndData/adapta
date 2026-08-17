@@ -7,9 +7,10 @@ from dataclasses import dataclass
 from typing import final, Self
 
 from dataclasses_json import DataClassJsonMixin
+from polars import DataFrame, LazyFrame
 from pyiceberg.catalog import Catalog
 
-from adapta.storage.iceberg.v1 import load_using_catalog, IcebergRestCatalogConfig, get_catalog
+from adapta.storage.iceberg.v1 import load_using_catalog, IcebergRestCatalogConfig, get_catalog, write_using_catalog
 from adapta.storage.models.enum import QueryEnabledStoreOptions
 from adapta.storage.models.expression_dsl.filter_expression import Expression
 from adapta.storage.models.iceberg import IcebergPath
@@ -17,7 +18,7 @@ from adapta.storage.query_enabled_store._models import (
     QueryEnabledStore,
     CONNECTION_STRING_REGEX,
 )
-from adapta.utils.metaframe import MetaFrame
+from adapta.utils.metaframe import MetaFrame, concat
 
 
 @dataclass
@@ -96,3 +97,24 @@ class IcebergQueryEnabledStore(QueryEnabledStore[IcebergCredential, IcebergSetti
 
     def _apply_query(self, query: str) -> MetaFrame | Iterator[MetaFrame]:
         raise NotImplementedError("Text queries are not supported by Iceberg QES")
+
+    def _write(
+        self, path: IcebergPath, data: MetaFrame | Iterator[MetaFrame], block_size: int, overwrite: bool
+    ) -> None:
+        # only polars is supported
+        def _resolve_dataframe() -> DataFrame | LazyFrame:
+            if isinstance(data, Iterator):
+                return concat(data).to_polars()
+
+            return data.to_polars()
+
+        assert self._catalog is not None, "Catalog not initialized"
+
+        write_using_catalog(
+            schema_name=path.schema,
+            table_name=path.table,
+            catalog=self._catalog,
+            data=_resolve_dataframe(),
+            write_chunk_size=block_size,
+            overwrite=overwrite,
+        )

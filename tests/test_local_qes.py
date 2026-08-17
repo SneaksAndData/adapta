@@ -5,7 +5,15 @@ import pytest
 from adapta.storage.models import LocalPath
 from adapta.storage.models.enum import QueryEnabledStoreOptions
 from adapta.storage.models.expression_dsl.filter_expression import FilterExpression, FilterField
-from adapta.storage.query_enabled_store import LocalQueryEnabledStore, LocalSettings, LocalCredential
+from adapta.storage.query_enabled_store import (
+    LocalQueryEnabledStore,
+    LocalSettings,
+    LocalCredential,
+    QueryEnabledStoreMode,
+    QueryEnabledStoreSelectParameter,
+    QueryEnabledStoreFilterParameter,
+    QueryEnabledStoreReadOptionsParameter,
+)
 from adapta.utils.metaframe import MetaFrameOptions
 
 # Create a test dataset
@@ -91,13 +99,15 @@ def test_local_qes_read(polars_filters: pl.Expr, qes_filters: FilterExpression):
 
     polars_data = data.filter(polars_filters) if polars_filters is not None else data
     qes_data = (
-        store.open(LocalPath(path=bytes_io))
-        .select(*data.columns)
-        .filter(qes_filters)
-        .add_options(
-            option_key=QueryEnabledStoreOptions.CONCAT_OPTIONS, option_value=[MetaFrameOptions(how="vertical")]
+        store.open(LocalPath(path=bytes_io), access_mode=QueryEnabledStoreMode.READ)
+        .set_parameters(
+            QueryEnabledStoreSelectParameter(data.columns),
+            QueryEnabledStoreFilterParameter(qes_filters),
+            QueryEnabledStoreReadOptionsParameter(
+                {QueryEnabledStoreOptions.CONCAT_OPTIONS: [MetaFrameOptions(how="vertical")]}
+            ),
         )
-        .read()
+        .execute()
         .to_polars()
     )
 
