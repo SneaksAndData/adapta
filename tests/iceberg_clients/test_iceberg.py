@@ -65,21 +65,27 @@ def test_map_read(trino_test_connection: sqlalchemy.engine.Engine, iceberg_catal
     expected_pl = polars.DataFrame(input_data, schema=schema)
 
     with trino_test_connection.connect() as con:
-        con.execute(text("""
+        con.execute(
+            text(
+                """
         CREATE OR REPLACE TABLE test.test_map_read (
             cola integer,
             colb varchar,
             colc array(integer),
             cold map(varchar(10), double)
-        )"""))
+        )"""
+            )
+        )
         for ix_row in range(len(input_data["cola"])):
             array_value = ", ".join([str(v) for v in input_data["colc"][ix_row]])
             map_keys_value = ", ".join([f"'{v['key']}'" for v in input_data["cold"][ix_row]])
             map_values_value = ", ".join([str(v["value"]) for v in input_data["cold"][ix_row]])
-            query = text(f"""
+            query = text(
+                f"""
                          INSERT INTO test.test_map_read (cola, colb, colc, cold)
                          VALUES ({input_data['cola'][ix_row]}, '{input_data['colb'][ix_row]}', ARRAY[{array_value}], MAP(ARRAY[{map_keys_value}], cast(ARRAY[{map_values_value}] as array(double))))
-                         """)
+                         """
+            )
             con.execute(query)
 
     data = load_using_catalog(
