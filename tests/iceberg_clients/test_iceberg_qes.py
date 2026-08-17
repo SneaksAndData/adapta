@@ -83,45 +83,51 @@ def test_iceberg_qes(
     assert_frame_equal(data.to_polars().sort("cola"), expected.sort("cola"), check_column_order=False)
 
 
-def test_iceberg_qes_write():
+@pytest.mark.parametrize(
+    "dataset1, dataset2, overwrite, expected",
+    [
+        (
+            polars.DataFrame({"cola": [1, 2, 3], "colb": ["a", "b", "c"]}),
+            polars.DataFrame({"cola": [4, 5], "colb": ["d", "e"]}),
+            True,
+            polars.DataFrame({"cola": [4, 5], "colb": ["d", "e"]}),
+        ),
+        (
+            polars.DataFrame({"cola": [1, 2, 3], "colb": ["a", "b", "c"]}),
+            polars.DataFrame({"cola": [4, 5], "colb": ["d", "e"]}),
+            False,
+            polars.concat(
+                [
+                    polars.DataFrame({"cola": [1, 2, 3], "colb": ["a", "b", "c"]}),
+                    polars.DataFrame({"cola": [4, 5], "colb": ["d", "e"]}),
+                ]
+            ),
+        ),
+    ],
+)
+def test_iceberg_qes_write(
+    dataset1: polars.DataFrame, dataset2: polars.DataFrame, overwrite: bool, expected: polars.DataFrame
+):
     table_name = f"qes_test_write_{generate_random_string(8)}".lower()
-    input_data1 = {
-        "cola": [1, 2, 3],
-        "colb": ["a", "b", "c"],
-    }
-    df1 = polars.DataFrame(input_data1)
 
     store = QueryEnabledStore.from_string(
         'qes://engine=ICEBERG;plaintext_credentials={"oauth_enabled": false};settings={"lazy_read": false}'
     )
 
-    # 1. Test Write with overwrite=True (Create)
+    # First write (Create table)
     store.open(parse_data_path(f"iceberg://test@{table_name}"), access_mode=QueryEnabledStoreMode.WRITE).set_parameters(
-        QueryEnabledStoreDataParameter(MetaFrame.from_polars(df1)),
+        QueryEnabledStoreDataParameter(MetaFrame.from_polars(dataset1)),
         QueryEnabledStoreOverwriteParameter(True),
+        QueryEnabledStoreBlockSizeParameter(10_000),
+    ).execute()
+
+    # Second write (Overwrite or Append)
+    store.open(parse_data_path(f"iceberg://test@{table_name}"), access_mode=QueryEnabledStoreMode.WRITE).set_parameters(
+        QueryEnabledStoreDataParameter(MetaFrame.from_polars(dataset2)),
+        QueryEnabledStoreOverwriteParameter(overwrite),
         QueryEnabledStoreBlockSizeParameter(10_000),
     ).execute()
 
     # Read back and assert
     data = store.open(parse_data_path(f"iceberg://test@{table_name}"), access_mode=QueryEnabledStoreMode.READ).execute()
-    assert_frame_equal(data.to_polars().sort("cola"), df1.sort("cola"), check_column_order=False)
-
-    # 2. Test Write with overwrite=False (Append)
-    input_data2 = {
-        "cola": [4, 5],
-        "colb": ["d", "e"],
-    }
-    df2 = polars.DataFrame(input_data2)
-
-    store.open(parse_data_path(f"iceberg://test@{table_name}"), access_mode=QueryEnabledStoreMode.WRITE).set_parameters(
-        QueryEnabledStoreDataParameter(MetaFrame.from_polars(df2)),
-        QueryEnabledStoreOverwriteParameter(False),
-        QueryEnabledStoreBlockSizeParameter(10_000),
-    ).execute()
-
-    # Read back and assert total appended
-    expected_df = polars.concat([df1, df2])
-    data_appended = store.open(
-        parse_data_path(f"iceberg://test@{table_name}"), access_mode=QueryEnabledStoreMode.READ
-    ).execute()
-    assert_frame_equal(data_appended.to_polars().sort("cola"), expected_df.sort("cola"), check_column_order=False)
+    assert_frame_equal(data.to_polars().sort("cola"), expected.sort("cola"), check_column_order=False)
