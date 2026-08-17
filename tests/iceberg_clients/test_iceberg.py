@@ -206,3 +206,49 @@ def test_append_to_table(iceberg_catalog: Catalog, lazy: bool):
         catalog=iceberg_catalog,
     )
     assert_frame_equal(read_data.to_polars().sort("cola"), expected_df.sort("cola"), check_column_order=False)
+
+
+@pytest.mark.parametrize("lazy", [False, True])
+def test_upsert_to_table(iceberg_catalog: Catalog, lazy: bool):
+    table_name = f"test_upsert_table_{generate_random_string(8)}".lower()
+    input_data1 = {
+        "cola": [1, 2],
+        "colb": ["a", "b"],
+        "colc": [[1], [2]],
+    }
+    df1 = polars.DataFrame(input_data1)
+    data1_to_write = df1.lazy() if lazy else df1
+
+    write_using_catalog(
+        schema_name="test",
+        table_name=table_name,
+        catalog=iceberg_catalog,
+        data=data1_to_write,
+        overwrite=True,
+    )
+
+    input_data2 = {
+        "cola": [1, 4],
+        "colb": ["a", "d"],
+        "colc": [[11], [4]],
+    }
+    df2 = polars.DataFrame(input_data2)
+    data2_to_write = df2.lazy() if lazy else df2
+
+    write_using_catalog(
+        schema_name="test",
+        table_name=table_name,
+        catalog=iceberg_catalog,
+        data=data2_to_write,
+        overwrite=False,
+        merge_columns=["cola"]
+    )
+
+    expected_df = polars.concat([df1, df2])
+
+    read_data = load_using_catalog(
+        schema="test",
+        table_name=table_name,
+        catalog=iceberg_catalog,
+    )
+    assert_frame_equal(read_data.to_polars().sort("cola"), expected_df.sort("cola"), check_column_order=False)
