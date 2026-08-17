@@ -18,10 +18,12 @@
 #
 
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, TypeVar, Generic
+
+TParameter = TypeVar("TParameter")  # pylint: disable=C0103
 
 
-class QueryEnabledStoreOperationParameter(ABC):
+class QueryEnabledStoreOperationParameter(ABC, Generic[TParameter]):
     """
     Base parameter class for query enabled store operation parameters.
     """
@@ -33,26 +35,25 @@ class QueryEnabledStoreOperationParameter(ABC):
     @abstractmethod
     def name(self) -> str:
         """
-        Name of this parameter. 
+        Name of this parameter.
         This is the parameter name passed to the operation callable.
         """
 
     @property
-    @abstractmethod
-    def value(self) -> Any:
+    def value(self) -> TParameter:
         """
         Value of this parameter.
         """
         return self._value
 
 
-class QueryEnabledStoreReadParameter(QueryEnabledStoreOperationParameter, ABC):
+class QueryEnabledStoreReadParameter(Generic[TParameter], QueryEnabledStoreOperationParameter[TParameter], ABC):
     """
     Base parameter class for query enabled store read operation parameters.
     """
 
 
-class QueryEnabledStoreWriteParameter(QueryEnabledStoreOperationParameter, ABC):
+class QueryEnabledStoreWriteParameter(Generic[TParameter], QueryEnabledStoreOperationParameter[TParameter], ABC):
     """
     Base parameter class for query enabled store write operation parameters.
     """

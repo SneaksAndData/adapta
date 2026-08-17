@@ -6,7 +6,7 @@ from adapta.storage.query_enabled_store.parameters._base import QueryEnabledStor
 
 
 @final
-class QueryEnabledStoreFilterParameter(QueryEnabledStoreReadParameter):
+class QueryEnabledStoreFilterParameter(QueryEnabledStoreReadParameter[FilterExpression | None]):
     """
     Data filter.
     """
@@ -21,7 +21,7 @@ class QueryEnabledStoreFilterParameter(QueryEnabledStoreReadParameter):
 
 
 @final
-class QueryEnabledStoreSelectParameter(QueryEnabledStoreReadParameter):
+class QueryEnabledStoreSelectParameter(QueryEnabledStoreReadParameter[list[str]]):
     """
     Column selector.
     """
@@ -36,7 +36,7 @@ class QueryEnabledStoreSelectParameter(QueryEnabledStoreReadParameter):
 
 
 @final
-class QueryEnabledStoreReadOptionsParameter(QueryEnabledStoreReadParameter):
+class QueryEnabledStoreReadOptionsParameter(QueryEnabledStoreReadParameter[dict[QueryEnabledStoreOptions, Any]]):
     """
     Read options.
     """
@@ -51,7 +51,7 @@ class QueryEnabledStoreReadOptionsParameter(QueryEnabledStoreReadParameter):
 
 
 @final
-class QueryEnabledStoreLimitParameter(QueryEnabledStoreReadParameter):
+class QueryEnabledStoreLimitParameter(QueryEnabledStoreReadParameter[int | None]):
     """
     Read limit (rows).
     """

@@ -25,7 +25,7 @@ from adapta.utils.metaframe import MetaFrame
 
 
 @final
-class QueryEnabledStoreDataParameter(QueryEnabledStoreWriteParameter):
+class QueryEnabledStoreDataParameter(QueryEnabledStoreWriteParameter[MetaFrame]):
     """
     Data to write.
     """
@@ -40,7 +40,7 @@ class QueryEnabledStoreDataParameter(QueryEnabledStoreWriteParameter):
 
 
 @final
-class QueryEnabledStoreOverwriteParameter(QueryEnabledStoreWriteParameter):
+class QueryEnabledStoreOverwriteParameter(QueryEnabledStoreWriteParameter[bool]):
     """
     Overwrite target or not.
     """
@@ -55,7 +55,7 @@ class QueryEnabledStoreOverwriteParameter(QueryEnabledStoreWriteParameter):
 
 
 @final
-class QueryEnabledStoreBlockSizeParameter(QueryEnabledStoreWriteParameter):
+class QueryEnabledStoreBlockSizeParameter(QueryEnabledStoreWriteParameter[int]):
     """
     Block size for streaming writer.
     """
