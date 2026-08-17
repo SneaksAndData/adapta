@@ -65,27 +65,21 @@ def test_map_read(trino_test_connection: sqlalchemy.engine.Engine, iceberg_catal
     expected_pl = polars.DataFrame(input_data, schema=schema)
 
     with trino_test_connection.connect() as con:
-        con.execute(
-            text(
-                """
+        con.execute(text("""
         CREATE OR REPLACE TABLE test.test_map_read (
             cola integer,
             colb varchar,
             colc array(integer),
             cold map(varchar(10), double)
-        )"""
-            )
-        )
+        )"""))
         for ix_row in range(len(input_data["cola"])):
             array_value = ", ".join([str(v) for v in input_data["colc"][ix_row]])
             map_keys_value = ", ".join([f"'{v['key']}'" for v in input_data["cold"][ix_row]])
             map_values_value = ", ".join([str(v["value"]) for v in input_data["cold"][ix_row]])
-            query = text(
-                f"""
+            query = text(f"""
                          INSERT INTO test.test_map_read (cola, colb, colc, cold)
                          VALUES ({input_data['cola'][ix_row]}, '{input_data['colb'][ix_row]}', ARRAY[{array_value}], MAP(ARRAY[{map_keys_value}], cast(ARRAY[{map_values_value}] as array(double))))
-                         """
-            )
+                         """)
             con.execute(query)
 
     data = load_using_catalog(
@@ -228,9 +222,9 @@ def test_upsert_to_table(iceberg_catalog: Catalog, lazy: bool):
     )
 
     input_data2 = {
-        "cola": [1, 4],
-        "colb": ["a", "d"],
-        "colc": [[11], [4]],
+        "cola": [1, 3],
+        "colb": ["aa", "c"],
+        "colc": [[11], [3]],
     }
     df2 = polars.DataFrame(input_data2)
     data2_to_write = df2.lazy() if lazy else df2
@@ -241,10 +235,16 @@ def test_upsert_to_table(iceberg_catalog: Catalog, lazy: bool):
         catalog=iceberg_catalog,
         data=data2_to_write,
         overwrite=False,
-        merge_columns=["cola"]
+        merge_columns=["cola"],
     )
 
-    expected_df = polars.concat([df1, df2])
+    expected_df = polars.DataFrame(
+        {
+            "cola": [1, 2, 3],
+            "colb": ["aa", "b", "c"],
+            "colc": [[11], [2], [3]],
+        }
+    )
 
     read_data = load_using_catalog(
         schema="test",
