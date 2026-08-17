@@ -7,9 +7,7 @@ from adapta.storage.models import parse_data_path
 from adapta.storage.models.expression_dsl.filter_expression import FilterField, Expression
 from adapta.utils.metaframe import MetaFrame
 from adapta.storage.query_enabled_store import (
-    IcebergQueryEnabledStore,
-    IcebergSettings,
-    IcebergCredential,
+    QueryEnabledStore,
     QueryEnabledStoreMode,
     QueryEnabledStoreSelectParameter,
     QueryEnabledStoreFilterParameter,
@@ -70,12 +68,9 @@ def test_iceberg_qes(
         data=_qes_input_data,
         trino_test_connection=trino_test_connection,
     )
-    store = IcebergQueryEnabledStore(
-        settings=IcebergSettings(
-            lazy_read=False,
-        ),
-        credentials=IcebergCredential(oauth_enabled=False),
-    )._init_catalog()
+    store = QueryEnabledStore.from_string(
+        'qes://engine=ICEBERG;plaintext_credentials={"oauth_enabled": false};settings={"lazy_read": false}'
+    )
 
     data = (
         store.open(parse_data_path(f"iceberg://test@{table_name}"), access_mode=QueryEnabledStoreMode.READ)
@@ -96,12 +91,9 @@ def test_iceberg_qes_write():
     }
     df1 = polars.DataFrame(input_data1)
 
-    store = IcebergQueryEnabledStore(
-        settings=IcebergSettings(
-            lazy_read=False,
-        ),
-        credentials=IcebergCredential(oauth_enabled=False),
-    )._init_catalog()
+    store = QueryEnabledStore.from_string(
+        'qes://engine=ICEBERG;plaintext_credentials={"oauth_enabled": false};settings={"lazy_read": false}'
+    )
 
     # 1. Test Write with overwrite=True (Create)
     store.open(parse_data_path(f"iceberg://test@{table_name}"), access_mode=QueryEnabledStoreMode.WRITE).set_parameters(
