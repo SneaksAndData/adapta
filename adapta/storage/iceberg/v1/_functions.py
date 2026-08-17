@@ -1,4 +1,5 @@
 """Iceberg reader (via REST Catalog)"""
+
 import os
 from typing import Literal
 
@@ -140,10 +141,12 @@ def write_using_catalog(
     data: polars.DataFrame | polars.LazyFrame,
     write_chunk_size: int = 50_000,
     overwrite: bool = True,
+    merge_columns: list[str] = None,
 ) -> None:
     """
     Writes data to an Iceberg table from the provided Metaframe. Will create a table if it doesn't exist.
     Data is written in chunks to regulate memory usage.
+    If `merge_columns` is provided an upsert will be performed
     Note when using S3 compatible storage: if you are getting checksum validation errors, add these two env variables:
         os.environ["AWS_REQUEST_CHECKSUM_CALCULATION"] = "WHEN_REQUIRED"
         os.environ["AWS_RESPONSE_CHECKSUM_VALIDATION"] = "WHEN_REQUIRED"
@@ -183,4 +186,7 @@ def write_using_catalog(
             else data.collect_batches(chunk_size=write_chunk_size)
         )
         for data_chunk in iterator:
-            write_tx.append(data_chunk.to_arrow())
+            if merge_columns:
+                write_tx.upsert(data_chunk.to_arrow(), join_cols=merge_columns)
+            else:
+                write_tx.append(data_chunk.to_arrow())
