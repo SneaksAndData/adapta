@@ -17,6 +17,7 @@
 #
 
 from adapta.storage.query_enabled_store._models import *
+from adapta.storage.query_enabled_store._functions import *
 
 try:
     from adapta.storage.query_enabled_store._qes_astra import *
