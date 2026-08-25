@@ -9,12 +9,30 @@ from adapta.storage.models import (
     AdlsGen2Path,
     TrinoPath,
 )
-from adapta.storage.query_enabled_store._qes_astra import AstraQueryEnabledStore
-from adapta.storage.query_enabled_store._models import QueryEnabledStore
-from adapta.storage.query_enabled_store._qes_iceberg import IcebergQueryEnabledStore
+
+
+try:
+    from adapta.storage.query_enabled_store._qes_astra import AstraQueryEnabledStore
+except (ImportError, ModuleNotFoundError) as ex:
+    print(f"Query Enabled Store (Astra) not configured: {ex}")
+
+try:
+    from adapta.storage.query_enabled_store._qes_iceberg import IcebergQueryEnabledStore
+except (ImportError, ModuleNotFoundError) as ex:
+    print(f"Query Enabled Store (Iceberg) not configured: {ex}")
+
+try:
+    from adapta.storage.query_enabled_store._qes_delta import DeltaQueryEnabledStore
+except (ImportError, ModuleNotFoundError) as ex:
+    print(f"Query Enabled Store (Delta) not configured: {ex}")
+
+try:
+    from adapta.storage.query_enabled_store._qes_trino import TrinoQueryEnabledStore
+except (ImportError, ModuleNotFoundError) as ex:
+    print(f"Query Enabled Store (Trino) not configured: {ex}")
+
 from adapta.storage.query_enabled_store._qes_local import LocalQueryEnabledStore
-from adapta.storage.query_enabled_store._qes_delta import DeltaQueryEnabledStore
-from adapta.storage.query_enabled_store._qes_trino import TrinoQueryEnabledStore
+from adapta.storage.query_enabled_store._models import QueryEnabledStore
 
 
 def suggest_store(socket: DataSocket) -> type[QueryEnabledStore] | None:
