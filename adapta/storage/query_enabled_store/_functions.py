@@ -9,14 +9,12 @@ from adapta.storage.models import (
     AdlsGen2Path,
     TrinoPath,
 )
-from adapta.storage.query_enabled_store import (
-    QueryEnabledStore,
-    IcebergQueryEnabledStore,
-    LocalQueryEnabledStore,
-    AstraQueryEnabledStore,
-    DeltaQueryEnabledStore,
-    TrinoQueryEnabledStore,
-)
+from adapta.storage.query_enabled_store._qes_astra import AstraQueryEnabledStore
+from adapta.storage.query_enabled_store._models import QueryEnabledStore
+from adapta.storage.query_enabled_store._qes_iceberg import IcebergQueryEnabledStore
+from adapta.storage.query_enabled_store._qes_local import LocalQueryEnabledStore
+from adapta.storage.query_enabled_store._qes_delta import DeltaQueryEnabledStore
+from adapta.storage.query_enabled_store._qes_trino import TrinoQueryEnabledStore
 
 
 def suggest_store(socket: DataSocket) -> type[QueryEnabledStore] | None:
