@@ -6,6 +6,8 @@ import os
 import re
 from types import TracebackType
 from typing import Self
+from cryptography.hazmat.primitives.serialization import load_pem_private_key
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 
 import snowflake.connector
 
@@ -17,6 +19,7 @@ from adapta.storage.models import S3Path, DataPath
 
 from adapta.storage.models.azure import AdlsGen2Path
 from adapta.utils.metaframe import MetaFrame
+from adapta.storage.database.v3.models import SnowflakeAuth
 
 
 class SnowflakeClient:
@@ -30,6 +33,8 @@ class SnowflakeClient:
     :param authenticator: The authentication mechanism to use for the Snowflake account.
     :param logger: The logger to use for logging messages. Defaults to a new SemanticLogger instance.
     :param password: Optional - The password for the Snowflake user. Should be combined with `authenticator='snowflake'` to enable password authentication
+    :param private_key: Optional - The private key for the Snowflake user.
+    :param private_key_password: Optional - The password for the private key, if it is encrypted.
     :param role: Optional - The role for the Snowflake user.
     """
 
@@ -38,23 +43,55 @@ class SnowflakeClient:
         user: str,
         account: str,
         warehouse: str,
-        authenticator: str = "externalbrowser",
+        authenticator: str = SnowflakeAuth.EXTERNAL_BROWSER,
         logger: SemanticLogger = SemanticLogger().add_log_source(
             log_source_name="adapta-snowflake-client",
             min_log_level=LogLevel.INFO,
             is_default=True,
         ),
         password: str | None = None,
+        private_key: str | None = None,
+        private_key_password: str | None = None,
         role: str | None = None,
     ):
+        if password and private_key:
+            raise ValueError("Provide either password or private_key, not both")
+
         self._user = user
         self._account = account
         self._warehouse = warehouse
-        self._authenticator = "snowflake" if password else authenticator
         self._logger = logger
         self._password = password
+        self._private_key = self._load_private_key(private_key, private_key_password) if private_key else None
+        self._authenticator = self._resolve_auth(authenticator, password, private_key)
         self._role = role
         self._conn = None
+
+    @staticmethod
+    def _resolve_auth(authenticator: str, password: str | None, private_key: str | None) -> str:
+        """
+        Select appropriate auth method for Snowflake.
+        """
+        if private_key:
+            return SnowflakeAuth.KEY_PAIR
+        if password:
+            return SnowflakeAuth.SNOWFLAKE
+        return authenticator
+
+    @staticmethod
+    def _load_private_key(private_key: str, private_key_password: str | None = None) -> RSAPrivateKey:
+        """
+        Loads a PEM RSA private key.
+        """
+        pem_bytes = private_key.encode("utf-8")
+        pem_password_bytes = private_key_password.encode("utf-8") if private_key_password else None
+        loaded_key = load_pem_private_key(pem_bytes, password=pem_password_bytes)
+        if not isinstance(loaded_key, RSAPrivateKey):
+            raise ValueError(
+                f"Snowflake key-pair authentication requires an RSA private key, got {type(loaded_key).__name__}"
+            )
+        return loaded_key
+
 
     def __enter__(self) -> Self | None:
         """
@@ -65,10 +102,12 @@ class SnowflakeClient:
             self._conn = snowflake.connector.connect(
                 user=self._user,
                 account=self._account,
-                password=self._password,
                 warehouse=self._warehouse,
+                password=self._password,
+                private_key=self._private_key,
                 authenticator=self._authenticator,
                 role=self._role,
+
             )
             return self
         except DatabaseError as ex:
