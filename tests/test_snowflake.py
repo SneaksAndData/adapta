@@ -17,8 +17,11 @@ from unittest.mock import patch, MagicMock
 
 import pytest
 from deltalake import DeltaTable
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives import serialization
 
-from adapta.storage.database.v3.snowflake_sql import SnowflakeClient
+from adapta.storage.database.v3.snowflake_sql import SnowflakeClient, load_private_key
+from adapta.storage.database.v3.models import SnowflakeAuth
 
 from adapta.storage.models.azure import AdlsGen2Path
 
@@ -144,3 +147,54 @@ def test_publish_external_delta_table_skip_initialize(
     mock_query.assert_any_call(
         query='alter external table "test_database"."test_schema"."test_table" refresh;', fetch_dataframe=False
     )
+
+
+def serialize_to_pem_key(rsa_private_key_test: rsa.RSAPrivateKey, passphrase: str | None = None) -> str:
+    encryption = (
+        serialization.BestAvailableEncryption(passphrase.encode("utf-8"))
+        if passphrase
+        else serialization.NoEncryption()
+    )
+    return rsa_private_key_test.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.TraditionalOpenSSL,
+        encryption_algorithm=encryption,
+    ).decode("utf-8")
+
+
+def test_load_private_key_unencrypted():
+    test_rsa_private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)  # create an RSA key
+    serialized_pem_private_key = serialize_to_pem_key(test_rsa_private_key, passphrase=None)  # serialize to PEM
+    loaded_key = load_private_key(serialized_pem_private_key)  # test
+    assert isinstance(loaded_key, rsa.RSAPrivateKey)
+    assert loaded_key.private_numbers() == test_rsa_private_key.private_numbers()
+
+
+def test_load_private_key_encrypted():
+    test_rsa_private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)  # create an RSA key
+    serialized_pem_private_key = serialize_to_pem_key(
+        test_rsa_private_key, passphrase="test_password"
+    )  # serialize to PEM
+    loaded_key = load_private_key(private_key=serialized_pem_private_key, private_key_password="test_password")  # test
+    assert isinstance(loaded_key, rsa.RSAPrivateKey)
+    assert loaded_key.private_numbers() == test_rsa_private_key.private_numbers()
+
+
+def test_client_uses_key_pair_when_private_key_supplied():
+    test_rsa_private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+
+    snowflake_client = SnowflakeClient(
+        user="test_user",
+        account="test_account",
+        warehouse="test_warehouse",
+        private_key=serialize_to_pem_key(test_rsa_private_key),
+    )
+
+    assert snowflake_client._authenticator == SnowflakeAuth.KEY_PAIR
+    assert isinstance(snowflake_client._private_key, rsa.RSAPrivateKey)
+
+
+def test_client_falls_back_to_external_browser_without_private_key():
+    snowflake_client = SnowflakeClient(user="test_user", account="test_account", warehouse="test_warehouse")
+    assert snowflake_client._authenticator == SnowflakeAuth.EXTERNAL_BROWSER
+    assert snowflake_client._private_key is None
