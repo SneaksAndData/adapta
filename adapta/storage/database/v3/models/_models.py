@@ -52,6 +52,7 @@ class DatabaseType(Enum):
     SQLITE_ODBC = SqlAlchemyDialect(dialect="sqlite+pysqlite", driver={})
 
 
+@final
 class SnowflakeAuth(str, Enum):
     """Supported Snowflake authentication options."""
 
