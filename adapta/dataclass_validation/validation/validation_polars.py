@@ -2,11 +2,12 @@
 Validation class for Polars DataFrames.
 """
 import datetime
-from typing import Any
+from typing import Any, get_origin
 
 import polars as pl
 
 from adapta.dataclass_validation.validation.validation_abstract import AbstractValidationClass
+from adapta.utils.polars import get_polars_type
 
 
 class PolarsValidationClass(AbstractValidationClass):
@@ -14,17 +15,8 @@ class PolarsValidationClass(AbstractValidationClass):
     Polars Validation Class for validating data against a schema defined as an AbstractDataClass.
     """
 
-    @property
-    def _dtype_mapping(self):
-        return {
-            str: pl.String,
-            int: pl.Int64,
-            float: pl.Float64,
-            bool: pl.Boolean,
-            datetime.date: pl.Date,
-            datetime.datetime: pl.Datetime,
-            dict: pl.Struct,
-        }
+    def _get_expected_dtypes(self, dtype: type) -> Any:
+        return get_polars_type(dtype=dtype)
 
     @property
     def _dtype_recursive_dtypes(self):
@@ -52,7 +44,29 @@ class PolarsValidationClass(AbstractValidationClass):
             ]
 
     def _get_column_dtype(self, column_name: str) -> Any:
-        return self._data[column_name].dtype
+        maybe_dtype = self._data[column_name].dtype
+
+        if type(maybe_dtype) == pl.Struct:
+            key_types = list(set(type(field.name) for field in maybe_dtype.fields))
+            if len(key_types) != 1:
+                raise ValueError(
+                    f"We only support one keytype for structs. You have defined {len(key_types)}: {key_types}"
+                )
+
+            value_types = list(set(type(field.dtype) for field in maybe_dtype.fields))
+            if len(value_types) != 1:
+                raise ValueError(
+                    f"We only support one valuetype for structs. You have defined {len(value_types)}: {value_types}"
+                )
+
+            return pl.Struct(
+                {
+                    "key": get_polars_type(dtype=key_types[0]),
+                    "value": value_types[0],  # already PolarsDataType
+                }
+            )
+
+        return maybe_dtype
 
     def _get_dataframe_columns(self) -> list[str]:
         return self._data.columns

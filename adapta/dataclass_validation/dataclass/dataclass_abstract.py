@@ -13,6 +13,7 @@ from adapta.dataclass_validation.validation.validation_utils import (
     ValidationResponse,
 )
 from adapta.dataclass_validation.validation.validation_polars import PolarsValidationClass
+from adapta.utils.polars import get_polars_type
 
 
 class AbstractDataClass(CoreDataClass):
@@ -73,18 +74,8 @@ class AbstractDataClass(CoreDataClass):
         """
 
         schema = self.get_column_types()
-        schema_resolved = copy.deepcopy(schema)
 
-        for column, dtype in schema.items():
-            if type(dtype) != type:
-                raise ValueError(
-                    f"create_empty_polars_dataframe is only supported for normal types, not {type(dtype)}"
-                )
-
-            if dtype == dict:
-                schema_resolved[column] = pl.Struct
-
-        return pl.DataFrame(schema=schema_resolved)
+        return pl.DataFrame(schema={column: get_polars_type(dtype=dtype) for column, dtype in schema.items()})
 
     def coerce_and_select_columns(self, data: Any, coerce_all: bool = True) -> Any:
         """
