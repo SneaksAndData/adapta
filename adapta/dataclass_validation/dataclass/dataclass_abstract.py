@@ -1,6 +1,7 @@
 """
 Abstract Data Class
 """
+import copy
 from copy import deepcopy
 from typing import Any
 
@@ -71,7 +72,19 @@ class AbstractDataClass(CoreDataClass):
         Create an empty Polars DataFrame based on the schema.
         """
 
-        return pl.DataFrame(schema=self.get_column_types())
+        schema = self.get_column_types()
+        schema_resolved = copy.deepcopy(schema)
+
+        for column, dtype in schema.items():
+            if type(dtype) != type:
+                raise ValueError(
+                    f"create_empty_polars_dataframe is only supported for normal types, not {type(dtype)}"
+                )
+
+            if dtype == dict:
+                schema_resolved[column] = pl.Struct
+
+        return pl.DataFrame(schema=schema_resolved)
 
     def coerce_and_select_columns(self, data: Any, coerce_all: bool = True) -> Any:
         """

@@ -35,6 +35,11 @@ class TestDataClass(AbstractDataClass):
         add_field_if_missing=True,
         allow_missing_values=True,
     )
+    column_5 = Field(
+        display_name="Column 5",
+        description="Description for column 5.",
+        dtype=dict,
+    )
 
 
 class InheritTestDataClass(TestDataClass):
@@ -193,8 +198,8 @@ def test__create_empty_polars_dataframe__expected():
     """
     Test that the create_empty_polars_dataframe method from AbstractDataClass creates
     """
-    expected_columns = ["column_1", "column_2", "column_3", "column_4"]
-    expected_dtypes = [pl.String, pl.Int64, pl.Float64, pl.Boolean]
+    expected_columns = ["column_1", "column_2", "column_3", "column_4", "column_5"]
+    expected_dtypes = [pl.String, pl.Int64, pl.Float64, pl.Boolean, pl.Struct]
     df = TEST_SCHEMA.create_empty_polars_dataframe()
     assert list(df.columns) == expected_columns
     assert list(df.dtypes) == expected_dtypes
