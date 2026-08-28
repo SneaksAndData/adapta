@@ -35,7 +35,7 @@ def test__validate_data_types__expected_no_errors():
         column_6 = Field(
             display_name="Column 6",
             description="Description for column 6.",
-            dtype=dict[str, str | int],
+            dtype=dict[str, int],
         )
 
     TEST_SCHEMA = TestDataClass()
@@ -52,8 +52,8 @@ def test__validate_data_types__expected_no_errors():
                     {"city": "Seattle"},
                 ],
                 TEST_SCHEMA.column_6: [
-                    {"key1": "value1", "key2": 1},
-                    {"key1": "value1", "key2": 1},
+                    {"key1": 1, "key2": 1},
+                    {"key1": 2, "key2": 1},
                 ],
             }
         ),
