@@ -1,7 +1,6 @@
 """
 Abstract Data Class
 """
-import copy
 from copy import deepcopy
 from typing import Any
 

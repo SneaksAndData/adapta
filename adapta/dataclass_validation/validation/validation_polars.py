@@ -1,8 +1,7 @@
 """
 Validation class for Polars DataFrames.
 """
-import datetime
-from typing import Any, get_origin
+from typing import Any
 
 import polars as pl
 
@@ -44,16 +43,16 @@ class PolarsValidationClass(AbstractValidationClass):
             ]
 
     def _get_column_dtype(self, column_name: str) -> Any:
-        maybe_dtype = self._data[column_name].dtype
+        dtype = self._data[column_name].dtype
 
-        if type(maybe_dtype) == pl.Struct:
-            key_types = list(set(type(field.name) for field in maybe_dtype.fields))
+        if isinstance(dtype, pl.Struct):
+            key_types: list[type] = list(set(type(field.name) for field in dtype.fields))
             if len(key_types) != 1:
                 raise ValueError(
                     f"We only support one keytype for structs. You have defined {len(key_types)}: {key_types}"
                 )
 
-            value_types = list(set(type(field.dtype) for field in maybe_dtype.fields))
+            value_types: list[pl.DataType] = list(set(field.dtype for field in dtype.fields))
             if len(value_types) != 1:
                 raise ValueError(
                     f"We only support one valuetype for structs. You have defined {len(value_types)}: {value_types}"
@@ -66,7 +65,7 @@ class PolarsValidationClass(AbstractValidationClass):
                 }
             )
 
-        return maybe_dtype
+        return dtype
 
     def _get_dataframe_columns(self) -> list[str]:
         return self._data.columns

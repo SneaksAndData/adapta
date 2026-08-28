@@ -32,6 +32,10 @@ def get_polars_schema(data_class: Any) -> dict[str, polars.DataType]:
 
 
 def get_polars_type(dtype: Any) -> polars.DataType:
+    """
+    :param dtype: type to convert to polars
+    :return: polars data type
+    """
     dtype_mapping = {
         str: polars.String,
         int: polars.Int64,
