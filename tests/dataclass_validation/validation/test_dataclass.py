@@ -35,6 +35,18 @@ class TestDataClass(AbstractDataClass):
         add_field_if_missing=True,
         allow_missing_values=True,
     )
+    column_5 = Field(
+        display_name="Column 5",
+        description="Description for column 5.",
+        dtype=dict[str, int],
+        required=False,
+    )
+    column_6 = Field(
+        display_name="Column 6",
+        description="Description for column 6.",
+        dtype=list[dict],
+        required=False,
+    )
 
 
 class InheritTestDataClass(TestDataClass):
@@ -42,9 +54,9 @@ class InheritTestDataClass(TestDataClass):
     Example of inheriting from another class
     """
 
-    column_5 = Field(
-        display_name="Column 5",
-        description="Description for column 5.",
+    column_7 = Field(
+        display_name="Column 7",
+        description="Description for column 7.",
         dtype=str,
     )
 
@@ -104,7 +116,14 @@ def test__get_fields__expected():
     expected fields.
     """
 
-    assert list(TEST_SCHEMA.get_fields().keys()) == ["column_1", "column_2", "column_3", "column_4"]
+    assert list(TEST_SCHEMA.get_fields().keys()) == [
+        "column_1",
+        "column_2",
+        "column_3",
+        "column_4",
+        "column_5",
+        "column_6",
+    ]
 
 
 def test__get_allowed_columns_to_add__expected():
@@ -147,7 +166,12 @@ def test__get_not_allowed_missing_value_fields__expected():
     """
     Test that the get_no_missing_value_fields method from AbstractDataClass returns the expected fields.
     """
-    assert list(TEST_SCHEMA.get_not_allowed_missing_value_fields().keys()) == ["column_1", "column_3"]
+    assert list(TEST_SCHEMA.get_not_allowed_missing_value_fields().keys()) == [
+        "column_1",
+        "column_3",
+        "column_5",
+        "column_6",
+    ]
 
 
 def test__inherit_fields__expected():
@@ -161,6 +185,8 @@ def test__inherit_fields__expected():
         "column_3",
         "column_4",
         "column_5",
+        "column_6",
+        "column_7",
     ]
 
 
@@ -193,8 +219,14 @@ def test__create_empty_polars_dataframe__expected():
     """
     Test that the create_empty_polars_dataframe method from AbstractDataClass creates
     """
-    expected_columns = ["column_1", "column_2", "column_3", "column_4"]
-    expected_dtypes = [pl.String, pl.Int64, pl.Float64, pl.Boolean]
+    expected_columns = ["column_1", "column_2", "column_3", "column_4", "column_5", "column_6"]
+    expected_dtypes = [pl.String, pl.Int64, pl.Float64, pl.Boolean, pl.Struct, pl.List]
     df = TEST_SCHEMA.create_empty_polars_dataframe()
     assert list(df.columns) == expected_columns
     assert list(df.dtypes) == expected_dtypes
+    assert df["column_5"].dtype == pl.Struct(
+        {
+            "key": pl.String,
+            "value": pl.Int64,
+        }
+    )

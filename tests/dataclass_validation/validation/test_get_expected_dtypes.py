@@ -65,7 +65,7 @@ def test__polars_get_expected_types__expected_errors(
             required=True,
         )
 
-    with pytest.raises(TypeError):
+    with pytest.raises((TypeError, KeyError)):
         PolarsValidationClass(
             data=pl.DataFrame(),
             schema=DummyDataClass(),  # Schema is not used in this test

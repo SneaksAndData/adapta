@@ -12,6 +12,7 @@ from adapta.dataclass_validation.validation.validation_utils import (
     ValidationResponse,
 )
 from adapta.dataclass_validation.validation.validation_polars import PolarsValidationClass
+from adapta.utils.polars import get_polars_type
 
 
 class AbstractDataClass(CoreDataClass):
@@ -71,7 +72,9 @@ class AbstractDataClass(CoreDataClass):
         Create an empty Polars DataFrame based on the schema.
         """
 
-        return pl.DataFrame(schema=self.get_column_types())
+        schema = self.get_column_types()
+
+        return pl.DataFrame(schema={column: get_polars_type(dtype=dtype) for column, dtype in schema.items()})
 
     def coerce_and_select_columns(self, data: Any, coerce_all: bool = True) -> Any:
         """

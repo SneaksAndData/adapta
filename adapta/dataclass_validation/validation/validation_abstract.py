@@ -25,16 +25,6 @@ class AbstractValidationClass:
 
     @property
     @abstractmethod
-    def _dtype_mapping(self):
-        pass
-
-    @property
-    @abstractmethod
-    def _dtype_recursive_dtypes(self):
-        pass
-
-    @property
-    @abstractmethod
     def _allowed_casts(self):
         pass
 
@@ -61,24 +51,12 @@ class AbstractValidationClass:
         Abstract method for validating primary keys.
         """
 
+    @abstractmethod
     def _get_expected_dtypes(self, dtype: type) -> Any:
         """
         Method to get the expected data types for the fields. If the type is a list, we use recursion to get the
         expected type.
         """
-        if dtype in self._dtype_mapping:
-            return self._dtype_mapping[dtype]
-
-        origin_dtype = get_origin(dtype)
-        if origin_dtype in self._dtype_recursive_dtypes and origin_dtype == list:
-            return self._dtype_recursive_dtypes[origin_dtype](self._get_expected_dtypes(dtype=get_args(dtype)[0]))
-        if origin_dtype == dict:
-            return self._dtype_mapping[origin_dtype]
-
-        raise TypeError(
-            f"Unsupported data type: {dtype}. Supported types are: "
-            f"{list(self._dtype_mapping.keys()) + list(self._dtype_recursive_dtypes.keys())}"
-        )
 
     def _validate_data_types(self) -> None:
         """
@@ -124,7 +102,7 @@ class AbstractValidationClass:
         Method for coercing data types.
         """
         for field_name, field in self._schema.get_coerce_fields().items():
-            expected_dtype = self._get_expected_dtypes(field.dtype)
+            expected_dtype = self._get_expected_dtypes(dtype=field.dtype)
             current_dtype = self._get_column_dtype(column_name=field_name)
             if all(
                 [
