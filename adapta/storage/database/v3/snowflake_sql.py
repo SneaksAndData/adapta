@@ -6,6 +6,8 @@ import os
 import re
 from types import TracebackType
 from typing import Self
+from cryptography.hazmat.primitives.serialization import load_pem_private_key
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 
 import snowflake.connector
 
@@ -17,6 +19,21 @@ from adapta.storage.models import S3Path, DataPath
 
 from adapta.storage.models.azure import AdlsGen2Path
 from adapta.utils.metaframe import MetaFrame
+from adapta.storage.database.v3.models import SnowflakeAuth
+
+
+def load_private_key(private_key: str, private_key_password: str | None = None) -> RSAPrivateKey:
+    """
+    Loads a PEM RSA private key.
+    """
+    pem_bytes = private_key.encode("utf-8")
+    pem_password_bytes = private_key_password.encode("utf-8") if private_key_password else None
+    loaded_key = load_pem_private_key(pem_bytes, password=pem_password_bytes)
+    if not isinstance(loaded_key, RSAPrivateKey):
+        raise ValueError(
+            f"Snowflake key-pair authentication requires an RSA private key, got {type(loaded_key).__name__}"
+        )
+    return loaded_key
 
 
 class SnowflakeClient:
@@ -27,9 +44,10 @@ class SnowflakeClient:
     :param user: The username for the Snowflake account.
     :param account: The account name for the Snowflake account.
     :param warehouse: The warehouse name for the Snowflake account.
-    :param authenticator: The authentication mechanism to use for the Snowflake account.
+    :param private_key: Optional - The private key for the Snowflake user (assumes PEM).
+    :param private_key_password: Optional - The password for the private key, if it is encrypted.
+    :param password: Optional - Plain-text password for the Snowflake user. Ignored if private_key is set.
     :param logger: The logger to use for logging messages. Defaults to a new SemanticLogger instance.
-    :param password: Optional - The password for the Snowflake user. Should be combined with `authenticator='snowflake'` to enable password authentication
     :param role: Optional - The role for the Snowflake user.
     """
 
@@ -38,20 +56,31 @@ class SnowflakeClient:
         user: str,
         account: str,
         warehouse: str,
-        authenticator: str = "externalbrowser",
+        private_key: str | None = None,
+        private_key_password: str | None = None,
+        password: str | None = None,
         logger: SemanticLogger = SemanticLogger().add_log_source(
             log_source_name="adapta-snowflake-client",
             min_log_level=LogLevel.INFO,
             is_default=True,
         ),
-        password: str | None = None,
         role: str | None = None,
     ):
+        if private_key:
+            self._authenticator = SnowflakeAuth.KEY_PAIR
+        elif password:
+            self._authenticator = SnowflakeAuth.PASSWORD
+        else:
+            self._authenticator = SnowflakeAuth.EXTERNAL_BROWSER
+            logger.warning(
+                "No private key / password provided for {account} -- falling back to externalbrowser authentication.",
+                account=account,
+            )
         self._user = user
         self._account = account
         self._warehouse = warehouse
-        self._authenticator = "snowflake" if password else authenticator
         self._logger = logger
+        self._private_key = load_private_key(private_key, private_key_password) if private_key else None
         self._password = password
         self._role = role
         self._conn = None
@@ -65,8 +94,9 @@ class SnowflakeClient:
             self._conn = snowflake.connector.connect(
                 user=self._user,
                 account=self._account,
-                password=self._password,
                 warehouse=self._warehouse,
+                private_key=self._private_key,
+                password=self._password,
                 authenticator=self._authenticator,
                 role=self._role,
             )

@@ -18,6 +18,7 @@
 
 from dataclasses import dataclass
 from enum import Enum
+from typing import final
 
 
 @dataclass
@@ -50,3 +51,12 @@ class DatabaseType(Enum):
         },
     )
     SQLITE_ODBC = SqlAlchemyDialect(dialect="sqlite+pysqlite", driver={})
+
+
+@final
+class SnowflakeAuth(str, Enum):
+    """Supported Snowflake authentication options."""
+
+    EXTERNAL_BROWSER = "externalbrowser"
+    KEY_PAIR = "SNOWFLAKE_JWT"
+    PASSWORD = "snowflake"
