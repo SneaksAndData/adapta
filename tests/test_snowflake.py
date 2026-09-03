@@ -198,3 +198,15 @@ def test_client_falls_back_to_external_browser_without_private_key():
     snowflake_client = SnowflakeClient(user="test_user", account="test_account", warehouse="test_warehouse")
     assert snowflake_client._authenticator == SnowflakeAuth.EXTERNAL_BROWSER
     assert snowflake_client._private_key is None
+
+def test_key_pair_precedence():
+    test_rsa_private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+
+    snowflake_client = SnowflakeClient(
+        user="test_user",
+        account="test_account",
+        warehouse="test_warehouse",
+        private_key=serialize_to_pem_key(test_rsa_private_key),
+        password="test_password",
+    )
+    assert snowflake_client._authenticator == SnowflakeAuth.KEY_PAIR

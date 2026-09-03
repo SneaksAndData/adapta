@@ -18,6 +18,7 @@
 
 from dataclasses import dataclass
 from enum import Enum
+from typing import final
 
 
 @dataclass
@@ -58,3 +59,4 @@ class SnowflakeAuth(str, Enum):
 
     EXTERNAL_BROWSER = "externalbrowser"
     KEY_PAIR = "SNOWFLAKE_JWT"
+    PASSWORD = "snowflake"

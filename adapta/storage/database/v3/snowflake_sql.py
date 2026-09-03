@@ -46,6 +46,7 @@ class SnowflakeClient:
     :param warehouse: The warehouse name for the Snowflake account.
     :param private_key: Optional - The private key for the Snowflake user (assumes PEM).
     :param private_key_password: Optional - The password for the private key, if it is encrypted.
+    :param password: Optional - Plain-text password for the Snowflake user. Ignored if private_key is set.
     :param logger: The logger to use for logging messages. Defaults to a new SemanticLogger instance.
     :param role: Optional - The role for the Snowflake user.
     """
@@ -57,6 +58,7 @@ class SnowflakeClient:
         warehouse: str,
         private_key: str | None = None,
         private_key_password: str | None = None,
+        password: str | None = None,
         logger: SemanticLogger = SemanticLogger().add_log_source(
             log_source_name="adapta-snowflake-client",
             min_log_level=LogLevel.INFO,
@@ -64,9 +66,15 @@ class SnowflakeClient:
         ),
         role: str | None = None,
     ):
-        if not private_key:
+
+        if private_key:
+            self._authenticator = SnowflakeAuth.KEY_PAIR
+        elif password:
+            self._authenticator = SnowflakeAuth.PASSWORD
+        else:
+            self._authenticator = SnowflakeAuth.EXTERNAL_BROWSER
             logger.warning(
-                "No private key provided for {account} -- falling back to externalbrowser authentication.",
+                "No private key / password provided for {account} -- falling back to externalbrowser authentication.",
                 account=account,
             )
         self._user = user
@@ -74,7 +82,7 @@ class SnowflakeClient:
         self._warehouse = warehouse
         self._logger = logger
         self._private_key = load_private_key(private_key, private_key_password) if private_key else None
-        self._authenticator = SnowflakeAuth.KEY_PAIR if private_key else SnowflakeAuth.EXTERNAL_BROWSER
+        self._password = password
         self._role = role
         self._conn = None
 
@@ -89,6 +97,7 @@ class SnowflakeClient:
                 account=self._account,
                 warehouse=self._warehouse,
                 private_key=self._private_key,
+                password=self._password,
                 authenticator=self._authenticator,
                 role=self._role,
             )
