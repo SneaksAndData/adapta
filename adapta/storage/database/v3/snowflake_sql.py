@@ -66,7 +66,6 @@ class SnowflakeClient:
         ),
         role: str | None = None,
     ):
-
         if private_key:
             self._authenticator = SnowflakeAuth.KEY_PAIR
         elif password:
