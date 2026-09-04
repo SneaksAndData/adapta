@@ -15,6 +15,8 @@ def test_polars_schema():
         value_datetime: datetime
         value_date: date
         value_float: float
+        value_optional: Optional[datetime]
+        value_optional_none: datetime | None = None
 
     assert get_polars_schema(Test) == {
         "value_int": polars.Int64,
@@ -23,6 +25,8 @@ def test_polars_schema():
         "value_datetime": polars.Datetime,
         "value_date": polars.Date,
         "value_float": polars.Float64,
+        "value_optional": polars.Datetime,
+        "value_optional_none": polars.Datetime,
     }
 
 
