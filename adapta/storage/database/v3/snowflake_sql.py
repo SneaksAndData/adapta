@@ -1,5 +1,5 @@
 """
-  Snowflake Client Wrapper
+Snowflake Client Wrapper
 """
 
 import os
@@ -10,8 +10,6 @@ from cryptography.hazmat.primitives.serialization import load_pem_private_key
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 
 import snowflake.connector
-
-from snowflake.connector.errors import DatabaseError, ProgrammingError
 
 from adapta.logs.models import LogLevel
 from adapta.logs import SemanticLogger
@@ -85,27 +83,21 @@ class SnowflakeClient:
         self._role = role
         self._conn = None
 
-    def __enter__(self) -> Self | None:
+    def __enter__(self) -> Self:
         """
         Enters the context manager and establishes a connection to the Snowflake database.
         :return: The SnowflakeClient instance, or None if there was an error connecting to the database.
         """
-        try:
-            self._conn = snowflake.connector.connect(
-                user=self._user,
-                account=self._account,
-                warehouse=self._warehouse,
-                private_key=self._private_key,
-                password=self._password,
-                authenticator=self._authenticator,
-                role=self._role,
-            )
-            return self
-        except DatabaseError as ex:
-            self._logger.error(
-                "Error connecting to {account} for {user}", account=self._account, user=self._user, exception=ex
-            )
-            return None
+        self._conn = snowflake.connector.connect(
+            user=self._user,
+            account=self._account,
+            warehouse=self._warehouse,
+            private_key=self._private_key,
+            password=self._password,
+            authenticator=self._authenticator,
+            role=self._role,
+        )
+        return self
 
     def __exit__(
         self,
@@ -133,15 +125,10 @@ class SnowflakeClient:
         :return: An iterator of Pandas DataFrames, one for each result set returned by the query, or None if there was
             an error executing the query.
         """
-        try:
-            with self._conn.cursor() as cursor:
-                result = cursor.execute(query)
-                if fetch_dataframe:
-                    return MetaFrame.from_arrow(result.fetch_arrow_all(force_return_table=True))
-                return None
-
-        except ProgrammingError as ex:
-            self._logger.error("Error executing query {query}", query=query, exception=ex)
+        with self._conn.cursor() as cursor:
+            result = cursor.execute(query)
+            if fetch_dataframe:
+                return MetaFrame.from_arrow(result.fetch_arrow_all(force_return_table=True))
             return None
 
     def _get_snowflake_type(self, data_type: str) -> str:
