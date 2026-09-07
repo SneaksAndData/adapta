@@ -6,6 +6,7 @@ from dataclasses import fields, is_dataclass
 from datetime import date, datetime
 from typing import Any, get_args, get_origin
 import typing
+import types
 
 import polars
 
@@ -50,7 +51,7 @@ def get_polars_type(dtype: Any) -> polars.DataType:
         return polars.Struct({f.name: get_polars_type(f.type) for f in fields(dtype)})
 
     # Handle fields wrapped in Optional
-    if get_origin(dtype) == typing.Union:
+    if get_origin(dtype) in (typing.Union, types.UnionType):
         return get_polars_type(get_args(dtype)[0])
 
     if get_origin(dtype) == list:
