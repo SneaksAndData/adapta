@@ -182,8 +182,10 @@ def write_using_catalog(
     delete_filter_expression = compile_expression(delete_filter, IcebergFilterExpression) if delete_filter else None
 
     with target_table.transaction() as write_tx:
-        if overwrite or delete_filter_expression:
-            write_tx.delete(delete_filter=delete_filter_expression or ALWAYS_TRUE)
+        if overwrite:
+            write_tx.delete(delete_filter=ALWAYS_TRUE)
+        if delete_filter_expression:    
+            write_tx.delete(delete_filter=delete_filter_expression)
         iterator = (
             data.iter_slices(n_rows=write_chunk_size)
             if isinstance(data, polars.DataFrame)
