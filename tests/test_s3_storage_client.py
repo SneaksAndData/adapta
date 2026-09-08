@@ -12,11 +12,12 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+from unittest.mock import patch
+
 import pytest
 
 from adapta.storage.blob.s3_storage_client import S3StorageClient
 from adapta.storage.models.aws import S3Path
-from unittest.mock import patch
 
 
 def test_from_hdfs_path():

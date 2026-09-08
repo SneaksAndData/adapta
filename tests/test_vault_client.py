@@ -13,7 +13,7 @@
 #  limitations under the License.
 #
 
-from unittest.mock import patch, MagicMock, mock_open, Mock
+from unittest.mock import MagicMock, Mock, mock_open, patch
 
 import pytest
 

@@ -1,6 +1,9 @@
 import polars as pl
+
 from adapta.dataclass_validation import AbstractDataClass, Field
-from adapta.dataclass_validation.validation.validation_polars import PolarsValidationClass
+from adapta.dataclass_validation.validation.validation_polars import (
+    PolarsValidationClass,
+)
 
 
 def test__add_missing_fields__expected_no_change():

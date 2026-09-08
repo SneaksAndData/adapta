@@ -13,16 +13,15 @@
 #  limitations under the License.
 #
 import pathlib
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
-from deltalake import DeltaTable
-from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
+from deltalake import DeltaTable
 
-from adapta.storage.database.v3.snowflake_sql import SnowflakeClient, load_private_key
 from adapta.storage.database.v3.models import SnowflakeAuth
-
+from adapta.storage.database.v3.snowflake_sql import SnowflakeClient, load_private_key
 from adapta.storage.models.azure import AdlsGen2Path
 
 

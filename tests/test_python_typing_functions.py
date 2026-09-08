@@ -9,9 +9,7 @@ from adapta.utils.python_typing import is_optional
 @pytest.mark.parametrize(
     "type_,expected",
     [
-        (str | int | None, True),
         (str | None, True),
-        (str | None, True),  # Same as Optional[str]
         (str | int | None, True),  # Same as Union[str, int, None], which is an optional type
         (str, False),
         (str | int, False),

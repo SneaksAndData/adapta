@@ -4,7 +4,7 @@ from typing import Any
 
 import pandas
 import sqlalchemy
-from sqlalchemy import ARRAY, BIGINT, JSON
+from sqlalchemy import ARRAY, BIGINT
 
 
 def prepare_iceberg_table(

@@ -14,6 +14,7 @@
 #
 
 import pytest
+
 from adapta.storage.models.astra import AstraPath
 
 

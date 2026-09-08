@@ -1,7 +1,7 @@
-import pytest
 import polars as pl
+import pytest
 
-from adapta.dataclass_validation import AbstractDataClass, Field, Checks
+from adapta.dataclass_validation import AbstractDataClass, Checks, Field
 
 
 class TestDataClass(AbstractDataClass):

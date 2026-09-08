@@ -4,18 +4,25 @@ import sqlalchemy
 from polars.testing import assert_frame_equal
 
 from adapta.storage.models import parse_data_path
-from adapta.storage.models.expression_dsl.filter_expression import FilterField, Expression
-from adapta.utils.metaframe import MetaFrame
+from adapta.storage.models.expression_dsl.filter_expression import (
+    Expression,
+    FilterField,
+)
 from adapta.storage.query_enabled_store import (
     QueryEnabledStore,
-    QueryEnabledStoreMode,
-    QueryEnabledStoreSelectParameter,
-    QueryEnabledStoreFilterParameter,
-    QueryEnabledStoreDataParameter,
-    QueryEnabledStoreOverwriteParameter,
     QueryEnabledStoreBlockSizeParameter,
+    QueryEnabledStoreDataParameter,
+    QueryEnabledStoreFilterParameter,
+    QueryEnabledStoreMode,
+    QueryEnabledStoreOverwriteParameter,
+    QueryEnabledStoreSelectParameter,
 )
-from tests.iceberg_clients._functions import get_input_data, prepare_iceberg_table, generate_random_string
+from adapta.utils.metaframe import MetaFrame
+from tests.iceberg_clients._functions import (
+    generate_random_string,
+    get_input_data,
+    prepare_iceberg_table,
+)
 
 _qes_input_data = get_input_data() | {"cold": [-1, 1, 2, -3, 0, 5, 6, 10, -5, 2]}
 _qes_input = polars.DataFrame(_qes_input_data)
@@ -50,7 +57,7 @@ _qes_input = polars.DataFrame(_qes_input_data)
             FilterField("cola") > 5,
             ["cola", "colb"],
             None,
-            _qes_input.filter((polars.col("cola") > 5)).select(polars.col("cola"), polars.col("colb")),
+            _qes_input.filter(polars.col("cola") > 5).select(polars.col("cola"), polars.col("colb")),
         ),
     ],
 )

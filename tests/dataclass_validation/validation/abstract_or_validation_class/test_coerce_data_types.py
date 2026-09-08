@@ -1,9 +1,12 @@
 from dataclasses import dataclass
+
 import polars as pl
 import pytest
 
 from adapta.dataclass_validation import AbstractDataClass, Field
-from adapta.dataclass_validation.validation.validation_polars import PolarsValidationClass
+from adapta.dataclass_validation.validation.validation_polars import (
+    PolarsValidationClass,
+)
 
 
 @dataclass

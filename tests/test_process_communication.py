@@ -13,7 +13,8 @@
 #  limitations under the License.
 #
 
-from contextlib import nullcontext as does_not_raise, AbstractContextManager
+from contextlib import AbstractContextManager
+from contextlib import nullcontext as does_not_raise
 
 import pytest
 

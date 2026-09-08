@@ -16,19 +16,18 @@
 import pathlib
 import zlib
 from copy import deepcopy
-from unittest.mock import patch, MagicMock, ANY, call
+from unittest.mock import ANY, MagicMock, call, patch
 
 import pandas
-import pytest
 import polars
+import pytest
+from pyarrow.dataset import field as pyarrow_field
 
 from adapta.security.clients import LocalClient
-from adapta.storage.models.local import LocalPath
-from adapta.storage.delta_lake.v3 import load, load_cached, get_cache_key
 from adapta.storage.cache import KeyValueCache
+from adapta.storage.delta_lake.v3 import get_cache_key, load, load_cached
 from adapta.storage.models.formatters import PandasDataFrameParquetSerializationFormat
-
-from pyarrow.dataset import field as pyarrow_field
+from adapta.storage.models.local import LocalPath
 
 
 @pytest.fixture

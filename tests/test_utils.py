@@ -16,7 +16,6 @@ import asyncio
 import os
 import pathlib
 import sys
-
 import time
 from dataclasses import dataclass
 from logging import StreamHandler
@@ -31,19 +30,18 @@ from dataclasses_json import DataClassJsonMixin
 from adapta.logs import SemanticLogger, create_async_logger
 from adapta.logs._async_logger import _AsyncLogger
 from adapta.logs.models import LogLevel
-from adapta.metrics import MetricsProvider
 from adapta.utils import (
-    doze,
-    operation_time,
     chunk_list,
-    memory_limit,
-    map_column_names,
-    run_time_metrics,
     downcast_dataframe,
-    xmltree_to_dict_collection,
+    doze,
+    map_column_names,
     map_column_names_polars,
+    memory_limit,
+    operation_time,
+    run_time_metrics,
+    xmltree_to_dict_collection,
 )
-from adapta.utils.concurrent_task_runner import Executable, ConcurrentTaskRunner
+from adapta.utils.concurrent_task_runner import ConcurrentTaskRunner, Executable
 from adapta.utils.decorators._logging import run_time_metrics_async
 
 
@@ -242,8 +240,7 @@ def test_memory_limit_error(limit_bytes: int | None, limit_percentage: float | N
     In both test cases, the test expects a MemoryError exception to be raised when `test_str` is multiplied by `num_iterations`.
     """
     test_str = "a"
-    with pytest.raises(MemoryError):
-        with memory_limit(memory_limit_bytes=limit_bytes, memory_limit_percentage=limit_percentage):
+    with pytest.raises(MemoryError), memory_limit(memory_limit_bytes=limit_bytes, memory_limit_percentage=limit_percentage):
             test_str *= num_iterations
 
 

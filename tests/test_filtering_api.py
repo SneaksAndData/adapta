@@ -1,35 +1,41 @@
+from dataclasses import dataclass, field
 from functools import reduce
+from typing import Any
 
+import pyarrow.compute as pc
 import pytest
+from pyarrow.dataset import field as pyarrow_field
 from pyiceberg.expressions import (
+    And,
     BooleanExpression,
     EqualTo,
-    GreaterThanOrEqual,
     GreaterThan,
+    GreaterThanOrEqual,
+    In,
     LessThan,
     LessThanOrEqual,
-    In,
-    And,
-    Or,
     NotEqualTo,
+    Or,
 )
-
-from adapta.storage.models.expression_dsl.filter_expression import (
-    FilterField,
-    FilterExpression,
-    compile_expression,
-)
-from adapta.storage.models.expression_dsl.iceberg_filter_expression import IcebergFilterExpression
-from adapta.storage.models.expression_dsl.trino_filter_expression import TrinoFilterExpression
-from adapta.storage.models.expression_dsl.arrow_filter_expression import ArrowFilterExpression
-from adapta.storage.models.expression_dsl.astra_filter_expression import AstraFilterExpression
 
 from adapta.schema_management.schema_entity import PythonSchemaEntity
-
-from dataclasses import dataclass, field
-from typing import Any
-from pyarrow.dataset import field as pyarrow_field
-import pyarrow.compute as pc
+from adapta.storage.models.expression_dsl.arrow_filter_expression import (
+    ArrowFilterExpression,
+)
+from adapta.storage.models.expression_dsl.astra_filter_expression import (
+    AstraFilterExpression,
+)
+from adapta.storage.models.expression_dsl.filter_expression import (
+    FilterExpression,
+    FilterField,
+    compile_expression,
+)
+from adapta.storage.models.expression_dsl.iceberg_filter_expression import (
+    IcebergFilterExpression,
+)
+from adapta.storage.models.expression_dsl.trino_filter_expression import (
+    TrinoFilterExpression,
+)
 
 
 @dataclass
@@ -265,5 +271,5 @@ def test_long_is_in_list(
 def test_large_filter(filter_expr: FilterField | FilterExpression):
     try:
         compile_expression(filter_expr, AstraFilterExpression)
-    except RecursionError as re:
-        assert False, f"Raised RecursionError for large filters"
+    except RecursionError:
+        assert False, "Raised RecursionError for large filters"

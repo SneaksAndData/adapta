@@ -1,6 +1,6 @@
-from datetime import datetime
+from datetime import UTC, datetime
 
-from adapta.utils import rate_limit, doze
+from adapta.utils import doze, rate_limit
 
 
 def test_rate_limit_decorator():
@@ -11,11 +11,11 @@ def test_rate_limit_decorator():
         nonlocal count
         count += 1
 
-    start = datetime.now()
-    for _ in range(0, 10):
+    start = datetime.now(tz=UTC)
+    for _ in range(10):
         increment()
 
-    assert (datetime.now() - start).seconds > 5
+    assert (datetime.now(tz=UTC) - start).seconds > 5
     assert count == 10
 
 
@@ -33,10 +33,10 @@ def test_delay_func():
         nonlocal count
         count += 1
 
-    start = datetime.now()
-    for _ in range(0, 5):
+    start = datetime.now(tz=UTC)
+    for _ in range(5):
         increment()
 
-    assert (datetime.now() - start).seconds > 5
+    assert (datetime.now(tz=UTC) - start).seconds > 5
     assert count == 5
     assert delay_calls > 2

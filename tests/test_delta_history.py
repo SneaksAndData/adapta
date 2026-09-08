@@ -20,9 +20,9 @@ import pandas
 import pytest
 
 from adapta.security.clients import LocalClient
+from adapta.storage.delta_lake import DeltaOperation, history
 from adapta.storage.delta_lake.v3 import load
 from adapta.storage.models.local import LocalPath
-from adapta.storage.delta_lake import history, DeltaOperation
 
 
 @pytest.fixture

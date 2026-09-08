@@ -4,7 +4,7 @@ import pandas
 import polars
 import pytest
 
-from adapta.utils.metaframe import MetaFrame, concat, PandasOptions
+from adapta.utils.metaframe import MetaFrame, PandasOptions, concat
 
 
 def test_to_df():

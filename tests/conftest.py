@@ -18,13 +18,13 @@ import os
 
 import pytest
 
+from adapta.logs import SemanticLogger
 from adapta.logs.handlers.datadog_api_handler import DataDogApiHandler
 from adapta.logs.models import LogLevel
-from adapta.logs import SemanticLogger
-from adapta.storage.database.v3.odbc import OdbcClient
 from adapta.storage.database.v3.models import DatabaseType
+from adapta.storage.database.v3.odbc import OdbcClient
 from adapta.storage.database.v3.trino_sql import TrinoClient
-from adapta.storage.iceberg.v1 import get_default_catalog, IcebergRestCatalogConfig
+from adapta.storage.iceberg.v1 import IcebergRestCatalogConfig, get_default_catalog
 
 
 @pytest.fixture

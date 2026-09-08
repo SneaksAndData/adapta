@@ -1,6 +1,7 @@
 from dataclasses import dataclass
-import pytest
+
 import polars as pl
+import pytest
 from polars.testing import assert_frame_equal
 
 from adapta.dataclass_validation.dataclass.dataclass_abstract import AbstractDataClass

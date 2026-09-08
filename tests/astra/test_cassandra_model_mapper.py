@@ -1,17 +1,17 @@
 from dataclasses import dataclass, field
 
+import pandera.polars
 import polars
 import pytest
-import pandera.polars
 from cassandra.cqlengine import columns
 from cassandra.cqlengine.models import Model
 from pandera.typing import Series
 
 from adapta.storage.distributed_object_store.v3.datastax_astra._model_mappers import (
-    DataclassMapper,
     CassandraModelMapper,
-    get_mapper,
+    DataclassMapper,
     PanderaPolarsMapper,
+    get_mapper,
 )
 
 cols = {"text_column": columns.Text(primary_key=True)}

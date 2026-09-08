@@ -5,7 +5,9 @@ import pytest
 from polars.testing import assert_frame_equal
 
 from adapta.dataclass_validation import AbstractDataClass, Checks, Field
-from adapta.dataclass_validation.validation.validation_polars import PolarsValidationClass
+from adapta.dataclass_validation.validation.validation_polars import (
+    PolarsValidationClass,
+)
 
 
 class GeFloatListDataClass(AbstractDataClass):

@@ -1,6 +1,5 @@
 from dataclasses import dataclass, field
 
-import numpy as np
 import pytest
 
 from adapta.schema_management.schema_entity import PythonSchemaEntity

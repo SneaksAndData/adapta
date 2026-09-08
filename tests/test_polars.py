@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from datetime import date, datetime
-from typing import Optional
 
 import polars
+
 from adapta.utils.polars import get_polars_schema
 
 
@@ -15,7 +15,7 @@ def test_polars_schema():
         value_datetime: datetime
         value_date: date
         value_float: float
-        value_optional: Optional[datetime]
+        value_optional: datetime | None
         value_optional_none: datetime | None = None
 
     assert get_polars_schema(Test) == {
@@ -34,7 +34,7 @@ def test_nested_polars_schema():
     @dataclass
     class TestField:
         id: int
-        value: Optional[str] = None
+        value: str | None = None
 
     @dataclass
     class Test:
