@@ -110,7 +110,8 @@ def test_log_format(
         if level == LogLevel.DEBUG:
             stream_logger.debug(template=template, exception=exception, diagnostics=diagnostics, **args)
 
-    logged_lines = open(test_file_path).readlines()
+    with open(test_file_path) as f:
+        logged_lines = f.readlines()
     assert expected_message in logged_lines
 
 
@@ -156,7 +157,7 @@ def test_adapta_logger_replacement(datadog_handler: DataDogApiHandler, restore_l
     requests.get("https://example.com", verify=False)
 
     requests_log = logging.getLogger("urllib3")
-    handler = [handler for handler in requests_log.handlers if isinstance(handler, DataDogApiHandler)][0]
+    handler = next(iter([handler for handler in requests_log.handlers if isinstance(handler, DataDogApiHandler)]))
     buffers = [json.loads(msg.message) for msg in handler._buffer]
     assert {"text": "Starting new HTTPS connection (1): example.com:443"} in buffers
 
@@ -171,7 +172,7 @@ def test_log_level(datadog_handler: DataDogApiHandler, restore_logger_class):
     logger.info("Info message", log_source_name="test")
 
     requests_log = logging.getLogger("test")
-    handler = [handler for handler in requests_log.handlers if isinstance(handler, DataDogApiHandler)][0]
+    handler = next(iter([handler for handler in requests_log.handlers if isinstance(handler, DataDogApiHandler)]))
     buffers = [json.loads(msg.message) for msg in handler._buffer]
     assert buffers == [{"template": "Info message", "text": "Info message"}]
 
@@ -197,7 +198,7 @@ def test_fixed_template(datadog_handler: DataDogApiHandler, restore_logger_class
     )
 
     requests_log = logging.getLogger("test_fixed_template")
-    handler = [handler for handler in requests_log.handlers if isinstance(handler, DataDogApiHandler)][0]
+    handler = next(iter([handler for handler in requests_log.handlers if isinstance(handler, DataDogApiHandler)]))
     buffers = [json.loads(msg.message) for msg in handler._buffer]
     assert buffers == [
         {
@@ -233,7 +234,7 @@ def test_fixed_template_duplicate_handler(datadog_handler: DataDogApiHandler, re
     )
 
     requests_log = logging.getLogger("test_fixed_template")
-    handler = [handler for handler in requests_log.handlers if isinstance(handler, DataDogApiHandler)][0]
+    handler = next(iter([handler for handler in requests_log.handlers if isinstance(handler, DataDogApiHandler)]))
     buffers = [json.loads(msg.message) for msg in handler._buffer]
     assert buffers == [
         {

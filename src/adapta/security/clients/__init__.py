@@ -18,7 +18,7 @@ Import index.
 #
 
 from adapta.security.clients._base import AuthenticationClient as AuthenticationClient
-from adapta.security.clients._local_client import LocalClient
+from adapta.security.clients._local_client import LocalClient as LocalClient
 
 try:
     from adapta.security.clients.hashicorp_vault.oidc_client import (

@@ -46,7 +46,7 @@ class DataPath(ABC):
 
     @classmethod
     @abstractmethod
-    def from_hdfs_path(cls, hdfs_path: str) -> "DataPath":
+    def from_hdfs_path(cls, hdfs_path: str) -> Self:
         """
           Converts HDFS FileSystem path notation to this class.
         :param hdfs_path: abfss://...
@@ -55,7 +55,7 @@ class DataPath(ABC):
 
     @classmethod
     @abstractmethod
-    def from_uri(cls, url: str) -> "DataPath":
+    def from_uri(cls, url: str) -> Self:
         """
           Converts URL  to this class.
         :param url: https://...
@@ -94,4 +94,4 @@ class DataPath(ABC):
         """
         Concatenate two DataPaths into a new DataPath.
         """
-        return self.from_hdfs_path("/".join([self.to_hdfs_path(), other.path]))
+        return self.from_hdfs_path(f"{self.to_hdfs_path()}/{other.path}")

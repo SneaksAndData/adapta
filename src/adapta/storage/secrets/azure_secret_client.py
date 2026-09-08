@@ -53,7 +53,7 @@ class AzureSecretStorageClient(SecretStorageClient):
         b64_encode=False,
     ) -> None:
         if not isinstance(secret_value, str):
-            raise ValueError(
+            raise TypeError(
                 f"Only str secret type supported in AzureSecretStorageClient but was: {type(secret_value)}"
             )
         self._get_keyvault(storage_name).set_secret(

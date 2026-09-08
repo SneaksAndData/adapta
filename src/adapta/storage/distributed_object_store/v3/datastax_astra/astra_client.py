@@ -383,9 +383,7 @@ class AstraClient:
                         ],
                         chunksize=max(int(len(compiled_filter_values) / num_threads), 1),
                     ),
-                    options=options[QueryEnabledStoreOptions.CONCAT_OPTIONS]
-                    if QueryEnabledStoreOptions.CONCAT_OPTIONS in options
-                    else None,
+                    options=options.get(QueryEnabledStoreOptions.CONCAT_OPTIONS, None),
                 )
         else:
             result = concat(
@@ -401,9 +399,7 @@ class AstraClient:
                     )
                     for key_column_filter in compiled_filter_values
                 ],
-                options=options[QueryEnabledStoreOptions.CONCAT_OPTIONS]
-                if QueryEnabledStoreOptions.CONCAT_OPTIONS in options
-                else None,
+                options=options.get(QueryEnabledStoreOptions.CONCAT_OPTIONS, None),
             )
 
         return result

@@ -57,7 +57,7 @@ from adapta.storage.models.formatters.polars import (
     PolarsDataFrameExcelSerializationFormatWithFileFormat as PolarsDataFrameExcelSerializationFormatWithFileFormat,
 )
 from adapta.storage.models.formatters.polars import (
-    PolarsDataFrameJsonSerializationFormat as PolarsDataFrameJsonSerializationFormatWithFileFormat,
+    PolarsDataFrameJsonSerializationFormat as PolarsDataFrameJsonSerializationFormat,
 )
 from adapta.storage.models.formatters.polars import (
     PolarsDataFrameJsonSerializationFormatWithFileFormat as PolarsDataFrameJsonSerializationFormatWithFileFormat,

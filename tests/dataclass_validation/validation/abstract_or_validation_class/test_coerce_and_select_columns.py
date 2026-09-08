@@ -239,7 +239,7 @@ def test__allowed_casts__convention_coverage():
     for param in test_params:
         test_input = param.values[0]
 
-        source_dtype = list(test_input.dataframe.schema.values())[0]
+        source_dtype = next(iter(test_input.dataframe.schema.values()))
         # Normalize source
         s_base = source_dtype if isinstance(source_dtype, type) else source_dtype.__class__
 

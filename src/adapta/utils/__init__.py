@@ -18,6 +18,7 @@ Utilities module index.
 #
 
 from adapta.utils._common import *
-from adapta.utils._requests import LocalFileAdapter
+from adapta.utils._requests import LocalFileAdapter as LocalFileAdapter
 from adapta.utils.data_structures import *
-from adapta.utils.decorators import rate_limit, run_time_metrics
+from adapta.utils.decorators import rate_limit as rate_limit
+from adapta.utils.decorators import run_time_metrics as run_time_metrics

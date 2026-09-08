@@ -101,13 +101,12 @@ class MlflowBasicClient:
         :param model_stage: Stage of a model.
         """
         if model_stage:
-            return [m for m in self._get_latest_model_versions(model_name) if m.current_stage == model_stage][0]
+            return next(iter([m for m in self._get_latest_model_versions(model_name) if m.current_stage == model_stage]))
 
-        return sorted(
+        return max(
             self._get_latest_model_versions(model_name),
-            key=lambda m: int(m.version),
-            reverse=True,
-        )[0]
+            key=lambda m: int(m.version)
+        )
 
     def get_model_version_by_alias(self, model_name: str, alias: str) -> ModelVersion:
         """

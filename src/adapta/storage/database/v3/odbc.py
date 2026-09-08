@@ -147,7 +147,7 @@ class OdbcClient(ABC):
         except SQLAlchemyError as ex:
             self._logger.error("Engine error while executing query {query}", query=query, exception=ex)
             return None
-        except BaseException as other:  # pylint: disable=W0703
+        except BaseException as other:  # noqa
             self._logger.error(
                 "Unknown error while executing query {query}",
                 query=query,

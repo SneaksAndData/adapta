@@ -47,13 +47,13 @@ class QueryEnabledStoreOperationParameter(ABC, Generic[TParameter]):
         return self._value
 
 
-class QueryEnabledStoreReadParameter(Generic[TParameter], QueryEnabledStoreOperationParameter[TParameter], ABC):
+class QueryEnabledStoreReadParameter(QueryEnabledStoreOperationParameter[TParameter], ABC, Generic[TParameter]):
     """
     Base parameter class for query enabled store read operation parameters.
     """
 
 
-class QueryEnabledStoreWriteParameter(Generic[TParameter], QueryEnabledStoreOperationParameter[TParameter], ABC):
+class QueryEnabledStoreWriteParameter(QueryEnabledStoreOperationParameter[TParameter], ABC, Generic[TParameter]):
     """
     Base parameter class for query enabled store write operation parameters.
     """

@@ -23,7 +23,7 @@ from collections.abc import Callable, Iterator
 from enum import Enum
 from functools import partial
 from pydoc import locate
-from typing import Generic, Self, TypeVar, final
+from typing import Any, Generic, Self, TypeVar, final
 
 from adapta.storage.models.base import DataPath
 from adapta.storage.models.enum import QueryEnabledStoreOptions
@@ -72,7 +72,7 @@ class BundledQueryEnabledStores(Enum):
 BUNDLED_STORES = {store.name: store.value for store in BundledQueryEnabledStores}
 
 
-class QueryEnabledStore(Generic[TCredential, TSettings], ABC):
+class QueryEnabledStore(ABC, Generic[TCredential, TSettings]):
     """
     QES base class.
     """
@@ -118,7 +118,7 @@ class QueryEnabledStore(Generic[TCredential, TSettings], ABC):
         path: DataPath,
         filter_expression: Expression,
         columns: list[str],
-        options: dict[QueryEnabledStoreOptions, any] | None = None,
+        options: dict[QueryEnabledStoreOptions, Any] | None = None,
         limit: int | None = None,
     ) -> MetaFrame | Iterator[MetaFrame]:
         """

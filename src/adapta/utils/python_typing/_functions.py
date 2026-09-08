@@ -3,10 +3,7 @@
 from types import UnionType
 from typing import Union, get_args, get_origin
 
-ArgumentType = type
-
-ArgumentType = Union[UnionType, type]
-
+ArgumentType = UnionType | type
 
 def is_optional(type_: ArgumentType) -> bool:
     """

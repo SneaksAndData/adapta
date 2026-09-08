@@ -142,9 +142,9 @@ class CassandraModelMapper(ABC):
         if type_to_map is float:
             return (columns.Double,)
         if (
-            sys.version_info.minor > 9 and type(type_to_map) is enum.EnumType  # pylint: disable=unidiomatic-typecheck
+            sys.version_info.minor > 9 and type(type_to_map) is enum.EnumType  # noqa
         ) or (
-            sys.version_info.minor <= 9 and type(type_to_map) is enum.EnumMeta  # pylint: disable=unidiomatic-typecheck
+            sys.version_info.minor <= 9 and type(type_to_map) is enum.EnumMeta  # noqa
         ):  # assume all enums are strings - for now
             return (columns.Text,)
         if typing.get_origin(type_to_map) == list:

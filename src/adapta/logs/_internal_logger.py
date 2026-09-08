@@ -92,7 +92,7 @@ class _InternalLogger(LoggerInterface, ABC):
         dup_template = " ".join(
             [
                 "Duplicated log properties provided:",
-                ", ".join(map(lambda key: "".join(["{", key, "}"]), duplicates.keys())),
+                ", ".join([f"{{{key}}}" for key in duplicates]),
             ]
         )
         logger.log_with_metadata(

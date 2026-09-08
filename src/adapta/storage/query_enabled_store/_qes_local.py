@@ -9,7 +9,7 @@ from typing import final
 from dataclasses_json import DataClassJsonMixin
 from pyarrow.parquet import read_table
 
-from adapta.storage.models import LocalPath
+from adapta.storage.models import DataPath, LocalPath
 from adapta.storage.models.enum import QueryEnabledStoreOptions
 from adapta.storage.models.expression_dsl.arrow_filter_expression import (
     ArrowFilterExpression,
@@ -62,11 +62,11 @@ class LocalQueryEnabledStore(QueryEnabledStore[LocalCredential, LocalSettings]):
 
     def _apply_filter(
         self,
-        path: LocalPath,
+        path: DataPath,
         filter_expression: Expression,
         columns: list[str],
         options: dict[QueryEnabledStoreOptions, any] | None = None,
-        limit: int = None,
+        limit: int | None = None,
     ) -> MetaFrame | Iterator[MetaFrame]:
         """
         Applies a filter to a local file

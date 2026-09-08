@@ -27,7 +27,7 @@ def load_private_key(private_key: str, private_key_password: str | None = None) 
     pem_password_bytes = private_key_password.encode("utf-8") if private_key_password else None
     loaded_key = load_pem_private_key(pem_bytes, password=pem_password_bytes)
     if not isinstance(loaded_key, RSAPrivateKey):
-        raise ValueError(
+        raise TypeError(
             f"Snowflake key-pair authentication requires an RSA private key, got {type(loaded_key).__name__}"
         )
     return loaded_key
@@ -56,27 +56,27 @@ class SnowflakeClient:
         private_key: str | None = None,
         private_key_password: str | None = None,
         password: str | None = None,
-        logger: SemanticLogger = SemanticLogger().add_log_source(
+        logger: SemanticLogger | None = None,
+        role: str | None = None,
+    ):
+        self._logger = logger or SemanticLogger().add_log_source(
             log_source_name="adapta-snowflake-client",
             min_log_level=LogLevel.INFO,
             is_default=True,
-        ),
-        role: str | None = None,
-    ):
+        )
         if private_key:
             self._authenticator = SnowflakeAuth.KEY_PAIR
         elif password:
             self._authenticator = SnowflakeAuth.PASSWORD
         else:
             self._authenticator = SnowflakeAuth.EXTERNAL_BROWSER
-            logger.warning(
+            self._logger.warning(
                 "No private key / password provided for {account} -- falling back to externalbrowser authentication.",
                 account=account,
             )
         self._user = user
         self._account = account
         self._warehouse = warehouse
-        self._logger = logger
         self._private_key = load_private_key(private_key, private_key_password) if private_key else None
         self._password = password
         self._role = role

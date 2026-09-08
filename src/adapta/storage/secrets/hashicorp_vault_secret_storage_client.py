@@ -53,7 +53,7 @@ class HashicorpSecretStorageClient(SecretStorageClient):
         b64_encode=False,
     ) -> None:
         if not isinstance(secret_value, dict):
-            raise ValueError(
+            raise TypeError(
                 f"Only Dict secret type supported in HashicorpSecretStorageClient but was: {type(secret_value)}"
             )
         self.client.secrets.kv.v2.create_or_update_secret(path=secret_name, secret=secret_value)

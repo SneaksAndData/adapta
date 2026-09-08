@@ -4,6 +4,7 @@ Models for generating filter expressions for PyArrow and Astra.
 
 from abc import ABC, abstractmethod
 from enum import Enum
+from types import MappingProxyType
 from typing import Any, Generic, Self, TypeVar, final
 
 import pyarrow.compute
@@ -13,66 +14,64 @@ try:
 except (ImportError, ModuleNotFoundError):
     pass
 
-TCompileResult = TypeVar("TCompileResult")  # pylint: disable=invalid-name
+TCompileResult = TypeVar("TCompileResult")
 
-
-# pylint: disable=E1101
 class FilterExpressionOperation(Enum):
     """
     An enumeration of filter expression operations.
     """
 
-    AND = {
+    AND = MappingProxyType({
         "arrow": pyarrow.compute.Expression.__and__,
         "astra": lambda left_exprs, right_exprs: [
             left_expr | right_expr for left_expr in left_exprs for right_expr in right_exprs
         ],
         "trino": "AND",
         "iceberg": pyiceberg.expressions.And,
-    }
-    OR = {
+    })
+    OR = MappingProxyType({
         "arrow": pyarrow.compute.Expression.__or__,
         "astra": lambda left_exprs, right_exprs: left_exprs + right_exprs,
         "trino": "OR",
         "iceberg": pyiceberg.expressions.Or,
-    }
-    GT = {
+    })
+    GT = MappingProxyType({
         "arrow": pyarrow.compute.Expression.__gt__,
         "astra": "__gt",
         "trino": ">",
         "iceberg": pyiceberg.expressions.GreaterThan,
-    }
-    GE = {
+    })
+    GE = MappingProxyType({
         "arrow": pyarrow.compute.Expression.__ge__,
         "astra": "__gte",
         "trino": ">=",
         "iceberg": pyiceberg.expressions.GreaterThanOrEqual,
-    }
-    LT = {
+    })
+    LT = MappingProxyType({
         "arrow": pyarrow.compute.Expression.__lt__,
         "astra": "__lt",
         "trino": "<",
         "iceberg": pyiceberg.expressions.LessThan,
-    }
-    LE = {
+    })
+    LE = MappingProxyType({
         "arrow": pyarrow.compute.Expression.__le__,
         "astra": "__lte",
         "trino": "<=",
         "iceberg": pyiceberg.expressions.LessThanOrEqual,
-    }
-    EQ = {
+    })
+    EQ = MappingProxyType({
         "arrow": pyarrow.compute.Expression.__eq__,
         "astra": "",
         "trino": "=",
         "iceberg": pyiceberg.expressions.EqualTo,
-    }
-    NE = {
+    })
+    NE = MappingProxyType({
         "arrow": pyarrow.compute.Expression.__ne__,
         "astra": "__ne",
         "trino": "!=",
         "iceberg": pyiceberg.expressions.NotEqualTo,
-    }
-    IN = {"arrow": pyarrow.compute.Expression.isin, "astra": "__in", "trino": "IN", "iceberg": pyiceberg.expressions.In}
+    })
+    IN = MappingProxyType({"arrow": pyarrow.compute.Expression.isin, "astra": "__in", "trino": "IN", "iceberg": pyiceberg.expressions.In})
 
     def to_string(self):
         """
@@ -318,6 +317,6 @@ def compile_expression(expression: Expression, target: type[FilterExpression[TCo
     Compiles a filter expression using the specified target implementation.
     """
     if not isinstance(expression, Expression):
-        raise ValueError(f"Invalid expression type {type(expression)}")
+        raise TypeError(f"Invalid expression type {type(expression)}")
     split_filters = expression.split_expression()
     return target().compile(split_filters)

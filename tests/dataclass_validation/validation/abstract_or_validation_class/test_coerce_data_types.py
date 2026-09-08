@@ -158,7 +158,7 @@ def test__coerce_data_types__raises():
 
     ### Act / Assert
     # Check that it raises when should_raise is True
-    with pytest.raises(TypeError) as e:
+    with pytest.raises(TypeError):
         validation_class.coerce_data_types(should_raise=True)
 
     # Check that it does not raise when should_raise is False

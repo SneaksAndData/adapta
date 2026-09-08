@@ -117,8 +117,7 @@ class S3StorageClient(StorageClient):
             The type (T) of the serialization format must be compatible with the provided data.
         :return:
         """
-        if not overwrite:
-            if self.blob_exists(blob_path=blob_path):
+        if not overwrite and self.blob_exists(blob_path=blob_path):
                 raise StorageClientError(
                     f"Blob already exists at path: {blob_path.path}. Please specify overwrite=True if you want to overwrite it."
                 )

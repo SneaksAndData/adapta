@@ -186,7 +186,7 @@ class ErrorTestOutput:
             ),
             ErrorTestOutput(
                 expected_failed_validations=[
-                    "Column 'capacity' does not satisfy the less than or equal to constraint. "
+                    "Column 'capacity' does not satisfy the less than or equal to constraint. ",
                     "It should be less than 100.0, but found maximum value 100.5.",
                 ],
             ),
@@ -204,7 +204,7 @@ class ErrorTestOutput:
             ),
             ErrorTestOutput(
                 expected_failed_validations=[
-                    "Column 'capacity' does not satisfy the less than or equal to constraint. "
+                    "Column 'capacity' does not satisfy the less than or equal to constraint. ",
                     "It should be less than 100.0, but found maximum value 100.00001.",
                 ],
             ),

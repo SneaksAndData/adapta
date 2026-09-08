@@ -60,11 +60,7 @@ class TrinoClient:
         username: str | None = None,
         password: str | None = None,
         credentials_provider: tuple[TrinoConnectionSecret, SecretStorageClient] | None = None,
-        logger: SemanticLogger = SemanticLogger().add_log_source(
-            log_source_name="adapta-trino-client",
-            min_log_level=LogLevel.INFO,
-            is_default=True,
-        ),
+        logger: SemanticLogger | None = None,
         insecure: bool = False,
     ):
         """
@@ -89,6 +85,11 @@ class TrinoClient:
         :param insecure: Insecure (http) connection to Trino. Use this only in CI.
         """
 
+        self._logger = logger or SemanticLogger().add_log_source(
+            log_source_name="adapta-trino-client",
+            min_log_level=LogLevel.INFO,
+            is_default=True,
+        )
         self._host = host
         self._catalog = catalog
         self._port = port
@@ -135,7 +136,6 @@ class TrinoClient:
                 "Neither ADAPTA__TRINO_USERNAME or ADAPTA__TRINO_OAUTH2_USERNAME is specified. Cannot authenticate to the provided host."
             )
 
-        self._logger = logger
         self._connection: sqlalchemy.engine.Connection | None = None
 
     def connect(self) -> None:

@@ -50,12 +50,11 @@ def test_lazy_read(trino_test_connection: sqlalchemy.engine.Engine, iceberg_cata
 
 def test_map_read(trino_test_connection: sqlalchemy.engine.Engine, iceberg_catalog: Catalog):
     input_data = get_input_data() | {
-        "cold": list(
+        "cold":
             [
                 [{"key": "key1", "value": random.random() * 100}, {"key": "key2", "value": random.random() * 100}]
                 for _ in range(10)
-            ]
-        ),
+            ],
     }
     schema = {
         "cola": polars.Int32,

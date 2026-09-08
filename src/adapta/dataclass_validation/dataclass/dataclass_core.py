@@ -102,11 +102,10 @@ class Field:
         if self.enum is not None and not (isinstance(self.enum, type) and issubclass(self.enum, Enum)):
             raise ValueError("The 'enum' parameter must be an Enum class (not an instance).")
 
-        if self.checks is not None and self.dtype not in [int, float, list[int], list[float]]:
-            if self.checks.le_value is not None or self.checks.ge_value is not None:
-                raise ValueError(
-                    "Field checks can only be applied to numeric fields (int, float, list[int], list[float])."
-                )
+        if (self.checks is not None and self.dtype not in [int, float, list[int], list[float]]) and (self.checks.le_value is not None or self.checks.ge_value is not None):
+            raise ValueError(
+                "Field checks can only be applied to numeric fields (int, float, list[int], list[float])."
+            )
 
         if self.primary_key and self.allow_missing_values:
             raise ValueError("Primary keys cannot allow missing values.")
