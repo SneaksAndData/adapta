@@ -184,7 +184,7 @@ def write_using_catalog(
     with target_table.transaction() as write_tx:
         if overwrite:
             write_tx.delete(delete_filter=ALWAYS_TRUE)
-        if delete_filter_expression:    
+        if delete_filter_expression:
             write_tx.delete(delete_filter=delete_filter_expression)
         iterator = (
             data.iter_slices(n_rows=write_chunk_size)
