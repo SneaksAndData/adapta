@@ -179,9 +179,7 @@ def write_using_catalog(
         target_table.io.properties["s3.endpoint"] = os.environ["ADAPTA__ICEBERG_REST_CATALOG__S3_ENDPOINT_OVERRIDE"]
         target_table.config["s3.endpoint"] = os.environ["ADAPTA__ICEBERG_REST_CATALOG__S3_ENDPOINT_OVERRIDE"]
 
-    delete_filter_expression = None
-    if delete_filter:
-        delete_filter_expression = compile_expression(delete_filter, IcebergFilterExpression)
+    delete_filter_expression = compile_expression(delete_filter, IcebergFilterExpression) if delete_filter else None
 
     with target_table.transaction() as write_tx:
         if overwrite or delete_filter_expression:
