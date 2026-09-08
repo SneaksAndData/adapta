@@ -141,12 +141,14 @@ def write_using_catalog(
     data: polars.DataFrame | polars.LazyFrame,
     write_chunk_size: int = 50_000,
     overwrite: bool = True,
-    merge_columns: list[str] = None,
+    merge_columns: list[str] | None = None,
+    delete_filter: Expression | None = None,
 ) -> None:
     """
     Writes data to an Iceberg table from the provided Metaframe. Will create a table if it doesn't exist.
     Data is written in chunks to regulate memory usage.
     If `merge_columns` is provided an upsert will be performed
+    If `delete_filter` is provided the data matching the filter will be deleted before performing the insert/update
     Note when using S3 compatible storage: if you are getting checksum validation errors, add these two env variables:
         os.environ["AWS_REQUEST_CHECKSUM_CALCULATION"] = "WHEN_REQUIRED"
         os.environ["AWS_RESPONSE_CHECKSUM_VALIDATION"] = "WHEN_REQUIRED"
@@ -177,9 +179,13 @@ def write_using_catalog(
         target_table.io.properties["s3.endpoint"] = os.environ["ADAPTA__ICEBERG_REST_CATALOG__S3_ENDPOINT_OVERRIDE"]
         target_table.config["s3.endpoint"] = os.environ["ADAPTA__ICEBERG_REST_CATALOG__S3_ENDPOINT_OVERRIDE"]
 
+    delete_filter_expression = None
+    if delete_filter:
+        delete_filter_expression = compile_expression(delete_filter, IcebergFilterExpression)
+
     with target_table.transaction() as write_tx:
-        if overwrite:
-            write_tx.delete(delete_filter=ALWAYS_TRUE)
+        if overwrite or delete_filter_expression:
+            write_tx.delete(delete_filter=delete_filter_expression or ALWAYS_TRUE)
         iterator = (
             data.iter_slices(n_rows=write_chunk_size)
             if isinstance(data, polars.DataFrame)
