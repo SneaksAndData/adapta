@@ -5,6 +5,7 @@ from typing import Union, get_args, get_origin
 
 ArgumentType = UnionType | type
 
+
 def is_optional(type_: ArgumentType) -> bool:
     """
     Checks if a type is Optional.

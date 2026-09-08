@@ -72,10 +72,7 @@ class ArrowFilterExpression(FilterExpression[pyarrow.compute.Expression]):
         # Handle list of dicts
         elif isinstance(field_values, list) and isinstance(field_values[0], dict):
             field = pyarrow.compute.binary_join_element_wise(
-                *[
-                    pyarrow.compute.struct_field(field, key).cast(pyarrow.large_string())
-                    for key in field_values[0]
-                ],
+                *[pyarrow.compute.struct_field(field, key).cast(pyarrow.large_string()) for key in field_values[0]],
                 pyarrow.scalar(separator, pyarrow.large_string()),
             )
             field_values = join_dict_values(field_values, separator)

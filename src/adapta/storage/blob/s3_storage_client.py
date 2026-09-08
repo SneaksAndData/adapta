@@ -118,9 +118,9 @@ class S3StorageClient(StorageClient):
         :return:
         """
         if not overwrite and self.blob_exists(blob_path=blob_path):
-                raise StorageClientError(
-                    f"Blob already exists at path: {blob_path.path}. Please specify overwrite=True if you want to overwrite it."
-                )
+            raise StorageClientError(
+                f"Blob already exists at path: {blob_path.path}. Please specify overwrite=True if you want to overwrite it."
+            )
 
         s3_path = cast_path(blob_path)
         bytes_ = serialization_format().serialize(data, **(serialization_kwargs or {}))

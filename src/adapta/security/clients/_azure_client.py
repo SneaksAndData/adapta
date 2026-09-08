@@ -127,7 +127,9 @@ class AzureClient(AuthenticationClient):
             # Auto discover through ARM if env vars are not present for the target account
             storage_client = StorageManagementClient(_get_azure_credentials(), self.subscription_id)
 
-            accounts: list[tuple[str, str]] = [(get_resource_group(result), result.name) for result in storage_client.storage_accounts.list()]
+            accounts: list[tuple[str, str]] = [
+                (get_resource_group(result), result.name) for result in storage_client.storage_accounts.list()
+            ]
 
             for rg, account in accounts:  # pylint: disable=C0103
                 if adls_path.account == account:

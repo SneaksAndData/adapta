@@ -16,62 +16,81 @@ except (ImportError, ModuleNotFoundError):
 
 TCompileResult = TypeVar("TCompileResult")
 
+
 class FilterExpressionOperation(Enum):
     """
     An enumeration of filter expression operations.
     """
 
-    AND = MappingProxyType({
-        "arrow": pyarrow.compute.Expression.__and__,
-        "astra": lambda left_exprs, right_exprs: [
-            left_expr | right_expr for left_expr in left_exprs for right_expr in right_exprs
-        ],
-        "trino": "AND",
-        "iceberg": pyiceberg.expressions.And,
-    })
-    OR = MappingProxyType({
-        "arrow": pyarrow.compute.Expression.__or__,
-        "astra": lambda left_exprs, right_exprs: left_exprs + right_exprs,
-        "trino": "OR",
-        "iceberg": pyiceberg.expressions.Or,
-    })
-    GT = MappingProxyType({
-        "arrow": pyarrow.compute.Expression.__gt__,
-        "astra": "__gt",
-        "trino": ">",
-        "iceberg": pyiceberg.expressions.GreaterThan,
-    })
-    GE = MappingProxyType({
-        "arrow": pyarrow.compute.Expression.__ge__,
-        "astra": "__gte",
-        "trino": ">=",
-        "iceberg": pyiceberg.expressions.GreaterThanOrEqual,
-    })
-    LT = MappingProxyType({
-        "arrow": pyarrow.compute.Expression.__lt__,
-        "astra": "__lt",
-        "trino": "<",
-        "iceberg": pyiceberg.expressions.LessThan,
-    })
-    LE = MappingProxyType({
-        "arrow": pyarrow.compute.Expression.__le__,
-        "astra": "__lte",
-        "trino": "<=",
-        "iceberg": pyiceberg.expressions.LessThanOrEqual,
-    })
-    EQ = MappingProxyType({
-        "arrow": pyarrow.compute.Expression.__eq__,
-        "astra": "",
-        "trino": "=",
-        "iceberg": pyiceberg.expressions.EqualTo,
-    })
-    NE = MappingProxyType({
-        "arrow": pyarrow.compute.Expression.__ne__,
-        "astra": "__ne",
-        "trino": "!=",
-        "iceberg": pyiceberg.expressions.NotEqualTo,
-    })
-    IN = MappingProxyType({"arrow": pyarrow.compute.Expression.isin, "astra": "__in", "trino": "IN", "iceberg": pyiceberg.expressions.In})
+    AND = MappingProxyType(
+        {
+            "arrow": pyarrow.compute.Expression.__and__,
+            "astra": lambda left_exprs, right_exprs: [
+                left_expr | right_expr for left_expr in left_exprs for right_expr in right_exprs
+            ],
+            "trino": "AND",
+            "iceberg": pyiceberg.expressions.And,
+        }
+    )
+    OR = MappingProxyType(
+        {
+            "arrow": pyarrow.compute.Expression.__or__,
+            "astra": lambda left_exprs, right_exprs: left_exprs + right_exprs,
+            "trino": "OR",
+            "iceberg": pyiceberg.expressions.Or,
+        }
+    )
+    GT = MappingProxyType(
+        {
+            "arrow": pyarrow.compute.Expression.__gt__,
+            "astra": "__gt",
+            "trino": ">",
+            "iceberg": pyiceberg.expressions.GreaterThan,
+        }
+    )
+    GE = MappingProxyType(
+        {
+            "arrow": pyarrow.compute.Expression.__ge__,
+            "astra": "__gte",
+            "trino": ">=",
+            "iceberg": pyiceberg.expressions.GreaterThanOrEqual,
+        }
+    )
+    LT = MappingProxyType(
+        {
+            "arrow": pyarrow.compute.Expression.__lt__,
+            "astra": "__lt",
+            "trino": "<",
+            "iceberg": pyiceberg.expressions.LessThan,
+        }
+    )
+    LE = MappingProxyType(
+        {
+            "arrow": pyarrow.compute.Expression.__le__,
+            "astra": "__lte",
+            "trino": "<=",
+            "iceberg": pyiceberg.expressions.LessThanOrEqual,
+        }
+    )
+    EQ = MappingProxyType(
+        {
+            "arrow": pyarrow.compute.Expression.__eq__,
+            "astra": "",
+            "trino": "=",
+            "iceberg": pyiceberg.expressions.EqualTo,
+        }
+    )
+    NE = MappingProxyType(
+        {
+            "arrow": pyarrow.compute.Expression.__ne__,
+            "astra": "__ne",
+            "trino": "!=",
+            "iceberg": pyiceberg.expressions.NotEqualTo,
+        }
+    )
+    IN = MappingProxyType(
+        {"arrow": pyarrow.compute.Expression.isin, "astra": "__in", "trino": "IN", "iceberg": pyiceberg.expressions.In}
+    )
 
     def to_string(self):
         """
