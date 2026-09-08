@@ -1,5 +1,5 @@
 """
-  Implementation of a metrics provider for Datadog.
+Implementation of a metrics provider for Datadog.
 """
 #  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
 #

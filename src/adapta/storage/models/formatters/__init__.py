@@ -1,6 +1,7 @@
 """
 Serialization formatters for various data types.
 """
+
 from adapta.storage.models.formatters.dict import (
     DictJsonSerializationFormat as DictJsonSerializationFormat,
 )

@@ -1,6 +1,7 @@
 """
 Validation utilities for the adapta dataclass validation framework
 """
+
 from dataclasses import dataclass
 
 import polars as pl

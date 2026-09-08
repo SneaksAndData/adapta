@@ -62,8 +62,7 @@ def get_polars_type(dtype: Any) -> polars.DataType:
 
         if len(inner_types) != 2:
             raise ValueError(
-                f"expected 2 inner types - one for key and one for value of dict, got "
-                f"{len(inner_types)}: {inner_types}"
+                f"expected 2 inner types - one for key and one for value of dict, got {len(inner_types)}: {inner_types}"
             )
 
         return polars.Struct(

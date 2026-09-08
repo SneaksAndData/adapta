@@ -1,5 +1,5 @@
 """
-    Connector for Azure Service Bus.
+Connector for Azure Service Bus.
 """
 #  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
 #

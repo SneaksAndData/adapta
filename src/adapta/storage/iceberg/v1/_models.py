@@ -1,6 +1,7 @@
 """
- Iceberg REST wrapper
+Iceberg REST wrapper
 """
+
 import os
 from dataclasses import dataclass
 from typing import Self

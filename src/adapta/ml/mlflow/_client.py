@@ -1,5 +1,5 @@
 """
-  Thin wrapper for Mlflow operations.
+Thin wrapper for Mlflow operations.
 """
 #  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
 #
@@ -51,9 +51,9 @@ class MlflowBasicClient:
         Creates an instance of MlflowBasicClient using credentials from environment variables
         https://mlflow.org/docs/latest/self-hosting/security/basic-http-auth/#using-environment-variables
         """
-        assert os.environ.get("MLFLOW_TRACKING_USERNAME") and os.environ.get(
-            "MLFLOW_TRACKING_PASSWORD"
-        ), "Both MLFLOW_TRACKING_USERNAME and MLFLOW_TRACKING_PASSWORD must be set to access MLFlow Tracking Server"
+        assert os.environ.get("MLFLOW_TRACKING_USERNAME") and os.environ.get("MLFLOW_TRACKING_PASSWORD"), (
+            "Both MLFLOW_TRACKING_USERNAME and MLFLOW_TRACKING_PASSWORD must be set to access MLFlow Tracking Server"
+        )
 
         return cls(tracking_server_uri=tracking_server_uri)._initialize()
 

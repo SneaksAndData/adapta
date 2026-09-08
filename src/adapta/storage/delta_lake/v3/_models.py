@@ -1,5 +1,5 @@
 """
- Models used by delta lake functions.
+Models used by delta lake functions.
 """
 #  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
 #

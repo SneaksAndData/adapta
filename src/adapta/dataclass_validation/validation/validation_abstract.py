@@ -1,6 +1,7 @@
 """
 Abstract Validation Class
 """
+
 from abc import abstractmethod
 from typing import Any, get_args, get_origin
 
@@ -138,7 +139,7 @@ class AbstractValidationClass:
 
                     self._failed_validations += [
                         f"Failed to coerce column '{field_name}' from type {current_dtype} from type {expected_dtype}. ",
-                        f"Error: {e!s}"
+                        f"Error: {e!s}",
                     ]
                     self._failed_validation_columns += [field_name]
 
@@ -249,7 +250,7 @@ class AbstractValidationClass:
                 if result is not None:
                     self._failed_validations += [
                         f"Column '{field_name}' does not satisfy the greater than or equal to constraint. ",
-                        f"It should be greater than {field.checks.ge_value}, but found minimum value {result}."
+                        f"It should be greater than {field.checks.ge_value}, but found minimum value {result}.",
                     ]
 
     def _validate_le_value(self) -> None:
@@ -270,7 +271,7 @@ class AbstractValidationClass:
                 if result is not None:
                     self._failed_validations += [
                         f"Column '{field_name}' does not satisfy the less than or equal to constraint. ",
-                        f"It should be less than {field.checks.le_value}, but found maximum value {result}."
+                        f"It should be less than {field.checks.le_value}, but found maximum value {result}.",
                     ]
 
     def _validate_value_not_missing(self) -> None:
@@ -316,7 +317,7 @@ class AbstractValidationClass:
                 if invalid_values:
                     self._failed_validations += [
                         f"Column '{field_name}' contains values that are not members of ",
-                        f"{field.enum.__name__}. Invalid values found: {invalid_values}"
+                        f"{field.enum.__name__}. Invalid values found: {invalid_values}",
                     ]
 
     def _set_failed_validations(self) -> None:

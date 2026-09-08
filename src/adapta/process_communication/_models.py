@@ -1,5 +1,5 @@
 """
-  Models used for inter-process communication in data processing applications.
+Models used for inter-process communication in data processing applications.
 """
 #  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
 #
@@ -50,9 +50,9 @@ class DataSocket(DataClassJsonMixin):
     data_partitions: list[str] | None = None
 
     def __post_init__(self):
-        assert (
-            self.alias and self.data_path and self.data_format
-        ), "Fields alias, data_path and data_format must have a value provided to instantiate a DataSocket."
+        assert self.alias and self.data_path and self.data_format, (
+            "Fields alias, data_path and data_format must have a value provided to instantiate a DataSocket."
+        )
 
     def parse_data_path(
         self,

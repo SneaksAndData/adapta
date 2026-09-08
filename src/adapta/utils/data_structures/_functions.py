@@ -1,6 +1,7 @@
 """
- Module for data structures methods.
+Module for data structures methods.
 """
+
 import os.path
 import xml.etree.ElementTree as ET
 from pathlib import Path

@@ -1,5 +1,5 @@
 """
- Azure Cloud implementation of AuthenticationClient.
+Azure Cloud implementation of AuthenticationClient.
 """
 #  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
 #
@@ -94,9 +94,9 @@ class AzureClient(AuthenticationClient):
         def get_resource_group(account: StorageAccount) -> str:
             return account.id.split("/")[account.id.split("/").index("resourceGroups") + 1]
 
-        assert isinstance(
-            path, (AdlsGen2Path, WasbPath)
-        ), "Only adapta.storage.models.azure.AdlsGen2Path or with adapta.storage.models.azure.WasbPath are supported"
+        assert isinstance(path, (AdlsGen2Path, WasbPath)), (
+            "Only adapta.storage.models.azure.AdlsGen2Path or with adapta.storage.models.azure.WasbPath are supported"
+        )
 
         adls_path: AdlsGen2Path | WasbPath = path
 
@@ -189,9 +189,9 @@ class AzureClient(AuthenticationClient):
 
             raise ValueError(f"Unsupported connection options have been provided: {connection_options}")
 
-        assert isinstance(
-            path, (AdlsGen2Path, WasbPath)
-        ), "Only adapta.storage.models.azure.AdlsGen2Path or with adapta.storage.models.azure.WasbPath are supported"
+        assert isinstance(path, (AdlsGen2Path, WasbPath)), (
+            "Only adapta.storage.models.azure.AdlsGen2Path or with adapta.storage.models.azure.WasbPath are supported"
+        )
 
         return SubTreeFileSystem(
             path.to_hdfs_path(), PyFileSystem(FSSpecHandler(select_file_system(connection_options, path.account)))

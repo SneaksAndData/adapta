@@ -1,6 +1,7 @@
 """
- Filter expression for AstraDB (Cassandra)
+Filter expression for AstraDB (Cassandra)
 """
+
 import math
 from typing import Any, final
 

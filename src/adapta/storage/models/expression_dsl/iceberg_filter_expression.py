@@ -1,6 +1,7 @@
 """
- FilterExpression for Iceberg (REST)
+FilterExpression for Iceberg (REST)
 """
+
 from typing import Any, final
 
 from pyiceberg.expressions import BooleanExpression

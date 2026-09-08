@@ -1,4 +1,5 @@
 """Serialization format for Pickle."""
+
 import pickle
 
 from adapta.storage.models.format import SerializationFormat, T

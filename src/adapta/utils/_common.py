@@ -260,9 +260,9 @@ def downcast_dataframe(dataframe: pandas.DataFrame, columns: list[str] | None = 
 
     return dataframe.assign(
         **{
-            column: lambda x, c=column: pandas.to_numeric(x[c], downcast=get_downcast_type(x[c]))
-            if downcast_supported(x[c])
-            else x[c]
+            column: lambda x, c=column: (
+                pandas.to_numeric(x[c], downcast=get_downcast_type(x[c])) if downcast_supported(x[c]) else x[c]
+            )
             for column in dataframe.columns
             if column in columns
         }

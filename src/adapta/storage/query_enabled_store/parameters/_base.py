@@ -1,5 +1,5 @@
 """
- Query Enabled Store Parameters.
+Query Enabled Store Parameters.
 """
 
 #  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.

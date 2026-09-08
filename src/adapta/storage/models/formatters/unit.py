@@ -1,6 +1,7 @@
 """
 Module providing a unit serialization format for bytes.
 """
+
 from adapta.storage.models.format import SerializationFormat
 
 

@@ -1,5 +1,5 @@
 """
- Adapta Logging Interface.
+Adapta Logging Interface.
 """
 #  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
 #
@@ -106,14 +106,14 @@ class SemanticLogger(_InternalLogger):
         :param log_source_name: Optional name of a log source.
         :return:
         """
-        assert (
-            log_source_name or self._default_log_source
-        ), "Argument `log_source` must be provided when no default log source is added. You can add a log source as default by calling `add_log_source(.., is_default=True)`"
+        assert log_source_name or self._default_log_source, (
+            "Argument `log_source` must be provided when no default log source is added. You can add a log source as default by calling `add_log_source(.., is_default=True)`"
+        )
 
         if log_source_name:
-            assert (
-                log_source_name in self._loggers
-            ), f"{log_source_name} does not have an associated logger. Use add_log_source() to associate a logger with this log source."
+            assert log_source_name in self._loggers, (
+                f"{log_source_name} does not have an associated logger. Use add_log_source() to associate a logger with this log source."
+            )
 
         return self._loggers[log_source_name or self._default_log_source]
 

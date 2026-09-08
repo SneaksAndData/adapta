@@ -84,7 +84,7 @@ def test_map_read(trino_test_connection: sqlalchemy.engine.Engine, iceberg_catal
             query = text(
                 f"""
                          INSERT INTO test.test_map_read (cola, colb, colc, cold)
-                         VALUES ({input_data['cola'][ix_row]}, '{input_data['colb'][ix_row]}', ARRAY[{array_value}], MAP(ARRAY[{map_keys_value}], cast(ARRAY[{map_values_value}] as array(double))))
+                         VALUES ({input_data["cola"][ix_row]}, '{input_data["colb"][ix_row]}', ARRAY[{array_value}], MAP(ARRAY[{map_keys_value}], cast(ARRAY[{map_values_value}] as array(double))))
                          """
             )
             con.execute(query)

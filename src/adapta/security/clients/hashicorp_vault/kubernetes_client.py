@@ -1,5 +1,5 @@
 """
- Hashicorp Vault implementation of AuthenticationClient.
+Hashicorp Vault implementation of AuthenticationClient.
 """
 #  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
 #

@@ -78,7 +78,7 @@ class AzureStorageClient(StorageClient):
             endpoint_protocol = "DefaultEndpointsProtocol=https"
 
             if "ADAPTA__AZURE_STORAGE_BLOB_ENDPOINT" in os.environ:
-                blob_endpoint = f'BlobEndpoint={os.environ["ADAPTA__AZURE_STORAGE_BLOB_ENDPOINT"]}'
+                blob_endpoint = f"BlobEndpoint={os.environ['ADAPTA__AZURE_STORAGE_BLOB_ENDPOINT']}"
 
             if "ADAPTA__AZURE_STORAGE_DEFAULT_PROTOCOL" in os.environ:
                 endpoint_protocol = f"DefaultEndpointsProtocol={os.environ['ADAPTA__AZURE_STORAGE_DEFAULT_PROTOCOL']}"
@@ -115,9 +115,9 @@ class AzureStorageClient(StorageClient):
     def _get_blob_client(self, blob_path: DataPath) -> BlobClient:
         azure_path = cast_path(blob_path)
 
-        assert (
-            azure_path.account == self._blob_service_client.account_name
-        ), "Path provided is in another storage account and cannot be used."
+        assert azure_path.account == self._blob_service_client.account_name, (
+            "Path provided is in another storage account and cannot be used."
+        )
 
         return self._blob_service_client.get_blob_client(
             container=azure_path.container,
@@ -127,9 +127,9 @@ class AzureStorageClient(StorageClient):
     def _get_container_client(self, blob_path: DataPath) -> ContainerClient:
         azure_path = cast_path(blob_path)
 
-        assert (
-            azure_path.account == self._blob_service_client.account_name
-        ), "Path provided is in another storage account and cannot be used."
+        assert azure_path.account == self._blob_service_client.account_name, (
+            "Path provided is in another storage account and cannot be used."
+        )
 
         return self._blob_service_client.get_container_client(container=azure_path.container)
 

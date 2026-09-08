@@ -1,6 +1,7 @@
 """
 Rate limit decorator.
 """
+
 from collections.abc import Callable
 from enum import Enum
 from functools import wraps
@@ -31,7 +32,7 @@ def rate_limit(
     *,
     limit: str,
     strategy: RateLimitStrategy | None = RateLimitStrategy.MOVING_WINDOW,
-    delay_func: Callable[[], int] = _default_delay_func
+    delay_func: Callable[[], int] = _default_delay_func,
 ) -> Callable:
     """
     Rate limit decorator.

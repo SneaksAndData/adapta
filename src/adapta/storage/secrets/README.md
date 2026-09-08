@@ -11,10 +11,10 @@ Supported API:
 from adapta.security.clients import AzureClient
 from adapta.storage.secrets.azure_secret_client import AzureSecretStorageClient
 
-azure_client = AzureClient(subscription_id='test')
+azure_client = AzureClient(subscription_id="test")
 azure_secrets = AzureSecretStorageClient(base_client=azure_client)
 
-my_secret = azure_secrets.read_secret('my-keyvault', 'my-secret')
+my_secret = azure_secrets.read_secret("my-keyvault", "my-secret")
 
 print(my_secret)
 ```

@@ -1,5 +1,5 @@
 """
-  SqlAlchemy-based Trino Client Wrapper
+SqlAlchemy-based Trino Client Wrapper
 """
 
 #  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.

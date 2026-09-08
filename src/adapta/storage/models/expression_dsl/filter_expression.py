@@ -1,6 +1,7 @@
 """
-    Models for generating filter expressions for PyArrow and Astra.
+Models for generating filter expressions for PyArrow and Astra.
 """
+
 from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Any, Generic, Self, TypeVar, final

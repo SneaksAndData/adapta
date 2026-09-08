@@ -1,5 +1,5 @@
 """
- Base class representing file system path.
+Base class representing file system path.
 """
 #  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
 #

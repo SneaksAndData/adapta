@@ -126,7 +126,7 @@ def test_datadog_api_handler(datadog_handler: DataDogApiHandler):
 
     try:
         raise ValueError("test warning")
-    except BaseException as ex: # noqa
+    except BaseException as ex:  # noqa
         dd_logger.warning(template="This a unit test logger {index}", exception=ex, index=1)
         ex_str = traceback.format_exc().removesuffix("\n")
 
@@ -311,7 +311,7 @@ async def test_log_format_async(
     expected_message: str,
 ):
     test_file_path = os.path.join(tempfile.gettempdir(), str(uuid.uuid4()))
-    with open(test_file_path, "w") as log_stream: # noqa: ASYNC230
+    with open(test_file_path, "w") as log_stream:  # noqa: ASYNC230
         with create_async_logger(
             logger_type=TestLoggerClass,
             min_log_level=LogLevel.DEBUG,
@@ -332,7 +332,7 @@ async def test_log_format_async(
 
         await asyncio.sleep(1)
 
-        with open(test_file_path, 'r', encoding='utf-8') as f: # noqa: ASYNC230
+        with open(test_file_path, "r", encoding="utf-8") as f:  # noqa: ASYNC230
             logged_lines = f.readlines()
             assert expected_message in logged_lines
 

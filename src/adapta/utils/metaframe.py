@@ -2,6 +2,7 @@
 This module contains the MetaFrame class which contains structured data for a dataframe.
 The MetaFrame can be used to convert the latent representation to other formats.
 """
+
 import itertools
 from abc import ABC
 from collections.abc import Callable, Iterable
@@ -160,7 +161,7 @@ def concat(dataframes: Iterable[MetaFrame], options: Iterable[MetaFrameOptions] 
                 for options_object in options
                 for k, v in options_object.kwargs.items()
                 if isinstance(options_object, PolarsOptions)
-            }
+            },
         ),
         convert_to_pandas=lambda data: pandas.concat(
             map(lambda df: df.to_pandas(), data),
@@ -169,6 +170,6 @@ def concat(dataframes: Iterable[MetaFrame], options: Iterable[MetaFrameOptions] 
                 for options_object in options
                 for k, v in options_object.kwargs.items()
                 if isinstance(options_object, PandasOptions)
-            }
+            },
         ),
     )

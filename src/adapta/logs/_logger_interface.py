@@ -1,6 +1,7 @@
 """
- Marker interface for logging API
+Marker interface for logging API
 """
+
 from abc import ABC, abstractmethod
 from contextlib import asynccontextmanager, contextmanager
 
@@ -54,7 +55,7 @@ class LoggerInterface(ABC):
         exception: BaseException | None = None,
         diagnostics: str | None = None,
         tags: dict[str, str] | None = None,
-        **kwargs
+        **kwargs,
     ):
         """
         Logs a message on DEBUG level

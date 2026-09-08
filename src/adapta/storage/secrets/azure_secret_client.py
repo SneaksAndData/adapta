@@ -1,5 +1,5 @@
 """
- Azure Secret Storage Client (KeyVault).
+Azure Secret Storage Client (KeyVault).
 """
 #  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
 #

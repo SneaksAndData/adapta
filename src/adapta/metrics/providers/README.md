@@ -28,25 +28,31 @@ import random
 from time import sleep
 from adapta.metrics.providers.datadog_provider import DatadogMetricsProvider
 
-provider = DatadogMetricsProvider.uds(metric_namespace='test', wait_for_socket_timeout_seconds=300)
+provider = DatadogMetricsProvider.uds(metric_namespace="test", wait_for_socket_timeout_seconds=300)
 
 # report a gauge metric
 for i in range(0, 100):
     sleep(1)
-    provider.gauge(metric_name="test_gauge", metric_value=random.random(), tags={'env': 'test', 'other_tag': f'{i % 10}'})
+    provider.gauge(
+        metric_name="test_gauge", metric_value=random.random(), tags={"env": "test", "other_tag": f"{i % 10}"}
+    )
 
 # report a count metric using increment/decrement
 for i in range(0, 100):
     sleep(1)
     if random.random() > 0.4:
-        provider.increment(metric_name="test_inc", tags={'env': 'test', 'other_tag': f'{i % 10}'})
+        provider.increment(metric_name="test_inc", tags={"env": "test", "other_tag": f"{i % 10}"})
     else:
-        provider.decrement(metric_name="test_inc", tags={'env': 'test', 'other_tag': f'{i % 10}'})
+        provider.decrement(metric_name="test_inc", tags={"env": "test", "other_tag": f"{i % 10}"})
 
 # report a SET metric
 for i in range(0, 100):
     sleep(0.1)
-    provider.set(metric_name="test_set", metric_value=f"some-value-{random.randint(0, 100)}", tags={'env': 'test', 'other_tag': f'{i % 10}'})
+    provider.set(
+        metric_name="test_set",
+        metric_value=f"some-value-{random.randint(0, 100)}",
+        tags={"env": "test", "other_tag": f"{i % 10}"},
+    )
 ```
 
 You can also enrich pushed metrics with information like units, description etc.:
@@ -54,5 +60,7 @@ You can also enrich pushed metrics with information like units, description etc.
 from adapta.metrics.providers.datadog_provider import DatadogMetricsProvider
 from datadog_api_client.v1.model.metric_metadata import MetricMetadata
 
-DatadogMetricsProvider.update_metric_metadata(metric_name='my_metric.test', metric_metadata=MetricMetadata(description='best metric!'))
+DatadogMetricsProvider.update_metric_metadata(
+    metric_name="my_metric.test", metric_metadata=MetricMetadata(description="best metric!")
+)
 ```

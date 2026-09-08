@@ -1,6 +1,7 @@
 """
-  Dev mode metrics provider.
+Dev mode metrics provider.
 """
+
 from typing import final
 
 from adapta.metrics import MetricsProvider

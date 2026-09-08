@@ -1,4 +1,5 @@
 """Common python typing functions. All of these are imported into __init__.py"""
+
 from types import UnionType
 from typing import Union, get_args, get_origin
 

@@ -14,7 +14,8 @@
 #
 
 """
- Import index.
+Import index.
 """
+
 from adapta.storage.distributed_object_store.v3.datastax_astra._models import *
 from adapta.storage.distributed_object_store.v3.datastax_astra.astra_client import *

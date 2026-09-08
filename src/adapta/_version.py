@@ -1,5 +1,5 @@
 """
- Package version.
+Package version.
 """
 
 #  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.

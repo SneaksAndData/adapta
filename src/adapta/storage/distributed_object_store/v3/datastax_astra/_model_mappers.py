@@ -1,4 +1,5 @@
 """Model mapper module"""
+
 import datetime
 import enum
 import re

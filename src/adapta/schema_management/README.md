@@ -7,11 +7,16 @@ from datetime import datetime
 
 from adapta.schema_management.schema_entity import PythonSchemaEntity
 
+
 @dataclass
 class Order:
-	"""Data model for entity Order
-	"""
-	created_on: Optional[datetime] = field(metadata={"DisplayName": "Created On", "Description": "Date and time when the record was created."})
+    """Data model for entity Order"""
+
+    created_on: Optional[datetime] = field(
+        metadata={"DisplayName": "Created On", "Description": "Date and time when the record was created."}
+    )
+
+
 ORDER_PYTHON_SCHEMA: Order = PythonSchemaEntity(Order)
 ```
 

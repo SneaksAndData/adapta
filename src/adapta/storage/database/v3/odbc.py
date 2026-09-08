@@ -1,5 +1,5 @@
 """
- Database client that uses an ODBC driver.
+Database client that uses an ODBC driver.
 """
 
 #  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.

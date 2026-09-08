@@ -1,6 +1,7 @@
 """
- Asyncio-safe implementation of a Semantic Logger.
+Asyncio-safe implementation of a Semantic Logger.
 """
+
 import asyncio
 
 #  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.

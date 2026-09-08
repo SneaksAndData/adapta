@@ -1,6 +1,7 @@
 """
-  Logging handler for DataDog.
+Logging handler for DataDog.
 """
+
 #  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -73,15 +74,15 @@ class DataDogApiHandler(Handler):
         where code is not running on main thread (e.g. in Streamlit).
         """
         super().__init__()
-        assert os.getenv(
-            "PROTEUS__DD_API_KEY"
-        ), "PROTEUS__DD_API_KEY environment variable must be set in order to use DataDogApiHandler"
-        assert os.getenv(
-            "PROTEUS__DD_APP_KEY"
-        ), "PROTEUS__DD_APP_KEY environment variable must be set in order to use DataDogApiHandler"
-        assert os.getenv(
-            "PROTEUS__DD_SITE"
-        ), "PROTEUS__DD_SITE environment variable must be set in order to use DataDogApiHandler"
+        assert os.getenv("PROTEUS__DD_API_KEY"), (
+            "PROTEUS__DD_API_KEY environment variable must be set in order to use DataDogApiHandler"
+        )
+        assert os.getenv("PROTEUS__DD_APP_KEY"), (
+            "PROTEUS__DD_APP_KEY environment variable must be set in order to use DataDogApiHandler"
+        )
+        assert os.getenv("PROTEUS__DD_SITE"), (
+            "PROTEUS__DD_SITE environment variable must be set in order to use DataDogApiHandler"
+        )
 
         configuration = Configuration()
         configuration.server_variables["site"] = os.getenv("PROTEUS__DD_SITE")

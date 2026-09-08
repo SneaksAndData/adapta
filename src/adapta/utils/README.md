@@ -12,7 +12,7 @@ from adapta.utils import doze
 
 # Sleep for 5 seconds
 elapsed_time_ns = doze(5)
-print(f'Time elapsed (in nanoseconds): {elapsed_time_ns}')
+print(f"Time elapsed (in nanoseconds): {elapsed_time_ns}")
 ```
 
 Output:
@@ -39,7 +39,7 @@ Example usage:
 from adapta.utils import convert_datadog_tags
 
 # Convert a tag dictionary to Datadog tag format
-tags = {'environment': 'production', 'version': '1.0.0'}
+tags = {"environment": "production", "version": "1.0.0"}
 datadog_tags = convert_datadog_tags(tags)
 print(datadog_tags)
 ```
@@ -61,7 +61,7 @@ with operation_time() as op:
     doze(5)
 
 # Print execution time
-print(f'Time elapsed (in nanoseconds): {op.elapsed}')
+print(f"Time elapsed (in nanoseconds): {op.elapsed}")
 ```
 
 Output:
@@ -133,28 +133,29 @@ from adapta.logs.models import LogLevel
 from adapta.utils import run_time_metrics
 
 
-@run_time_metrics(metric_name='example')
+@run_time_metrics(metric_name="example")
 def adder(number1, number2, logger=None, **_kwargs):
-  result = number1 + number2
-  logger.info('Sum of the numbers {result}', result=result)
-  return result
+    result = number1 + number2
+    logger.info("Sum of the numbers {result}", result=result)
+    return result
 
 
-@run_time_metrics(metric_name='update_message', log_level=LogLevel.INFO)
+@run_time_metrics(metric_name="update_message", log_level=LogLevel.INFO)
 def upgrade_message(message, logger=None, metrics_provider=None, **_kwargs):
-  message += ' : - )'
-  logger.info(message)
-  metrics_provider.gauge(metric_name="test_gauge", metric_value=1, tags={'env': 'test'})
-  return message
+    message += " : - )"
+    logger.info(message)
+    metrics_provider.gauge(metric_name="test_gauge", metric_value=1, tags={"env": "test"})
+    return message
 
 
-provider = DatadogMetricsProvider(metric_namespace='test')
-datadog_tags = {'source': 'wrapper'}
-semantic_logger = SemanticLogger().add_log_source(log_source_name='test_logger_1', min_log_level=LogLevel.DEBUG,
-                                                  is_default=True)
+provider = DatadogMetricsProvider(metric_namespace="test")
+datadog_tags = {"source": "wrapper"}
+semantic_logger = SemanticLogger().add_log_source(
+    log_source_name="test_logger_1", min_log_level=LogLevel.DEBUG, is_default=True
+)
 
 adder(5, 4, logger=semantic_logger, metrics_provider=provider, metric_tags=datadog_tags)
-upgrade_message('Lorum Ipsum', logger=semantic_logger, metrics_provider=provider, metric_tags=datadog_tags)
+upgrade_message("Lorum Ipsum", logger=semantic_logger, metrics_provider=provider, metric_tags=datadog_tags)
 ```
 
 ## xmltree_to_dict_collection
@@ -193,12 +194,15 @@ from dataclasses import dataclass
 from adapta.utils import xmltree_to_dict_collection
 from dataclasses_json import DataClassJsonMixin
 
+
 @dataclass
 class ExampleNodeType(DataClassJsonMixin):
     """
     A node type example
     """
+
     book: str
+
 
 xml_str = "<?xml version='1.0'?><catalog><book>book_name1</book><book>book_name2</book></catalog>"
 converted_result = xmltree_to_dict_collection(xml_str, ExampleNodeType)
@@ -232,6 +236,7 @@ def call_api(url, session):
     response = session.get(url)
     return response.json()
 
+
 http_session = session_with_retries(retry_count=4)
 for _ in range(10):
     call_api("https://example.com", http_session)
@@ -252,10 +257,7 @@ from adapta.utils.metaframe import MetaFrame
 import pandas
 import polars
 
-data = {
-    'a': [1, 2, 3],
-    'b': [4, 5, 6]
-}
+data = {"a": [1, 2, 3], "b": [4, 5, 6]}
 mf = MetaFrame(
     data=data,
     convert_to_pandas=lambda x: pandas.DataFrame.from_dict(x),
@@ -279,10 +281,7 @@ The MetaFrame also allows even easier conversion between the different dataframe
 from adapta.utils.metaframe import MetaFrame
 import pandas
 
-data = pandas.DataFrame({
-    'a': [1, 2, 3],
-    'b': [4, 5, 6]
-})
+data = pandas.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]})
 mf = MetaFrame.from_pandas(data=data)
 
 print(mf.to_polars())

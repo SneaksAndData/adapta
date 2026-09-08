@@ -1,6 +1,7 @@
 """
- Shared functionality for the MetadataLogger enricher implementations.
+Shared functionality for the MetadataLogger enricher implementations.
 """
+
 import ctypes
 
 #  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.

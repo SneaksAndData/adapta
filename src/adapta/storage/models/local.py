@@ -1,5 +1,5 @@
 """
- Models used by Local Client when working with storage.
+Models used by Local Client when working with storage.
 """
 #  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
 #

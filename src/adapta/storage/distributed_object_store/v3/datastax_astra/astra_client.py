@@ -1,5 +1,5 @@
 """
- DataStax Astra client driver.
+DataStax Astra client driver.
 """
 
 #  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
@@ -342,9 +342,9 @@ class AstraClient:
                 convert_to_pandas=lambda x: pandas.DataFrame(x, columns=select_columns),
             )
 
-        assert (
-            self._session is not None
-        ), "Please instantiate an AstraClient using with AstraClient(...) before calling this method"
+        assert self._session is not None, (
+            "Please instantiate an AstraClient using with AstraClient(...) before calling this method"
+        )
 
         cassandra_model_mapper = get_mapper(
             data_model=model_class,

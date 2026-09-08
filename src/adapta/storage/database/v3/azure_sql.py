@@ -1,5 +1,5 @@
 """
- ODBC client extension for Azure SQL.
+ODBC client extension for Azure SQL.
 """
 
 #  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.

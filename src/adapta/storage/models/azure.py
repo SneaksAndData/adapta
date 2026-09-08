@@ -1,5 +1,5 @@
 """
- Models used by Azure Client when working with storage.
+Models used by Azure Client when working with storage.
 """
 #  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
 #
@@ -32,9 +32,9 @@ class AdlsGen2Path(DataPath):
 
     @classmethod
     def from_uri(cls, url: str) -> "DataPath":
-        assert url.startswith("https://") and (
-            "dfs.core.windows.net" in url
-        ), "Invalid URL supplied. Please use the following format: https://<accountname>.dfs.core.windows.net or https://<accountname>.blob.core.windows.net"
+        assert url.startswith("https://") and ("dfs.core.windows.net" in url), (
+            "Invalid URL supplied. Please use the following format: https://<accountname>.dfs.core.windows.net or https://<accountname>.blob.core.windows.net"
+        )
 
         return cls(
             account=url.split("://")[1].split(".")[0],
@@ -52,9 +52,9 @@ class AdlsGen2Path(DataPath):
 
     @classmethod
     def from_hdfs_path(cls, hdfs_path: str) -> "AdlsGen2Path":
-        assert (
-            "@" in hdfs_path and "dfs.core.windows.net" in hdfs_path and hdfs_path.startswith("abfss://")
-        ), "Invalid HDFS (ALDS2) path supplied. Please use the following format: abfss://<container>@<account>.dfs.core.windows.net/my/data"
+        assert "@" in hdfs_path and "dfs.core.windows.net" in hdfs_path and hdfs_path.startswith("abfss://"), (
+            "Invalid HDFS (ALDS2) path supplied. Please use the following format: abfss://<container>@<account>.dfs.core.windows.net/my/data"
+        )
 
         return AdlsGen2Path(
             account=hdfs_path.split("@")[1].split(".")[0],
@@ -85,9 +85,9 @@ class WasbPath(DataPath):
 
     @classmethod
     def from_uri(cls, url: str) -> "DataPath":
-        assert url.startswith("https://") and (
-            "blob.core.windows.net" in url
-        ), "Invalid URL supplied. Please use the following format: https://<accountname>.blob.core.windows.net"
+        assert url.startswith("https://") and ("blob.core.windows.net" in url), (
+            "Invalid URL supplied. Please use the following format: https://<accountname>.blob.core.windows.net"
+        )
 
         return cls(
             account=url.split("://")[1].split(".")[0],
@@ -105,9 +105,9 @@ class WasbPath(DataPath):
 
     @classmethod
     def from_hdfs_path(cls, hdfs_path: str) -> "WasbPath":
-        assert (
-            "@" in hdfs_path and "blob.core.windows.net" in hdfs_path and hdfs_path.startswith("wasbs://")
-        ), "Invalid HDFS (WASB) path supplied. Please use the following format: wasbs://<container>@<account>.blob.core.windows.net/my/data"
+        assert "@" in hdfs_path and "blob.core.windows.net" in hdfs_path and hdfs_path.startswith("wasbs://"), (
+            "Invalid HDFS (WASB) path supplied. Please use the following format: wasbs://<container>@<account>.blob.core.windows.net/my/data"
+        )
 
         return WasbPath(
             account=hdfs_path.split("@")[1].split(".")[0],

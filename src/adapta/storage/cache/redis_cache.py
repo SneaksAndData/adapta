@@ -1,5 +1,5 @@
 """
-  Key-value cache based on Redis.
+Key-value cache based on Redis.
 """
 #  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
 #

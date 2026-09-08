@@ -1,5 +1,5 @@
 """
- Abstraction for secret storage operations.
+Abstraction for secret storage operations.
 """
 
 #  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.

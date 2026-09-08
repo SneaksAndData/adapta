@@ -14,7 +14,7 @@
 #
 
 """
- Wrapper for Python-based schema classes.
+Wrapper for Python-based schema classes.
 """
 
 from dataclasses import Field

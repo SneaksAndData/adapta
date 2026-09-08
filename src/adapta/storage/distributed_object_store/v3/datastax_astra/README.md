@@ -23,22 +23,19 @@ from dataclasses import dataclass, field
 
 @dataclass
 class TestEntity:
-    col_a: str = field(metadata={
-        "is_primary_key": True,
-        "is_partition_key": True
-    })
+    col_a: str = field(metadata={"is_primary_key": True, "is_partition_key": True})
     col_b: str
     col_c: str
 
 
 with AstraClient(
-        client_name='test',
-        keyspace='tmp',
-        secure_connect_bundle_bytes='base64string',
-        client_id='Astra Token client_id',
-        client_secret='Astra Token client_secret'
+    client_name="test",
+    keyspace="tmp",
+    secure_connect_bundle_bytes="base64string",
+    client_id="Astra Token client_id",
+    client_secret="Astra Token client_secret",
 ) as ac:
-    single_entity = ac.get_entity('test_entity')
+    single_entity = ac.get_entity("test_entity")
     print(single_entity)
     # {'col_a': 'something3', 'col_b': 'ordinal', 'col_c': 'today'}
 
@@ -47,12 +44,15 @@ with AstraClient(
     #    col_a    col_b  col_c
     # 0  something3  ordinal  today
 
-    print(ac.filter_entities(TestEntity, key_column_filter_values=[{"col_a": 'something1'}]).to_pandas())
+    print(ac.filter_entities(TestEntity, key_column_filter_values=[{"col_a": "something1"}]).to_pandas())
     #        col_a col_b     col_c
-    #0  something1  else  entirely
+    # 0  something1  else  entirely
 
-    print(ac.filter_entities(TestEntity, key_column_filter_values=[{"col_a": 'something1'}],
-                             select_columns=['col_c']).to_pandas())
+    print(
+        ac.filter_entities(
+            TestEntity, key_column_filter_values=[{"col_a": "something1"}], select_columns=["col_c"]
+        ).to_pandas()
+    )
     #       col_c
     # 0  entirely
 ```
@@ -85,14 +85,8 @@ from dataclasses import dataclass, field
 
 @dataclass
 class TestEntityNew:
-    col_a: str = field(metadata={
-        "is_primary_key": True,
-        "is_partition_key": True
-    })
-    col_b: str = field(metadata={
-        "is_primary_key": True,
-        "is_partition_key": False
-    })
+    col_a: str = field(metadata={"is_primary_key": True, "is_partition_key": True})
+    col_b: str = field(metadata={"is_primary_key": True, "is_partition_key": False})
     col_c: int
 
 
@@ -101,20 +95,21 @@ SCHEMA: TestEntityNew = PythonSchemaEntity(TestEntityNew)
 simple_filter = FilterField(SCHEMA.col_a) == "something1"
 combined_filter = (FilterField(SCHEMA.col_a) == "something1") & (FilterField(SCHEMA.col_b) == "else")
 combined_filter_with_collection = (FilterField(SCHEMA.col_a) == "something1") & (
-    FilterField(SCHEMA.col_b).isin(['else', 'nonexistent']))
+    FilterField(SCHEMA.col_b).isin(["else", "nonexistent"])
+)
 
 # Apply the filters for Astra
 with AstraClient(
-        client_name='test',
-        keyspace='tmp',
-        secure_connect_bundle_bytes="base64 bundle string",
-        client_id='client id',
-        client_secret='client secret'
+    client_name="test",
+    keyspace="tmp",
+    secure_connect_bundle_bytes="base64 bundle string",
+    client_id="client id",
+    client_secret="client secret",
 ) as ac:
     # Filter expressions are compiled into specific target, in this case Astra filters, in filter_entities method
     print(ac.filter_entities(TestEntityNew, simple_filter).to_pandas())
 
-    # simple filter field == value    
+    # simple filter field == value
     #         col_a      col_b  col_c
     # 0  something1  different    456
     # 1  something1       else    123
@@ -163,62 +158,63 @@ from dataclasses import dataclass, field
 
 @dataclass
 class TestEntityWithEmbeddings:
-    col_a: str = field(metadata={
-        "is_primary_key": True,
-        "is_partition_key": True
-    })
+    col_a: str = field(metadata={"is_primary_key": True, "is_partition_key": True})
     col_b: str
-    col_c: list[float] = field(metadata={
-        "is_vector_enabled": True
-    })
+    col_c: list[float] = field(metadata={"is_vector_enabled": True})
     col_d: str
 
 
 astra_client = AstraClient(
-    client_name='test',
-    keyspace='tmp',
-    secure_connect_bundle_bytes='base64string',
-    client_id='Astra Token client_id',
-    client_secret='Astra Token client_secret'
+    client_name="test",
+    keyspace="tmp",
+    secure_connect_bundle_bytes="base64string",
+    client_id="Astra Token client_id",
+    client_secret="Astra Token client_secret",
 )
 
 # Search in Astra
 with astra_client:
-    print(astra_client.ann_search(
-        entity_type=TestEntityWithEmbeddings,
-        vector_to_match=[0.1, 0.2, 0.3],
-        similarity_function=SimilarityFunction.DOT_PRODUCT
-        , num_results=2
-    ).to_pandas())
+    print(
+        astra_client.ann_search(
+            entity_type=TestEntityWithEmbeddings,
+            vector_to_match=[0.1, 0.2, 0.3],
+            similarity_function=SimilarityFunction.DOT_PRODUCT,
+            num_results=2,
+        ).to_pandas()
+    )
 
     #         col_a       col_b   col_d  sim_value
     # 0  something2  different1  extra2     0.5665
     # 1  something1   different  extra1     0.6300
 
 # Search with primary key filter in Astra (with dictionary)
-filter_expression = [{'col_a': 'something2', 'col_b': 'different1'}]
+filter_expression = [{"col_a": "something2", "col_b": "different1"}]
 with astra_client:
-    print(astra_client.ann_search(
-        entity_type=TestEntityWithEmbeddings,
-        vector_to_match=[0.1, 0.2, 0.3],
-        similarity_function=SimilarityFunction.DOT_PRODUCT,
-        num_results=2,
-        key_column_filter_values=filter_expression
-    ).to_pandas())
+    print(
+        astra_client.ann_search(
+            entity_type=TestEntityWithEmbeddings,
+            vector_to_match=[0.1, 0.2, 0.3],
+            similarity_function=SimilarityFunction.DOT_PRODUCT,
+            num_results=2,
+            key_column_filter_values=filter_expression,
+        ).to_pandas()
+    )
 
     #         col_a       col_b   col_d  sim_value
     # 0  something2  different1  extra2     0.5665
 
 # Search with primary key filter in Astra (with Expression)
-filter_expression = (FilterField('col_a') == 'something2') & (FilterField('col_b').isin(['different1', 'doesnt_exist']))
+filter_expression = (FilterField("col_a") == "something2") & (FilterField("col_b").isin(["different1", "doesnt_exist"]))
 with astra_client:
-    print(astra_client.ann_search(
-        entity_type=TestEntityWithEmbeddings,
-        vector_to_match=[0.1, 0.2, 0.3],
-        similarity_function=SimilarityFunction.DOT_PRODUCT,
-        num_results=2,
-        key_column_filter_values=filter_expression,
-    ).to_pandas())
+    print(
+        astra_client.ann_search(
+            entity_type=TestEntityWithEmbeddings,
+            vector_to_match=[0.1, 0.2, 0.3],
+            similarity_function=SimilarityFunction.DOT_PRODUCT,
+            num_results=2,
+            key_column_filter_values=filter_expression,
+        ).to_pandas()
+    )
 
     #         col_a       col_b   col_d  sim_value
     # 0  something2  different1  extra2     0.5665
@@ -243,9 +239,9 @@ from adapta.storage.distributed_object_store.v3.datastax_astra import AstraClien
 
 from dataclasses import dataclass, field
 
+
 @dataclass
 class TestEntity:
-
     column_a: str = field(
         metadata={
             "is_primary_key": True,
@@ -255,22 +251,23 @@ class TestEntity:
     column_b: list[str]
     column_c: list[dict[str, float]]
 
+
 rows_to_insert = [
-    {'column_a': '1', 'column_b': [], 'column_c': [{'key_a': 1, 'key_b': 2}]},
-    {'column_a': '2', 'column_b': ['1', '3', '4'], 'column_c': [{'key_a': 1, 'key_b': 2}, {'key_a': 3, 'key_b': 4}]}
+    {"column_a": "1", "column_b": [], "column_c": [{"key_a": 1, "key_b": 2}]},
+    {"column_a": "2", "column_b": ["1", "3", "4"], "column_c": [{"key_a": 1, "key_b": 2}, {"key_a": 3, "key_b": 4}]},
 ]
 
 with AstraClient(
-        client_name='test',
-        keyspace='tmp',
-        secure_connect_bundle_bytes='base64string',
-        client_id='Astra Token client_id',
-        client_secret='Astra Token client_secret'
+    client_name="test",
+    keyspace="tmp",
+    secure_connect_bundle_bytes="base64string",
+    client_id="Astra Token client_id",
+    client_secret="Astra Token client_secret",
 ) as ac:
     ac.upsert_batch(
-    entities=rows_to_insert,
-    entity_type=TestEntity,
-    keyspace="tmp",
-    table_name="test_entity",
+        entities=rows_to_insert,
+        entity_type=TestEntity,
+        keyspace="tmp",
+        table_name="test_entity",
     )
 ```

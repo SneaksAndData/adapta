@@ -1,6 +1,7 @@
 """
 Core data class implementation for the adapta library
 """
+
 from enum import Enum
 from typing import final
 

@@ -240,8 +240,11 @@ def test_memory_limit_error(limit_bytes: int | None, limit_percentage: float | N
     In both test cases, the test expects a MemoryError exception to be raised when `test_str` is multiplied by `num_iterations`.
     """
     test_str = "a"
-    with pytest.raises(MemoryError), memory_limit(memory_limit_bytes=limit_bytes, memory_limit_percentage=limit_percentage):
-            test_str *= num_iterations
+    with (
+        pytest.raises(MemoryError),
+        memory_limit(memory_limit_bytes=limit_bytes, memory_limit_percentage=limit_percentage),
+    ):
+        test_str *= num_iterations
 
 
 @pytest.mark.parametrize("drop_missing", [True, False])

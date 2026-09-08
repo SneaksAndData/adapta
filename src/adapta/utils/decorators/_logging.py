@@ -1,4 +1,5 @@
-""" Module for common decorator methods. """
+"""Module for common decorator methods."""
+
 from functools import wraps
 from typing import Any
 

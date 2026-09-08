@@ -1,5 +1,5 @@
 """
- Storage enums.
+Storage enums.
 """
 
 from enum import Enum

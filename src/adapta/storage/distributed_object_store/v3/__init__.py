@@ -14,5 +14,5 @@
 #
 
 """
- Import index.
+Import index.
 """

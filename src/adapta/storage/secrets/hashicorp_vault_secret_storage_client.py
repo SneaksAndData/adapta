@@ -1,5 +1,5 @@
 """
- Hashicorp Vault Secret storage client
+Hashicorp Vault Secret storage client
 """
 #  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
 #

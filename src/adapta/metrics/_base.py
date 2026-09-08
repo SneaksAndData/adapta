@@ -1,5 +1,5 @@
 """
- Metrics integration abstraction.
+Metrics integration abstraction.
 """
 #  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
 #

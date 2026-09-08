@@ -1,6 +1,7 @@
 """
- Models for Astra DB.
+Models for Astra DB.
 """
+
 #  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -127,7 +128,8 @@ class VectorSearchQuery:
             [
                 "select",
                 ", ".join(self._data_fields),
-                ", ", f"{self._get_similarity_colum()} as sim_value",
+                ", ",
+                f"{self._get_similarity_colum()} as sim_value",
                 f"from {self._table_fqn}",
                 self._get_filter(),
                 self._get_order_by(),

@@ -1,5 +1,5 @@
 """
- Amazon Web Services implementation of AuthenticationClient.
+Amazon Web Services implementation of AuthenticationClient.
 """
 #  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
 #

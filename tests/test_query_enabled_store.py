@@ -91,5 +91,5 @@ def test_query_store_instantiation(connection_string: str, expected_store_type: 
     try:
         store = QueryEnabledStore.from_string(connection_string, lazy_init=True)
         assert isinstance(store, expected_store_type)
-    except Exception as load_error: # noqa
+    except Exception as load_error:  # noqa
         assert isinstance(load_error, expected_store_type)

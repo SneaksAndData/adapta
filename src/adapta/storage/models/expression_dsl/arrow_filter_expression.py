@@ -1,6 +1,7 @@
 """
- Filter expression for PyArrow backends
+Filter expression for PyArrow backends
 """
+
 from typing import Any, final
 
 import pyarrow.compute

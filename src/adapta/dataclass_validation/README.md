@@ -60,6 +60,7 @@ EXAMPLE_SCHEMA = ExampleDataClass()
 ### Validate a dataframe against the dataclass schema
 ```python
 import polars as pl
+
 # Create an example Polars DataFrame that matches the schema
 example_dataframe = pl.DataFrame(
     {
