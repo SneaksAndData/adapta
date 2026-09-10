@@ -4,8 +4,10 @@ import polars as pl
 import pytest
 from polars.testing import assert_frame_equal
 
-from adapta.dataclass_validation import AbstractDataClass, Field, Checks
-from adapta.dataclass_validation.validation.validation_polars import PolarsValidationClass
+from adapta.dataclass_validation import AbstractDataClass, Checks, Field
+from adapta.dataclass_validation.validation.validation_polars import (
+    PolarsValidationClass,
+)
 
 
 class LeToleranceDataClass(AbstractDataClass):
@@ -184,7 +186,7 @@ class ErrorTestOutput:
             ),
             ErrorTestOutput(
                 expected_failed_validations=[
-                    "Column 'capacity' does not satisfy the less than or equal to constraint. "
+                    "Column 'capacity' does not satisfy the less than or equal to constraint. ",
                     "It should be less than 100.0, but found maximum value 100.5.",
                 ],
             ),
@@ -202,7 +204,7 @@ class ErrorTestOutput:
             ),
             ErrorTestOutput(
                 expected_failed_validations=[
-                    "Column 'capacity' does not satisfy the less than or equal to constraint. "
+                    "Column 'capacity' does not satisfy the less than or equal to constraint. ",
                     "It should be less than 100.0, but found maximum value 100.00001.",
                 ],
             ),

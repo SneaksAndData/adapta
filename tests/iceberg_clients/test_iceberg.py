@@ -9,7 +9,7 @@ from sqlalchemy import text
 
 from adapta.storage.iceberg.v1 import load_using_catalog, write_using_catalog
 from adapta.storage.models.expression_dsl.filter_expression import FilterField
-from tests.iceberg_clients._functions import prepare_iceberg_table, get_input_data, generate_random_string
+from tests.iceberg_clients._functions import generate_random_string, get_input_data, prepare_iceberg_table
 
 
 def test_simple_read(trino_test_connection: sqlalchemy.engine.Engine, iceberg_catalog: Catalog):
@@ -50,12 +50,10 @@ def test_lazy_read(trino_test_connection: sqlalchemy.engine.Engine, iceberg_cata
 
 def test_map_read(trino_test_connection: sqlalchemy.engine.Engine, iceberg_catalog: Catalog):
     input_data = get_input_data() | {
-        "cold": list(
-            [
-                [{"key": "key1", "value": random.random() * 100}, {"key": "key2", "value": random.random() * 100}]
-                for _ in range(10)
-            ]
-        ),
+        "cold": [
+            [{"key": "key1", "value": random.random() * 100}, {"key": "key2", "value": random.random() * 100}]
+            for _ in range(10)
+        ],
     }
     schema = {
         "cola": polars.Int32,
@@ -84,7 +82,7 @@ def test_map_read(trino_test_connection: sqlalchemy.engine.Engine, iceberg_catal
             query = text(
                 f"""
                          INSERT INTO test.test_map_read (cola, colb, colc, cold)
-                         VALUES ({input_data['cola'][ix_row]}, '{input_data['colb'][ix_row]}', ARRAY[{array_value}], MAP(ARRAY[{map_keys_value}], cast(ARRAY[{map_values_value}] as array(double))))
+                         VALUES ({input_data["cola"][ix_row]}, '{input_data["colb"][ix_row]}', ARRAY[{array_value}], MAP(ARRAY[{map_keys_value}], cast(ARRAY[{map_values_value}] as array(double))))
                          """
             )
             con.execute(query)

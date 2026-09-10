@@ -1,7 +1,7 @@
-import pytest
 import polars as pl
+import pytest
 
-from adapta.dataclass_validation import AbstractDataClass, Field, Checks
+from adapta.dataclass_validation import AbstractDataClass, Checks, Field
 
 
 class TestDataClass(AbstractDataClass):
@@ -179,7 +179,7 @@ def test__inherit_fields__expected():
     Test that the class that inherits from another class also gets all the expected parents fields.
     """
 
-    assert sorted(list(InheritTestDataClass().get_fields().keys())) == [
+    assert sorted(InheritTestDataClass().get_fields().keys()) == [
         "column_1",
         "column_2",
         "column_3",

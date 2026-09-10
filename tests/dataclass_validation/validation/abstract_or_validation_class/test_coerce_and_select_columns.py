@@ -1,11 +1,14 @@
 from dataclasses import dataclass
 from unittest.mock import MagicMock
+
 import polars as pl
-from polars.testing import assert_frame_equal
 import pytest
+from polars.testing import assert_frame_equal
 
 from adapta.dataclass_validation import AbstractDataClass, Field
-from adapta.dataclass_validation.validation.validation_polars import PolarsValidationClass
+from adapta.dataclass_validation.validation.validation_polars import (
+    PolarsValidationClass,
+)
 
 
 @dataclass
@@ -236,7 +239,7 @@ def test__allowed_casts__convention_coverage():
     for param in test_params:
         test_input = param.values[0]
 
-        source_dtype = list(test_input.dataframe.schema.values())[0]
+        source_dtype = next(iter(test_input.dataframe.schema.values()))
         # Normalize source
         s_base = source_dtype if isinstance(source_dtype, type) else source_dtype.__class__
 

@@ -1,10 +1,13 @@
-import polars as pl
 from dataclasses import dataclass
-from polars.testing import assert_frame_equal
+
+import polars as pl
 import pytest
+from polars.testing import assert_frame_equal
 
 from adapta.dataclass_validation import AbstractDataClass, Field
-from adapta.dataclass_validation.validation.validation_polars import PolarsValidationClass
+from adapta.dataclass_validation.validation.validation_polars import (
+    PolarsValidationClass,
+)
 
 
 class ComprehensiveSchema(AbstractDataClass):

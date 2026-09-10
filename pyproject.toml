@@ -1,144 +1,99 @@
-[tool.poetry]
+[project]
 name = "adapta"
 version = "0.0.0"
 description = "Logging, data connectors, monitoring, secret handling and general lifehacks to make data people lives easier."
-authors = ["ECCO Sneaks & Data <esdsupport@ecco.com>"]
-maintainers = ['GZU <gzu@ecco.com>', 'JRB <ext-jrb@ecco.com>']
-license = 'Apache-2.0'
+authors = [{ name = "ECCO Data & AI", email = "esdsupport@ecco.com" }]
+requires-python = ">=3.11, <3.16"
 readme = "README.md"
-repository = 'https://github.com/SneaksAndData/adapta'
+license = "Apache-2.0"
+maintainers = [
+    { name = "George Zubrienko", email = "gzu@ecco.com" },
+    { name = "ECCO Data & AI", email = "esdsupport@ecco.com" }
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "License :: OSI Approved :: Apache Software License",
+]
+dependencies = [
+    "requests>=2.26,<3",
+    "backoff>=2.2,<3",
+    "cryptography>=36",
+    "pandas[performance]>=2.0.0,<3.0",
+    "pyarrow>=7.0",
+    "dataclasses-json>=0.6,<0.7",
+    "limits>=5.8,<6",
+    "polars>=1.18",
+    "pandera>=0.20.3, <1.0",
+    "fsspec>=2025,<2026",
+]
 
-[tool.poetry.dependencies]
-python = ">=3.11, <3.13"
-requests = "^2.26"
-backoff = "^2.2"
-cryptography = ">=36"
-pandas = { version = ">=2.0.0,<3.0", extras = ["performance"] }
-pyarrow = ">=7.0"
-dataclasses-json = "~0.6"
-limits = "^5.8"
-polars = ">=1.18"
-pandera = ">=0.20.3 <1.0"
-xlsxwriter = { version = "^3.0", optional = true }
-fastexcel = { version = "^0.14.0", optional = true }
-openpyxl = { version = "^3.0", optional = true }
-
-cassandra-driver = { version = "~3.30.0", optional = true }
-
-deltalake = { version = "^0.18.1", optional = true }
-
-pyiceberg = { version = "^0.11.1", optional = true }
-
-s3fs = { version = "^2025.10.0", optional = true}
-
-azure-identity = { version = "^1.7", optional = true }
-azure-storage-blob = { version = ">=12.17.0,<=13", optional = true }
-azure-mgmt-storage = { version = "~19.1.0", optional = true }
-azure-keyvault-secrets = { version = "^4.3", optional = true }
-azure-servicebus = { version = "~7.6", optional = true }
-adlfs = { version = '~2025', optional = true }
-
-boto3 = { version = "^1.28.0", optional = true}
-botocore = { version = "^1.31", optional = true}
-
-datadog = { version = "~0.49.1", optional = true }
-datadog-api-client = { version = "~2.18.0", optional = true }
-
-SQLAlchemy = { version = "~2.0", optional = true }
-pyodbc = { version = "~4.0", optional = true }
-
-mlflow-skinny = { version = "~2.17.0", optional = true }
-
-redis = { version = "~4.4.0", optional = true, extras = ['hiredis'] }
-
-hvac = { version = "~0.11.2", optional = true }
-
-fsspec = { version = "^2025" }
-
-trino = { version = "^0.337", optional = true, extras = ['sqlalchemy'] }
-
-snowflake-connector-python = { version = "^3.4.0", optional = true }
-
-[tool.poetry.extras]
+[project.optional-dependencies]
 azure = [
-    'azure-identity',
-    'azure-storage-blob',
-    'azure-mgmt-storage',
-    'azure-keyvault-secrets',
-    'adlfs'
+    "azure-identity>=1.7,<2",
+    "azure-storage-blob>=12.17.0,<=13",
+    "azure-mgmt-storage~=19.1.0",
+    "azure-keyvault-secrets>=4.3,<5",
+    "adlfs>=2025,<2026",
 ]
-azure-servicebus = [
-    'azure-servicebus',
-]
+azure-servicebus = ["azure-servicebus>=7.6,<7.7"]
 datadog = [
-    'datadog',
-    'datadog-api-client'
+    "datadog~=0.49.1",
+    "datadog-api-client~=2.18.0",
 ]
 databases = [
-    'SQLAlchemy',
-    'pyodbc'
+    "SQLAlchemy>=2.0,<2.1",
+    "pyodbc>=4.0,<4.1",
 ]
-ml = [
-    'mlflow-skinny'
-]
-caching = [
-    'redis'
-]
-
-hashicorp = [
-    'hvac'
-]
-
-trino = [
-    'trino'
-]
-
-snowflake = [
-    'snowflake-connector-python'
-]
-
-storage-delta = [
-    "deltalake"
-]
-
-storage-iceberg = [
-    "pyiceberg"
-]
-
-storage-cassandra = [
-    "cassandra-driver"
-]
-
+ml = ["mlflow-skinny~=2.17.0"]
+caching = ["redis[hiredis]~=4.4.0"]
+hashicorp = ["hvac~=0.11.2"]
+trino = ["trino[sqlalchemy]>=0.337,<0.338"]
+snowflake = ["snowflake-connector-python>=3.4.0,<4"]
+storage-delta = ["deltalake>=0.18.1,<0.19"]
+storage-iceberg = ["pyiceberg>=0.11.1,<0.12"]
+storage-cassandra = ["cassandra-driver~=3.30.0"]
 aws = [
-    "boto3",
-    "botocore",
+    "boto3>=1.28.0,<2",
+    "botocore>=1.31,<2",
 ]
-
-aws-fileio = [
-    "s3fs"
-]
-
+aws-fileio = ["s3fs>=2025.10.0,<2026"]
 excel = [
-    "xlsxwriter",
-    "fastexcel",
-    "openpyxl"
+    "xlsxwriter>=3.0,<4",
+    "fastexcel>=0.14.0,<0.15",
+    "openpyxl>=3.0,<4",
 ]
 
-[tool.poetry.group.dev.dependencies]
-pytest = "^8"
-pytest-mock = "^3"
-pytest-xdist = "^3"
-pytest-asyncio = "^1"
-pytest-cov = "^6"
-pylint = "^4"
-cryptography = "~36.0"
-black = "^23"
-pyupgrade = "^3"
-pyarrow-stubs = "^20.0.0.20251215"
+[project.urls]
+Repository = "https://github.com/SneaksAndData/adapta"
 
-[tool.black]
+[dependency-groups]
+dev = [
+    "pytest>=9",
+    "pytest-mock>=3",
+    "pytest-xdist>=3",
+    "pytest-asyncio>=1",
+    "pytest-cov>=7",
+    "cryptography>=36.0,<36.1",
+    "pyupgrade>=3,<4",
+    "pyarrow-stubs>=20.0.0.20251215,<21",
+    "ruff>=0.16.5",
+]
+
+[tool.uv]
+default-groups = "all"
+
+[tool.ruff]
+src = ["src"]
+exclude = [".venv", "examples"]
+target-version = "py311"
 line-length = 120
+extend-exclude = ['tests/data/.*']
+
 
 [build-system]
-requires = ["poetry-core>=1.2.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["uv_build>=0.12.7,<0.13.0"]
+build-backend = "uv_build"

@@ -2,17 +2,21 @@ from io import BytesIO
 
 import polars as pl
 import pytest
+
 from adapta.storage.models import LocalPath
 from adapta.storage.models.enum import QueryEnabledStoreOptions
-from adapta.storage.models.expression_dsl.filter_expression import FilterExpression, FilterField
+from adapta.storage.models.expression_dsl.filter_expression import (
+    FilterExpression,
+    FilterField,
+)
 from adapta.storage.query_enabled_store import (
+    LocalCredential,
     LocalQueryEnabledStore,
     LocalSettings,
-    LocalCredential,
-    QueryEnabledStoreMode,
-    QueryEnabledStoreSelectParameter,
     QueryEnabledStoreFilterParameter,
+    QueryEnabledStoreMode,
     QueryEnabledStoreReadOptionsParameter,
+    QueryEnabledStoreSelectParameter,
 )
 from adapta.utils.metaframe import MetaFrameOptions
 

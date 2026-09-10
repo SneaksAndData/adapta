@@ -1,6 +1,6 @@
 import pytest
 
-from adapta.dataclass_validation import Field, AbstractDataClass
+from adapta.dataclass_validation import AbstractDataClass, Field
 from adapta.dataclass_validation.dataclass.dataclass_core import AstraProperties
 
 
@@ -56,4 +56,4 @@ def test__set_astra_properties_keys__expected_raise():
         ValueError,
         match="Data class DataClassWithFieldWithoutPrimaryKey must have at least one primary key defined to use Astra properties.",
     ):
-        TEST_SCHEMA = DataClassWithFieldWithoutPrimaryKey()
+        _ = DataClassWithFieldWithoutPrimaryKey()

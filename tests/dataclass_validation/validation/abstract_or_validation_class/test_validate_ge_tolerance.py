@@ -4,8 +4,10 @@ import polars as pl
 import pytest
 from polars.testing import assert_frame_equal
 
-from adapta.dataclass_validation import AbstractDataClass, Field, Checks
-from adapta.dataclass_validation.validation.validation_polars import PolarsValidationClass
+from adapta.dataclass_validation import AbstractDataClass, Checks, Field
+from adapta.dataclass_validation.validation.validation_polars import (
+    PolarsValidationClass,
+)
 
 
 class GeToleranceDataClass(AbstractDataClass):
@@ -184,7 +186,7 @@ class ErrorTestOutput:
             ),
             ErrorTestOutput(
                 expected_failed_validations=[
-                    "Column 'inventory' does not satisfy the greater than or equal to constraint. "
+                    "Column 'inventory' does not satisfy the greater than or equal to constraint. ",
                     "It should be greater than 0.0, but found minimum value -0.5.",
                 ],
             ),
@@ -202,7 +204,7 @@ class ErrorTestOutput:
             ),
             ErrorTestOutput(
                 expected_failed_validations=[
-                    "Column 'inventory' does not satisfy the greater than or equal to constraint. "
+                    "Column 'inventory' does not satisfy the greater than or equal to constraint. ",
                     "It should be greater than 0.0, but found minimum value -1e-05.",
                 ],
             ),

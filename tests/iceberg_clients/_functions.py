@@ -4,7 +4,7 @@ from typing import Any
 
 import pandas
 import sqlalchemy
-from sqlalchemy import ARRAY, BIGINT, JSON
+from sqlalchemy import ARRAY, BIGINT
 
 
 def prepare_iceberg_table(
@@ -45,5 +45,5 @@ def get_input_data():
     return {
         "cola": list(range(10)),
         "colb": list(generate_random_strings(10, 10)),
-        "colc": list([list(range(random.randint(1, 10))) for _ in range(10)]),
+        "colc": [list(range(random.randint(1, 10))) for _ in range(10)],
     }

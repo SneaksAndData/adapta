@@ -4,7 +4,9 @@ import polars as pl
 import pytest
 
 from adapta.dataclass_validation import AbstractDataClass, Checks, Field
-from adapta.dataclass_validation.validation.validation_polars import PolarsValidationClass
+from adapta.dataclass_validation.validation.validation_polars import (
+    PolarsValidationClass,
+)
 
 
 class GeFloatListDataClass(AbstractDataClass):
@@ -79,7 +81,7 @@ class OutputTest:
             ),
             OutputTest(
                 expected_failed_validations=[
-                    "Column 'values' does not satisfy the greater than or equal to constraint. "
+                    "Column 'values' does not satisfy the greater than or equal to constraint. ",
                     "It should be greater than 0.0, but found minimum value -0.5.",
                 ],
             ),
@@ -97,7 +99,7 @@ class OutputTest:
             ),
             OutputTest(
                 expected_failed_validations=[
-                    "Column 'values' does not satisfy the greater than or equal to constraint. "
+                    "Column 'values' does not satisfy the greater than or equal to constraint. ",
                     "It should be greater than 0.0, but found minimum value -2.",
                 ],
             ),
@@ -138,7 +140,7 @@ def test__validate_ge_value__list_column_errors(inputs: InputTest, expected: Out
             ),
             OutputTest(
                 expected_failed_validations=[
-                    "Column 'values' does not satisfy the less than or equal to constraint. "
+                    "Column 'values' does not satisfy the less than or equal to constraint. ",
                     "It should be less than 100.0, but found maximum value 100.5.",
                 ],
             ),
@@ -156,7 +158,7 @@ def test__validate_ge_value__list_column_errors(inputs: InputTest, expected: Out
             ),
             OutputTest(
                 expected_failed_validations=[
-                    "Column 'values' does not satisfy the less than or equal to constraint. "
+                    "Column 'values' does not satisfy the less than or equal to constraint. ",
                     "It should be less than 100.0, but found maximum value 102.",
                 ],
             ),

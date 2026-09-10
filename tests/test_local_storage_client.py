@@ -19,7 +19,10 @@ import uuid
 import pandas as pd
 
 from adapta.storage.blob.local_storage_client import LocalStorageClient
-from adapta.storage.models.formatters import PandasDataFrameParquetSerializationFormat, DictJsonSerializationFormat
+from adapta.storage.models.formatters import (
+    DictJsonSerializationFormat,
+    PandasDataFrameParquetSerializationFormat,
+)
 from adapta.storage.models.local import LocalPath
 
 
@@ -60,7 +63,7 @@ def test_list_blobs():
 
 def test_read_blobs():
     test_base = uuid.uuid4()
-    local_storage = LocalStorageClient.for_storage_path(f"file:///tmp")
+    local_storage = LocalStorageClient.for_storage_path("file:///tmp")
 
     local_storage.save_data_as_blob(
         data={"key1": "value1"},

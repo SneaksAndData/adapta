@@ -18,17 +18,15 @@ import json
 import logging
 import os
 import sys
+import tempfile
 import traceback
+import uuid
 from ctypes.util import find_library
 from logging import StreamHandler
-
-import tempfile
 from threading import Thread
 from time import sleep
 
 import pytest
-import uuid
-
 import requests
 
 from adapta.logs import SemanticLogger, create_async_logger
@@ -112,7 +110,8 @@ def test_log_format(
         if level == LogLevel.DEBUG:
             stream_logger.debug(template=template, exception=exception, diagnostics=diagnostics, **args)
 
-    logged_lines = open(test_file_path).readlines()
+    with open(test_file_path) as f:
+        logged_lines = f.readlines()
     assert expected_message in logged_lines
 
 
@@ -128,7 +127,7 @@ def test_datadog_api_handler(datadog_handler: DataDogApiHandler):
 
     try:
         raise ValueError("test warning")
-    except BaseException as ex:
+    except BaseException as ex:  # noqa
         dd_logger.warning(template="This a unit test logger {index}", exception=ex, index=1)
         ex_str = traceback.format_exc().removesuffix("\n")
 
@@ -158,7 +157,7 @@ def test_adapta_logger_replacement(datadog_handler: DataDogApiHandler, restore_l
     requests.get("https://example.com", verify=False)
 
     requests_log = logging.getLogger("urllib3")
-    handler = [handler for handler in requests_log.handlers if isinstance(handler, DataDogApiHandler)][0]
+    handler = next(iter([handler for handler in requests_log.handlers if isinstance(handler, DataDogApiHandler)]))
     buffers = [json.loads(msg.message) for msg in handler._buffer]
     assert {"text": "Starting new HTTPS connection (1): example.com:443"} in buffers
 
@@ -173,7 +172,7 @@ def test_log_level(datadog_handler: DataDogApiHandler, restore_logger_class):
     logger.info("Info message", log_source_name="test")
 
     requests_log = logging.getLogger("test")
-    handler = [handler for handler in requests_log.handlers if isinstance(handler, DataDogApiHandler)][0]
+    handler = next(iter([handler for handler in requests_log.handlers if isinstance(handler, DataDogApiHandler)]))
     buffers = [json.loads(msg.message) for msg in handler._buffer]
     assert buffers == [{"template": "Info message", "text": "Info message"}]
 
@@ -199,7 +198,7 @@ def test_fixed_template(datadog_handler: DataDogApiHandler, restore_logger_class
     )
 
     requests_log = logging.getLogger("test_fixed_template")
-    handler = [handler for handler in requests_log.handlers if isinstance(handler, DataDogApiHandler)][0]
+    handler = next(iter([handler for handler in requests_log.handlers if isinstance(handler, DataDogApiHandler)]))
     buffers = [json.loads(msg.message) for msg in handler._buffer]
     assert buffers == [
         {
@@ -235,7 +234,7 @@ def test_fixed_template_duplicate_handler(datadog_handler: DataDogApiHandler, re
     )
 
     requests_log = logging.getLogger("test_fixed_template")
-    handler = [handler for handler in requests_log.handlers if isinstance(handler, DataDogApiHandler)][0]
+    handler = next(iter([handler for handler in requests_log.handlers if isinstance(handler, DataDogApiHandler)]))
     buffers = [json.loads(msg.message) for msg in handler._buffer]
     assert buffers == [
         {
@@ -313,7 +312,7 @@ async def test_log_format_async(
     expected_message: str,
 ):
     test_file_path = os.path.join(tempfile.gettempdir(), str(uuid.uuid4()))
-    with open(test_file_path, "w") as log_stream:
+    with open(test_file_path, "w") as log_stream:  # noqa: ASYNC230
         with create_async_logger(
             logger_type=TestLoggerClass,
             min_log_level=LogLevel.DEBUG,
@@ -334,8 +333,9 @@ async def test_log_format_async(
 
         await asyncio.sleep(1)
 
-        logged_lines = open(test_file_path).readlines()
-        assert expected_message in logged_lines
+        with open(test_file_path, "r", encoding="utf-8") as f:  # noqa: ASYNC230
+            logged_lines = f.readlines()
+            assert expected_message in logged_lines
 
 
 def printf_messages(message_count: int, output_type: str) -> None:

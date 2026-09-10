@@ -1,5 +1,7 @@
 from dataclasses import dataclass
+
 import pytest
+
 from adapta.dataclass_validation import Field
 
 

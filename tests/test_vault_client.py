@@ -13,7 +13,7 @@
 #  limitations under the License.
 #
 
-from unittest.mock import patch, MagicMock, mock_open, Mock
+from unittest.mock import MagicMock, Mock, mock_open, patch
 
 import pytest
 
@@ -67,8 +67,10 @@ def test_list_secrets_with_kubernetes():
 
 
 def test_read_secret_with_mock():
-    with patch("hvac.Client", MagicMock(return_value=generate_hashicorp_vault_mock())), patch("webbrowser.open"), patch(
-        "adapta.security.clients.hashicorp_vault.oidc_client._get_vault_credentials"
+    with (
+        patch("hvac.Client", MagicMock(return_value=generate_hashicorp_vault_mock())),
+        patch("webbrowser.open"),
+        patch("adapta.security.clients.hashicorp_vault.oidc_client._get_vault_credentials"),
     ):
         client = HashicorpSecretStorageClient(base_client=HashicorpVaultOidcClient(TEST_VAULT_ADDRESS))
         secret = client.read_secret("secret", "test/secret/with/path")
@@ -78,8 +80,10 @@ def test_read_secret_with_mock():
 def test_create_secret_with_mock():
     client_mock = generate_hashicorp_vault_mock()
 
-    with patch("hvac.Client", MagicMock(return_value=client_mock)), patch("webbrowser.open"), patch(
-        "adapta.security.clients.hashicorp_vault.oidc_client._get_vault_credentials"
+    with (
+        patch("hvac.Client", MagicMock(return_value=client_mock)),
+        patch("webbrowser.open"),
+        patch("adapta.security.clients.hashicorp_vault.oidc_client._get_vault_credentials"),
     ):
         client = HashicorpSecretStorageClient(base_client=HashicorpVaultOidcClient(TEST_VAULT_ADDRESS))
         client.create_secret("secret", "path/to/secret", {"key": "value"})
@@ -92,8 +96,10 @@ def test_create_secret_with_mock():
 def test_string_secret():
     client_mock = generate_hashicorp_vault_mock()
 
-    with patch("hvac.Client", MagicMock(return_value=client_mock)), patch("webbrowser.open"), patch(
-        "adapta.security.clients.hashicorp_vault.oidc_client._get_vault_credentials"
+    with (
+        patch("hvac.Client", MagicMock(return_value=client_mock)),
+        patch("webbrowser.open"),
+        patch("adapta.security.clients.hashicorp_vault.oidc_client._get_vault_credentials"),
     ):
         client = HashicorpSecretStorageClient(base_client=HashicorpVaultOidcClient(TEST_VAULT_ADDRESS))
 
@@ -108,9 +114,11 @@ def test_string_secret():
 def test_list_secrets():
     client_mock = generate_hashicorp_vault_mock()
 
-    with patch("hvac.Client", MagicMock(return_value=client_mock)), patch(
-        "builtins.open", mock_open(read_data="data")
-    ), patch("hvac.api.auth_methods.kubernetes", Mock()):
+    with (
+        patch("hvac.Client", MagicMock(return_value=client_mock)),
+        patch("builtins.open", mock_open(read_data="data")),
+        patch("hvac.api.auth_methods.kubernetes", Mock()),
+    ):
         client = HashicorpSecretStorageClient(
             base_client=HashicorpVaultKubernetesClient(TEST_VAULT_ADDRESS, "kubernetes-cluster")
         )

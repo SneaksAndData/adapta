@@ -1,6 +1,7 @@
 """
 Tests for the enum field validation.
 """
+
 from dataclasses import dataclass
 from enum import Enum
 
@@ -193,9 +194,9 @@ def test__validate_enum_members__unit_test(inputs: InputTest, expected: OutputTe
 
     # Assert
     if expected.should_pass:
-        assert (
-            len(validation_response.failed_validations) == 0
-        ), f"Expected no failures but got: {validation_response.failed_validations}"
+        assert len(validation_response.failed_validations) == 0, (
+            f"Expected no failures but got: {validation_response.failed_validations}"
+        )
     else:
         assert len(validation_response.failed_validations) > 0
         assert any(expected.expected_invalid_column in msg for msg in validation_response.failed_validations)

@@ -1,0 +1,108 @@
+"""Local Query Enabled Store (QES) for reading local files."""
+
+import os.path
+import re
+from collections.abc import Iterator
+from dataclasses import dataclass
+from typing import final
+
+from dataclasses_json import DataClassJsonMixin
+from pyarrow.parquet import read_table
+
+from adapta.storage.models import DataPath, LocalPath
+from adapta.storage.models.enum import QueryEnabledStoreOptions
+from adapta.storage.models.expression_dsl.arrow_filter_expression import (
+    ArrowFilterExpression,
+)
+from adapta.storage.models.expression_dsl.filter_expression import (
+    Expression,
+    compile_expression,
+)
+from adapta.storage.models.formatters import MetaFrameParquetSerializationFormat
+from adapta.storage.query_enabled_store._models import (
+    CONNECTION_STRING_REGEX,
+    QueryEnabledStore,
+)
+from adapta.utils.metaframe import MetaFrame
+
+
+@dataclass
+class LocalCredential(DataClassJsonMixin):
+    """
+    Local credential helper for QES.
+    No authentication is required for local files.
+    """
+
+
+@dataclass
+class LocalSettings(DataClassJsonMixin):
+    """
+    Settings for local QES
+    """
+
+
+@final
+class LocalQueryEnabledStore(QueryEnabledStore[LocalCredential, LocalSettings]):
+    """
+    QES Client for local file reads (e.g., Parquet) using PyArrow.
+    """
+
+    def close(self) -> None:
+        pass
+
+    @classmethod
+    def _from_connection_string(
+        cls, connection_string: str, lazy_init: bool = False
+    ) -> "QueryEnabledStore[LocalCredential, LocalSettings]":
+        """
+        Parses a connection string for local files.
+        """
+        _, credentials, settings = re.findall(re.compile(CONNECTION_STRING_REGEX), connection_string)[0]
+        return cls(credentials=LocalCredential.from_json(credentials), settings=LocalSettings.from_json(settings))
+
+    def _apply_filter(
+        self,
+        path: DataPath,
+        filter_expression: Expression,
+        columns: list[str],
+        options: dict[QueryEnabledStoreOptions, any] | None = None,
+        limit: int | None = None,
+    ) -> MetaFrame | Iterator[MetaFrame]:
+        """
+        Applies a filter to a local file
+        """
+        row_filter = compile_expression(filter_expression, ArrowFilterExpression) if filter_expression else None
+
+        pyarrow_table = read_table(
+            path.path,
+            columns=columns if columns else None,
+            filters=row_filter,
+        )
+
+        return MetaFrame.from_arrow(
+            data=pyarrow_table,
+        )
+
+    def _apply_query(self, query: str) -> MetaFrame | Iterator[MetaFrame]:
+        """
+        Local QES does not natively support SQL-like queries.
+        """
+        raise NotImplementedError("Text queries are currently not supported by Local QES")
+
+    def _write(
+        self,
+        path: LocalPath,
+        data: MetaFrame | Iterator[MetaFrame],
+        block_size: int,
+        overwrite: bool,
+        merge_columns: list[str] | None = None,
+        delete_filter: Expression | None = None,
+    ) -> None:
+        if isinstance(data, Iterator):
+            for ix, metaframe in enumerate(data):
+                with open(os.path.join(path.path, f"_{ix}"), "wb") as f:
+                    f.write(MetaFrameParquetSerializationFormat().serialize(metaframe))
+            return
+
+        with open(path.path, "wb") as f:
+            f.write(MetaFrameParquetSerializationFormat().serialize(data))

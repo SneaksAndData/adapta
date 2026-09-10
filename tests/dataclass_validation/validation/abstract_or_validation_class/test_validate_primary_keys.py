@@ -1,6 +1,9 @@
 import polars as pl
+
 from adapta.dataclass_validation import AbstractDataClass, Field
-from adapta.dataclass_validation.validation.validation_polars import PolarsValidationClass
+from adapta.dataclass_validation.validation.validation_polars import (
+    PolarsValidationClass,
+)
 
 
 def test__validate_primary_keys__expected_unique_primary_keys():

@@ -15,13 +15,13 @@
 
 import os
 import tempfile
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 from azure.storage.blob import BlobProperties
 
+from adapta.security.clients import AzureClient
 from adapta.storage.blob.azure_storage_client import AzureStorageClient
 from adapta.storage.models.azure import AdlsGen2Path
-from adapta.security.clients import AzureClient
 
 
 @patch("azure.storage.blob._download.StorageStreamDownloader")

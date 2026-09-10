@@ -14,15 +14,15 @@
 #
 
 import pathlib
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 import pandas
 import pytest
 
 from adapta.security.clients import LocalClient
+from adapta.storage.delta_lake import DeltaOperation, history
 from adapta.storage.delta_lake.v3 import load
 from adapta.storage.models.local import LocalPath
-from adapta.storage.delta_lake import history, DeltaOperation
 
 
 @pytest.fixture
@@ -66,13 +66,13 @@ def test_delta_history_full(get_client_and_path):
     ]
 
 
-@pytest.mark.parametrize("timestamp", [datetime(year=1900, month=1, day=1)])
+@pytest.mark.parametrize("timestamp", [datetime(year=1900, month=1, day=1, tzinfo=UTC)])
 def test_delta_time_travel(get_client_and_path, timestamp):
     client, data_path = get_client_and_path
     current_table: pandas.DataFrame = load(client, data_path).to_pandas()
     first_version_table: pandas.DataFrame = load(client, data_path, timestamp=timestamp).to_pandas()
     latest_version_table: pandas.DataFrame = load(
-        client, data_path, timestamp=datetime.now() + timedelta(days=10)
+        client, data_path, timestamp=datetime.now(tz=UTC) + timedelta(days=10)
     ).to_pandas()
 
     assert current_table.equals(latest_version_table)
