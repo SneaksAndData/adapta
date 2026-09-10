@@ -103,7 +103,7 @@ def test_string_secret():
     ):
         client = HashicorpSecretStorageClient(base_client=HashicorpVaultOidcClient(TEST_VAULT_ADDRESS))
 
-        with pytest.raises(ValueError) as e:
+        with pytest.raises(TypeError) as e:
             client.create_secret("secret", "path/to/secret", '{"key": "value"}')
 
     assert "Only Dict secret type supported in HashicorpSecretStorageClient but was: <class 'str'>" in str(e.value)

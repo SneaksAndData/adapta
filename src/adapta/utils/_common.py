@@ -145,6 +145,8 @@ def memory_limit(*, memory_limit_percentage: float | None = None, memory_limit_b
     """
     if sys.platform == "win32":
         yield None
+    if sys.platform == "darwin":
+        yield None
     else:
         total_mem_bytes = os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES")
         try:
