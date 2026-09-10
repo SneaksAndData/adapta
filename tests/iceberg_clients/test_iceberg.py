@@ -8,6 +8,7 @@ from pyiceberg.catalog import Catalog
 from sqlalchemy import text
 
 from adapta.storage.iceberg.v1 import load_using_catalog, write_using_catalog
+from adapta.storage.models.expression_dsl.filter_expression import FilterField
 from tests.iceberg_clients._functions import prepare_iceberg_table, get_input_data, generate_random_string
 
 
@@ -249,6 +250,58 @@ def test_upsert_to_table(iceberg_catalog: Catalog, lazy: bool):
             "cola": [1, 2, 3],
             "colb": ["aa", "b", "c"],
             "colc": [[11], [2], [3]],
+        }
+    )
+
+    read_data = load_using_catalog(
+        schema="test",
+        table_name=table_name,
+        catalog=iceberg_catalog,
+    )
+    assert_frame_equal(read_data.to_polars().sort("cola"), expected_df.sort("cola"), check_column_order=False)
+
+
+@pytest.mark.parametrize("lazy", [False, True])
+def test_partial_overwrite_table(iceberg_catalog: Catalog, lazy: bool):
+    table_name = f"test_partial_overwrite_table_{generate_random_string(8)}".lower()
+    input_data1 = {
+        "cola": [1, 1, 2],
+        "colb": ["a", "1", "c"],
+        "colc": [[1], [1], [3]],
+    }
+    df1 = polars.DataFrame(input_data1)
+    data1_to_write = df1.lazy() if lazy else df1
+
+    write_using_catalog(
+        schema_name="test",
+        table_name=table_name,
+        catalog=iceberg_catalog,
+        data=data1_to_write,
+        overwrite=True,
+    )
+
+    input_data2 = {
+        "cola": [1, 3],
+        "colb": ["aa", "d"],
+        "colc": [[11], [4]],
+    }
+    df2 = polars.DataFrame(input_data2)
+    data2_to_write = df2.lazy() if lazy else df2
+
+    write_using_catalog(
+        schema_name="test",
+        table_name=table_name,
+        catalog=iceberg_catalog,
+        data=data2_to_write,
+        overwrite=False,
+        delete_filter=FilterField("cola") == 1,
+    )
+
+    expected_df = polars.DataFrame(
+        {
+            "cola": [1, 2, 3],
+            "colb": ["aa", "c", "d"],
+            "colc": [[11], [3], [4]],
         }
     )
 

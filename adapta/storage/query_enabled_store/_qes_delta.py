@@ -1,6 +1,7 @@
 """
- QES implementations for delta-rs.
+QES implementations for delta-rs.
 """
+
 import re
 from dataclasses import dataclass
 from pydoc import locate
@@ -91,5 +92,13 @@ class DeltaQueryEnabledStore(QueryEnabledStore[DeltaCredential, DeltaSettings]):
     def _apply_query(self, query: str) -> MetaFrame | Iterator[MetaFrame]:
         raise NotImplementedError("Text queries are not supported by Delta QES")
 
-    def _write(self, path: DataPath, data: MetaFrame | Iterator[MetaFrame], block_size: int, overwrite: bool) -> None:
+    def _write(
+        self,
+        path: DataPath,
+        data: MetaFrame | Iterator[MetaFrame],
+        block_size: int,
+        overwrite: bool,
+        merge_columns: list[str] | None = None,
+        delete_filter: Expression | None = None,
+    ) -> None:
         raise NotImplementedError("Writing not supported by this QES engine.")

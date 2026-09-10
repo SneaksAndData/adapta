@@ -1,5 +1,5 @@
 """
- Query Enabled Store Connection interface.
+Query Enabled Store Connection interface.
 """
 
 #  Copyright (c) 2023-2026. ECCO Data & AI and other project contributors.
@@ -132,7 +132,15 @@ class QueryEnabledStore(Generic[TCredential, TSettings], ABC):
         """
 
     @abstractmethod
-    def _write(self, path: DataPath, data: MetaFrame | Iterator[MetaFrame], block_size: int, overwrite: bool) -> None:
+    def _write(
+        self,
+        path: DataPath,
+        data: MetaFrame | Iterator[MetaFrame],
+        block_size: int,
+        overwrite: bool,
+        merge_columns: list[str] | None = None,
+        delete_filter: Expression | None = None,
+    ) -> None:
         """
         Writes `data` to the provided path, using the underlying store implementation.
         """

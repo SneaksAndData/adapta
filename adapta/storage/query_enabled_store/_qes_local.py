@@ -1,4 +1,5 @@
 """Local Query Enabled Store (QES) for reading local files."""
+
 import os.path
 import re
 from collections.abc import Iterator
@@ -83,7 +84,15 @@ class LocalQueryEnabledStore(QueryEnabledStore[LocalCredential, LocalSettings]):
         """
         raise NotImplementedError("Text queries are currently not supported by Local QES")
 
-    def _write(self, path: LocalPath, data: MetaFrame | Iterator[MetaFrame], block_size: int, overwrite: bool) -> None:
+    def _write(
+        self,
+        path: LocalPath,
+        data: MetaFrame | Iterator[MetaFrame],
+        block_size: int,
+        overwrite: bool,
+        merge_columns: list[str] | None = None,
+        delete_filter: Expression | None = None,
+    ) -> None:
         if isinstance(data, Iterator):
             for ix, metaframe in enumerate(data):
                 with open(os.path.join(path.path, f"_{ix}"), "wb") as f:

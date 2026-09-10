@@ -1,6 +1,7 @@
 """
- QES implementations for Trino.
+QES implementations for Trino.
 """
+
 import os
 import re
 from dataclasses import dataclass
@@ -142,5 +143,13 @@ class TrinoQueryEnabledStore(QueryEnabledStore[TrinoCredential, TrinoSettings]):
 
         return query
 
-    def _write(self, path: TrinoPath, data: MetaFrame | Iterator[MetaFrame], block_size: int, overwrite: bool) -> None:
+    def _write(
+        self,
+        path: TrinoPath,
+        data: MetaFrame | Iterator[MetaFrame],
+        block_size: int,
+        overwrite: bool,
+        merge_columns: list[str] | None = None,
+        delete_filter: Expression | None = None,
+    ) -> None:
         raise NotImplementedError("Writing not supported by this QES engine.")
