@@ -174,7 +174,9 @@ def test_concurrent_task_runner(
     assert results == expectations and total_wait < expected_wait
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="Functionality not supported on Windows")
+@pytest.mark.skipif(
+    sys.platform == "win32" or sys.platform == "darwin", reason="Functionality not supported on Windows/MacOS"
+)
 @pytest.mark.parametrize(
     "limit_bytes,limit_percentage,num_iterations,expected_limit",
     [
@@ -213,7 +215,9 @@ def test_memory_limit_enough_memory(
     assert enforced_limit == expected_limit
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="Functionality not supported on Windows")
+@pytest.mark.skipif(
+    sys.platform == "win32" or sys.platform == "darwin", reason="Functionality not supported on Windows/MacOS"
+)
 @pytest.mark.parametrize(
     "limit_bytes,limit_percentage,num_iterations",
     [

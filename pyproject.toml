@@ -93,6 +93,21 @@ target-version = "py311"
 line-length = 120
 extend-exclude = ['tests/data/.*']
 
+[tool.coverage.run]
+omit = [
+    "tests/*",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = """
+    --cov-config=.coveragerc
+    --doctest-modules
+    --junitxml=junit/test-results.xml
+    --cov=.
+    --cov-report=term-missing:skip-covered
+"""
+
 
 [build-system]
 requires = ["uv_build>=0.12.7,<0.13.0"]

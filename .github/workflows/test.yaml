@@ -35,8 +35,20 @@ jobs:
       - name: Prepare environment
         run: uv sync --frozen --all-extras
 
+      - name: Build the Docker Compose stack
+        run: docker compose up --quiet-pull -d
+
+      - name: Get Compose Logs
+        if: always()
+        run: docker compose logs
+
       - name: Run Tests
-        run: uv run pytest | tee pytest-coverage.txt
+        run:  |
+          set -euo pipefail
+          
+          sleep 10 # let Trino boot
+          
+          uv run pytest | tee pytest-coverage.txt
 
       - name: Publish Code Coverage
         uses: MishaKav/pytest-coverage-comment@main

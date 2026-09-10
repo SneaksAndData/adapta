@@ -31,7 +31,7 @@ from adapta.storage.models.expression_dsl.trino_filter_expression import (
         (False, "False"),
         (None, "NULL"),
         (datetime.date(2023, 10, 1), "DATE '2023-10-01'"),
-        (datetime.datetime(2023, 10, 1, 12, 30, 45, tzinfo=datetime.UTC), "TIMESTAMP '2023-10-01 12:30:45'"),
+        (datetime.datetime(2023, 10, 1, 12, 30, 45), "TIMESTAMP '2023-10-01 12:30:45'"),  # noqa: DTZ001
     ],
 )
 def test_format_value_expected(value: any, expected_value: str):
