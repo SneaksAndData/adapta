@@ -15,4 +15,4 @@
 #  limitations under the License.
 #
 
-from adapta.connectors.service_bus._connector import AzureServiceBusConnector as AzureServiceBusConnector
+from adapta.connectors.service_bus._connector import AzureServiceBusConnector
