@@ -9,7 +9,7 @@ from sqlalchemy import text
 
 from adapta.storage.iceberg.v1 import load_using_catalog, write_using_catalog
 from adapta.storage.models.expression_dsl.filter_expression import FilterField
-from tests.iceberg_clients._functions import prepare_iceberg_table, get_input_data, generate_random_string
+from tests.iceberg_clients._functions import generate_random_string, get_input_data, prepare_iceberg_table
 
 
 def test_simple_read(trino_test_connection: sqlalchemy.engine.Engine, iceberg_catalog: Catalog):
