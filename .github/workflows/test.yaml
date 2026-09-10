@@ -43,7 +43,10 @@ jobs:
         run: docker compose logs
 
       - name: Run Tests
-        run: uv run pytest | tee pytest-coverage.txt
+        run:  |
+          set -euo pipefail
+          
+          uv run pytest | tee pytest-coverage.txt
 
       - name: Publish Code Coverage
         uses: MishaKav/pytest-coverage-comment@main
