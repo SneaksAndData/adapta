@@ -81,8 +81,8 @@ class OutputTest:
             ),
             OutputTest(
                 expected_failed_validations=[
-                    "Column 'values' does not satisfy the greater than or equal to constraint. "
-                    "It should be greater than 0.0, but found minimum value -0.5."
+                    ("Column 'values' does not satisfy the greater than or equal to constraint. "
+                    "It should be greater than 0.0, but found minimum value -0.5.")
                 ],
             ),
             id="1) Reports ge error for float list values below tolerance",
@@ -99,8 +99,8 @@ class OutputTest:
             ),
             OutputTest(
                 expected_failed_validations=[
-                    "Column 'values' does not satisfy the greater than or equal to constraint. "
-                    "It should be greater than 0.0, but found minimum value -2."
+                    ("Column 'values' does not satisfy the greater than or equal to constraint. "
+                    "It should be greater than 0.0, but found minimum value -2.")
                 ],
             ),
             id="2) Reports ge error for integer list values below tolerance",
@@ -140,8 +140,8 @@ def test__validate_ge_value__list_column_errors(inputs: InputTest, expected: Out
             ),
             OutputTest(
                 expected_failed_validations=[
-                    "Column 'values' does not satisfy the less than or equal to constraint. "
-                    "It should be less than 100.0, but found maximum value 100.5."
+                    ("Column 'values' does not satisfy the less than or equal to constraint. "
+                    "It should be less than 100.0, but found maximum value 100.5.")
                 ],
             ),
             id="1) Reports le error for float list values above tolerance",
@@ -158,8 +158,8 @@ def test__validate_ge_value__list_column_errors(inputs: InputTest, expected: Out
             ),
             OutputTest(
                 expected_failed_validations=[
-                    "Column 'values' does not satisfy the less than or equal to constraint. "
-                    "It should be less than 100.0, but found maximum value 102."
+                    ("Column 'values' does not satisfy the less than or equal to constraint. "
+                    "It should be less than 100.0, but found maximum value 102.")
                 ],
             ),
             id="2) Reports le error for integer list values above tolerance",
