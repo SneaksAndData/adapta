@@ -164,7 +164,7 @@ def concat(dataframes: Iterable[MetaFrame], options: Iterable[MetaFrameOptions] 
             },
         ),
         convert_to_pandas=lambda data: pandas.concat(
-            [df.to_polars() for df in data],
+            [df.to_pandas() for df in data],
             **{
                 k: v
                 for options_object in options

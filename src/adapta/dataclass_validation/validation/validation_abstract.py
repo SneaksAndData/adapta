@@ -249,8 +249,8 @@ class AbstractValidationClass:
                     )
                 if result is not None:
                     self._failed_validations += [
-                        f"Column '{field_name}' does not satisfy the greater than or equal to constraint. ",
-                        f"It should be greater than {field.checks.ge_value}, but found minimum value {result}.",
+                        f"Column '{field_name}' does not satisfy the greater than or equal to constraint. "
+                        f"It should be greater than {field.checks.ge_value}, but found minimum value {result}."
                     ]
 
     def _validate_le_value(self) -> None:
@@ -270,8 +270,8 @@ class AbstractValidationClass:
                     )
                 if result is not None:
                     self._failed_validations += [
-                        f"Column '{field_name}' does not satisfy the less than or equal to constraint. ",
-                        f"It should be less than {field.checks.le_value}, but found maximum value {result}.",
+                        f"Column '{field_name}' does not satisfy the less than or equal to constraint. "
+                        f"It should be less than {field.checks.le_value}, but found maximum value {result}."
                     ]
 
     def _validate_value_not_missing(self) -> None:
