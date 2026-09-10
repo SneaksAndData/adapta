@@ -1,6 +1,7 @@
 """
- QES implementations for PyIceberg.
+QES implementations for PyIceberg.
 """
+
 import re
 from collections.abc import Iterator
 from dataclasses import dataclass
@@ -99,7 +100,13 @@ class IcebergQueryEnabledStore(QueryEnabledStore[IcebergCredential, IcebergSetti
         raise NotImplementedError("Text queries are not supported by Iceberg QES")
 
     def _write(
-        self, path: IcebergPath, data: MetaFrame | Iterator[MetaFrame], block_size: int, overwrite: bool
+        self,
+        path: IcebergPath,
+        data: MetaFrame | Iterator[MetaFrame],
+        block_size: int,
+        overwrite: bool,
+        merge_columns: list[str] | None = None,
+        delete_filter: Expression | None = None,
     ) -> None:
         # only polars is supported
         def _resolve_dataframe() -> DataFrame | LazyFrame:
@@ -117,4 +124,6 @@ class IcebergQueryEnabledStore(QueryEnabledStore[IcebergCredential, IcebergSetti
             data=_resolve_dataframe(),
             write_chunk_size=block_size,
             overwrite=overwrite,
+            merge_columns=merge_columns,
+            delete_filter=delete_filter,
         )
