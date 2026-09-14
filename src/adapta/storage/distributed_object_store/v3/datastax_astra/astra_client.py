@@ -84,13 +84,16 @@ class AstraClient(CassandraClient):
         }
 
     # pylint: disable=too-many-locals
-    def __init__(self, client_name: str, keyspace: str | None = None, secure_connect_bundle_bytes: str | None = None,
-                 client_id: str | None = None, client_secret: str | None = None, client_config: CassandraClientConfiguration | None = None):
-        super().__init__(
-            client_name=client_name,
-            keyspace=keyspace,
-            client_config=client_config
-        )
+    def __init__(
+        self,
+        client_name: str,
+        keyspace: str | None = None,
+        secure_connect_bundle_bytes: str | None = None,
+        client_id: str | None = None,
+        client_secret: str | None = None,
+        client_config: CassandraClientConfiguration | None = None,
+    ):
+        super().__init__(client_name=client_name, keyspace=keyspace, client_config=client_config)
         self._secure_connect_bundle_bytes = secure_connect_bundle_bytes or os.getenv("PROTEUS__ASTRA_BUNDLE_BYTES")
         self._client_id = client_id or os.getenv("PROTEUS__ASTRA_CLIENT_ID")
         self._client_secret = client_secret or os.getenv("PROTEUS__ASTRA_CLIENT_SECRET")

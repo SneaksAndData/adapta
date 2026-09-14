@@ -52,10 +52,13 @@ from adapta.utils.metaframe import MetaFrame, concat
 
 TCassandraModel = TypeVar("TCassandraModel")
 
+
 class CassandraClient(ABC):
     """Generic Cassandra client"""
 
-    def __init__(self, client_name: str, keyspace: str | None, client_config: CassandraClientConfiguration | None) -> None:
+    def __init__(
+        self, client_name: str, keyspace: str | None, client_config: CassandraClientConfiguration | None
+    ) -> None:
         self._client_name = client_name
         self._keyspace = keyspace
         self._session: Session | None = None
@@ -362,7 +365,9 @@ class CassandraClient(ABC):
         """
         self._session.execute(f"ALTER TABLE {self._keyspace}.{table_name} with {option_name}={option_value};")
 
-    def delete_entity(self, entity: TCassandraModel, table_name: str | None = None, keyspace: str | None = None) -> None:
+    def delete_entity(
+        self, entity: TCassandraModel, table_name: str | None = None, keyspace: str | None = None
+    ) -> None:
         """
          Delete an entity from Astra table
 

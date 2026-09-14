@@ -89,7 +89,12 @@ class FilterExpressionOperation(Enum):
         }
     )
     IN = MappingProxyType(
-        {"arrow": pyarrow.compute.Expression.isin, "cassandra": "__in", "trino": "IN", "iceberg": pyiceberg.expressions.In}
+        {
+            "arrow": pyarrow.compute.Expression.isin,
+            "cassandra": "__in",
+            "trino": "IN",
+            "iceberg": pyiceberg.expressions.In,
+        }
     )
 
     def to_string(self):
