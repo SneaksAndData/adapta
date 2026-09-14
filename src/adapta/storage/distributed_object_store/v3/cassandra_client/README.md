@@ -20,9 +20,9 @@ client = VanillaCassandraClient(
     client_name="local_dev",
     keyspace="my_keyspace",
     contact_points=["127.0.0.1"],  # defaults to ["127.0.0.1"]
-    port=9042,                      # defaults to 9042
-    username=None,                  # optional username for PlainTextAuthProvider
-    password=None,                  # optional password
+    port=9042,  # defaults to 9042
+    username=None,  # optional username for PlainTextAuthProvider
+    password=None,  # optional password
 )
 ```
 

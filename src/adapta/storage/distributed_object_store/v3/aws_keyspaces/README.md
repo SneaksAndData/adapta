@@ -15,7 +15,7 @@ client = AwsKeyspaceClient(
     client_name="my_keyspaces_app",
     keyspace="my_keyspace",
     region="eu-central-1",
-    profile_name=None # optionally add your AWS CLI profile name
+    profile_name=None,  # optionally add your AWS CLI profile name
 )
 
 with client:

@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+
 import pytest
 from cassandra.cluster import Cluster
 
@@ -50,8 +51,8 @@ def test_vanilla_cassandra_client_connect_and_crud(setup_keyspace_and_table):
         keyspace="test_vanilla",
         contact_points=["127.0.0.1"],
         port=9042,
-        username='cassandra',
-        password='cassandra',
+        username="cassandra",
+        password="cassandra",
     )
 
     with client:

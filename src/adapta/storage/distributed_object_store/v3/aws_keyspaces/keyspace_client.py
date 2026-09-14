@@ -16,7 +16,12 @@ class AwsKeyspaceClient(CassandraClient):
     """
 
     def __init__(
-        self, keyspace: str, client_name: str, region: str, profile_name: str | None = None, client_config: CassandraClientConfiguration | None = None
+        self,
+        keyspace: str,
+        client_name: str,
+        region: str,
+        profile_name: str | None = None,
+        client_config: CassandraClientConfiguration | None = None,
     ) -> None:
         super().__init__(client_name, keyspace, client_config)
         self._region = region
@@ -43,8 +48,5 @@ class AwsKeyspaceClient(CassandraClient):
         return None
 
     def _get_auth_provider(self) -> AuthProvider:
-        session = boto3.Session(
-            region_name=self._region,
-            profile_name=self._profile
-        )
+        session = boto3.Session(region_name=self._region, profile_name=self._profile)
         return SigV4AuthProvider(session=session)
