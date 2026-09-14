@@ -383,8 +383,8 @@ class CassandraClient(ABC):
                 OverloadedErrorMessage,
                 IsBootstrappingErrorMessage,
             ),
-            max_tries=self._transient_error_max_retries,
-            max_time=self._transient_error_max_wait_s,
+            max_tries=self._client_config.transient_error_max_retries,
+            max_time=self._client_config.transient_error_max_wait_s,
             raise_on_giveup=True,
         )
         def _delete_entity(model_class: type[Model], key_filter: dict):
@@ -422,8 +422,8 @@ class CassandraClient(ABC):
         @on_exception(
             wait_gen=expo,
             exception=(OverloadedErrorMessage, IsBootstrappingErrorMessage, WriteTimeout),
-            max_tries=self._transient_error_max_retries,
-            max_time=self._transient_error_max_wait_s,
+            max_tries=self._client_config.transient_error_max_retries,
+            max_time=self._client_config.transient_error_max_wait_s,
             raise_on_giveup=True,
         )
         @rate_limit(limit=client_rate_limit)
@@ -463,13 +463,13 @@ class CassandraClient(ABC):
         @on_exception(
             wait_gen=expo,
             exception=(OverloadedErrorMessage, IsBootstrappingErrorMessage, WriteTimeout),
-            max_tries=self._transient_error_max_retries,
-            max_time=self._transient_error_max_wait_s,
+            max_tries=self._client_config.transient_error_max_retries,
+            max_time=self._client_config.transient_error_max_wait_s,
             raise_on_giveup=True,
         )
         @rate_limit(limit=client_rate_limit)
         def _save_entities(model_class: type[Model], values: list[dict], ttl: int):
-            with BatchQuery(batch_type=BatchType.UNLOGGED) as upsert_batch:
+            with BatchQuery(batch_type=BatchType.Unlogged) as upsert_batch:
                 for value in values:
                     model_class.batch(upsert_batch).ttl(ttl).create(**value)
 

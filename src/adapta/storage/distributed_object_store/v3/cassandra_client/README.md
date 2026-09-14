@@ -2,62 +2,28 @@
 
 `CassandraClient` is the base client class for connecting to and interacting with Apache Cassandra clusters. It provides high-level APIs for CQL queries, object-relational mapping with Python `dataclass`, filtering, batch upserts, and exporting results directly to **pandas** or **polars** DataFrames via `MetaFrame`.
 
-Adapta provides concrete client implementations for:
-- Local / generic Cassandra clusters (by subclassing `CassandraClient`)
-- **DataStax Astra DB**: [AstraClient](../datastax_astra/README.md)
-- **AWS Keyspaces**: [AwsKeyspaceClient](../aws_keyspaces/README.md)
+Adapta provides concrete client implementations:
+- **`VanillaCassandraClient`**: For standard / local Apache Cassandra clusters ([Vanilla README](../vanilla_cassandra/README.md))
+- **`AstraClient`**: For DataStax Astra DB ([Astra README](../datastax_astra/README.md))
+- **`AwsKeyspaceClient`**: For Amazon Keyspaces ([Keyspaces README](../aws_keyspaces/README.md))
 
 ---
 
-## Defining a Local Cassandra Client
+## Connecting with `VanillaCassandraClient`
 
-To connect to a local or standard Cassandra cluster, create a subclass of `CassandraClient`:
+Use `VanillaCassandraClient` to connect to local or standard Cassandra instances:
 
 ```python
-import ssl
-from cassandra.auth import AuthProvider, PlainTextAuthProvider
-from adapta.storage.distributed_object_store.v3.cassandra_client import (
-    CassandraClient,
-    CassandraClientConfiguration,
+from adapta.storage.distributed_object_store.v3.vanilla_cassandra import VanillaCassandraClient
+
+client = VanillaCassandraClient(
+    client_name="local_dev",
+    keyspace="my_keyspace",
+    contact_points=["127.0.0.1"],  # defaults to ["127.0.0.1"]
+    port=9042,                      # defaults to 9042
+    username=None,                  # optional username for PlainTextAuthProvider
+    password=None,                  # optional password
 )
-
-
-class LocalCassandraClient(CassandraClient):
-    def __init__(
-        self,
-        client_name: str,
-        keyspace: str,
-        contact_points: list[str] | None = None,
-        port: int = 9042,
-        username: str | None = None,
-        password: str | None = None,
-        client_config: CassandraClientConfiguration | None = None,
-    ) -> None:
-        super().__init__(client_name, keyspace, client_config)
-        self._contact_points = contact_points or ["127.0.0.1"]
-        self._port = port
-        self._username = username
-        self._password = password
-
-    def _get_port(self) -> int | None:
-        return self._port
-
-    def _get_contact_points(self) -> list[str] | None:
-        return self._contact_points
-
-    def _get_ssl_context(self) -> ssl.SSLContext | None:
-        return None
-
-    def _get_auth_provider(self) -> AuthProvider | None:
-        if self._username and self._password:
-            return PlainTextAuthProvider(username=self._username, password=self._password)
-        return None
-
-    def _cloud_config(self) -> dict | None:
-        return None
-
-    def post_connect(self) -> None:
-        pass
 ```
 
 ---
@@ -88,7 +54,7 @@ class UserEntity:
 import pandas as pd
 import polars as pl
 
-client = LocalCassandraClient(
+client = VanillaCassandraClient(
     client_name="local_dev",
     keyspace="my_keyspace",
     contact_points=["127.0.0.1"],
