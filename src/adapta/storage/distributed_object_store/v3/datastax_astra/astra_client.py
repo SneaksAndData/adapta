@@ -20,39 +20,24 @@ DataStax Astra client driver.
 import base64
 import logging
 import os
-import platform
+import shutil
+import ssl
 import tempfile
 import typing
-from typing import Any, TypeVar
+from typing import Any
 from uuid import uuid4
 
 from adapta.storage.distributed_object_store.v3.cassandra_client import CassandraClient
 from adapta.storage.distributed_object_store.v3.cassandra_client import \
     CassandraClientConfiguration
+from adapta.storage.distributed_object_store.v3.cassandra_client import TCassandraModel
 
-try:
-    from _socket import IPPROTO_TCP, TCP_NODELAY, TCP_USER_TIMEOUT
-except ImportError:
-    # Fix for MacOS - MacOS does not have TCP_USER_TIMEOUT as in linux _socket module - https://man7.org/linux/man-pages/man7/tcp.7.html
-    # So we removed TCP_USER_TIMEOUT from _socket import
-    from socket import IPPROTO_TCP, TCP_NODELAY
 
 import pandas
 import polars
-from cassandra import ConsistencyLevel
-from cassandra.auth import PlainTextAuthProvider
-from cassandra.cluster import (  # pylint: disable=E0611
-    EXEC_PROFILE_DEFAULT,
-    Cluster,
-    ExecutionProfile,
-    RetryPolicy,
-)
-from cassandra.cqlengine.connection import set_session
-from cassandra.policies import ExponentialReconnectionPolicy
-from cassandra.query import dict_factory  # pylint: disable=E0611
+from cassandra.auth import PlainTextAuthProvider, AuthProvider
 
-from adapta import __version__
-from adapta.storage.distributed_object_store.v3.cassandra_client._model_mappers import (
+from adapta.storage.distributed_object_store.v3.cassandra_client import (
     get_mapper,
 )
 from adapta.storage.distributed_object_store.v3.datastax_astra._models import (
@@ -64,9 +49,6 @@ from adapta.storage.models.expression_dsl.filter_expression import (
 )
 from adapta.utils.metaframe import MetaFrame
 
-TModel = TypeVar("TModel")  # pylint: disable=C0103
-
-
 @typing.final
 class AstraClient(CassandraClient):
     """
@@ -77,19 +59,31 @@ class AstraClient(CassandraClient):
      :param: secure_connect_bundle_bytes: Base64-encoded contents (string) of a secure connect bundle.
      :param: client_id: Astra token client_id
      :param: client_secret: Astra token client secret
-     :param: reconnect_base_delay_ms: Reconnect delay in ms, in case of a connection or node failure (min value for exp. backoff).
-     :param: reconnect_max_delay_ms: Reconnect delay in ms, in case of a connection or node failure (max value for exp backoff).
-     :param: socket_connection_timeout: Connect timeout for the TCP connection.
-     :param: socket_read_timeout: Read timeout for TCP operations (query timeout).
-     :param: transient_error_max_retries: Maximum number of exp backoff retries for transient errors like rate limit.
-     :param: transient_error_max_wait_s: Maximum cumulative wait time for exp backoff attempts for transient errors.
-     :param: log_transient_errors: Whether to log errors that can be resolved via exp backoff retries.
-     :param: metadata_fetch_timeout_s: Timeout in seconds for the driver’s HTTP call to get cluster metadata from Astra DB. Defaults to 30s up fromf factory default of 5 seconds.
-     :param: protocol_version: Cassandra protocol version to use. Defaults to the latest version supported by the driver.
     """
 
-    async def connect_async(self) -> None:
-        raise NotImplementedError("Unsupported")
+    def _get_port(self) -> int | None:
+        return None
+
+    def _get_contact_points(self) -> list[str] | None:
+        return None
+
+    def _get_ssl_context(self) -> ssl.SSLContext | None:
+        return None
+
+    def post_connect(self) -> None:
+        shutil.rmtree(self._tmp_bundle_path, ignore_errors=True)
+
+    def _cloud_config(self) -> dict | None:
+        tmp_bundle_file_name = str(uuid4())
+        os.makedirs(self._tmp_bundle_path, exist_ok=True)
+
+        with open(os.path.join(self._tmp_bundle_path, tmp_bundle_file_name), "wb") as bundle_file:
+            bundle_file.write(base64.b64decode(self._secure_connect_bundle_bytes))
+
+        return {
+            "secure_connect_bundle": os.path.join(self._tmp_bundle_path, tmp_bundle_file_name),
+            "connect_timeout": self._client_config.metadata_fetch_timeout_s,
+        }
 
     # pylint: disable=too-many-locals
     def __init__(self, client_name: str, keyspace: str | None = None, secure_connect_bundle_bytes: str | None = None,
@@ -107,60 +101,12 @@ class AstraClient(CassandraClient):
         if self._client_config.log_transient_errors:
             logging.getLogger("backoff").addHandler(logging.StreamHandler())
 
-    def connect(self) -> None:
-        """
-        Connects to the Astra database
-        """
-        tmp_bundle_file_name = str(uuid4())
-        os.makedirs(self._tmp_bundle_path, exist_ok=True)
-
-        with open(os.path.join(self._tmp_bundle_path, tmp_bundle_file_name), "wb") as bundle_file:
-            bundle_file.write(base64.b64decode(self._secure_connect_bundle_bytes))
-
-        cloud_config = {
-            "secure_connect_bundle": os.path.join(self._tmp_bundle_path, tmp_bundle_file_name),
-            "connect_timeout": self._client_config.metadata_fetch_timeout_ms,
-        }
-        auth_provider = PlainTextAuthProvider(self._client_id, self._client_secret)
-
-        profile = ExecutionProfile(
-            retry_policy=RetryPolicy(),
-            consistency_level=ConsistencyLevel.LOCAL_QUORUM,
-            serial_consistency_level=ConsistencyLevel.LOCAL_SERIAL,
-            request_timeout=self._client_config.socket_read_timeout_ms / 1e3,
-            row_factory=dict_factory,
-        )
-
-        # https://docs.datastax.com/en/developer/python-driver/3.28/getting_started/
-        self._cluster = Cluster(
-            connection_class=self._client_config.connection_class,
-            execution_profiles={EXEC_PROFILE_DEFAULT: profile},
-            cloud=cloud_config,
-            auth_provider=auth_provider,
-            reconnection_policy=ExponentialReconnectionPolicy(
-                self._client_config.reconnect_base_delay_ms, self._client_config.reconnect_max_delay_ms
-            ),
-            compression=True,
-            application_name=self._client_name,
-            application_version=__version__,
-            protocol_version=self._client_config.protocol_version,
-            sockopts=[
-                (IPPROTO_TCP, TCP_NODELAY, 1),
-                (IPPROTO_TCP, TCP_USER_TIMEOUT, self._client_config.socket_read_timeout_ms),
-            ]
-            if platform.system().lower() != "darwin"
-            else [(IPPROTO_TCP, TCP_NODELAY, 1)],
-        )
-
-        self._session = self._cluster.connect(self._keyspace)
-
-        set_session(self._session)
-
-        os.remove(os.path.join(self._tmp_bundle_path, tmp_bundle_file_name))
+    def _get_auth_provider(self) -> AuthProvider:
+        return PlainTextAuthProvider(self._client_id, self._client_secret)
 
     def ann_search(
         self,
-        entity_type: type[TModel],
+        entity_type: type[TCassandraModel],
         vector_to_match: list[float],
         similarity_function: SimilarityFunction = SimilarityFunction.COSINE,
         key_column_filter_values: Expression | list[dict[str, Any]] | None = None,

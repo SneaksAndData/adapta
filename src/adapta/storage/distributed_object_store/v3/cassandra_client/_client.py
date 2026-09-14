@@ -1,6 +1,17 @@
 import math
 import os
+import platform
 import re
+import ssl
+
+from cassandra.cqlengine.connection import set_session
+
+try:
+    from _socket import IPPROTO_TCP, TCP_NODELAY, TCP_USER_TIMEOUT
+except ImportError:
+    # Fix for MacOS - MacOS does not have TCP_USER_TIMEOUT as in linux _socket module - https://man7.org/linux/man-pages/man7/tcp.7.html
+    # So we removed TCP_USER_TIMEOUT from _socket import
+    from socket import IPPROTO_TCP, TCP_NODELAY
 from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict
@@ -9,15 +20,19 @@ from typing import Self, Callable, TypeVar, Any
 import pandas
 import polars
 from backoff import on_exception, expo
-from cassandra import WriteTimeout
-from cassandra.cluster import Session, Cluster
+from cassandra import WriteTimeout, ConsistencyLevel
+from cassandra.auth import AuthProvider
+from cassandra.cluster import Session, Cluster, EXEC_PROFILE_DEFAULT, ExecutionProfile, RetryPolicy, \
+    ExponentialReconnectionPolicy
 from cassandra.cqlengine.models import Model
 from cassandra.cqlengine.named import NamedTable
 from cassandra.cqlengine.query import BatchQuery, BatchType
 from cassandra.metadata import get_schema_parser, TableMetadata
 from cassandra.protocol import OverloadedErrorMessage, IsBootstrappingErrorMessage
+from cassandra.query import dict_factory
 from polars.exceptions import ComputeError
 
+import adapta
 from adapta.storage.distributed_object_store.v3.cassandra_client._client_configuration import \
     CassandraClientConfiguration
 from adapta.storage.distributed_object_store.v3.datastax_astra import get_mapper
@@ -41,13 +56,73 @@ class CassandraClient(ABC):
         self._filter_pattern = re.compile(r"(__\w+)")
         self._client_config = client_config or CassandraClientConfiguration.default()
 
-    @abstractmethod
     def connect(self) -> None:
         """Sync connect to this Cassandra cluster"""
+        self._cluster = self._get_cluster()
+        if self._cluster:
+            self._session = self._cluster.connect(self._keyspace)
+            set_session(self._session)
 
     @abstractmethod
-    async def connect_async(self) -> None:
+    def _get_port(self) -> int | None:
+        """Port number for this Cassandra client"""
+
+    @abstractmethod
+    def _get_contact_points(self) -> list[str] | None:
+        """Coordinator addresses for this client"""
+
+    @abstractmethod
+    def _get_ssl_context(self) -> ssl.SSLContext | None:
+        """SSL context for this client"""
+
+    @abstractmethod
+    def post_connect(self) -> None:
+        """Cleanup or any extra config after connection, if needed"""
+
+    @abstractmethod
+    def _get_auth_provider(self) -> AuthProvider:
+        """Auth provider for this client"""
+
+    @abstractmethod
+    def _cloud_config(self) -> dict | None:
+        """Additional provider-specific configuration for this client"""
+
+    def _get_cluster(self) -> Cluster:
+        profile = ExecutionProfile(
+            retry_policy=RetryPolicy(),
+            consistency_level=ConsistencyLevel.LOCAL_QUORUM,
+            serial_consistency_level=ConsistencyLevel.LOCAL_SERIAL,
+            request_timeout=self._client_config.socket_read_timeout_ms / 1e3,
+            row_factory=dict_factory,
+        )
+
+        return Cluster(
+            contact_points=self._get_contact_points(),
+            port=self._get_port(),
+            connection_class=self._client_config.connection_class,
+            execution_profiles={EXEC_PROFILE_DEFAULT: profile},
+            cloud=self._cloud_config(),
+            auth_provider=self._get_auth_provider(),
+            reconnection_policy=ExponentialReconnectionPolicy(
+                self._client_config.reconnect_base_delay_ms, self._client_config.reconnect_max_delay_ms
+            ),
+            compression=True,
+            ssl_context=self._get_ssl_context(),
+            application_name=self._client_name,
+            application_version=adapta.__version__,
+            protocol_version=self._client_config.protocol_version,
+            sockopts=[
+                (IPPROTO_TCP, TCP_NODELAY, 1),
+                (IPPROTO_TCP, TCP_USER_TIMEOUT, self._client_config.socket_read_timeout_ms),
+            ]
+            if platform.system().lower() != "darwin"
+            else [(IPPROTO_TCP, TCP_NODELAY, 1)],
+        )
+
+    async def connect_async(self) -> Self:
         """Async connect to this Cassandra cluster"""
+        self.connect()
+        return self
 
     def disconnect(self) -> None:
         """
