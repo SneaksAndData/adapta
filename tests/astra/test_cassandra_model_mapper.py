@@ -7,7 +7,7 @@ from cassandra.cqlengine import columns
 from cassandra.cqlengine.models import Model
 from pandera.typing import Series
 
-from adapta.storage.distributed_object_store.v3.datastax_astra._model_mappers import (
+from adapta.storage.distributed_object_store.v3.cassandra_client._model_mappers import (
     CassandraModelMapper,
     DataclassMapper,
     PanderaPolarsMapper,

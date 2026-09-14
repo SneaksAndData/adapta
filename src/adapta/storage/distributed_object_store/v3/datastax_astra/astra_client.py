@@ -52,7 +52,7 @@ from cassandra.policies import ExponentialReconnectionPolicy
 from cassandra.query import dict_factory  # pylint: disable=E0611
 
 from adapta import __version__
-from adapta.storage.distributed_object_store.v3.datastax_astra._model_mappers import (
+from adapta.storage.distributed_object_store.v3.cassandra_client._model_mappers import (
     get_mapper,
 )
 from adapta.storage.distributed_object_store.v3.datastax_astra._models import (
