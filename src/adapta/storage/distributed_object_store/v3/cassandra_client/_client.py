@@ -6,6 +6,8 @@ import ssl
 
 from cassandra.cqlengine.connection import set_session
 
+from adapta.storage.distributed_object_store.v3.cassandra_client._model_mappers import get_mapper
+
 try:
     from _socket import IPPROTO_TCP, TCP_NODELAY, TCP_USER_TIMEOUT
 except ImportError:
@@ -248,8 +250,8 @@ class CassandraClient(ABC):
                 OverloadedErrorMessage,
                 IsBootstrappingErrorMessage,
             ),
-            max_tries=self._transient_error_max_retries,
-            max_time=self._transient_error_max_wait_s,
+            max_tries=self._client_config.transient_error_max_retries,
+            max_time=self._client_config.transient_error_max_wait_s,
             raise_on_giveup=True,
         )
         def apply(model: type[Model], key_column_filter: dict[str, Any], columns_to_select: list[str] | None):
