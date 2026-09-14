@@ -43,7 +43,6 @@ import adapta
 from adapta.storage.distributed_object_store.v3.cassandra_client._client_configuration import (
     CassandraClientConfiguration,
 )
-from adapta.storage.distributed_object_store.v3.datastax_astra import get_mapper
 from adapta.storage.models.enum import QueryEnabledStoreOptions
 from adapta.storage.models.expression_dsl.astra_filter_expression import CassandraFilterExpression
 from adapta.storage.models.expression_dsl.filter_expression import Expression, compile_expression
