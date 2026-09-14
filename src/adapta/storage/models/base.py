@@ -31,6 +31,7 @@ class DataProtocols(Enum):
     FILE = "file"
     HIVE = "hive"
     ASTRA = "astra"
+    KEYSPACES = "ksp"
     S3 = "s3"
     TRINO = "trino"
     ICEBERG_REST = "iceberg_rest"

@@ -14,9 +14,9 @@ from adapta.utils import chunk_list
 
 
 @final
-class AstraFilterExpression(FilterExpression[list[dict[str, Any]]]):
+class CassandraFilterExpression(FilterExpression[list[dict[str, Any]]]):
     """
-    A concrete implementation of the 'FilterExpression' abstract class for Astra.
+    A concrete implementation of the 'FilterExpression' abstract class for Apache Cassandra.
     """
 
     # This value represents the threshold for the maximum length of a list in an IN filter in Astra
@@ -31,12 +31,12 @@ class AstraFilterExpression(FilterExpression[list[dict[str, Any]]]):
             and len(field_values) > self.in_select_cartesian_product_failure_threshold
         ):
             return self._isin_large_list_result(field_name, field_values, operation)
-        return [{f"{field_name}{operation.value['astra']}": field_values}]
+        return [{f"{field_name}{operation.value['cassandra']}": field_values}]
 
     def _combine_results(
         self, compiled_result_a: TCompileResult, compiled_result_b: TCompileResult, operation: FilterExpressionOperation
     ) -> TCompileResult:
-        return operation.value["astra"](compiled_result_a, compiled_result_b)
+        return operation.value["cassandra"](compiled_result_a, compiled_result_b)
 
     def _isin_large_list_result(
         self, field_name: str, field_values: list[Any], operation: FilterExpressionOperation

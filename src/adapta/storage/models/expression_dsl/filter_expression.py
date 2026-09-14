@@ -25,7 +25,7 @@ class FilterExpressionOperation(Enum):
     AND = MappingProxyType(
         {
             "arrow": pyarrow.compute.Expression.__and__,
-            "astra": lambda left_exprs, right_exprs: [
+            "cassandra": lambda left_exprs, right_exprs: [
                 left_expr | right_expr for left_expr in left_exprs for right_expr in right_exprs
             ],
             "trino": "AND",
@@ -35,7 +35,7 @@ class FilterExpressionOperation(Enum):
     OR = MappingProxyType(
         {
             "arrow": pyarrow.compute.Expression.__or__,
-            "astra": lambda left_exprs, right_exprs: left_exprs + right_exprs,
+            "cassandra": lambda left_exprs, right_exprs: left_exprs + right_exprs,
             "trino": "OR",
             "iceberg": pyiceberg.expressions.Or,
         }
@@ -43,7 +43,7 @@ class FilterExpressionOperation(Enum):
     GT = MappingProxyType(
         {
             "arrow": pyarrow.compute.Expression.__gt__,
-            "astra": "__gt",
+            "cassandra": "__gt",
             "trino": ">",
             "iceberg": pyiceberg.expressions.GreaterThan,
         }
@@ -51,7 +51,7 @@ class FilterExpressionOperation(Enum):
     GE = MappingProxyType(
         {
             "arrow": pyarrow.compute.Expression.__ge__,
-            "astra": "__gte",
+            "cassandra": "__gte",
             "trino": ">=",
             "iceberg": pyiceberg.expressions.GreaterThanOrEqual,
         }
@@ -59,7 +59,7 @@ class FilterExpressionOperation(Enum):
     LT = MappingProxyType(
         {
             "arrow": pyarrow.compute.Expression.__lt__,
-            "astra": "__lt",
+            "cassandra": "__lt",
             "trino": "<",
             "iceberg": pyiceberg.expressions.LessThan,
         }
@@ -67,7 +67,7 @@ class FilterExpressionOperation(Enum):
     LE = MappingProxyType(
         {
             "arrow": pyarrow.compute.Expression.__le__,
-            "astra": "__lte",
+            "cassandra": "__lte",
             "trino": "<=",
             "iceberg": pyiceberg.expressions.LessThanOrEqual,
         }
@@ -75,7 +75,7 @@ class FilterExpressionOperation(Enum):
     EQ = MappingProxyType(
         {
             "arrow": pyarrow.compute.Expression.__eq__,
-            "astra": "",
+            "cassandra": "",
             "trino": "=",
             "iceberg": pyiceberg.expressions.EqualTo,
         }
@@ -83,13 +83,13 @@ class FilterExpressionOperation(Enum):
     NE = MappingProxyType(
         {
             "arrow": pyarrow.compute.Expression.__ne__,
-            "astra": "__ne",
+            "cassandra": "__ne",
             "trino": "!=",
             "iceberg": pyiceberg.expressions.NotEqualTo,
         }
     )
     IN = MappingProxyType(
-        {"arrow": pyarrow.compute.Expression.isin, "astra": "__in", "trino": "IN", "iceberg": pyiceberg.expressions.In}
+        {"arrow": pyarrow.compute.Expression.isin, "cassandra": "__in", "trino": "IN", "iceberg": pyiceberg.expressions.In}
     )
 
     def to_string(self):
