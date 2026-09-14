@@ -22,8 +22,8 @@ from adapta.schema_management.schema_entity import PythonSchemaEntity
 from adapta.storage.models.expression_dsl.arrow_filter_expression import (
     ArrowFilterExpression,
 )
-from adapta.storage.models.expression_dsl.astra_filter_expression import (
-    AstraFilterExpression,
+from adapta.storage.models.expression_dsl.cassandra_filter_expression import (
+    CassandraFilterExpression,
 )
 from adapta.storage.models.expression_dsl.filter_expression import (
     FilterExpression,
@@ -175,7 +175,7 @@ def test_generic_filtering(
     iceberg_expected_expr: BooleanExpression,
 ):
     assert compile_expression(filter_expr, ArrowFilterExpression).equals(pyarrow_expected_expr)
-    assert compile_expression(filter_expr, AstraFilterExpression) == astra_expected_expr
+    assert compile_expression(filter_expr, CassandraFilterExpression) == astra_expected_expr
     assert compile_expression(filter_expr, TrinoFilterExpression) == trino_expected_expr
     assert compile_expression(filter_expr, IcebergFilterExpression) == iceberg_expected_expr
 
@@ -248,7 +248,7 @@ def test_long_is_in_list(
     trino_expected_expr: str,
 ):
     assert compile_expression(filter_expr, ArrowFilterExpression).equals(pyarrow_expected_expr)
-    assert compile_expression(filter_expr, AstraFilterExpression) == astra_expected_expr
+    assert compile_expression(filter_expr, CassandraFilterExpression) == astra_expected_expr
     assert compile_expression(filter_expr, TrinoFilterExpression) == trino_expected_expr
 
 
@@ -270,6 +270,6 @@ def test_long_is_in_list(
 )
 def test_large_filter(filter_expr: FilterField | FilterExpression):
     try:
-        compile_expression(filter_expr, AstraFilterExpression)
+        compile_expression(filter_expr, CassandraFilterExpression)
     except RecursionError:
         assert False, "Raised RecursionError for large filters"

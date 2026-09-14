@@ -1,6 +1,23 @@
 version: '3.3'
 
 services:
+  scylla:
+    container_name: scylla
+    image: scylladb/scylla
+    network_mode: host
+    volumes:
+      - ./scylla-supervisord.conf:/etc/supervisord.conf.d/port-override.conf:ro
+      # Ensure your other scylla environments/commands remain here
+    command:
+      - "--listen-address"
+      - "127.0.0.1"
+      - "--smp"
+      - "1"
+    healthcheck:
+      test: [ "CMD-SHELL", "[ $$(nodetool statusgossip) = running ]" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
   minio:
     container_name: minio
     hostname: minio-e2e

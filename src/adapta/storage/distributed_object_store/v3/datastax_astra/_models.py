@@ -20,8 +20,8 @@ import re
 from enum import Enum
 from typing import Any
 
-from adapta.storage.models.expression_dsl.astra_filter_expression import (
-    AstraFilterExpression,
+from adapta.storage.models.expression_dsl.cassandra_filter_expression import (
+    CassandraFilterExpression,
 )
 from adapta.storage.models.expression_dsl.filter_expression import (
     Expression,
@@ -87,13 +87,13 @@ class VectorSearchQuery:
                 return f"'{val}'"
             return str(val)
 
-        def get_astra_operator(column_expression: str) -> str:
+        def get_cassandra_operator(column_expression: str) -> str:
             operator_map = {
-                FilterExpressionOperation.GT.value["astra"]: ">",
-                FilterExpressionOperation.GE.value["astra"]: ">=",
-                FilterExpressionOperation.LT.value["astra"]: "<",
-                FilterExpressionOperation.LE.value["astra"]: "<=",
-                FilterExpressionOperation.IN.value["astra"]: "IN",
+                FilterExpressionOperation.GT.value["cassandra"]: ">",
+                FilterExpressionOperation.GE.value["cassandra"]: ">=",
+                FilterExpressionOperation.LT.value["cassandra"]: "<",
+                FilterExpressionOperation.LE.value["cassandra"]: "<=",
+                FilterExpressionOperation.IN.value["cassandra"]: "IN",
             }
 
             for suffix, operator in operator_map.items():
@@ -110,7 +110,7 @@ class VectorSearchQuery:
             return re.sub(r"__\w+$", "", col)
 
         compiled_filter_values = (
-            compile_expression(self._key_column_filter_values, AstraFilterExpression)
+            compile_expression(self._key_column_filter_values, CassandraFilterExpression)
             if isinstance(self._key_column_filter_values, Expression)
             else self._key_column_filter_values
         )
@@ -118,7 +118,7 @@ class VectorSearchQuery:
             raise ValueError("Restriction on key columns must not be nested under OR operator")
 
         cql_filter_expressions = [
-            f"{remove_operator_suffix(col)} {get_astra_operator(col)} {format_value_for_cql(val)}"
+            f"{remove_operator_suffix(col)} {get_cassandra_operator(col)} {format_value_for_cql(val)}"
             for col, val in compiled_filter_values[0].items()
         ]
         return f"where {' and '.join(cql_filter_expressions)}"

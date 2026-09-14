@@ -29,6 +29,7 @@ dependencies = [
     "polars>=1.18",
     "pandera>=0.20.3, <1.0",
     "fsspec>=2025,<2026",
+    "cassandra-sigv4>=4.0.2",
 ]
 
 [project.optional-dependencies]
