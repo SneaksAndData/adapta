@@ -43,7 +43,7 @@ class CassandraFilterExpression(FilterExpression[list[dict[str, Any]]]):
     ) -> TCompileResult:
         # Compile each chunk into an IN operation expression
         return [
-            {f"{field_name}{operation.value['astra']}": chunk}
+            {f"{field_name}{operation.value['cassandra']}": chunk}
             for chunk in chunk_list(
                 field_values, math.ceil(len(field_values) / self.in_select_cartesian_product_failure_threshold)
             )

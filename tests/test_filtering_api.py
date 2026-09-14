@@ -22,7 +22,7 @@ from adapta.schema_management.schema_entity import PythonSchemaEntity
 from adapta.storage.models.expression_dsl.arrow_filter_expression import (
     ArrowFilterExpression,
 )
-from adapta.storage.models.expression_dsl.astra_filter_expression import (
+from adapta.storage.models.expression_dsl.cassandra_filter_expression import (
     CassandraFilterExpression,
 )
 from adapta.storage.models.expression_dsl.filter_expression import (

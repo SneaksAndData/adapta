@@ -31,12 +31,12 @@ import pandas
 import polars
 from cassandra.auth import AuthProvider, PlainTextAuthProvider
 
-from adapta.storage.distributed_object_store.v3.cassandra_client._client import (
+from adapta.storage.distributed_object_store.v3.cassandra_client import (
     CassandraClient,
     CassandraClientConfiguration,
     TCassandraModel,
+    get_mapper,
 )
-from adapta.storage.distributed_object_store.v3.cassandra_client._model_mappers import get_mapper
 from adapta.storage.distributed_object_store.v3.datastax_astra._models import (
     SimilarityFunction,
     VectorSearchQuery,

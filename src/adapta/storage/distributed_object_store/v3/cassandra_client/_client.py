@@ -46,7 +46,7 @@ from adapta.storage.distributed_object_store.v3.cassandra_client._client_configu
     CassandraClientConfiguration,
 )
 from adapta.storage.models.enum import QueryEnabledStoreOptions
-from adapta.storage.models.expression_dsl.astra_filter_expression import CassandraFilterExpression
+from adapta.storage.models.expression_dsl.cassandra_filter_expression import CassandraFilterExpression
 from adapta.storage.models.expression_dsl.filter_expression import Expression, compile_expression
 from adapta.utils import chunk_list, rate_limit
 from adapta.utils.metaframe import MetaFrame, concat
@@ -468,7 +468,7 @@ class CassandraClient(ABC):
             raise_on_giveup=True,
         )
         @rate_limit(limit=client_rate_limit)
-        def _save_entities(model_class: type[Model], values: list[dict], ttl: int):
+        def _save_entities(model_class: type[Model], values: list[dict], ttl: int | None):
             with BatchQuery(batch_type=BatchType.Unlogged) as upsert_batch:
                 for value in values:
                     model_class.batch(upsert_batch).ttl(ttl).create(**value)

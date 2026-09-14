@@ -20,7 +20,7 @@ import re
 from enum import Enum
 from typing import Any
 
-from adapta.storage.models.expression_dsl.astra_filter_expression import (
+from adapta.storage.models.expression_dsl.cassandra_filter_expression import (
     CassandraFilterExpression,
 )
 from adapta.storage.models.expression_dsl.filter_expression import (
