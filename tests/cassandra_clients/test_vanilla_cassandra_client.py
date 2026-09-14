@@ -23,7 +23,8 @@ def setup_keyspace_and_table():
     session.execute(
         """
         CREATE KEYSPACE IF NOT EXISTS test_vanilla
-        WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1};
+        WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}
+        AND tablets = { 'enabled': false };
         """
     )
     session.set_keyspace("test_vanilla")
