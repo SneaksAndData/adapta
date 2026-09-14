@@ -27,17 +27,14 @@ import typing
 from typing import Any
 from uuid import uuid4
 
-from adapta.storage.distributed_object_store.v3.cassandra_client import CassandraClient
-from adapta.storage.distributed_object_store.v3.cassandra_client import \
-    CassandraClientConfiguration
-from adapta.storage.distributed_object_store.v3.cassandra_client import TCassandraModel
-
-
 import pandas
 import polars
-from cassandra.auth import PlainTextAuthProvider, AuthProvider
+from cassandra.auth import AuthProvider, PlainTextAuthProvider
 
 from adapta.storage.distributed_object_store.v3.cassandra_client import (
+    CassandraClient,
+    CassandraClientConfiguration,
+    TCassandraModel,
     get_mapper,
 )
 from adapta.storage.distributed_object_store.v3.datastax_astra._models import (
@@ -48,6 +45,7 @@ from adapta.storage.models.expression_dsl.filter_expression import (
     Expression,
 )
 from adapta.utils.metaframe import MetaFrame
+
 
 @typing.final
 class AstraClient(CassandraClient):

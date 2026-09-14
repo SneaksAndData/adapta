@@ -12,7 +12,7 @@ from adapta.storage.distributed_object_store.v3.cassandra_client import Cassandr
 @final
 class AwsKeyspaceClient(CassandraClient):
     """
-
+     Cassandra client for AWS Keyspaces. Supports SigV4 (IAM) auth.
     """
 
     def __init__(self, keyspace: str, client_name: str, region: str, client_config: CassandraClientConfiguration | None = None) -> None:

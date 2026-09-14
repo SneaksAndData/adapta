@@ -1,7 +1,7 @@
 from dataclasses import dataclass
-from typing import final, Self, Any
+from typing import Any, Self, final
 
-from cassandra.cluster import DefaultConnection, _NOT_SET
+from cassandra.cluster import _NOT_SET, DefaultConnection
 
 
 @final

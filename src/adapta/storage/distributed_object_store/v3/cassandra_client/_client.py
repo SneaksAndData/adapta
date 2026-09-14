@@ -13,28 +13,36 @@ except ImportError:
     # So we removed TCP_USER_TIMEOUT from _socket import
     from socket import IPPROTO_TCP, TCP_NODELAY
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict
-from typing import Self, Callable, TypeVar, Any
+from typing import Any, Self, TypeVar
 
 import pandas
 import polars
-from backoff import on_exception, expo
-from cassandra import WriteTimeout, ConsistencyLevel
+from backoff import expo, on_exception
+from cassandra import ConsistencyLevel, WriteTimeout
 from cassandra.auth import AuthProvider
-from cassandra.cluster import Session, Cluster, EXEC_PROFILE_DEFAULT, ExecutionProfile, RetryPolicy, \
-    ExponentialReconnectionPolicy
+from cassandra.cluster import (
+    EXEC_PROFILE_DEFAULT,
+    Cluster,
+    ExecutionProfile,
+    ExponentialReconnectionPolicy,
+    RetryPolicy,
+    Session,
+)
 from cassandra.cqlengine.models import Model
 from cassandra.cqlengine.named import NamedTable
 from cassandra.cqlengine.query import BatchQuery, BatchType
-from cassandra.metadata import get_schema_parser, TableMetadata
-from cassandra.protocol import OverloadedErrorMessage, IsBootstrappingErrorMessage
+from cassandra.metadata import TableMetadata, get_schema_parser
+from cassandra.protocol import IsBootstrappingErrorMessage, OverloadedErrorMessage
 from cassandra.query import dict_factory
 from polars.exceptions import ComputeError
 
 import adapta
-from adapta.storage.distributed_object_store.v3.cassandra_client._client_configuration import \
-    CassandraClientConfiguration
+from adapta.storage.distributed_object_store.v3.cassandra_client._client_configuration import (
+    CassandraClientConfiguration,
+)
 from adapta.storage.distributed_object_store.v3.datastax_astra import get_mapper
 from adapta.storage.models.enum import QueryEnabledStoreOptions
 from adapta.storage.models.expression_dsl.astra_filter_expression import CassandraFilterExpression
