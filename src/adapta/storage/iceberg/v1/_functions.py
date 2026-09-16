@@ -8,6 +8,7 @@ import pyarrow.dataset
 import pyiceberg
 from pyarrow.lib import Schema
 from pyiceberg.catalog import Catalog, load_catalog
+from pyiceberg.schema import Schema as IcebergSchema
 from pyiceberg.table import ALWAYS_TRUE
 from pyiceberg.table import Table as IcebergTable
 
@@ -267,3 +268,27 @@ def get_property(
     """
     table = _apply_s3_endpoint_override(catalog.load_table(identifier=(schema_name, table_name)))
     return table.properties.get(property_name, None)
+
+
+def get_schema(
+    schema_name: str,
+    table_name: str,
+    catalog: Catalog,
+) -> IcebergSchema:
+    """
+    Retrieves a schema of the table
+    """
+    table = _apply_s3_endpoint_override(catalog.load_table(identifier=(schema_name, table_name)))
+    return table.schema()
+
+
+def get_current_snapshot(
+    schema_name: str,
+    table_name: str,
+    catalog: Catalog,
+) -> int:
+    """
+    Retrieves a latest snapshot of the table
+    """
+    table = _apply_s3_endpoint_override(catalog.load_table(identifier=(schema_name, table_name)))
+    return table.current_snapshot().snapshot_id

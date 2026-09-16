@@ -5,6 +5,7 @@ import re
 import ssl
 
 from cassandra.cqlengine.connection import set_session
+from cassandra.cqlengine.management import sync_table
 
 from adapta.storage.distributed_object_store.v3.cassandra_client._model_mappers import get_mapper
 
@@ -162,6 +163,18 @@ class CassandraClient(ABC):
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         self.disconnect()
+
+    def create_table(self, entity: TCassandraModel, table_name: str, keyspace: str) -> None:
+        """
+        Creates a table with the given name, in a given keyspaces, in compliance with the specified model.
+        """
+        cassandra_mapper = get_mapper(
+            data_model=type(entity),
+            table_name=table_name,
+            keyspace=keyspace,
+        )
+
+        sync_table(cassandra_mapper.map())
 
     def get_table_metadata(self, table_name: str) -> TableMetadata:
         """
