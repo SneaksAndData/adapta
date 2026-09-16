@@ -55,7 +55,7 @@ hashicorp = ["hvac~=0.11.2"]
 trino = ["trino[sqlalchemy]>=0.337,<0.338"]
 snowflake = ["snowflake-connector-python>=3.4.0,<4"]
 storage-delta = ["deltalake>=0.18.1,<0.19"]
-storage-iceberg = ["pyiceberg>=0.11.1,<0.12"]
+storage-iceberg = ["pyiceberg>=0.11.1,<0.13"]
 storage-cassandra = ["cassandra-driver~=3.30.0"]
 aws = [
     "boto3>=1.28.0,<2",
