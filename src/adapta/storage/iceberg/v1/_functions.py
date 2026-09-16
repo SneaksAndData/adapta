@@ -216,9 +216,10 @@ def get_changes(
     table = _apply_s3_endpoint_override(catalog.load_table(identifier=(schema_name, table_name)))
 
     scanner = table.incremental_append_scan(
-        from_snapshot_id=from_snapshot_id,
-        to_snapshot_id=to_snapshot_id,
-    ).select(*columns)
+        from_snapshot_id_exclusive=from_snapshot_id,
+        to_snapshot_id_inclusive=to_snapshot_id,
+        selected_fields=columns or ("*",),
+    )
 
     if lazy:
         return MetaFrame(
