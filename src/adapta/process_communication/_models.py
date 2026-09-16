@@ -21,7 +21,7 @@ from dataclasses import dataclass
 
 from dataclasses_json import DataClassJsonMixin
 
-from adapta.storage.models import parse_data_path
+from adapta.storage.models import CassandraPath, parse_data_path
 from adapta.storage.models.astra import AstraPath
 from adapta.storage.models.aws import S3Path
 from adapta.storage.models.azure import AdlsGen2Path, WasbPath
@@ -61,6 +61,7 @@ class DataSocket(DataClassJsonMixin):
             LocalPath,
             WasbPath,
             AstraPath,
+            CassandraPath,
             S3Path,
             TrinoPath,
             IcebergPath,
