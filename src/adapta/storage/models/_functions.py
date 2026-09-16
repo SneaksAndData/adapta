@@ -22,6 +22,7 @@ from adapta.storage.models.astra import AstraPath
 from adapta.storage.models.aws import S3Path
 from adapta.storage.models.azure import AdlsGen2Path, WasbPath
 from adapta.storage.models.base import DataPath
+from adapta.storage.models.cassandra import CassandraPath
 from adapta.storage.models.iceberg import IcebergPath
 from adapta.storage.models.local import LocalPath
 from adapta.storage.models.trino import TrinoPath
@@ -37,6 +38,8 @@ def parse_data_path(
         S3Path,
         TrinoPath,
         IcebergPath,
+        CassandraPath,
+        AstraPath,
     ),
 ) -> DataPath | None:
     """

@@ -30,6 +30,7 @@ class DataProtocols(Enum):
     ADLS2 = "abfss"
     FILE = "file"
     HIVE = "hive"
+    CASSANDRA = "cass"
     ASTRA = "astra"
     KEYSPACES = "ksp"
     S3 = "s3"
