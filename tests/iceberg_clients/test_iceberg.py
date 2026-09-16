@@ -7,7 +7,13 @@ from polars.testing import assert_frame_equal
 from pyiceberg.catalog import Catalog
 from sqlalchemy import text
 
-from adapta.storage.iceberg.v1 import load_using_catalog, write_using_catalog
+from adapta.storage.iceberg.v1 import (
+    get_changes,
+    get_property,
+    load_using_catalog,
+    set_property,
+    write_using_catalog,
+)
 from adapta.storage.models.expression_dsl.filter_expression import FilterField
 from tests.iceberg_clients._functions import generate_random_string, get_input_data, prepare_iceberg_table
 
@@ -309,3 +315,136 @@ def test_partial_overwrite_table(iceberg_catalog: Catalog, lazy: bool):
         catalog=iceberg_catalog,
     )
     assert_frame_equal(read_data.to_polars().sort("cola"), expected_df.sort("cola"), check_column_order=False)
+
+
+@pytest.mark.parametrize("lazy", [False, True])
+def test_get_changes(iceberg_catalog: Catalog, lazy: bool):
+    table_name = f"test_get_changes_{generate_random_string(8)}".lower()
+    input_data1 = {
+        "cola": [1, 2],
+        "colb": ["a", "b"],
+        "colc": [[1], [2]],
+    }
+    df1 = polars.DataFrame(input_data1)
+
+    write_using_catalog(
+        schema_name="test",
+        table_name=table_name,
+        catalog=iceberg_catalog,
+        data=df1,
+        overwrite=True,
+    )
+
+    table = iceberg_catalog.load_table(identifier=("test", table_name))
+    from_snapshot_id = table.current_snapshot().snapshot_id
+
+    input_data2 = {
+        "cola": [3, 4],
+        "colb": ["c", "d"],
+        "colc": [[3], [4]],
+    }
+    df2 = polars.DataFrame(input_data2)
+
+    write_using_catalog(
+        schema_name="test",
+        table_name=table_name,
+        catalog=iceberg_catalog,
+        data=df2,
+        overwrite=False,
+    )
+
+    table.refresh()
+    to_snapshot_id = table.current_snapshot().snapshot_id
+
+    changes_metaframe = get_changes(
+        schema_name="test",
+        table_name=table_name,
+        catalog=iceberg_catalog,
+        from_snapshot_id=from_snapshot_id,
+        to_snapshot_id=to_snapshot_id,
+        lazy=lazy,
+    )
+
+    result_df = changes_metaframe.to_polars()
+    if lazy:
+        result_df = result_df.collect()
+
+    assert_frame_equal(result_df.sort("cola"), df2.sort("cola"), check_column_order=False)
+
+    # Test with column selection
+    changes_metaframe_cols = get_changes(
+        schema_name="test",
+        table_name=table_name,
+        catalog=iceberg_catalog,
+        from_snapshot_id=from_snapshot_id,
+        to_snapshot_id=to_snapshot_id,
+        columns=("cola",),
+        lazy=lazy,
+    )
+
+    result_cols_df = changes_metaframe_cols.to_polars()
+    if lazy:
+        result_cols_df = result_cols_df.collect()
+
+    assert_frame_equal(result_cols_df.sort("cola"), df2.select(["cola"]).sort("cola"), check_column_order=False)
+
+
+def test_table_properties(iceberg_catalog: Catalog):
+    table_name = f"test_properties_{generate_random_string(8)}".lower()
+    input_data = get_input_data()
+    df = polars.DataFrame(input_data)
+
+    write_using_catalog(
+        schema_name="test",
+        table_name=table_name,
+        catalog=iceberg_catalog,
+        data=df,
+        overwrite=True,
+    )
+
+    # Property initially does not exist
+    assert (
+        get_property(
+            schema_name="test",
+            table_name=table_name,
+            catalog=iceberg_catalog,
+            property_name="custom.test.prop",
+        )
+        is None
+    )
+
+    # Set property and verify
+    set_property(
+        schema_name="test",
+        table_name=table_name,
+        catalog=iceberg_catalog,
+        property_name="custom.test.prop",
+        property_value="initial_value",
+    )
+    assert (
+        get_property(
+            schema_name="test",
+            table_name=table_name,
+            catalog=iceberg_catalog,
+            property_name="custom.test.prop",
+        )
+        == "initial_value"
+    )
+
+    # Update property and verify
+    set_property(
+        schema_name="test",
+        table_name=table_name,
+        catalog=iceberg_catalog,
+        property_name="custom.test.prop",
+        property_value="updated_value",
+    )
+    assert (
+        get_property(
+            schema_name="test",
+            table_name=table_name,
+            catalog=iceberg_catalog,
+            property_name="custom.test.prop",
+        )
+        == "updated_value"
+    )

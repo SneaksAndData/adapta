@@ -9,6 +9,7 @@ import pyiceberg
 from pyarrow.lib import Schema
 from pyiceberg.catalog import Catalog, load_catalog
 from pyiceberg.table import ALWAYS_TRUE
+from pyiceberg.table import Table as IcebergTable
 
 from adapta.storage.iceberg.v1._models import IcebergRestCatalogConfig
 from adapta.storage.models.expression_dsl.filter_expression import (
@@ -33,6 +34,19 @@ def get_catalog(name: str, catalog_config: IcebergRestCatalogConfig) -> Catalog:
     Loads a provided configuration as named catalog, using a provided name.
     """
     return load_catalog(name, **catalog_config.get_constructor_args)
+
+
+def _apply_s3_endpoint_override(table: IcebergTable) -> IcebergTable:
+    if "ADAPTA__ICEBERG_REST_CATALOG__S3_ENDPOINT_OVERRIDE" in os.environ:
+        # FileIO's endpoint is taken directly from the catalog response
+        # In case it differs from `s3.endpoint` set in catalog config, align them
+        # Note that when vended credentials are used, table.config will take preference over client setting
+        # thus endpoint is updated after catalog returns creds
+        # this is necessary if your S3 service has multiple endpoints and client doesn't have access to the one used by catalog
+        table.io.properties["s3.endpoint"] = os.environ["ADAPTA__ICEBERG_REST_CATALOG__S3_ENDPOINT_OVERRIDE"]
+        table.config["s3.endpoint"] = os.environ["ADAPTA__ICEBERG_REST_CATALOG__S3_ENDPOINT_OVERRIDE"]
+
+    return table
 
 
 def load_using_catalog(
@@ -106,15 +120,7 @@ def load_using_native_scan(
     This method relies on **UNSTABLE** API to ensure compatibility with S3 implementations outside AWS.
     Use of `load_using_catalog` is recommended for production applications.
     """
-    table = catalog.load_table(identifier=(schema, table_name))
-    if "ADAPTA__ICEBERG_REST_CATALOG__S3_ENDPOINT_OVERRIDE" in os.environ:
-        # FileIO's endpoint is taken directly from the catalog response
-        # In case it differs from `s3.endpoint` set in catalog config, align them
-        # Note that when vended credentials are used, table.config will take preference over client setting
-        # thus endpoint is updated after catalog returns creds
-        # this is necessary if your S3 service has multiple endpoints and client doesn't have access to the one used by catalog
-        table.io.properties["s3.endpoint"] = os.environ["ADAPTA__ICEBERG_REST_CATALOG__S3_ENDPOINT_OVERRIDE"]
-        table.config["s3.endpoint"] = os.environ["ADAPTA__ICEBERG_REST_CATALOG__S3_ENDPOINT_OVERRIDE"]
+    table = _apply_s3_endpoint_override(catalog.load_table(identifier=(schema, table_name)))
 
     return MetaFrame(
         table,
@@ -174,15 +180,7 @@ def write_using_catalog(
 
         return collect_lazy_schema(data)
 
-    target_table: pyiceberg.table.Table = _get_table(_get_schema())
-    if "ADAPTA__ICEBERG_REST_CATALOG__S3_ENDPOINT_OVERRIDE" in os.environ:
-        # FileIO's endpoint is taken directly from the catalog response
-        # In case it differs from `s3.endpoint` set in catalog config, align them
-        # Note that when vended credentials are used, table.config will take preference over client setting
-        # thus endpoint is updated after catalog returns creds
-        # this is necessary if your S3 service has multiple endpoints and client doesn't have access to the one used by catalog
-        target_table.io.properties["s3.endpoint"] = os.environ["ADAPTA__ICEBERG_REST_CATALOG__S3_ENDPOINT_OVERRIDE"]
-        target_table.config["s3.endpoint"] = os.environ["ADAPTA__ICEBERG_REST_CATALOG__S3_ENDPOINT_OVERRIDE"]
+    target_table: pyiceberg.table.Table = _apply_s3_endpoint_override(_get_table(_get_schema()))
 
     delete_filter_expression = compile_expression(delete_filter, IcebergFilterExpression) if delete_filter else None
 
@@ -201,3 +199,71 @@ def write_using_catalog(
                 write_tx.upsert(data_chunk.to_arrow(), join_cols=merge_columns)
             else:
                 write_tx.append(data_chunk.to_arrow())
+
+
+def get_changes(
+    schema_name: str,
+    table_name: str,
+    catalog: Catalog,
+    from_snapshot_id: int,
+    to_snapshot_id: int,
+    columns: tuple[str] | None = None,
+    lazy: bool = False,
+) -> MetaFrame:
+    """
+    Retrieve changes between two snapshots as a MetaFrame
+    """
+    table = _apply_s3_endpoint_override(catalog.load_table(identifier=(schema_name, table_name)))
+
+    scanner = table.incremental_append_scan(
+        from_snapshot_id_exclusive=from_snapshot_id,
+        to_snapshot_id_inclusive=to_snapshot_id,
+        selected_fields=columns or ("*",),
+    )
+
+    if lazy:
+        return MetaFrame(
+            data=scanner.to_arrow_batch_reader(),
+            convert_to_polars=lambda v: polars.scan_pyarrow_dataset(pyarrow.dataset.dataset(v)),
+            convert_to_pandas=None,
+        )
+
+    return MetaFrame(
+        data=scanner,
+        # use built-in DataScan converters
+        convert_to_polars=lambda v: v.to_polars(),
+        convert_to_pandas=lambda v: v.to_pandas(),
+    )
+
+
+def set_property(
+    schema_name: str,
+    table_name: str,
+    catalog: Catalog,
+    property_name: str,
+    property_value: str,
+) -> None:
+    """
+    Sets or updates a custom property on the specified Iceberg table
+    """
+    table = _apply_s3_endpoint_override(catalog.load_table(identifier=(schema_name, table_name)))
+
+    with table.transaction() as tx:
+        tx.set_properties(
+            {
+                property_name: property_value,
+            }
+        )
+
+
+def get_property(
+    schema_name: str,
+    table_name: str,
+    catalog: Catalog,
+    property_name: str,
+) -> str | None:
+    """
+    Retrieves a custom property from the specified Iceberg table
+    """
+    table = _apply_s3_endpoint_override(catalog.load_table(identifier=(schema_name, table_name)))
+    return table.properties.get(property_name, None)
