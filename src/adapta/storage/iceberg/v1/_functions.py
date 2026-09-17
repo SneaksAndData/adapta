@@ -6,6 +6,7 @@ from typing import Literal
 import polars
 import pyarrow.dataset
 import pyiceberg
+from polars import LazyFrame, Expr
 from pyarrow.lib import Schema
 from pyiceberg.catalog import Catalog, load_catalog
 from pyiceberg.schema import Schema as IcebergSchema
@@ -55,7 +56,7 @@ def load_using_catalog(
     table_name: str,
     catalog: Catalog,
     row_filter: Expression | None = None,
-    columns: tuple[str] | None = None,
+    columns: tuple[str, ...] | None = None,
     limit: int | None = None,
     version_id: int | None = None,
     lazy_read: bool = False,
@@ -208,33 +209,46 @@ def get_changes(
     catalog: Catalog,
     from_snapshot_id: int,
     to_snapshot_id: int,
-    columns: tuple[str] | None = None,
-    lazy: bool = False,
-) -> MetaFrame:
+    tracking_column: str,
+    primary_key_columns: tuple[str, ...],
+) -> tuple[LazyFrame, LazyFrame | None, LazyFrame | None,]:
     """
     Retrieve changes between two snapshots as a MetaFrame
     """
-    table = _apply_s3_endpoint_override(catalog.load_table(identifier=(schema_name, table_name)))
+    def _not_null_expr(suffix: str, fields: tuple[str, ...]) -> Expr:
+        expr_base = polars.lit(1).eq(1)
+        for field in fields:
+            if suffix:
+                expr_base = expr_base & polars.col(f"{field}_{suffix}").is_not_null()
+            else:
+                expr_base = expr_base & polars.col(field).is_not_null()
 
-    scanner = table.incremental_append_scan(
-        from_snapshot_id_exclusive=from_snapshot_id,
-        to_snapshot_id_inclusive=to_snapshot_id,
-        selected_fields=columns or ("*",),
+        return expr_base
+
+
+    current_version: LazyFrame = load_using_catalog(schema_name, table_name, catalog, columns=(tracking_column, *primary_key_columns), version_id=to_snapshot_id, lazy_read=True).to_polars()
+    previous_version: LazyFrame = load_using_catalog(schema_name, table_name, catalog, columns=(tracking_column, *primary_key_columns),version_id=from_snapshot_id, lazy_read=True).to_polars()
+
+    diff_table = current_version.join(
+        previous_version,
+        on=primary_key_columns,
+        how="outer",
     )
 
-    if lazy:
-        return MetaFrame(
-            data=scanner.to_arrow_batch_reader(),
-            convert_to_polars=lambda v: polars.scan_pyarrow_dataset(pyarrow.dataset.dataset(v)),
-            convert_to_pandas=None,
-        )
+    # Inserts: pk exists now, but didn't exist previously
+    inserts = diff_table.drop_nulls(subset=[f"{k}_right" for k in primary_key_columns])
 
-    return MetaFrame(
-        data=scanner,
-        # use built-in DataScan converters
-        convert_to_polars=lambda v: v.to_polars(),
-        convert_to_pandas=lambda v: v.to_pandas(),
+    # Deletes: pk existed previously, but doesn't exist now
+    deletes = diff_table.drop_nulls(subset=primary_key_columns)
+
+    # Updates: pk exists in both, pick latest
+    updates = diff_table.filter(
+        _not_null_expr("", primary_key_columns) &
+        _not_null_expr("_right", primary_key_columns) &
+        (polars.col(tracking_column) > polars.col(f"{tracking_column}_right"))
     )
+
+    return inserts, updates, deletes
 
 
 def set_property(

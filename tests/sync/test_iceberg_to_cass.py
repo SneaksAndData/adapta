@@ -13,7 +13,6 @@
 #  limitations under the License.
 #
 
-import zlib
 from dataclasses import dataclass, field
 
 import polars
@@ -26,11 +25,7 @@ from adapta.logs import SemanticLogger
 from adapta.logs.models import LogLevel
 from adapta.process_communication import DataSocket
 from adapta.storage.distributed_object_store.v3.vanilla_cassandra import VanillaCassandraClient
-from adapta.storage.iceberg.v1 import (
-    get_schema,
-    set_property,
-    write_using_catalog,
-)
+from adapta.storage.iceberg.v1 import write_using_catalog
 from adapta.storage.sync.iceberg_to_cass import sync_iceberg_to_cassandra
 from tests.iceberg_clients._functions import generate_random_string
 
@@ -83,7 +78,7 @@ def logger():
     )
 
 
-def test_sync_with_handover(
+def test_sync_iceberg_to_cassandra(
     cassandra_client: VanillaCassandraClient,
     cassandra_keyspace: str,
     iceberg_catalog: Catalog,
@@ -111,9 +106,6 @@ def test_sync_with_handover(
 
     # 3. Create a new Cassandra table with matching schema
     cassandra_client.create_table(SyncItem, cassandra_table_name, cassandra_keyspace)
-    source_schema = get_schema("test", iceberg_table_name, iceberg_catalog)
-    schema_hash = hex(zlib.crc32(source_schema.model_dump_json().encode("utf-8")))
-    set_property("test", iceberg_table_name, iceberg_catalog, "adapta.cassandra.schema-hash", schema_hash)
 
     iceberg_source = DataSocket(
         alias="source",
