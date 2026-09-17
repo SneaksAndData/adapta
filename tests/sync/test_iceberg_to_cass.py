@@ -31,7 +31,7 @@ from adapta.storage.iceberg.v1 import (
     set_property,
     write_using_catalog,
 )
-from adapta.storage.sync.iceberg_to_cass import sync_with_handover
+from adapta.storage.sync.iceberg_to_cass import sync_iceberg_to_cassandra
 from tests.iceberg_clients._functions import generate_random_string
 
 
@@ -127,7 +127,7 @@ def test_sync_with_handover(
     )
 
     # 4. Run sync
-    sync_with_handover(
+    sync_iceberg_to_cassandra(
         iceberg_catalog=iceberg_catalog,
         client=cassandra_client,
         iceberg_source=iceberg_source,
@@ -154,7 +154,7 @@ def test_sync_with_handover(
     )
 
     # 6. Run sync
-    sync_with_handover(
+    sync_iceberg_to_cassandra(
         iceberg_catalog=iceberg_catalog,
         client=cassandra_client,
         iceberg_source=iceberg_source,
@@ -174,7 +174,7 @@ def test_sync_with_handover(
     assert_frame_equal(synced_records, expected_records, check_column_order=False)
 
     # 8. Run sync again with no new changes (up to date)
-    sync_with_handover(
+    sync_iceberg_to_cassandra(
         iceberg_catalog=iceberg_catalog,
         client=cassandra_client,
         iceberg_source=iceberg_source,
