@@ -14,7 +14,6 @@
 #
 
 from dataclasses import dataclass, field
-from typing import Self
 
 import polars
 import pytest
@@ -36,10 +35,6 @@ class SyncItem:
     id: str = field(metadata={"is_primary_key": True, "is_partition_key": True})
     name: str
     value: int
-
-    @classmethod
-    def create_with_key_only(cls, **kwargs) -> Self:
-        return cls(kwargs["id"], "", 0)
 
 
 @pytest.fixture(scope="module")
@@ -83,15 +78,21 @@ def logger():
     )
 
 
+def _get_table_names() -> tuple[str, str]:
+    table_suffix = generate_random_string(8).lower()
+    iceberg_table_name = f"test_iceberg_{table_suffix}"
+    cassandra_table_name = f"test_cass_{table_suffix}"
+
+    return iceberg_table_name, cassandra_table_name
+
+
 def test_sync_iceberg_to_cassandra(
     cassandra_client: VanillaCassandraClient,
     cassandra_keyspace: str,
     iceberg_catalog: Catalog,
     logger: SemanticLogger,
 ):
-    table_suffix = generate_random_string(8).lower()
-    iceberg_table_name = f"test_iceberg_{table_suffix}"
-    cassandra_table_name = f"test_cass_{table_suffix}"
+    iceberg_table_name, cassandra_table_name = _get_table_names()
 
     # 1. Create a new iceberg table and 2. fill it with data
     initial_data = polars.DataFrame(
@@ -194,9 +195,7 @@ def test_sync_iceberg_to_cassandra_insert_update(
     iceberg_catalog: Catalog,
     logger: SemanticLogger,
 ):
-    table_suffix = generate_random_string(8).lower()
-    iceberg_table_name = f"test_iceberg_{table_suffix}"
-    cassandra_table_name = f"test_cass_{table_suffix}"
+    iceberg_table_name, cassandra_table_name = _get_table_names()
 
     initial_data = polars.DataFrame(
         {
@@ -286,9 +285,7 @@ def test_sync_iceberg_to_cassandra_insert_delete_update(
     iceberg_catalog: Catalog,
     logger: SemanticLogger,
 ):
-    table_suffix = generate_random_string(8).lower()
-    iceberg_table_name = f"test_iceberg_{table_suffix}"
-    cassandra_table_name = f"test_cass_{table_suffix}"
+    iceberg_table_name, cassandra_table_name = _get_table_names()
 
     initial_data = polars.DataFrame(
         {
@@ -407,9 +404,7 @@ def test_sync_iceberg_to_cassandra_insert_delete_update_single_hop(
     iceberg_catalog: Catalog,
     logger: SemanticLogger,
 ):
-    table_suffix = generate_random_string(8).lower()
-    iceberg_table_name = f"test_iceberg_{table_suffix}"
-    cassandra_table_name = f"test_cass_{table_suffix}"
+    iceberg_table_name, cassandra_table_name = _get_table_names()
 
     initial_data = polars.DataFrame(
         {
