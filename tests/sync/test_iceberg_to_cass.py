@@ -398,5 +398,3 @@ def test_sync_iceberg_to_cassandra_insert_delete_update(
         }
     ).sort("id")
     assert_frame_equal(synced_records_after_update, expected_after_update, check_column_order=False)
-
-

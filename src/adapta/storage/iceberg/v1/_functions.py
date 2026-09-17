@@ -213,8 +213,8 @@ def get_changes(
     primary_key_columns: tuple[str, ...],
 ) -> tuple[
     LazyFrame,
-    LazyFrame | None,
-    LazyFrame | None,
+    LazyFrame,
+    LazyFrame,
 ]:
     """
     Retrieve changes between two snapshots as a MetaFrame
@@ -256,7 +256,7 @@ def get_changes(
         version_id=from_snapshot_id,
         lazy_read=True,
     ).to_polars()
-    current_version_full = load_using_catalog(
+    current_version_full: LazyFrame = load_using_catalog(
         schema_name,
         table_name,
         catalog,
@@ -283,7 +283,11 @@ def get_changes(
     ).drop(polars.selectors.contains("_right"))
 
     # Deletes: pk existed previously, but doesn't exist now
-    deletes = diff_table.filter(_null_expr("", primary_key_columns))
+    deletes = (
+        diff_table.filter(_null_expr("", primary_key_columns))
+        .drop(~polars.selectors.contains("_right"))
+        .rename({f"{k}_right": k for k in primary_key_columns})
+    )
 
     return inserts, updates, deletes
 
