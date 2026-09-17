@@ -89,7 +89,7 @@ def sync_iceberg_to_cassandra(
                     batch.to_dicts(), cassandra_model, target_path.keyspace, target_path.table, batch_size=batch.height
                 )
                 total_synced_records += batch.height
-            if updates:
+            if updates is not None:
                 for batch in updates.collect_batches(chunk_size=chunk_size, maintain_order=True):
                     client.upsert_batch(
                         batch.to_dicts(),
@@ -99,10 +99,10 @@ def sync_iceberg_to_cassandra(
                         batch_size=batch.height,
                     )
                     total_synced_records += batch.height
-            if deletes:
+            if deletes is not None:
                 for batch in deletes.collect_batches(chunk_size=chunk_size, maintain_order=True):
                     for row in batch.to_dicts():
-                        client.delete_entity(row, cassandra_model, target_path.keyspace)
+                        client.delete_entity(cassandra_model.create_with_key_only(row["id"]), target_path.table)
                         total_synced_records += batch.height
             set_property(
                 source_path.schema,

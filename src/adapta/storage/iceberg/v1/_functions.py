@@ -230,6 +230,16 @@ def get_changes(
 
         return expr_base
 
+    def _null_expr(suffix: str, fields: tuple[str, ...]) -> Expr:
+        expr_base = polars.lit(1).eq(1)
+        for field in fields:
+            if suffix:
+                expr_base = expr_base & polars.col(f"{field}_{suffix}").is_null()
+            else:
+                expr_base = expr_base & polars.col(field).is_null()
+
+        return expr_base
+
     current_version: LazyFrame = load_using_catalog(
         schema_name,
         table_name,
@@ -246,6 +256,13 @@ def get_changes(
         version_id=from_snapshot_id,
         lazy_read=True,
     ).to_polars()
+    current_version_full = load_using_catalog(
+        schema_name,
+        table_name,
+        catalog,
+        version_id=to_snapshot_id,
+        lazy_read=True,
+    ).to_polars()
 
     diff_table = current_version.join(
         previous_version,
@@ -254,17 +271,21 @@ def get_changes(
     )
 
     # Inserts: pk exists now, but didn't exist previously
-    inserts = diff_table.drop_nulls(subset=[f"{k}_right" for k in primary_key_columns])
-
-    # Deletes: pk existed previously, but doesn't exist now
-    deletes = diff_table.drop_nulls(subset=primary_key_columns)
+    inserts = current_version_full.join(
+        diff_table.filter(_null_expr("right", primary_key_columns)),
+        on=primary_key_columns,
+        how="semi"
+    )
 
     # Updates: pk exists in both, pick latest
     updates = diff_table.filter(
         _not_null_expr("", primary_key_columns)
-        & _not_null_expr("_right", primary_key_columns)
+        & _not_null_expr("right", primary_key_columns)
         & (polars.col(tracking_column) > polars.col(f"{tracking_column}_right"))
-    )
+    ).drop(polars.selectors.contains("_right"))
+
+    # Deletes: pk existed previously, but doesn't exist now
+    deletes = diff_table.filter(_null_expr("", primary_key_columns))
 
     return inserts, updates, deletes
 

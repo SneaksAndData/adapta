@@ -36,6 +36,10 @@ class SyncItem:
     name: str
     value: int
 
+    @classmethod
+    def create_with_key_only(cls, key_value: str):
+        return cls(key_value, "", 0)
+
 
 @pytest.fixture(scope="module")
 def cassandra_keyspace():
@@ -124,6 +128,7 @@ def test_sync_iceberg_to_cassandra(
         client=cassandra_client,
         iceberg_source=iceberg_source,
         cassandra_model=SyncItem,
+        version_field="value",
         cassandra_target=cassandra_target,
         chunk_size=2,
         logger=logger,
@@ -151,6 +156,7 @@ def test_sync_iceberg_to_cassandra(
         client=cassandra_client,
         iceberg_source=iceberg_source,
         cassandra_model=SyncItem,
+        version_field="value",
         cassandra_target=cassandra_target,
         chunk_size=2,
         logger=logger,
@@ -162,6 +168,7 @@ def test_sync_iceberg_to_cassandra(
         .to_polars()
         .sort("id")
     )
+    print(synced_records)
     expected_records = polars.concat([initial_data, updated_data]).sort("id")
     assert_frame_equal(synced_records, expected_records, check_column_order=False)
 
@@ -171,6 +178,7 @@ def test_sync_iceberg_to_cassandra(
         client=cassandra_client,
         iceberg_source=iceberg_source,
         cassandra_model=SyncItem,
+        version_field="value",
         cassandra_target=cassandra_target,
         chunk_size=2,
         logger=logger,
