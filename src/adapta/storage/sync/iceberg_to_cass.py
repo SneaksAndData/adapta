@@ -1,11 +1,5 @@
-import datetime
-import uuid
-import zlib
-from dataclasses import dataclass, field
-from datetime import UTC
 from typing import Any
 
-from adapta.storage.sync._models import SchemaOutOfSyncError
 from polars import LazyFrame
 from pyiceberg.catalog import Catalog
 
@@ -16,28 +10,11 @@ from adapta.storage.iceberg.v1 import (
     get_changes,
     get_current_snapshot,
     get_property,
-    get_schema,
     load_using_catalog,
     set_property,
 )
 from adapta.storage.models import CassandraPath, IcebergPath
 
-
-@dataclass
-class TableReference:
-    """
-    Pointers to actual tables based on key. This is used to allow graceful handover from old schema to new schema.
-    """
-
-    table_key: str = field(metadata={"is_primary_key": True})
-    table_name: str
-    supported_algorithm_version: str = field(metadata={"is_primary_key": True})
-    reference_version: int
-
-# sku sku_d3i21_312 1.2 1878993203 <-- current prod
-# sku sku_d3i21_313 1.2-dev 1878993213
-# sku sku_d3i21_314 1.3 1878993214
-#
 
 def sync_iceberg_to_cassandra(
     iceberg_catalog: Catalog,
@@ -51,8 +28,6 @@ def sync_iceberg_to_cassandra(
     """
      Synchronizes data from the provided Iceberg source to Cassandra target table. Assumes schemas are compatible.
     """
-    # perform schema check first
-    # schema is recorded in iceberg metadata to avoid complex conversion between Cassandra and Iceberg types
     source_path: IcebergPath = iceberg_source.parse_data_path()
     target_path: CassandraPath = cassandra_target.parse_data_path()
 
