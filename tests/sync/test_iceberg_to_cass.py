@@ -168,7 +168,6 @@ def test_sync_iceberg_to_cassandra(
         .to_polars()
         .sort("id")
     )
-    print(synced_records)
     expected_records = polars.concat([initial_data, updated_data]).sort("id")
     assert_frame_equal(synced_records, expected_records, check_column_order=False)
 
