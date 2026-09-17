@@ -5,6 +5,7 @@ import re
 import ssl
 
 from cassandra.cqlengine.connection import set_session
+from cassandra.cqlengine.management import sync_table
 
 from adapta.storage.distributed_object_store.v3.cassandra_client._model_mappers import get_mapper
 
@@ -148,7 +149,7 @@ class CassandraClient(ABC):
 
     def __enter__(self) -> Self:
         """
-        Creates an Astra client for this context.
+        Creates an Cassandra client for this context.
         """
         self.connect()
         return self
@@ -162,6 +163,18 @@ class CassandraClient(ABC):
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         self.disconnect()
+
+    def create_table(self, entity: TCassandraModel, table_name: str, keyspace: str) -> None:
+        """
+        Creates a table with the given name, in a given keyspaces, in compliance with the specified model.
+        """
+        cassandra_mapper = get_mapper(
+            data_model=entity if isinstance(entity, type) else type(entity),
+            table_name=table_name,
+            keyspace=keyspace,
+        )
+
+        sync_table(cassandra_mapper.map())
 
     def get_table_metadata(self, table_name: str) -> TableMetadata:
         """
@@ -226,20 +239,20 @@ class CassandraClient(ABC):
              col_a: int
              col_b: str
 
-         with AstraClient(...) as ac:
+         with CassandraClient(...) as ac:
              data = ac.filter_entities("test_table", Test, ['col_a'], [{'col_a': 123},{'col_a': 345}])
 
-        :param: model_class: A dataclass type that should be mapped to Astra Model.
+        :param: model_class: A dataclass type that should be mapped to Cassandra Model.
         :param: key_column_filter_values: Primary key filters in a form of list of dictionaries of my_key: my_value. Multiple entries will result in multiple queries being run and concatenated
         :param: keyspace: Optional keyspace name, if not provided in the client constructor
-        :param: table_name: Optional Astra table name, if it cannot be inferred from class name by converting it to snake_case.
+        :param: table_name: Optional Cassandra table name, if it cannot be inferred from class name by converting it to snake_case.
         :param: select_columns: An optional list of columns to return with the query.
         :param: primary_keys: An optional list of columns that constitute a primary key, if it cannot be inferred from the data model.
         :param: partition_keys: An optional list of columns that constitute a partition key, if it cannot be inferred from the data model.
         :param: custom_indexes: An optional list of custom indexes, if it cannot be inferred, if it cannot be inferred from the data model.
         :param: deduplicate: Optionally deduplicate query result, for example when only the partition key part of a primary key is used to fetch results.
         :param: num_threads: Optionally run filtering using multiple threads. Setting this to -1 will cause this method to automatically evaluate number of threads based on filter expression size.
-        :param: limit: Optionally limit the number of results returned. NOTE the limit works per call to Astra and not on the final result.
+        :param: limit: Optionally limit the number of results returned. NOTE the limit works per call to Cassandra and not on the final result.
         """
         if options is None:
             options = {}
@@ -285,7 +298,7 @@ class CassandraClient(ABC):
             )
 
         assert self._session is not None, (
-            "Please instantiate an AstraClient using with AstraClient(...) before calling this method"
+            "Please instantiate an CassandraClient using with CassandraClient(...) before calling this method"
         )
 
         cassandra_model_mapper = get_mapper(
@@ -370,7 +383,7 @@ class CassandraClient(ABC):
         self, entity: TCassandraModel, table_name: str | None = None, keyspace: str | None = None
     ) -> None:
         """
-         Delete an entity from Astra table
+         Delete an entity from Cassandra table
 
         :param: entity: entity to delete
         :param: table_name: Table to delete entity from.
@@ -399,6 +412,44 @@ class CassandraClient(ABC):
         _delete_entity(
             model_class=cassandra_mapper.map(),
             key_filter={key: getattr(entity, key) for key in cassandra_mapper.primary_keys},
+        )
+
+    def delete_entity_by_key(
+        self,
+        model: type[TCassandraModel],
+        primary_keys: dict[str, Any],
+        table_name: str | None = None,
+        keyspace: str | None = None,
+    ) -> None:
+        """
+        Delete an entity from Cassandra table, using only primary and model information
+        """
+
+        @on_exception(
+            wait_gen=expo,
+            exception=(
+                OverloadedErrorMessage,
+                IsBootstrappingErrorMessage,
+            ),
+            max_tries=self._client_config.transient_error_max_retries,
+            max_time=self._client_config.transient_error_max_wait_s,
+            raise_on_giveup=True,
+        )
+        def _delete_entity(model_class: type[Model], key_filter: dict):
+            model_class.filter(**key_filter).delete()
+
+        cassandra_mapper = get_mapper(
+            data_model=model,
+            table_name=table_name,
+            keyspace=keyspace,
+        )
+
+        # discard all data but primary keys
+        delete_filter = {pk: pk_value for pk, pk_value in primary_keys.items() if pk in cassandra_mapper.primary_keys}
+
+        _delete_entity(
+            model_class=cassandra_mapper.map(),
+            key_filter=delete_filter,
         )
 
     def upsert_entity(

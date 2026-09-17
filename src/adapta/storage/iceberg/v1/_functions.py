@@ -6,8 +6,10 @@ from typing import Literal
 import polars
 import pyarrow.dataset
 import pyiceberg
+from polars import Expr, LazyFrame
 from pyarrow.lib import Schema
 from pyiceberg.catalog import Catalog, load_catalog
+from pyiceberg.schema import Schema as IcebergSchema
 from pyiceberg.table import ALWAYS_TRUE
 from pyiceberg.table import Table as IcebergTable
 
@@ -54,7 +56,7 @@ def load_using_catalog(
     table_name: str,
     catalog: Catalog,
     row_filter: Expression | None = None,
-    columns: tuple[str] | None = None,
+    columns: tuple[str, ...] | None = None,
     limit: int | None = None,
     version_id: int | None = None,
     lazy_read: bool = False,
@@ -207,33 +209,87 @@ def get_changes(
     catalog: Catalog,
     from_snapshot_id: int,
     to_snapshot_id: int,
-    columns: tuple[str] | None = None,
-    lazy: bool = False,
-) -> MetaFrame:
+    tracking_column: str,
+    primary_key_columns: tuple[str, ...],
+) -> tuple[
+    LazyFrame,
+    LazyFrame,
+    LazyFrame,
+]:
     """
     Retrieve changes between two snapshots as a MetaFrame
     """
-    table = _apply_s3_endpoint_override(catalog.load_table(identifier=(schema_name, table_name)))
 
-    scanner = table.incremental_append_scan(
-        from_snapshot_id_exclusive=from_snapshot_id,
-        to_snapshot_id_inclusive=to_snapshot_id,
-        selected_fields=columns or ("*",),
+    def _not_null_expr(suffix: str, fields: tuple[str, ...]) -> Expr:
+        expr_base = polars.lit(1).eq(1)
+        for field in fields:
+            if suffix:
+                expr_base = expr_base & polars.col(f"{field}_{suffix}").is_not_null()
+            else:
+                expr_base = expr_base & polars.col(field).is_not_null()
+
+        return expr_base
+
+    def _null_expr(suffix: str, fields: tuple[str, ...]) -> Expr:
+        expr_base = polars.lit(1).eq(1)
+        for field in fields:
+            if suffix:
+                expr_base = expr_base & polars.col(f"{field}_{suffix}").is_null()
+            else:
+                expr_base = expr_base & polars.col(field).is_null()
+
+        return expr_base
+
+    current_version: LazyFrame = load_using_catalog(
+        schema_name,
+        table_name,
+        catalog,
+        columns=(tracking_column, *primary_key_columns),
+        version_id=to_snapshot_id,
+        lazy_read=True,
+    ).to_polars()
+    previous_version: LazyFrame = load_using_catalog(
+        schema_name,
+        table_name,
+        catalog,
+        columns=(tracking_column, *primary_key_columns),
+        version_id=from_snapshot_id,
+        lazy_read=True,
+    ).to_polars()
+    current_version_full: LazyFrame = load_using_catalog(
+        schema_name,
+        table_name,
+        catalog,
+        version_id=to_snapshot_id,
+        lazy_read=True,
+    ).to_polars()
+
+    diff_table = current_version.join(
+        previous_version,
+        on=primary_key_columns,
+        how="outer",
     )
 
-    if lazy:
-        return MetaFrame(
-            data=scanner.to_arrow_batch_reader(),
-            convert_to_polars=lambda v: polars.scan_pyarrow_dataset(pyarrow.dataset.dataset(v)),
-            convert_to_pandas=None,
-        )
-
-    return MetaFrame(
-        data=scanner,
-        # use built-in DataScan converters
-        convert_to_polars=lambda v: v.to_polars(),
-        convert_to_pandas=lambda v: v.to_pandas(),
+    # Inserts: pk exists now, but didn't exist previously
+    inserts = current_version_full.join(
+        diff_table.filter(_null_expr("right", primary_key_columns)), on=primary_key_columns, how="semi"
     )
+
+    # Updates: pk exists in both, pick latest
+    updates = diff_table.filter(
+        _not_null_expr("", primary_key_columns)
+        & _not_null_expr("right", primary_key_columns)
+        & (polars.col(tracking_column) > polars.col(f"{tracking_column}_right"))
+    ).drop(polars.selectors.contains("_right"))
+
+    # Deletes: pk existed previously, but doesn't exist now
+    deletes = (
+        diff_table.filter(_null_expr("", primary_key_columns))
+        .drop(~polars.selectors.contains("_right"))
+        .rename({f"{k}_right": k for k in primary_key_columns})
+    )
+
+    return inserts, updates, deletes
 
 
 def set_property(
@@ -267,3 +323,27 @@ def get_property(
     """
     table = _apply_s3_endpoint_override(catalog.load_table(identifier=(schema_name, table_name)))
     return table.properties.get(property_name, None)
+
+
+def get_schema(
+    schema_name: str,
+    table_name: str,
+    catalog: Catalog,
+) -> IcebergSchema:
+    """
+    Retrieves a schema of the table
+    """
+    table = _apply_s3_endpoint_override(catalog.load_table(identifier=(schema_name, table_name)))
+    return table.schema()
+
+
+def get_current_snapshot(
+    schema_name: str,
+    table_name: str,
+    catalog: Catalog,
+) -> int:
+    """
+    Retrieves a latest snapshot of the table
+    """
+    table = _apply_s3_endpoint_override(catalog.load_table(identifier=(schema_name, table_name)))
+    return table.current_snapshot().snapshot_id
