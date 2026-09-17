@@ -398,3 +398,98 @@ def test_sync_iceberg_to_cassandra_insert_delete_update(
         }
     ).sort("id")
     assert_frame_equal(synced_records_after_update, expected_after_update, check_column_order=False)
+
+def test_sync_iceberg_to_cassandra_insert_delete_update_single_hop(
+    cassandra_client: VanillaCassandraClient,
+    cassandra_keyspace: str,
+    iceberg_catalog: Catalog,
+    logger: SemanticLogger,
+):
+    table_suffix = generate_random_string(8).lower()
+    iceberg_table_name = f"test_iceberg_{table_suffix}"
+    cassandra_table_name = f"test_cass_{table_suffix}"
+
+    initial_data = polars.DataFrame(
+        {
+            "id": ["1", "2", "3"],
+            "name": ["alice", "bob", "charlie"],
+            "value": [10, 20, 30],
+        }
+    )
+    write_using_catalog(
+        schema_name="test",
+        table_name=iceberg_table_name,
+        catalog=iceberg_catalog,
+        data=initial_data,
+        overwrite=True,
+    )
+
+    cassandra_client.create_table(SyncItem, cassandra_table_name, cassandra_keyspace)
+
+    iceberg_source = DataSocket(
+        alias="source",
+        data_path=f"iceberg://test@{iceberg_table_name}",
+        data_format="iceberg",
+    )
+    cassandra_target = DataSocket(
+        alias="target",
+        data_path=f"cass+tests.sync.test_iceberg_to_cass.SyncItem://{cassandra_keyspace}@{cassandra_table_name}",
+        data_format="cassandra",
+    )
+
+    # 1. Initial sync
+    sync_iceberg_to_cassandra(
+        iceberg_catalog=iceberg_catalog,
+        client=cassandra_client,
+        iceberg_source=iceberg_source,
+        version_field="value",
+        cassandra_target=cassandra_target,
+        chunk_size=2,
+        logger=logger,
+    )
+
+    # 2. Delete record from Iceberg
+    iceberg_table = iceberg_catalog.load_table(identifier=("test", iceberg_table_name))
+    iceberg_table.delete("id = '2'")
+
+    # 3. Update record in Iceberg
+    updated_data = polars.DataFrame(
+        {
+            "id": ["3"],
+            "name": ["charlie"],
+            "value": [35],
+        }
+    )
+    write_using_catalog(
+        schema_name="test",
+        table_name=iceberg_table_name,
+        catalog=iceberg_catalog,
+        data=updated_data,
+        overwrite=False,
+        merge_columns=["id"],
+    )
+
+    # Run sync after update
+    sync_iceberg_to_cassandra(
+        iceberg_catalog=iceberg_catalog,
+        client=cassandra_client,
+        iceberg_source=iceberg_source,
+        version_field="value",
+        cassandra_target=cassandra_target,
+        chunk_size=2,
+        logger=logger,
+    )
+
+    synced_records_after_update = (
+        cassandra_client.get_entities_raw(f"SELECT * FROM {cassandra_keyspace}.{cassandra_table_name};")
+        .to_polars()
+        .sort("id")
+    )
+    expected_after_update = polars.DataFrame(
+        {
+            "id": ["1", "3"],
+            "name": ["alice", "charlie"],
+            "value": [10, 35],
+        }
+    ).sort("id")
+    assert_frame_equal(synced_records_after_update, expected_after_update, check_column_order=False)
