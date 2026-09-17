@@ -272,9 +272,7 @@ def get_changes(
 
     # Inserts: pk exists now, but didn't exist previously
     inserts = current_version_full.join(
-        diff_table.filter(_null_expr("right", primary_key_columns)),
-        on=primary_key_columns,
-        how="semi"
+        diff_table.filter(_null_expr("right", primary_key_columns)), on=primary_key_columns, how="semi"
     )
 
     # Updates: pk exists in both, pick latest
