@@ -6,7 +6,7 @@ from typing import Literal
 import polars
 import pyarrow.dataset
 import pyiceberg
-from polars import LazyFrame, Expr
+from polars import Expr, LazyFrame
 from pyarrow.lib import Schema
 from pyiceberg.catalog import Catalog, load_catalog
 from pyiceberg.schema import Schema as IcebergSchema
@@ -211,10 +211,15 @@ def get_changes(
     to_snapshot_id: int,
     tracking_column: str,
     primary_key_columns: tuple[str, ...],
-) -> tuple[LazyFrame, LazyFrame | None, LazyFrame | None,]:
+) -> tuple[
+    LazyFrame,
+    LazyFrame | None,
+    LazyFrame | None,
+]:
     """
     Retrieve changes between two snapshots as a MetaFrame
     """
+
     def _not_null_expr(suffix: str, fields: tuple[str, ...]) -> Expr:
         expr_base = polars.lit(1).eq(1)
         for field in fields:
@@ -225,9 +230,22 @@ def get_changes(
 
         return expr_base
 
-
-    current_version: LazyFrame = load_using_catalog(schema_name, table_name, catalog, columns=(tracking_column, *primary_key_columns), version_id=to_snapshot_id, lazy_read=True).to_polars()
-    previous_version: LazyFrame = load_using_catalog(schema_name, table_name, catalog, columns=(tracking_column, *primary_key_columns),version_id=from_snapshot_id, lazy_read=True).to_polars()
+    current_version: LazyFrame = load_using_catalog(
+        schema_name,
+        table_name,
+        catalog,
+        columns=(tracking_column, *primary_key_columns),
+        version_id=to_snapshot_id,
+        lazy_read=True,
+    ).to_polars()
+    previous_version: LazyFrame = load_using_catalog(
+        schema_name,
+        table_name,
+        catalog,
+        columns=(tracking_column, *primary_key_columns),
+        version_id=from_snapshot_id,
+        lazy_read=True,
+    ).to_polars()
 
     diff_table = current_version.join(
         previous_version,
@@ -243,9 +261,9 @@ def get_changes(
 
     # Updates: pk exists in both, pick latest
     updates = diff_table.filter(
-        _not_null_expr("", primary_key_columns) &
-        _not_null_expr("_right", primary_key_columns) &
-        (polars.col(tracking_column) > polars.col(f"{tracking_column}_right"))
+        _not_null_expr("", primary_key_columns)
+        & _not_null_expr("_right", primary_key_columns)
+        & (polars.col(tracking_column) > polars.col(f"{tracking_column}_right"))
     )
 
     return inserts, updates, deletes

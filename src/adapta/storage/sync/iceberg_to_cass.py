@@ -27,7 +27,7 @@ def sync_iceberg_to_cassandra(
     logger: LoggerInterface,
 ) -> None:
     """
-     Synchronizes data from the provided Iceberg source to Cassandra target table. Assumes schemas are compatible.
+    Synchronizes data from the provided Iceberg source to Cassandra target table. Assumes schemas are compatible.
     """
     source_path: IcebergPath = iceberg_source.parse_data_path()
     target_path: CassandraPath = cassandra_target.parse_data_path()
@@ -40,10 +40,10 @@ def sync_iceberg_to_cassandra(
         source_path.schema, source_path.table, iceberg_catalog, "adapta.cassandra.last-synced-snapshot-id"
     )
     mapper = get_mapper(
-            data_model=cassandra_model,
-            table_name=iceberg_source.alias,
-            keyspace="any",
-        )
+        data_model=cassandra_model,
+        table_name=iceberg_source.alias,
+        keyspace="any",
+    )
     total_synced_records = 0
     if not last_synced_snapshot or last_synced_snapshot == "-1":
         logger.info("Last sync snapshot data not available. Will perform a full sync.")
@@ -92,15 +92,17 @@ def sync_iceberg_to_cassandra(
             if updates:
                 for batch in updates.collect_batches(chunk_size=chunk_size, maintain_order=True):
                     client.upsert_batch(
-                        batch.to_dicts(), cassandra_model, target_path.keyspace, target_path.table, batch_size=batch.height
+                        batch.to_dicts(),
+                        cassandra_model,
+                        target_path.keyspace,
+                        target_path.table,
+                        batch_size=batch.height,
                     )
                     total_synced_records += batch.height
             if deletes:
                 for batch in deletes.collect_batches(chunk_size=chunk_size, maintain_order=True):
                     for row in batch.to_dicts():
-                        client.delete_entity(
-                            row, cassandra_model, target_path.keyspace
-                        )
+                        client.delete_entity(row, cassandra_model, target_path.keyspace)
                         total_synced_records += batch.height
             set_property(
                 source_path.schema,
