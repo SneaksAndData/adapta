@@ -14,6 +14,7 @@
 #
 
 from dataclasses import dataclass, field
+from typing import Self
 
 import polars
 import pytest
@@ -37,8 +38,8 @@ class SyncItem:
     value: int
 
     @classmethod
-    def create_with_key_only(cls, key_value: str):
-        return cls(key_value, "", 0)
+    def create_with_key_only(cls, **kwargs) -> Self:
+        return cls(kwargs["id"], "", 0)
 
 
 @pytest.fixture(scope="module")
@@ -398,6 +399,7 @@ def test_sync_iceberg_to_cassandra_insert_delete_update(
         }
     ).sort("id")
     assert_frame_equal(synced_records_after_update, expected_after_update, check_column_order=False)
+
 
 def test_sync_iceberg_to_cassandra_insert_delete_update_single_hop(
     cassandra_client: VanillaCassandraClient,
