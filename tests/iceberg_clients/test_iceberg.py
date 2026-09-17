@@ -317,8 +317,7 @@ def test_partial_overwrite_table(iceberg_catalog: Catalog, lazy: bool):
     assert_frame_equal(read_data.to_polars().sort("cola"), expected_df.sort("cola"), check_column_order=False)
 
 
-@pytest.mark.parametrize("lazy", [False, True])
-def test_get_changes(iceberg_catalog: Catalog, lazy: bool):
+def test_get_changes(iceberg_catalog: Catalog):
     table_name = f"test_get_changes_{generate_random_string(8)}".lower()
     input_data1 = {
         "cola": [1, 2],
@@ -356,37 +355,19 @@ def test_get_changes(iceberg_catalog: Catalog, lazy: bool):
     table.refresh()
     to_snapshot_id = table.current_snapshot().snapshot_id
 
-    changes_metaframe = get_changes(
+    inserts, _, __ = get_changes(
         schema_name="test",
         table_name=table_name,
         catalog=iceberg_catalog,
         from_snapshot_id=from_snapshot_id,
         to_snapshot_id=to_snapshot_id,
-        lazy=lazy,
+        tracking_column="cola",
+        primary_key_columns=("cola",),
     )
 
-    result_df = changes_metaframe.to_polars()
-    if lazy:
-        result_df = result_df.collect()
+    result_df = inserts.collect()
 
     assert_frame_equal(result_df.sort("cola"), df2.sort("cola"), check_column_order=False)
-
-    # Test with column selection
-    changes_metaframe_cols = get_changes(
-        schema_name="test",
-        table_name=table_name,
-        catalog=iceberg_catalog,
-        from_snapshot_id=from_snapshot_id,
-        to_snapshot_id=to_snapshot_id,
-        columns=("cola",),
-        lazy=lazy,
-    )
-
-    result_cols_df = changes_metaframe_cols.to_polars()
-    if lazy:
-        result_cols_df = result_cols_df.collect()
-
-    assert_frame_equal(result_cols_df.sort("cola"), df2.select(["cola"]).sort("cola"), check_column_order=False)
 
 
 def test_table_properties(iceberg_catalog: Catalog):
