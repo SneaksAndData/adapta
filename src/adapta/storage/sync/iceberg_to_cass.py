@@ -20,7 +20,6 @@ def sync_iceberg_to_cassandra(
     iceberg_catalog: Catalog,
     client: CassandraClient,
     iceberg_source: DataSocket,
-    cassandra_model: type[dataclasses.dataclass],
     version_field: str,
     cassandra_target: DataSocket,
     chunk_size: int,
@@ -31,6 +30,7 @@ def sync_iceberg_to_cassandra(
     """
     source_path: IcebergPath = iceberg_source.parse_data_path()
     target_path: CassandraPath = cassandra_target.parse_data_path()
+    cassandra_model = target_path.model_class()
 
     logger.info(
         "Running incremental sync to table {sync_to_table}. Looking for changes to sync.",
