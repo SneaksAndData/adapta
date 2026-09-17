@@ -11,7 +11,14 @@ from pyiceberg.catalog import Catalog
 from adapta.logs import LoggerInterface
 from adapta.process_communication import DataSocket
 from adapta.storage.distributed_object_store.v3.cassandra_client import CassandraClient
-from adapta.storage.iceberg.v1 import get_changes, get_current_snapshot, get_property, get_schema, load_using_catalog
+from adapta.storage.iceberg.v1 import (
+    get_changes,
+    get_current_snapshot,
+    get_property,
+    get_schema,
+    load_using_catalog,
+    set_property,
+)
 from adapta.storage.models import CassandraPath, IcebergPath
 
 
@@ -23,8 +30,13 @@ class TableReference:
 
     table_key: str = field(metadata={"is_primary_key": True})
     table_name: str
-    last_updated: int
+    supported_algorithm_version: str = field(metadata={"is_primary_key": True})
+    reference_version: int
 
+# sku sku_d3i21_312 1.2 1878993203 <-- current prod
+# sku sku_d3i21_313 1.2-dev 1878993213
+# sku sku_d3i21_314 1.3 1878993214
+#
 
 def sync_with_handover(
     iceberg_catalog: Catalog,
@@ -56,6 +68,7 @@ def sync_with_handover(
         )
         if not last_synced_snapshot or last_synced_snapshot == "-1":
             logger.info("Last sync snapshot data not available. Will perform a full sync.")
+            current_snapshot = get_current_snapshot(source_path.schema, source_path.table, iceberg_catalog)
             source_data: LazyFrame = load_using_catalog(
                 source_path.schema,
                 source_path.table,
@@ -64,31 +77,46 @@ def sync_with_handover(
             ).to_polars()
             for batch in source_data.collect_batches(chunk_size=chunk_size, maintain_order=False):
                 client.upsert_batch(
-                    batch.to_dicts(), cassandra_model, target_path.keyspace, target_path.table, batch_size=batch.count()
+                    batch.to_dicts(), cassandra_model, target_path.keyspace, sync_to_table, batch_size=batch.height
                 )
-        else:
-            current_snapshot = get_current_snapshot(source_path.schema, source_path.table, iceberg_catalog)
-            logger.info(
-                "Last sync snapshot: {snapshot}. Performing incremental sync to {latest_snapshot}",
-                snapshot=last_synced_snapshot,
-                latest_snapshot=current_snapshot,
-            )
-            changes: LazyFrame = get_changes(
+            set_property(
                 source_path.schema,
                 source_path.table,
                 iceberg_catalog,
-                last_synced_snapshot,
-                current_snapshot,
-                lazy=True,
+                "adapta.cassandra.last-synced-snapshot-id",
+                str(current_snapshot),
             )
-            for batch in changes.collect_batches(chunk_size=chunk_size, maintain_order=True):
-                client.upsert_batch(
-                    batch.to_dicts(), cassandra_model, target_path.keyspace, target_path.table, batch_size=batch.count()
+        else:
+            current_snapshot = get_current_snapshot(source_path.schema, source_path.table, iceberg_catalog)
+            if int(last_synced_snapshot) != current_snapshot:
+                logger.info(
+                    "Last sync snapshot: {snapshot}. Performing incremental sync to {latest_snapshot}",
+                    snapshot=last_synced_snapshot,
+                    latest_snapshot=current_snapshot,
+                )
+                changes: LazyFrame = get_changes(
+                    source_path.schema,
+                    source_path.table,
+                    iceberg_catalog,
+                    int(last_synced_snapshot),
+                    current_snapshot,
+                    lazy=True,
+                ).to_polars()
+                for batch in changes.collect_batches(chunk_size=chunk_size, maintain_order=True):
+                    client.upsert_batch(
+                        batch.to_dicts(), cassandra_model, target_path.keyspace, sync_to_table, batch_size=batch.height
+                    )
+                set_property(
+                    source_path.schema,
+                    source_path.table,
+                    iceberg_catalog,
+                    "adapta.cassandra.last-synced-snapshot-id",
+                    str(current_snapshot),
                 )
 
         logger.info(
             "Table {target} has been successfully synced with {source}",
-            target=target_path.table,
+            target=sync_to_table,
             source=source_path.table,
         )
 
@@ -97,12 +125,20 @@ def sync_with_handover(
         new_table_name = f"{source_path.table}_{str(uuid.uuid4()).replace('-', '_')}"
         client.create_table(cassandra_model, new_table_name, target_path.keyspace)
         _run_sync(new_table_name)
+        client.create_table(TableReference, "references", target_path.keyspace)
         client.upsert_entity(
             TableReference(
                 table_key=source_path.table, table_name=new_table_name, last_updated=datetime.now(tz=UTC).timestamp()
             ),
             keyspace=target_path.keyspace,
             table_name="references",
+        )
+        set_property(
+            source_path.schema,
+            source_path.table,
+            iceberg_catalog,
+            "adapta.cassandra.schema-hash",
+            source_schema_hash,
         )
         return
 

@@ -169,7 +169,7 @@ class CassandraClient(ABC):
         Creates a table with the given name, in a given keyspaces, in compliance with the specified model.
         """
         cassandra_mapper = get_mapper(
-            data_model=type(entity),
+            data_model=entity if isinstance(entity, type) else type(entity),
             table_name=table_name,
             keyspace=keyspace,
         )
