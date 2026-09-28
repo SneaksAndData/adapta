@@ -28,11 +28,6 @@ services:
       S2_SERVER_BUCKETS: tmp
     network_mode: host
     restart: always
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:9001" ]
-      interval: 30s
-      timeout: 10s
-      retries: 5
   lakekeeper:
     image: quay.io/lakekeeper/catalog:v0.13.4
     network_mode: host
@@ -55,8 +50,6 @@ services:
       lakekeeper_migrate:
         condition: service_completed_successfully
       lakekeeper_db:
-        condition: service_healthy
-      minio:
         condition: service_healthy
   lakekeeper_migrate:
     image: quay.io/lakekeeper/catalog:v0.13.4
