@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import Any, Self, final
 
+from cassandra import ProtocolVersion
 from cassandra.cluster import _NOT_SET, DefaultConnection
 
 
@@ -45,5 +46,20 @@ class CassandraClientConfiguration:
             log_transient_errors=True,
             metadata_fetch_timeout_s=30,
             protocol_version=_NOT_SET,
+            connection_class=DefaultConnection,
+        )
+
+    @classmethod
+    def v4(cls) -> Self:
+        return cls(
+            reconnect_base_delay_ms=500,
+            reconnect_max_delay_ms=5000,
+            socket_connection_timeout_ms=5000,
+            socket_read_timeout_ms=180000,
+            transient_error_max_retries=10,
+            transient_error_max_wait_s=300,
+            log_transient_errors=True,
+            metadata_fetch_timeout_s=30,
+            protocol_version=ProtocolVersion.V4,
             connection_class=DefaultConnection,
         )
