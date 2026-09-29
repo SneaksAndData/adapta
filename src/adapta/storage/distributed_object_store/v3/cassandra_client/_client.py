@@ -109,14 +109,31 @@ class CassandraClient(ABC):
             row_factory=dict_factory,
         )
 
-        cluster_kwargs = {}
-        if self._get_contact_points() is not None:
-            cluster_kwargs["contact_points"] = self._get_contact_points()
-
-        if self._client_config.protocol_version is not None:
-            cluster_kwargs["protocol_version"] = self._client_config.protocol_version
+        cloud = self._cloud_config()
+        if cloud:
+            return Cluster(
+                port=self._get_port(),
+                connection_class=self._client_config.connection_class,
+                execution_profiles={EXEC_PROFILE_DEFAULT: profile},
+                cloud=self._cloud_config(),
+                auth_provider=self._get_auth_provider(),
+                reconnection_policy=ExponentialReconnectionPolicy(
+                    self._client_config.reconnect_base_delay_ms, self._client_config.reconnect_max_delay_ms
+                ),
+                compression=True,
+                ssl_context=self._get_ssl_context(),
+                application_name=self._client_name,
+                application_version=adapta.__version__,
+                sockopts=[
+                    (IPPROTO_TCP, TCP_NODELAY, 1),
+                    (IPPROTO_TCP, TCP_USER_TIMEOUT, self._client_config.socket_read_timeout_ms),
+                ]
+                if platform.system().lower() != "darwin"
+                else [(IPPROTO_TCP, TCP_NODELAY, 1)],
+            )
 
         return Cluster(
+            contact_points=self._get_contact_points(),
             port=self._get_port(),
             connection_class=self._client_config.connection_class,
             execution_profiles={EXEC_PROFILE_DEFAULT: profile},
@@ -129,13 +146,13 @@ class CassandraClient(ABC):
             ssl_context=self._get_ssl_context(),
             application_name=self._client_name,
             application_version=adapta.__version__,
+            protocol_version=self._client_config.protocol_version,
             sockopts=[
                 (IPPROTO_TCP, TCP_NODELAY, 1),
                 (IPPROTO_TCP, TCP_USER_TIMEOUT, self._client_config.socket_read_timeout_ms),
             ]
             if platform.system().lower() != "darwin"
             else [(IPPROTO_TCP, TCP_NODELAY, 1)],
-            **cluster_kwargs,
         )
 
     async def connect_async(self) -> Self:
