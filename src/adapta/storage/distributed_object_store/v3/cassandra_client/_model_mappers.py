@@ -4,6 +4,7 @@ import datetime
 import enum
 import re
 import sys
+import types
 import typing
 from abc import ABC, abstractmethod
 from dataclasses import fields, is_dataclass
@@ -177,7 +178,7 @@ class CassandraModelMapper(ABC):
                 self._map_to_column(typing.get_args(type_to_map)[1])[0],
             )
 
-        if typing.get_origin(type_to_map) == typing.Union:
+        if typing.get_origin(type_to_map) in (typing.Union, types.UnionType):
             return self._map_to_column(typing.get_args(type_to_map)[0])
 
         raise TypeError(f"Unsupported type: {type_to_map}")

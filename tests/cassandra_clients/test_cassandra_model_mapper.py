@@ -109,3 +109,19 @@ def test_model_mapper_factory(data_model, expected_mapper: type[CassandraModelMa
     mapper = get_mapper(data_model)
 
     assert isinstance(mapper, expected_mapper)
+
+
+@pytest.mark.parametrize(
+    "type_to_map, expected_cassandra_type",
+    [
+        (str, (columns.Text,)),
+        (int, (columns.Integer,)),
+        (list[str], (columns.List, columns.Text)),
+        (dict[str, str], (columns.Map, columns.Text, columns.Text)),
+        (str | None, (columns.Text,)),
+    ],
+)
+def test_cassandra_model_mapper_map_to_column(type_to_map: type, expected_cassandra_type: tuple):
+    mapper = DataclassMapper(data_model=DataclassModel)
+
+    assert mapper._map_to_column(type_to_map=type_to_map) == expected_cassandra_type
