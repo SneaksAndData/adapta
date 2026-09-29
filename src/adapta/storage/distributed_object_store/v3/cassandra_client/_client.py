@@ -123,6 +123,7 @@ class CassandraClient(ABC):
                 compression=True,
                 application_name=self._client_name,
                 application_version=adapta.__version__,
+                protocol_version=self._client_config.protocol_version,
                 sockopts=[
                     (IPPROTO_TCP, TCP_NODELAY, 1),
                     (IPPROTO_TCP, TCP_USER_TIMEOUT, self._client_config.socket_read_timeout_ms),
