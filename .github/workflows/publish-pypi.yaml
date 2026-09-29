@@ -2,18 +2,22 @@ name: Publish to PyPi
 
 on: workflow_dispatch
 
+permissions: {}
+
 jobs:
   build:
     name: Build artifacts
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
         with:
           enable-cache: false
 
@@ -23,7 +27,7 @@ jobs:
       - name: Set version
         run: |
           version=$(git describe --tags --abbrev=7)
-          uv version $version        
+          uv version "$version"
 
       - name: Build
         run: uv build
