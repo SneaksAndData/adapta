@@ -137,7 +137,6 @@ class CassandraClient(ABC):
             port=self._get_port(),
             connection_class=self._client_config.connection_class,
             execution_profiles={EXEC_PROFILE_DEFAULT: profile},
-            cloud=self._cloud_config(),
             auth_provider=self._get_auth_provider(),
             reconnection_policy=ExponentialReconnectionPolicy(
                 self._client_config.reconnect_base_delay_ms, self._client_config.reconnect_max_delay_ms
