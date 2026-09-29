@@ -14,19 +14,19 @@ jobs:
         python-version: [ "3.11", "3.12", "3.13", "3.14" ]
 
     permissions:
-      contents: read
-      id-token: write
-      pull-requests: write
+      id-token: write      # required for dependabot PRs
+      pull-requests: write # required for dependabot PRs
+      contents: read       # required for dependabot PRs
 
     if: ${{ github.ref != 'refs/heads/main' }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
         with:
           enable-cache: true
       - name: Set up Python
@@ -51,6 +51,20 @@ jobs:
           uv run pytest | tee pytest-coverage.txt
 
       - name: Publish Code Coverage
-        uses: MishaKav/pytest-coverage-comment@main
+        uses: MishaKav/pytest-coverage-comment@432ac90e8d345c93e1d90ee0838b35913abc9c9b # v1.12.2
         with:
           pytest-coverage-path: ./pytest-coverage.txt
+
+  validate_commit:
+    name: Validate commit
+    runs-on: ubuntu-latest
+    needs: [validate_code]
+    if: ${{ always() }}
+    permissions: {}
+    steps:
+      - name: Check required jobs
+        env:
+          RESULT: ${{ needs.validate_code.result }}
+        run: |
+          echo "Result: $RESULT"
+          [ "$RESULT" = "success" ]
