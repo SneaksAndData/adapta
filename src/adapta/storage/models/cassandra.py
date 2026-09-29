@@ -22,7 +22,6 @@ from dataclasses import dataclass
 from pydoc import locate
 from typing import Self
 
-from adapta.storage.distributed_object_store.v3.cassandra_client import TCassandraModel
 from adapta.storage.models.base import DataPath, DataProtocols
 
 
@@ -65,7 +64,7 @@ class CassandraPath(DataPath):
     def to_delta_rs_path(self) -> str:
         raise NotImplementedError
 
-    def model_class(self) -> type[TCassandraModel] | None:
+    def model_class(self) -> type | None:
         """
         Locates and returns model class name.
         """
