@@ -121,7 +121,6 @@ class CassandraClient(ABC):
                     self._client_config.reconnect_base_delay_ms, self._client_config.reconnect_max_delay_ms
                 ),
                 compression=True,
-                ssl_context=self._get_ssl_context(),
                 application_name=self._client_name,
                 application_version=adapta.__version__,
                 sockopts=[
