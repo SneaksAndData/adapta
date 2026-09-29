@@ -279,7 +279,7 @@ def get_changes(
     updates = diff_table.filter(
         _not_null_expr("", primary_key_columns)
         & _not_null_expr("right", primary_key_columns)
-        & (polars.col(tracking_column) > polars.col(f"{tracking_column}_right"))
+        & (polars.col(tracking_column) != polars.col(f"{tracking_column}_right"))
     ).drop(polars.selectors.contains("_right"))
 
     # Deletes: pk existed previously, but doesn't exist now
