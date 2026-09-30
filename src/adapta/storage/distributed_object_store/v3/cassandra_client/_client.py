@@ -394,7 +394,9 @@ class CassandraClient(ABC):
                 convert_to_pandas=pandas.DataFrame,
             )
         return MetaFrame(
-            self._session.execute(query), convert_to_polars=polars.DataFrame, convert_to_pandas=pandas.DataFrame
+            self._session.execute(query),
+            convert_to_polars=lambda result_set: polars.DataFrame(dict(row) for row in result_set),
+            convert_to_pandas=pandas.DataFrame,
         )
 
     def set_table_option(self, table_name: str, option_name: str, option_value: str) -> None:
