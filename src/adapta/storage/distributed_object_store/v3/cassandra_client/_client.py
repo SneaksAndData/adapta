@@ -381,12 +381,18 @@ class CassandraClient(ABC):
 
         return result
 
-    def get_entities_raw(self, query: str) -> MetaFrame:
+    def get_entities_raw(self, query: str, force_eager: bool = False) -> MetaFrame:
         """
          Maps query result to a MetaFrame
 
         :param: query: A CQL query to run.
         """
+        if force_eager:
+            return MetaFrame(
+                self._session.execute(query).all(),
+                convert_to_polars=polars.DataFrame,
+                convert_to_pandas=pandas.DataFrame,
+            )
         return MetaFrame(
             self._session.execute(query), convert_to_polars=polars.DataFrame, convert_to_pandas=pandas.DataFrame
         )
