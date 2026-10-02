@@ -290,7 +290,10 @@ class CassandraClient(ABC):
             raise_on_giveup=True,
         )
         def apply(model: type[Model], key_column_filter: dict[str, Any], columns_to_select: list[str] | None):
-            model = model.filter(**key_column_filter).limit(limit)
+            if len(key_column_filter) == 0:
+                model = model.all().limit(limit)
+            else:
+                model = model.filter(**key_column_filter).limit(limit)
             if columns_to_select:
                 return model.only(select_columns)
 
@@ -305,6 +308,10 @@ class CassandraClient(ABC):
 
         def convert_to_polars(x: list[dict]) -> polars.DataFrame:
             try:
+                for row in x:
+                    for col in select_columns:
+                        if isinstance(row[col], dict):
+                            row[col] = [{"key": k, "value": v} for k, v in row[col].items()]
                 return polars.DataFrame(x, schema=select_columns)
             except ComputeError:
                 # Catches errors related to incorrect schema inference and tries again with unlimited schema inference length
@@ -344,6 +351,16 @@ class CassandraClient(ABC):
             else key_column_filter_values
         )
 
+        # return entire table if no filter was supplied
+        if len(compiled_filter_values) == 0:
+            return MetaFrame(
+                [dict(v.items()) for v in list(apply(cassandra_model, {}, select_columns))],
+                convert_to_polars=convert_to_polars if not deduplicate else (lambda x: convert_to_polars(x).unique()),
+                convert_to_pandas=(lambda x: pandas.DataFrame(x, columns=select_columns))
+                if not deduplicate
+                else (lambda x: pandas.DataFrame(x, columns=select_columns).drop_duplicates()),
+            )
+
         if num_threads:
             max_threads = (
                 max([int(math.sqrt(len(compiled_filter_values) + 1) / 2), num_threads, os.cpu_count()])
@@ -351,7 +368,7 @@ class CassandraClient(ABC):
                 else num_threads
             )
             with ThreadPoolExecutor(max_workers=max_threads) as tpe:
-                result = concat(
+                return concat(
                     tpe.map(
                         lambda args: to_frame(*args),
                         [
@@ -363,7 +380,7 @@ class CassandraClient(ABC):
                     options=options.get(QueryEnabledStoreOptions.CONCAT_OPTIONS, None),
                 )
         else:
-            result = concat(
+            return concat(
                 [
                     MetaFrame(
                         [dict(v.items()) for v in list(apply(cassandra_model, key_column_filter, select_columns))],
@@ -378,8 +395,6 @@ class CassandraClient(ABC):
                 ],
                 options=options.get(QueryEnabledStoreOptions.CONCAT_OPTIONS, None),
             )
-
-        return result
 
     def get_entities_raw(self, query: str, force_eager: bool = False) -> MetaFrame:
         """
