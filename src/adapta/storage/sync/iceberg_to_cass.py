@@ -31,7 +31,12 @@ def sync_iceberg_to_cassandra(
         """Polars remaps map<k, v> to list[{"key": ..., "value": ...}]"""
         fixed = {}
         for cell_key, cell_value in entity.items():
-            if isinstance(cell_value, list) and "key" in cell_value[0] and "value" in cell_value[0]:
+            if (
+                isinstance(cell_value, list)
+                and len(cell_value) > 0
+                and "key" in cell_value[0]
+                and "value" in cell_value[0]
+            ):
                 fixed[cell_key] = {a["key"]: a["value"] for a in cell_value}
             else:
                 fixed[cell_key] = cell_value
