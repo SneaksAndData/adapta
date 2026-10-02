@@ -26,6 +26,22 @@ def sync_iceberg_to_cassandra(
     """
     Synchronizes data from the provided Iceberg source to Cassandra target table. Assumes schemas are compatible.
     """
+
+    def _fix_map_type(entity: dict) -> dict:
+        """Polars remaps map<k, v> to list[{"key": ..., "value": ...}]"""
+        fixed = {}
+        for cell_key, cell_value in entity.items():
+            if (
+                isinstance(cell_value, list)
+                and len(cell_value) > 0
+                and "key" in cell_value[0]
+                and "value" in cell_value[0]
+            ):
+                fixed[cell_key] = {a["key"]: a["value"] for a in cell_value}
+            else:
+                fixed[cell_key] = cell_value
+        return fixed
+
     source_path: IcebergPath = iceberg_source.parse_data_path()
     target_path: CassandraPath = cassandra_target.parse_data_path()
     cassandra_model = target_path.model_class()
@@ -54,7 +70,11 @@ def sync_iceberg_to_cassandra(
         ).to_polars()
         for batch in source_data.collect_batches(chunk_size=chunk_size, maintain_order=False):
             client.upsert_batch(
-                batch.to_dicts(), cassandra_model, target_path.keyspace, target_path.table, batch_size=batch.height
+                [_fix_map_type(batch_row) for batch_row in batch.to_dicts()],
+                cassandra_model,
+                target_path.keyspace,
+                target_path.table,
+                batch_size=batch.height,
             )
             total_synced_records += batch.height
         set_property(

@@ -16,6 +16,7 @@
 from dataclasses import dataclass, field
 
 import polars
+import pyarrow as pa
 import pytest
 from cassandra.cluster import Cluster
 from polars.testing import assert_frame_equal
@@ -35,6 +36,14 @@ class SyncItem:
     id: str = field(metadata={"is_primary_key": True, "is_partition_key": True})
     name: str
     value: int
+
+
+@dataclass
+class SyncMapItem:
+    id: str = field(metadata={"is_primary_key": True, "is_partition_key": True})
+    name: str
+    value: int
+    metadata: dict[str, str]
 
 
 @pytest.fixture(scope="module")
@@ -490,3 +499,82 @@ def test_sync_iceberg_to_cassandra_insert_delete_update_single_hop(
         }
     ).sort("id")
     assert_frame_equal(synced_records_after_update, expected_after_update, check_column_order=False)
+
+
+def test_sync_iceberg_to_cassandra_map_type(
+    cassandra_client: VanillaCassandraClient,
+    cassandra_keyspace: str,
+    iceberg_catalog: Catalog,
+    logger: SemanticLogger,
+):
+    iceberg_table_name, cassandra_table_name = _get_table_names()
+
+    arrow_schema = pa.schema(
+        [
+            pa.field("id", pa.string(), nullable=False),
+            pa.field("name", pa.string()),
+            pa.field("value", pa.int32()),
+            pa.field("metadata", pa.map_(pa.string(), pa.string())),
+        ]
+    )
+    arrow_data = pa.Table.from_pydict(
+        {
+            "id": ["1", "2"],
+            "name": ["alice", "bob"],
+            "value": [10, 20],
+            "metadata": [
+                [("env", "prod"), ("region", "eu")],
+                [("env", "dev"), ("region", "us")],
+            ],
+        },
+        schema=arrow_schema,
+    )
+
+    write_using_catalog(
+        schema_name="test",
+        table_name=iceberg_table_name,
+        catalog=iceberg_catalog,
+        data=polars.DataFrame(arrow_data),
+        overwrite=True,
+    )
+
+    cassandra_client.create_table(SyncMapItem, cassandra_table_name, cassandra_keyspace)
+
+    iceberg_source = DataSocket(
+        alias="source",
+        data_path=f"iceberg://test@{iceberg_table_name}",
+        data_format="iceberg",
+    )
+    cassandra_target = DataSocket(
+        alias="target",
+        data_path=f"cass+tests.sync.test_iceberg_to_cass.SyncMapItem://{cassandra_keyspace}@{cassandra_table_name}",
+        data_format="cassandra",
+    )
+
+    sync_iceberg_to_cassandra(
+        iceberg_catalog=iceberg_catalog,
+        client=cassandra_client,
+        iceberg_source=iceberg_source,
+        version_field="value",
+        cassandra_target=cassandra_target,
+        chunk_size=2,
+        logger=logger,
+    )
+
+    synced_records = (
+        cassandra_client.get_entities_raw(f"SELECT * FROM {cassandra_keyspace}.{cassandra_table_name};")
+        .to_polars()
+        .sort("id")
+    )
+    expected_records = polars.DataFrame(
+        {
+            "id": ["1", "2"],
+            "name": ["alice", "bob"],
+            "value": [10, 20],
+            "metadata": [
+                {"env": "prod", "region": "eu"},
+                {"env": "dev", "region": "us"},
+            ],
+        }
+    ).sort("id")
+    assert_frame_equal(synced_records, expected_records, check_column_order=False)
