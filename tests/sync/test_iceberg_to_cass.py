@@ -140,7 +140,7 @@ def test_sync_iceberg_to_cassandra(
         iceberg_source=iceberg_source,
         version_field="value",
         cassandra_target=cassandra_target,
-        chunk_size=2,
+        read_chunk_size=2,
         logger=logger,
     )
 
@@ -167,7 +167,7 @@ def test_sync_iceberg_to_cassandra(
         iceberg_source=iceberg_source,
         version_field="value",
         cassandra_target=cassandra_target,
-        chunk_size=2,
+        read_chunk_size=2,
         logger=logger,
     )
 
@@ -187,7 +187,7 @@ def test_sync_iceberg_to_cassandra(
         iceberg_source=iceberg_source,
         version_field="value",
         cassandra_target=cassandra_target,
-        chunk_size=2,
+        read_chunk_size=2,
         logger=logger,
     )
     synced_records_unchanged = (
@@ -241,7 +241,7 @@ def test_sync_iceberg_to_cassandra_insert_update(
         iceberg_source=iceberg_source,
         version_field="value",
         cassandra_target=cassandra_target,
-        chunk_size=2,
+        read_chunk_size=2,
         logger=logger,
     )
 
@@ -269,7 +269,7 @@ def test_sync_iceberg_to_cassandra_insert_update(
         iceberg_source=iceberg_source,
         version_field="value",
         cassandra_target=cassandra_target,
-        chunk_size=2,
+        read_chunk_size=2,
         logger=logger,
     )
 
@@ -331,7 +331,7 @@ def test_sync_iceberg_to_cassandra_insert_delete_update(
         iceberg_source=iceberg_source,
         version_field="value",
         cassandra_target=cassandra_target,
-        chunk_size=2,
+        read_chunk_size=2,
         logger=logger,
     )
 
@@ -346,7 +346,7 @@ def test_sync_iceberg_to_cassandra_insert_delete_update(
         iceberg_source=iceberg_source,
         version_field="value",
         cassandra_target=cassandra_target,
-        chunk_size=2,
+        read_chunk_size=2,
         logger=logger,
     )
 
@@ -388,7 +388,7 @@ def test_sync_iceberg_to_cassandra_insert_delete_update(
         iceberg_source=iceberg_source,
         version_field="value",
         cassandra_target=cassandra_target,
-        chunk_size=2,
+        read_chunk_size=2,
         logger=logger,
     )
 
@@ -450,7 +450,7 @@ def test_sync_iceberg_to_cassandra_insert_delete_update_single_hop(
         iceberg_source=iceberg_source,
         version_field="value",
         cassandra_target=cassandra_target,
-        chunk_size=2,
+        read_chunk_size=2,
         logger=logger,
     )
 
@@ -482,7 +482,7 @@ def test_sync_iceberg_to_cassandra_insert_delete_update_single_hop(
         iceberg_source=iceberg_source,
         version_field="value",
         cassandra_target=cassandra_target,
-        chunk_size=2,
+        read_chunk_size=2,
         logger=logger,
     )
 
@@ -557,7 +557,7 @@ def test_sync_iceberg_to_cassandra_map_type(
         iceberg_source=iceberg_source,
         version_field="value",
         cassandra_target=cassandra_target,
-        chunk_size=2,
+        read_chunk_size=2,
         logger=logger,
     )
 
