@@ -171,6 +171,7 @@ def write_using_catalog(
         if catalog.table_exists(identifier=(schema_name, table_name)):
             return catalog.load_table(identifier=(schema_name, table_name))
 
+        catalog.create_namespace_if_not_exists(namespace=schema_name)
         return catalog.create_table(
             identifier=(schema_name, table_name),
             schema=table_schema,
