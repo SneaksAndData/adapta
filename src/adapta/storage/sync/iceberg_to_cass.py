@@ -52,7 +52,13 @@ def sync_iceberg_to_cassandra(
     def _sync_lazyframe(source: LazyFrame) -> int:
         @run_time_metrics(metric_name="adapta.cassandra.iceberg_batch_upsert_duration")
         def _upsert_with_metric(entities: list[dict], **kwargs) -> int:
-            client.upsert_batch(entities=entities, **kwargs)
+            client.upsert_batch(
+                entities=entities,
+                entity_type=kwargs["entity_type"],
+                keyspace=kwargs["keyspace"],
+                table_name=kwargs["table_name"],
+                batch_size=kwargs["batch_size"],
+            )
             kwargs["logger"].info("Upserted {rows} rows", rows=len(entities))
             return len(entities)
 
