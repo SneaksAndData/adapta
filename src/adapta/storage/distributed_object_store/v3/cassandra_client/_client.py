@@ -24,7 +24,7 @@ from typing import Any, Self, TypeVar
 import pandas
 import polars
 from backoff import expo, on_exception
-from cassandra import ConsistencyLevel, WriteTimeout
+from cassandra import ConsistencyLevel, WriteTimeout, WriteFailure
 from cassandra.auth import AuthProvider
 from cassandra.cluster import (
     EXEC_PROFILE_DEFAULT,
@@ -558,7 +558,7 @@ class CassandraClient(ABC):
 
         @on_exception(
             wait_gen=expo,
-            exception=(OverloadedErrorMessage, IsBootstrappingErrorMessage, WriteTimeout),
+            exception=(OverloadedErrorMessage, IsBootstrappingErrorMessage, WriteTimeout, WriteFailure),
             max_tries=self._client_config.transient_error_max_retries,
             max_time=self._client_config.transient_error_max_wait_s,
             raise_on_giveup=True,
