@@ -1,3 +1,5 @@
+import uuid
+
 from polars import LazyFrame
 from pyiceberg.catalog import Catalog
 
@@ -12,6 +14,7 @@ from adapta.storage.iceberg.v1 import (
     set_property,
 )
 from adapta.storage.models import CassandraPath, IcebergPath
+from adapta.utils.concurrent_task_runner import ConcurrentTaskRunner, Executable
 
 
 def sync_iceberg_to_cassandra(
@@ -20,8 +23,9 @@ def sync_iceberg_to_cassandra(
     iceberg_source: DataSocket,
     version_field: str,
     cassandra_target: DataSocket,
-    chunk_size: int,
+    read_chunk_size: int,
     logger: LoggerInterface,
+    threads: int,
 ) -> None:
     """
     Synchronizes data from the provided Iceberg source to Cassandra target table. Assumes schemas are compatible.
@@ -41,6 +45,30 @@ def sync_iceberg_to_cassandra(
             else:
                 fixed[cell_key] = cell_value
         return fixed
+
+    def _sync_lazyframe(source: LazyFrame) -> int:
+        def _upsert_with_metric(entities: list[dict], **kwargs) -> int:
+            client.upsert_batch(entities=entities, **kwargs)
+            return len(entities)
+
+        ctr = ConcurrentTaskRunner[int](
+            [
+                Executable(
+                    _upsert_with_metric,
+                    str(uuid.uuid4()),
+                    kwargs={
+                        "entities": [_fix_map_type(batch_row) for batch_row in source_batch.to_dicts()],
+                        "entity_type": cassandra_model,
+                        "keyspace": target_path.keyspace,
+                        "table_name": target_path.table,
+                        "batch_size": source_batch.height,
+                    },
+                )
+                for source_batch in source.collect_batches(chunk_size=read_chunk_size, maintain_order=False)
+            ],
+            num_threads=threads,
+        )
+        return sum([rows_synced for _, rows_synced in ctr.eager().items()])
 
     source_path: IcebergPath = iceberg_source.parse_data_path()
     target_path: CassandraPath = cassandra_target.parse_data_path()
@@ -68,15 +96,7 @@ def sync_iceberg_to_cassandra(
             iceberg_catalog,
             lazy_read=True,
         ).to_polars()
-        for batch in source_data.collect_batches(chunk_size=chunk_size, maintain_order=False):
-            client.upsert_batch(
-                [_fix_map_type(batch_row) for batch_row in batch.to_dicts()],
-                cassandra_model,
-                target_path.keyspace,
-                target_path.table,
-                batch_size=batch.height,
-            )
-            total_synced_records += batch.height
+        total_synced_records = _sync_lazyframe(source_data)
         set_property(
             source_path.schema,
             source_path.table,
@@ -102,23 +122,12 @@ def sync_iceberg_to_cassandra(
                 primary_key_columns=tuple(mapper.primary_keys),
             )
             # insert/update first
-            for batch in inserts.collect_batches(chunk_size=chunk_size, maintain_order=True):
-                client.upsert_batch(
-                    batch.to_dicts(), cassandra_model, target_path.keyspace, target_path.table, batch_size=batch.height
-                )
-                total_synced_records += batch.height
+            total_synced_records += _sync_lazyframe(inserts)
             if updates is not None:
-                for batch in updates.collect_batches(chunk_size=chunk_size, maintain_order=True):
-                    client.upsert_batch(
-                        batch.to_dicts(),
-                        cassandra_model,
-                        target_path.keyspace,
-                        target_path.table,
-                        batch_size=batch.height,
-                    )
-                    total_synced_records += batch.height
+                total_synced_records += _sync_lazyframe(updates)
+            # keep deletes out of parallelism for now
             if deletes is not None:
-                for batch in deletes.collect_batches(chunk_size=chunk_size, maintain_order=True):
+                for batch in deletes.collect_batches(chunk_size=read_chunk_size, maintain_order=True):
                     for row in batch.to_dicts():
                         client.delete_entity_by_key(cassandra_model, row, target_path.table)
                         total_synced_records += batch.height
