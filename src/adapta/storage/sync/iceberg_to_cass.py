@@ -50,7 +50,7 @@ def sync_iceberg_to_cassandra(
         return fixed
 
     def _sync_lazyframe(source: LazyFrame) -> int:
-        @run_time_metrics
+        @run_time_metrics(metric_name="adapta.cassandra.iceberg_batch_upsert_duration")
         def _upsert_with_metric(entities: list[dict], **kwargs) -> int:
             client.upsert_batch(entities=entities, **kwargs)
             kwargs["logger"].info("Upserted {rows} rows", rows=len(entities))
