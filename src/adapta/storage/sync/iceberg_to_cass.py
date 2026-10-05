@@ -56,7 +56,11 @@ def sync_iceberg_to_cassandra(
                 Executable(
                     _upsert_with_metric,
                     str(uuid.uuid4()),
-                    entities=[_fix_map_type(batch_row) for batch_row in source_batch.to_dicts()], entity_type=cassandra_model, keyspace=target_path.keyspace, table_name=target_path.table, batch_size=batch.height,
+                    entities=[_fix_map_type(batch_row) for batch_row in source_batch.to_dicts()],
+                    entity_type=cassandra_model,
+                    keyspace=target_path.keyspace,
+                    table_name=target_path.table,
+                    batch_size=batch.height,
                 )
                 for source_batch in source.collect_batches(chunk_size=read_chunk_size, maintain_order=False)
             ],

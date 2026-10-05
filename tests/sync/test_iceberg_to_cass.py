@@ -142,6 +142,7 @@ def test_sync_iceberg_to_cassandra(
         cassandra_target=cassandra_target,
         read_chunk_size=2,
         logger=logger,
+        threads=4,
     )
 
     # 5. Update iceberg table (no schema changes)
@@ -169,6 +170,7 @@ def test_sync_iceberg_to_cassandra(
         cassandra_target=cassandra_target,
         read_chunk_size=2,
         logger=logger,
+        threads=4,
     )
 
     # 7. Validate the expected data looks as it should
@@ -189,6 +191,7 @@ def test_sync_iceberg_to_cassandra(
         cassandra_target=cassandra_target,
         read_chunk_size=2,
         logger=logger,
+        threads=4,
     )
     synced_records_unchanged = (
         cassandra_client.get_entities_raw(f"SELECT * FROM {cassandra_keyspace}.{cassandra_table_name};")
@@ -243,6 +246,7 @@ def test_sync_iceberg_to_cassandra_insert_update(
         cassandra_target=cassandra_target,
         read_chunk_size=2,
         logger=logger,
+        threads=4,
     )
 
     # Update records in Iceberg
@@ -271,6 +275,7 @@ def test_sync_iceberg_to_cassandra_insert_update(
         cassandra_target=cassandra_target,
         read_chunk_size=2,
         logger=logger,
+        threads=4,
     )
 
     synced_records = (
@@ -333,6 +338,7 @@ def test_sync_iceberg_to_cassandra_insert_delete_update(
         cassandra_target=cassandra_target,
         read_chunk_size=2,
         logger=logger,
+        threads=4,
     )
 
     # 2. Delete record from Iceberg
@@ -348,6 +354,7 @@ def test_sync_iceberg_to_cassandra_insert_delete_update(
         cassandra_target=cassandra_target,
         read_chunk_size=2,
         logger=logger,
+        threads=4,
     )
 
     synced_records_after_delete = (
@@ -390,6 +397,7 @@ def test_sync_iceberg_to_cassandra_insert_delete_update(
         cassandra_target=cassandra_target,
         read_chunk_size=2,
         logger=logger,
+        threads=4,
     )
 
     synced_records_after_update = (
@@ -452,6 +460,7 @@ def test_sync_iceberg_to_cassandra_insert_delete_update_single_hop(
         cassandra_target=cassandra_target,
         read_chunk_size=2,
         logger=logger,
+        threads=4,
     )
 
     # 2. Delete record from Iceberg
@@ -484,6 +493,7 @@ def test_sync_iceberg_to_cassandra_insert_delete_update_single_hop(
         cassandra_target=cassandra_target,
         read_chunk_size=2,
         logger=logger,
+        threads=4,
     )
 
     synced_records_after_update = (
@@ -559,6 +569,7 @@ def test_sync_iceberg_to_cassandra_map_type(
         cassandra_target=cassandra_target,
         read_chunk_size=2,
         logger=logger,
+        threads=4,
     )
 
     synced_records = (
