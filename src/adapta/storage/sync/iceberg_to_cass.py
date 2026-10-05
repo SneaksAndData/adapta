@@ -60,7 +60,7 @@ def sync_iceberg_to_cassandra(
                     entity_type=cassandra_model,
                     keyspace=target_path.keyspace,
                     table_name=target_path.table,
-                    batch_size=batch.height,
+                    batch_size=source_batch.height,
                 )
                 for source_batch in source.collect_batches(chunk_size=read_chunk_size, maintain_order=False)
             ],
