@@ -24,7 +24,7 @@ from typing import Any, Self, TypeVar
 import pandas
 import polars
 from backoff import expo, on_exception
-from cassandra import ConsistencyLevel, WriteTimeout, WriteFailure
+from cassandra import ConsistencyLevel, WriteFailure, WriteTimeout
 from cassandra.auth import AuthProvider
 from cassandra.cluster import (
     EXEC_PROFILE_DEFAULT,

@@ -4,6 +4,7 @@ from polars import LazyFrame
 from pyiceberg.catalog import Catalog
 
 from adapta.logs import LoggerInterface
+from adapta.metrics import MetricsProvider
 from adapta.process_communication import DataSocket
 from adapta.storage.distributed_object_store.v3.cassandra_client import CassandraClient, get_mapper
 from adapta.storage.iceberg.v1 import (
@@ -14,6 +15,7 @@ from adapta.storage.iceberg.v1 import (
     set_property,
 )
 from adapta.storage.models import CassandraPath, IcebergPath
+from adapta.utils import run_time_metrics
 from adapta.utils.concurrent_task_runner import ConcurrentTaskRunner, Executable
 
 
@@ -25,6 +27,7 @@ def sync_iceberg_to_cassandra(
     cassandra_target: DataSocket,
     read_chunk_size: int,
     logger: LoggerInterface,
+    metrics: MetricsProvider,
     threads: int,
 ) -> None:
     """
@@ -47,8 +50,10 @@ def sync_iceberg_to_cassandra(
         return fixed
 
     def _sync_lazyframe(source: LazyFrame) -> int:
+        @run_time_metrics
         def _upsert_with_metric(entities: list[dict], **kwargs) -> int:
             client.upsert_batch(entities=entities, **kwargs)
+            kwargs["logger"].info("Upserted {rows} rows", rows=len(entities))
             return len(entities)
 
         ctr = ConcurrentTaskRunner[int](
@@ -62,6 +67,8 @@ def sync_iceberg_to_cassandra(
                         "keyspace": target_path.keyspace,
                         "table_name": target_path.table,
                         "batch_size": source_batch.height,
+                        "metrics_provider": metrics,
+                        "logger": logger,
                     },
                 )
                 for source_batch in source.collect_batches(chunk_size=read_chunk_size, maintain_order=False)
