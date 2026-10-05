@@ -24,6 +24,7 @@ from pyiceberg.catalog import Catalog
 
 from adapta.logs import SemanticLogger
 from adapta.logs.models import LogLevel
+from adapta.metrics.providers.void_provider import VoidMetricsProvider
 from adapta.process_communication import DataSocket
 from adapta.storage.distributed_object_store.v3.vanilla_cassandra import VanillaCassandraClient
 from adapta.storage.iceberg.v1 import write_using_catalog
@@ -142,6 +143,7 @@ def test_sync_iceberg_to_cassandra(
         cassandra_target=cassandra_target,
         read_chunk_size=2,
         logger=logger,
+        metrics=VoidMetricsProvider(),
         threads=4,
     )
 
@@ -170,6 +172,7 @@ def test_sync_iceberg_to_cassandra(
         cassandra_target=cassandra_target,
         read_chunk_size=2,
         logger=logger,
+        metrics=VoidMetricsProvider(),
         threads=4,
     )
 
@@ -191,6 +194,7 @@ def test_sync_iceberg_to_cassandra(
         cassandra_target=cassandra_target,
         read_chunk_size=2,
         logger=logger,
+        metrics=VoidMetricsProvider(),
         threads=4,
     )
     synced_records_unchanged = (
@@ -246,6 +250,7 @@ def test_sync_iceberg_to_cassandra_insert_update(
         cassandra_target=cassandra_target,
         read_chunk_size=2,
         logger=logger,
+        metrics=VoidMetricsProvider(),
         threads=4,
     )
 
@@ -275,6 +280,7 @@ def test_sync_iceberg_to_cassandra_insert_update(
         cassandra_target=cassandra_target,
         read_chunk_size=2,
         logger=logger,
+        metrics=VoidMetricsProvider(),
         threads=4,
     )
 
@@ -338,6 +344,7 @@ def test_sync_iceberg_to_cassandra_insert_delete_update(
         cassandra_target=cassandra_target,
         read_chunk_size=2,
         logger=logger,
+        metrics=VoidMetricsProvider(),
         threads=4,
     )
 
@@ -354,6 +361,7 @@ def test_sync_iceberg_to_cassandra_insert_delete_update(
         cassandra_target=cassandra_target,
         read_chunk_size=2,
         logger=logger,
+        metrics=VoidMetricsProvider(),
         threads=4,
     )
 
@@ -397,6 +405,7 @@ def test_sync_iceberg_to_cassandra_insert_delete_update(
         cassandra_target=cassandra_target,
         read_chunk_size=2,
         logger=logger,
+        metrics=VoidMetricsProvider(),
         threads=4,
     )
 
@@ -460,6 +469,7 @@ def test_sync_iceberg_to_cassandra_insert_delete_update_single_hop(
         cassandra_target=cassandra_target,
         read_chunk_size=2,
         logger=logger,
+        metrics=VoidMetricsProvider(),
         threads=4,
     )
 
@@ -493,6 +503,7 @@ def test_sync_iceberg_to_cassandra_insert_delete_update_single_hop(
         cassandra_target=cassandra_target,
         read_chunk_size=2,
         logger=logger,
+        metrics=VoidMetricsProvider(),
         threads=4,
     )
 
@@ -569,6 +580,7 @@ def test_sync_iceberg_to_cassandra_map_type(
         cassandra_target=cassandra_target,
         read_chunk_size=2,
         logger=logger,
+        metrics=VoidMetricsProvider(),
         threads=4,
     )
 
