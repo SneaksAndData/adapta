@@ -83,6 +83,39 @@ def sync_iceberg_to_cassandra(
         )
         return sum([rows_synced for _, rows_synced in ctr.eager().items()])
 
+    def _sync_deletes_from_lazyframe(source: LazyFrame, primary_keys: list[str]) -> int:
+        @run_time_metrics(metric_name="adapta.cassandra.iceberg_batch_upsert_duration")
+        def _delete_with_metric(entities: list[dict], **kwargs) -> int:
+            for entity in entities:
+                client.delete_entity_by_key(
+                    model=kwargs["entity_type"],
+                    primary_keys={key: entity[key] for key in primary_keys},
+                    keyspace=kwargs["keyspace"],
+                    table_name=kwargs["table_name"],
+                )
+            kwargs["logger"].info("Deleted {rows} rows", rows=len(entities))
+            return len(entities)
+
+        ctr = ConcurrentTaskRunner[int](
+            [
+                Executable(
+                    _delete_with_metric,
+                    str(uuid.uuid4()),
+                    kwargs={
+                        "entities": [_fix_map_type(batch_row) for batch_row in source_batch.to_dicts()],
+                        "entity_type": cassandra_model,
+                        "keyspace": target_path.keyspace,
+                        "table_name": target_path.table,
+                        "metrics_provider": metrics,
+                        "logger": logger,
+                    },
+                )
+                for source_batch in source.collect_batches(chunk_size=read_chunk_size, maintain_order=False)
+            ],
+            num_threads=threads,
+        )
+        return sum([rows_synced for _, rows_synced in ctr.eager().items()])
+
     source_path: IcebergPath = iceberg_source.parse_data_path()
     target_path: CassandraPath = cassandra_target.parse_data_path()
     cassandra_model = target_path.model_class()
@@ -140,10 +173,7 @@ def sync_iceberg_to_cassandra(
                 total_synced_records += _sync_lazyframe(updates)
             # keep deletes out of parallelism for now
             if deletes is not None:
-                for batch in deletes.collect_batches(chunk_size=read_chunk_size, maintain_order=True):
-                    for row in batch.to_dicts():
-                        client.delete_entity_by_key(cassandra_model, row, target_path.table)
-                        total_synced_records += batch.height
+                total_synced_records += _sync_deletes_from_lazyframe(deletes, mapper.primary_keys)
             set_property(
                 source_path.schema,
                 source_path.table,
