@@ -168,6 +168,7 @@ def write_using_catalog(
     """
 
     def _get_table(table_schema: Schema) -> pyiceberg.table.Table:
+        catalog.create_namespace_if_not_exists(namespace=schema_name)
         if catalog.table_exists(identifier=(schema_name, table_name)):
             return catalog.load_table(identifier=(schema_name, table_name))
 
