@@ -4,7 +4,6 @@ import os
 from typing import Literal
 
 import polars
-import pyarrow.dataset
 import pyiceberg
 from polars import Expr, LazyFrame
 from pyarrow.lib import Schema
@@ -62,7 +61,10 @@ def load_using_catalog(
     lazy_read: bool = False,
 ) -> MetaFrame:
     """
-    Loads an Iceberg table as a Metaframe, using provided catalog connection
+    Loads an Iceberg table as a Metaframe, using provided catalog connection.
+
+    Set PYICEBERG_MAX_WORKERS in your environment (defaults to CPU count).
+    Increasing this (e.g., 16–32) speeds up concurrent Parquet downloads from cloud storage.
 
     :param schema: table schema name
     :param table_name: table name
@@ -98,7 +100,7 @@ def load_using_catalog(
     if lazy_read:
         return MetaFrame(
             data=scanner.to_arrow_batch_reader(),
-            convert_to_polars=lambda v: polars.scan_pyarrow_dataset(pyarrow.dataset.dataset(v)),
+            convert_to_polars=lambda v: polars.scan_arrow_c_stream(v),
             convert_to_pandas=None,
         )
 
