@@ -55,7 +55,7 @@ def test__coerce_and_select_columns__selects_subset(inputs: TestInput, expected:
     Tests that coerce_and_select_columns selects only the columns defined in the schema.
     """
     result = inputs.schema.coerce_and_select_columns(data=inputs.dataframe)
-    assert_frame_equal(result, expected.expected_dataframe, check_dtype=False)
+    assert_frame_equal(result, expected.expected_dataframe, check_dtypes=False)
 
 
 class TestSchema(AbstractDataClass):
