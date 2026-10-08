@@ -267,7 +267,7 @@ def get_changes(
     diff_table = current_version.join(
         previous_version,
         on=primary_key_columns,
-        how="outer",
+        how="full",
     )
 
     # Inserts: pk exists now, but didn't exist previously
