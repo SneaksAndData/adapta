@@ -99,8 +99,8 @@ def load_using_catalog(
 
     if lazy_read:
         return MetaFrame(
-            data=scanner.to_arrow_batch_reader(),
-            convert_to_polars=lambda v: polars.scan_arrow_c_stream(v),
+            data=scanner,
+            convert_to_polars=lambda s: polars.scan_arrow_c_stream(s.to_arrow_batch_reader()),
             convert_to_pandas=None,
         )
 
@@ -266,10 +266,14 @@ def get_changes(
         lazy_read=True,
     ).to_polars()
 
-    diff_table = current_version.join(
-        previous_version,
-        on=primary_key_columns,
-        how="full",
+    diff_table = (
+        current_version.join(
+            previous_version,
+            on=primary_key_columns,
+            how="full",
+        )
+        .collect()
+        .lazy()
     )
 
     # Inserts: pk exists now, but didn't exist previously
