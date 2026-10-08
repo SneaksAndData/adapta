@@ -4,7 +4,6 @@ import os
 from typing import Literal
 
 import polars
-import pyarrow.dataset
 import pyiceberg
 from polars import Expr, LazyFrame
 from pyarrow.lib import Schema
@@ -62,7 +61,10 @@ def load_using_catalog(
     lazy_read: bool = False,
 ) -> MetaFrame:
     """
-    Loads an Iceberg table as a Metaframe, using provided catalog connection
+    Loads an Iceberg table as a Metaframe, using provided catalog connection.
+
+    Set PYICEBERG_MAX_WORKERS in your environment (defaults to CPU count).
+    Increasing this (e.g., 16–32) speeds up concurrent Parquet downloads from cloud storage.
 
     :param schema: table schema name
     :param table_name: table name
@@ -97,8 +99,8 @@ def load_using_catalog(
 
     if lazy_read:
         return MetaFrame(
-            data=scanner.to_arrow_batch_reader(),
-            convert_to_polars=lambda v: polars.scan_pyarrow_dataset(pyarrow.dataset.dataset(v)),
+            data=scanner,
+            convert_to_polars=lambda s: polars.scan_arrow_c_stream(s.to_arrow_batch_reader()),
             convert_to_pandas=None,
         )
 
@@ -264,10 +266,14 @@ def get_changes(
         lazy_read=True,
     ).to_polars()
 
-    diff_table = current_version.join(
-        previous_version,
-        on=primary_key_columns,
-        how="full",
+    diff_table = (
+        current_version.join(
+            previous_version,
+            on=primary_key_columns,
+            how="full",
+        )
+        .collect()
+        .lazy()
     )
 
     # Inserts: pk exists now, but didn't exist previously
