@@ -633,6 +633,15 @@ def test_sync_iceberg_to_cassandra_custom_index(
 
     cassandra_client.create_table(SyncItemWithCustomIndex, cassandra_table_name, cassandra_keyspace)
 
+    @dataclass
+    class SyncItemCategoryIndex:
+        category: str = field(metadata={"is_primary_key": True, "is_partition_key": True})
+        id: str
+        value: int
+
+    idx_cassandra_table = f"{cassandra_table_name}__idx_category"
+    cassandra_client.create_table(SyncItemCategoryIndex, idx_cassandra_table, cassandra_keyspace)
+
     iceberg_source = DataSocket(
         alias="source",
         data_path=f"iceberg://test@{iceberg_table_name}",
