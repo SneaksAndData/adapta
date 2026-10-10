@@ -260,9 +260,10 @@ def sync_iceberg_to_cassandra(
         logger=logger,
     )
     total_synced_records = 0
+    current_snapshot = get_current_snapshot(source_path.schema, source_path.table, iceberg_catalog)
+
     if not last_synced_snapshot or last_synced_snapshot == "-1":
         logger.info("Last sync snapshot data not available. Will perform a full sync.")
-        current_snapshot = get_current_snapshot(source_path.schema, source_path.table, iceberg_catalog)
         source_data: LazyFrame = load_using_catalog(
             source_path.schema,
             source_path.table,
@@ -270,80 +271,62 @@ def sync_iceberg_to_cassandra(
             lazy_read=True,
         ).to_polars()
         total_synced_records = _sync_lazyframe(source_data)
-        set_property(
+    elif int(last_synced_snapshot) != current_snapshot:
+        logger.info(
+            "Last sync snapshot: {snapshot}. Performing incremental sync to {latest_snapshot}",
+            snapshot=last_synced_snapshot,
+            latest_snapshot=current_snapshot,
+        )
+        inserts, updates, deletes = get_changes(
             source_path.schema,
             source_path.table,
             iceberg_catalog,
-            "adapta.cassandra.last-synced-snapshot-id",
-            str(current_snapshot),
+            int(last_synced_snapshot),
+            current_snapshot,
+            tracking_column=version_field,
+            primary_key_columns=tuple(mapper.primary_keys),
         )
-        for index_model, idx_f_name, idx_iceberg_table, idx_cassandra_table, index_cols in custom_index_models:
-            _sync_custom_index(
-                index_model=index_model,
-                idx_field_name=idx_f_name,
-                idx_iceberg_table=idx_iceberg_table,
-                idx_cassandra_table=idx_cassandra_table,
-                index_cols=index_cols,
-                source_schema=source_path.schema,
-                source_table=source_path.table,
-                target_keyspace=target_path.keyspace,
-                version_field=version_field,
-                iceberg_catalog=iceberg_catalog,
-                client=client,
-                upload_mode=upload_mode,
-                read_chunk_size=read_chunk_size,
-                threads=threads,
-                logger=logger,
-            )
+        # insert/update first
+        total_synced_records += _sync_lazyframe(inserts)
+        if updates is not None:
+            total_synced_records += _sync_lazyframe(updates)
+        # keep deletes out of parallelism for now
+        if deletes is not None:
+            total_synced_records += _sync_deletes(deletes)
     else:
-        current_snapshot = get_current_snapshot(source_path.schema, source_path.table, iceberg_catalog)
-        if int(last_synced_snapshot) != current_snapshot:
-            logger.info(
-                "Last sync snapshot: {snapshot}. Performing incremental sync to {latest_snapshot}",
-                snapshot=last_synced_snapshot,
-                latest_snapshot=current_snapshot,
-            )
-            inserts, updates, deletes = get_changes(
-                source_path.schema,
-                source_path.table,
-                iceberg_catalog,
-                int(last_synced_snapshot),
-                current_snapshot,
-                tracking_column=version_field,
-                primary_key_columns=tuple(mapper.primary_keys),
-            )
-            # insert/update first
-            total_synced_records += _sync_lazyframe(inserts)
-            if updates is not None:
-                total_synced_records += _sync_lazyframe(updates)
-            # keep deletes out of parallelism for now
-            if deletes is not None:
-                total_synced_records += _sync_deletes(deletes)
-            set_property(
-                source_path.schema,
-                source_path.table,
-                iceberg_catalog,
-                "adapta.cassandra.last-synced-snapshot-id",
-                str(current_snapshot),
-            )
-            for index_model, idx_f_name, idx_iceberg_table, idx_cassandra_table, index_cols in custom_index_models:
-                _sync_custom_index(
-                    index_model=index_model,
-                    idx_field_name=idx_f_name,
-                    idx_iceberg_table=idx_iceberg_table,
-                    idx_cassandra_table=idx_cassandra_table,
-                    index_cols=index_cols,
-                    source_schema=source_path.schema,
-                    source_table=source_path.table,
-                    target_keyspace=target_path.keyspace,
-                    version_field=version_field,
-                    iceberg_catalog=iceberg_catalog,
-                    client=client,
-                    upload_mode=upload_mode,
-                    read_chunk_size=read_chunk_size,
-                    threads=threads,
-                    logger=logger,
-                )
+        logger.info(
+            "Table {target} is already up to date with {source} at snapshot {snapshot}",
+            target=target_path.table,
+            source=source_path.table,
+            snapshot=current_snapshot,
+        )
+        return
+
+    set_property(
+        source_path.schema,
+        source_path.table,
+        iceberg_catalog,
+        "adapta.cassandra.last-synced-snapshot-id",
+        str(current_snapshot),
+    )
+    for index_model, idx_f_name, idx_iceberg_table, idx_cassandra_table, index_cols in custom_index_models:
+        _sync_custom_index(
+            index_model=index_model,
+            idx_field_name=idx_f_name,
+            idx_iceberg_table=idx_iceberg_table,
+            idx_cassandra_table=idx_cassandra_table,
+            index_cols=index_cols,
+            source_schema=source_path.schema,
+            source_table=source_path.table,
+            target_keyspace=target_path.keyspace,
+            version_field=version_field,
+            iceberg_catalog=iceberg_catalog,
+            client=client,
+            upload_mode=upload_mode,
+            read_chunk_size=read_chunk_size,
+            threads=threads,
+            logger=logger,
+        )
 
     logger.info(
         "Table {target} has been successfully synced with {source}, records changed: {records}",
