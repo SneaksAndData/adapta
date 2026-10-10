@@ -192,7 +192,7 @@ def _sync_custom_index(
         from_snapshot_id=idx_previous_snapshot,
         to_snapshot_id=idx_current_snapshot,
         tracking_column=version_field,
-        primary_key_columns=(index_metadata.field_name,),
+        primary_key_columns=tuple(col for col in index_metadata.index_columns if col != version_field),
     )
 
     if idx_inserts is not None:
