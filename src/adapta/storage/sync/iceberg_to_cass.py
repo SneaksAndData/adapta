@@ -26,7 +26,7 @@ class CassandraUploadMode(Enum):
 
 
 def _get_custom_index_models(
-    cassandra_model: type,
+    cassandra_model: type[dataclasses.dataclass],
     source_table: str,
     target_table: str,
     version_field: str,
