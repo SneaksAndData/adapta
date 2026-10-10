@@ -120,14 +120,15 @@ def _sync_custom_index(
     threads: int,
     logger: LoggerInterface,
 ) -> None:
-    logger.info("Reading source table {source_table} for custom index", source_table=source_table)
-    full_source: LazyFrame = load_using_catalog(
-        source_schema,
-        source_table,
-        iceberg_catalog,
-        lazy_read=True,
-    ).to_polars()
-    idx_data = full_source.select(index_metadata.index_columns)
+    def _read_index_data() -> LazyFrame:
+        logger.info("Reading source table {source_table} for custom index", source_table=source_table)
+        full_source: LazyFrame = load_using_catalog(
+            source_schema,
+            source_table,
+            iceberg_catalog,
+            lazy_read=True,
+        ).to_polars()
+        return full_source.select(index_metadata.index_columns)
 
     idx_exists = iceberg_catalog.table_exists(identifier=(source_schema, index_metadata.iceberg_table))
     idx_previous_snapshot = (
@@ -139,7 +140,7 @@ def _sync_custom_index(
         schema_name=source_schema,
         table_name=index_metadata.iceberg_table,
         catalog=iceberg_catalog,
-        data=idx_data,
+        data=_read_index_data(),
         overwrite=True,
     )
 
@@ -172,7 +173,7 @@ def _sync_custom_index(
         logger.info(
             "Syncing index table {cassandra_table} to Cassandra", cassandra_table=index_metadata.cassandra_table
         )
-        _upload_index(idx_data)
+        _upload_index(_read_index_data())
         return
 
     if idx_previous_snapshot == idx_current_snapshot:
