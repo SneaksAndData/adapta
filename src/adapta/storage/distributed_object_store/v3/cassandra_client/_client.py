@@ -645,3 +645,50 @@ class CassandraClient(ABC):
             )
 
         _execute_concurrent()
+
+    def upload_lazyframe(
+        self,
+        source: polars.LazyFrame | polars.DataFrame,
+        table_name: str,
+        entity_type: type[TCassandraModel],
+        keyspace: str | None = None,
+        batch_size: int = 100_000,
+        concurrency: int | None = None,
+    ) -> None:
+        """
+        Uploads a Polars LazyFrame or DataFrame in batches using upsert_concurrent.
+
+        Note: Map type row adjustments (_fix_map_type) are applied for Polars <2 compatibility.
+
+        :param source: Polars LazyFrame or DataFrame to upload.
+        :param table_name: Table to insert entities into.
+        :param entity_type: Entity type to map data model and metadata.
+        :param keyspace: Optional keyspace name, if not provided in the client constructor.
+        :param batch_size: Number of rows per batch to collect and upsert. Defaults to 100,000.
+        :param concurrency: Maximum number of concurrent statements per batch.
+        """
+        lazy_source = source.lazy() if isinstance(source, polars.DataFrame) else source
+
+        def _fix_map_type(entity: dict) -> dict:
+            """Polars <2 remaps map<k, v> to list[{"key": ..., "value": ...}]"""
+            fixed = {}
+            for cell_key, cell_value in entity.items():
+                if (
+                    isinstance(cell_value, list)
+                    and len(cell_value) > 0
+                    and "key" in cell_value[0]
+                    and "value" in cell_value[0]
+                ):
+                    fixed[cell_key] = {a["key"]: a["value"] for a in cell_value}
+                else:
+                    fixed[cell_key] = cell_value
+            return fixed
+
+        for batch in lazy_source.collect_batches(chunk_size=batch_size, maintain_order=False):
+            self.upsert_concurrent(
+                rows=[_fix_map_type(row) for row in batch.to_dicts()],
+                table_name=table_name,
+                entity_type=entity_type,
+                keyspace=keyspace,
+                concurrency=concurrency,
+            )
