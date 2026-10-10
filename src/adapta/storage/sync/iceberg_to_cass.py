@@ -1,13 +1,14 @@
 import dataclasses
+from dataclasses import dataclass
 from enum import Enum
-from typing import Any, final
+from typing import Self, final
 
 from polars import LazyFrame
 from pyiceberg.catalog import Catalog
 
 from adapta.logs import LoggerInterface
 from adapta.process_communication import DataSocket
-from adapta.storage.distributed_object_store.v3.cassandra_client import CassandraClient, get_mapper
+from adapta.storage.distributed_object_store.v3.cassandra_client import CassandraClient, TCassandraModel, get_mapper
 from adapta.storage.iceberg.v1 import (
     get_changes,
     get_current_snapshot,
@@ -25,60 +26,89 @@ class CassandraUploadMode(Enum):
     CONCURRENT_NATIVE = "native"
 
 
-def _get_custom_index_models(
-    cassandra_model: type[dataclasses.dataclass],
-    source_table: str,
-    target_table: str,
-    version_field: str,
-    logger: LoggerInterface,
-) -> list[tuple[Any, str, str, str, list[str]]]:
-    if not dataclasses.is_dataclass(cassandra_model):
-        return []
+@final
+@dataclass
+class CustomIndexMetadata:
+    """
+    Metadata describing a custom index table in Iceberg and Cassandra.
+    """
 
-    model_fields = {f.name: f for f in dataclasses.fields(cassandra_model)}
-    custom_idx_fields = [f for f in dataclasses.fields(cassandra_model) if f.metadata.get("is_custom_index", False)]
-    if not custom_idx_fields:
-        return []
+    index_model: type[TCassandraModel]
+    field_name: str
+    iceberg_table: str
+    cassandra_table: str
+    index_columns: list[str]
 
-    orig_pks = [f for f in dataclasses.fields(cassandra_model) if f.metadata.get("is_primary_key", False)]
-    ver_field = model_fields.get(version_field)
-
-    index_models = []
-    for idx_f in custom_idx_fields:
-        idx_iceberg_table = f"{source_table}__idx_{idx_f.name}"
-        idx_cassandra_table = f"{target_table}__idx_{idx_f.name}"
+    @classmethod
+    def create(
+        cls,
+        base_model: type[dataclass],
+        index_field: dataclasses.Field,
+        source_table: str,
+        target_table: str,
+        version_field: str,
+    ) -> Self:
+        model_fields = {f.name: f for f in dataclasses.fields(base_model)}
+        orig_pks = [f for f in dataclasses.fields(base_model) if f.metadata.get("is_primary_key", False)]
+        ver_field = model_fields.get(version_field)
 
         fields_spec = [
             (
-                idx_f.name,
-                idx_f.type,
+                index_field.name,
+                index_field.type,
                 dataclasses.field(metadata={"is_primary_key": True, "is_partition_key": True}),
             )
         ]
         for pk in orig_pks:
-            if pk.name != idx_f.name:
+            if pk.name != index_field.name:
                 fields_spec.append((pk.name, pk.type, dataclasses.field()))
-        if ver_field and ver_field.name != idx_f.name:
+        if ver_field and ver_field.name != index_field.name:
             fields_spec.append((ver_field.name, ver_field.type, dataclasses.field()))
 
-        index_model = dataclasses.make_dataclass(f"{cassandra_model.__name__}__idx_{idx_f.name}", fields_spec)
+        index_model = dataclasses.make_dataclass(f"{base_model.__name__}__idx_{index_field.name}", fields_spec)
         index_cols = [f[0] for f in fields_spec]
+
+        return cls(
+            index_model=index_model,
+            field_name=index_field.name,
+            iceberg_table=f"{source_table}__idx_{index_field.name}",
+            cassandra_table=f"{target_table}__idx_{index_field.name}",
+            index_columns=index_cols,
+        )
+
+
+def _get_custom_index_models(
+    cassandra_model: type[dataclass],
+    source_table: str,
+    target_table: str,
+    version_field: str,
+    logger: LoggerInterface,
+) -> list[CustomIndexMetadata]:
+    custom_idx_fields = [f for f in dataclasses.fields(cassandra_model) if f.metadata.get("is_custom_index", False)]
+    if not custom_idx_fields:
+        return []
+
+    index_models: list[CustomIndexMetadata] = []
+    for idx_f in custom_idx_fields:
+        idx_meta = CustomIndexMetadata.create(
+            base_model=cassandra_model,
+            index_field=idx_f,
+            source_table=source_table,
+            target_table=target_table,
+            version_field=version_field,
+        )
         logger.info(
             "Identified custom index field {field_name} with columns {columns}",
-            field_name=idx_f.name,
-            columns=index_cols,
+            field_name=idx_meta.field_name,
+            columns=idx_meta.index_columns,
         )
-        index_models.append((index_model, idx_f.name, idx_iceberg_table, idx_cassandra_table, index_cols))
+        index_models.append(idx_meta)
 
     return index_models
 
 
 def _sync_custom_index(
-    index_model: Any,
-    idx_field_name: str,
-    idx_iceberg_table: str,
-    idx_cassandra_table: str,
-    index_cols: list[str],
+    index_metadata: CustomIndexMetadata,
     source_schema: str,
     source_table: str,
     target_keyspace: str,
@@ -97,30 +127,30 @@ def _sync_custom_index(
         iceberg_catalog,
         lazy_read=True,
     ).to_polars()
-    idx_data = full_source.select(index_cols)
+    idx_data = full_source.select(index_metadata.index_columns)
 
-    idx_exists = iceberg_catalog.table_exists(identifier=(source_schema, idx_iceberg_table))
+    idx_exists = iceberg_catalog.table_exists(identifier=(source_schema, index_metadata.iceberg_table))
     idx_previous_snapshot = (
-        get_current_snapshot(source_schema, idx_iceberg_table, iceberg_catalog) if idx_exists else None
+        get_current_snapshot(source_schema, index_metadata.iceberg_table, iceberg_catalog) if idx_exists else None
     )
 
-    logger.info("Writing index data to Iceberg table {iceberg_table}", iceberg_table=idx_iceberg_table)
+    logger.info("Writing index data to Iceberg table {iceberg_table}", iceberg_table=index_metadata.iceberg_table)
     write_using_catalog(
         schema_name=source_schema,
-        table_name=idx_iceberg_table,
+        table_name=index_metadata.iceberg_table,
         catalog=iceberg_catalog,
         data=idx_data,
         overwrite=True,
     )
 
-    idx_current_snapshot = get_current_snapshot(source_schema, idx_iceberg_table, iceberg_catalog)
+    idx_current_snapshot = get_current_snapshot(source_schema, index_metadata.iceberg_table, iceberg_catalog)
 
     def _upload_index(source: LazyFrame) -> None:
         if upload_mode == CassandraUploadMode.CONCURRENT_BATCH:
             client.upload_concurrent_batch(
                 source=source,
-                table_name=idx_cassandra_table,
-                entity_type=index_model,
+                table_name=index_metadata.cassandra_table,
+                entity_type=index_metadata.index_model,
                 keyspace=target_keyspace,
                 batch_size=read_chunk_size,
                 threads=threads,
@@ -129,8 +159,8 @@ def _sync_custom_index(
         if upload_mode == CassandraUploadMode.CONCURRENT_NATIVE:
             client.upload_concurrent_native(
                 source=source,
-                table_name=idx_cassandra_table,
-                entity_type=index_model,
+                table_name=index_metadata.cassandra_table,
+                entity_type=index_metadata.index_model,
                 keyspace=target_keyspace,
                 batch_size=read_chunk_size,
                 threads=threads,
@@ -139,7 +169,9 @@ def _sync_custom_index(
         raise ValueError(f"Unsupported upload mode: {upload_mode}")
 
     if not idx_previous_snapshot:
-        logger.info("Syncing index table {cassandra_table} to Cassandra", cassandra_table=idx_cassandra_table)
+        logger.info(
+            "Syncing index table {cassandra_table} to Cassandra", cassandra_table=index_metadata.cassandra_table
+        )
         _upload_index(idx_data)
         return
 
@@ -148,34 +180,43 @@ def _sync_custom_index(
 
     logger.info(
         "Retrieving changes for index table {iceberg_table} between snapshots {prev_snap} and {curr_snap}",
-        iceberg_table=idx_iceberg_table,
+        iceberg_table=index_metadata.iceberg_table,
         prev_snap=idx_previous_snapshot,
         curr_snap=idx_current_snapshot,
     )
     idx_inserts, idx_updates, idx_deletes = get_changes(
         schema_name=source_schema,
-        table_name=idx_iceberg_table,
+        table_name=index_metadata.iceberg_table,
         catalog=iceberg_catalog,
         from_snapshot_id=idx_previous_snapshot,
         to_snapshot_id=idx_current_snapshot,
         tracking_column=version_field,
-        primary_key_columns=(idx_field_name,),
+        primary_key_columns=(index_metadata.field_name,),
     )
 
     if idx_inserts is not None:
-        logger.info("Syncing index inserts to Cassandra table {cassandra_table}", cassandra_table=idx_cassandra_table)
+        logger.info(
+            "Syncing index inserts to Cassandra table {cassandra_table}",
+            cassandra_table=index_metadata.cassandra_table,
+        )
         _upload_index(idx_inserts)
 
     if idx_updates is not None:
-        logger.info("Syncing index updates to Cassandra table {cassandra_table}", cassandra_table=idx_cassandra_table)
+        logger.info(
+            "Syncing index updates to Cassandra table {cassandra_table}",
+            cassandra_table=index_metadata.cassandra_table,
+        )
         _upload_index(idx_updates)
 
     if idx_deletes is not None:
-        logger.info("Syncing index deletes to Cassandra table {cassandra_table}", cassandra_table=idx_cassandra_table)
+        logger.info(
+            "Syncing index deletes to Cassandra table {cassandra_table}",
+            cassandra_table=index_metadata.cassandra_table,
+        )
         client.delete_batch_concurrent(
             source=idx_deletes,
-            table_name=idx_cassandra_table,
-            entity_type=index_model,
+            table_name=index_metadata.cassandra_table,
+            entity_type=index_metadata.index_model,
             keyspace=target_keyspace,
             batch_size=read_chunk_size,
             threads=threads,
@@ -309,13 +350,9 @@ def sync_iceberg_to_cassandra(
         "adapta.cassandra.last-synced-snapshot-id",
         str(current_snapshot),
     )
-    for index_model, idx_f_name, idx_iceberg_table, idx_cassandra_table, index_cols in custom_index_models:
+    for idx_meta in custom_index_models:
         _sync_custom_index(
-            index_model=index_model,
-            idx_field_name=idx_f_name,
-            idx_iceberg_table=idx_iceberg_table,
-            idx_cassandra_table=idx_cassandra_table,
-            index_cols=index_cols,
+            index_metadata=idx_meta,
             source_schema=source_path.schema,
             source_table=source_path.table,
             target_keyspace=target_path.keyspace,
