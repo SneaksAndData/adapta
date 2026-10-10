@@ -589,9 +589,7 @@ class CassandraClient(ABC):
         table_name: str,
         entity_type: type[TCassandraModel],
         keyspace: str | None = None,
-        concurrency: int = 100,
-        raise_on_first_error: bool = True,
-        execution_profile: Any = EXEC_PROFILE_DEFAULT,
+        concurrency: int | None = None,
     ) -> None:
         """
         Upserts rows concurrently using cassandra.concurrent.execute_concurrent.
@@ -600,9 +598,7 @@ class CassandraClient(ABC):
         :param table_name: Table to insert entities into.
         :param entity_type: Entity type to map data model and metadata.
         :param keyspace: Optional keyspace name, if not provided in the client constructor.
-        :param concurrency: Maximum number of concurrent statements. Defaults to 100.
-        :param raise_on_first_error: If True, raise exception on first error.
-        :param execution_profile: Execution profile for cassandra driver.
+        :param concurrency: Maximum number of concurrent statements. Defaults to cpu_count * 2.
         """
         assert self._session is not None, (
             "Please instantiate an CassandraClient using with CassandraClient(...) before calling this method"
@@ -631,6 +627,8 @@ class CassandraClient(ABC):
         query = f"INSERT INTO {table_identifier} ({columns_str}) VALUES ({placeholders});"
         prepared_stmt = self._session.prepare(query)
 
+        concurrency = concurrency or (os.cpu_count() or 1) * 2
+
         @on_exception(
             wait_gen=expo,
             exception=(OverloadedErrorMessage, IsBootstrappingErrorMessage, WriteTimeout, WriteFailure),
@@ -644,8 +642,6 @@ class CassandraClient(ABC):
                 self._session,
                 statements_and_params,
                 concurrency=concurrency,
-                raise_on_first_error=raise_on_first_error,
-                execution_profile=execution_profile,
             )
 
         _execute_concurrent()
