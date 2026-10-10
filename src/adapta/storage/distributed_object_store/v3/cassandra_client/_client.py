@@ -586,24 +586,22 @@ class CassandraClient(ABC):
     def upsert_concurrent(
         self,
         rows: list[dict],
-        table_name: str | None = None,
-        entity_type: type[TCassandraModel] | None = None,
+        table_name: str,
+        entity_type: type[TCassandraModel],
         keyspace: str | None = None,
-        concurrency: int | None = None,
+        concurrency: int = 100,
         raise_on_first_error: bool = True,
-        time_to_live: int | None = None,
         execution_profile: Any = EXEC_PROFILE_DEFAULT,
-    ) -> list[tuple[bool, Any]]:
+    ) -> None:
         """
         Upserts rows concurrently using cassandra.concurrent.execute_concurrent.
 
         :param rows: List of dictionaries representing rows to upsert.
         :param table_name: Table to insert entities into.
-        :param entity_type: Optional entity type to infer table_name or metadata.
+        :param entity_type: Entity type to map data model and metadata.
         :param keyspace: Optional keyspace name, if not provided in the client constructor.
-        :param concurrency: Maximum number of concurrent statements. Defaults to client configuration's max_requests_per_connection.
+        :param concurrency: Maximum number of concurrent statements. Defaults to 100.
         :param raise_on_first_error: If True, raise exception on first error.
-        :param time_to_live: Time to live in seconds for the inserted entities.
         :param execution_profile: Execution profile for cassandra driver.
         """
         assert self._session is not None, (
@@ -611,29 +609,26 @@ class CassandraClient(ABC):
         )
 
         if not rows:
-            return []
+            return
+
+        if isinstance(table_name, type) and isinstance(entity_type, str):
+            table_name, entity_type = entity_type, table_name
 
         target_keyspace = keyspace or self._keyspace
-        target_table_name = table_name
 
-        if entity_type:
-            cassandra_mapper = get_mapper(
-                data_model=entity_type,
-                table_name=table_name,
-                keyspace=target_keyspace,
-            )
-            target_table_name = target_table_name or cassandra_mapper.table_name
-
-        if not target_table_name:
-            raise ValueError("table_name or entity_type must be provided")
+        cassandra_mapper = get_mapper(
+            data_model=entity_type,
+            table_name=table_name,
+            keyspace=target_keyspace,
+        )
+        target_table_name = table_name or cassandra_mapper.table_name
 
         table_identifier = f"{target_keyspace}.{target_table_name}" if target_keyspace else target_table_name
 
-        columns = list(rows[0].keys())
+        columns = cassandra_mapper.column_names
         columns_str = ", ".join(columns)
         placeholders = ", ".join(["?" for _ in columns])
-        ttl_clause = f" USING TTL {int(time_to_live)}" if time_to_live is not None else ""
-        query = f"INSERT INTO {table_identifier} ({columns_str}) VALUES ({placeholders}){ttl_clause};"
+        query = f"INSERT INTO {table_identifier} ({columns_str}) VALUES ({placeholders});"
         prepared_stmt = self._session.prepare(query)
 
         @on_exception(
@@ -645,12 +640,12 @@ class CassandraClient(ABC):
         )
         def _execute_concurrent():
             statements_and_params = [(prepared_stmt, tuple(row.get(col) for col in columns)) for row in rows]
-            return execute_concurrent(
+            execute_concurrent(
                 self._session,
                 statements_and_params,
-                concurrency=concurrency or self._client_config.max_requests_per_connection,
+                concurrency=concurrency,
                 raise_on_first_error=raise_on_first_error,
                 execution_profile=execution_profile,
             )
 
-        return _execute_concurrent()
+        _execute_concurrent()

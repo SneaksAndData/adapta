@@ -1,4 +1,3 @@
-import os
 from dataclasses import dataclass
 from typing import Any, Self, final
 
@@ -21,7 +20,6 @@ class CassandraClientConfiguration:
     log_transient_errors: Whether to log errors that can be resolved via exp backoff retries.
     metadata_fetch_timeout_s: Timeout in seconds for the driver’s HTTP call to get cluster metadata from Astra DB. Defaults to 30s up fromf factory default of 5 seconds.
     protocol_version: Cassandra protocol version to use. Defaults to the latest version supported by the driver.
-    max_requests_per_connection: Maximum number of concurrent requests per connection. Defaults to cpu_count * 2.
 
     """
 
@@ -35,7 +33,6 @@ class CassandraClientConfiguration:
     metadata_fetch_timeout_s: int
     protocol_version: Any
     connection_class: Any
-    max_requests_per_connection: int = (os.cpu_count() or 1) * 2
 
     @classmethod
     def default(cls) -> Self:
@@ -50,7 +47,6 @@ class CassandraClientConfiguration:
             metadata_fetch_timeout_s=30,
             protocol_version=_NOT_SET,
             connection_class=DefaultConnection,
-            max_requests_per_connection=(os.cpu_count() or 1) * 2,
         )
 
     @classmethod
@@ -66,5 +62,4 @@ class CassandraClientConfiguration:
             metadata_fetch_timeout_s=30,
             protocol_version=ProtocolVersion.V4,
             connection_class=DefaultConnection,
-            max_requests_per_connection=(os.cpu_count() or 1) * 2,
         )
