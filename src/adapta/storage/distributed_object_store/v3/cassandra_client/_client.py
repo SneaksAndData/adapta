@@ -351,7 +351,7 @@ class CassandraClient(ABC):
             )
 
         assert self._session is not None, (
-            "Please instantiate an CassandraClient using with CassandraClient(...) before calling this method"
+            "Please connect to Cassandra using connect() or with CassandraClient(...) before calling this method"
         )
 
         cassandra_model_mapper = get_mapper(
@@ -624,14 +624,11 @@ class CassandraClient(ABC):
         :param concurrency: Maximum number of concurrent statements. Defaults to cpu_count * 2.
         """
         assert self._session is not None, (
-            "Please instantiate an CassandraClient using with CassandraClient(...) before calling this method"
+            "Please connect to Cassandra using connect() or with CassandraClient(...) before calling this method"
         )
 
         if not rows:
             return
-
-        if isinstance(table_name, type) and isinstance(entity_type, str):
-            table_name, entity_type = entity_type, table_name
 
         target_keyspace = keyspace or self._keyspace
 
