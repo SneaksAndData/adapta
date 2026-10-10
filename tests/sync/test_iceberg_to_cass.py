@@ -46,6 +46,14 @@ class SyncMapItem:
     metadata: dict[str, str]
 
 
+@dataclass
+class SyncItemWithCustomIndex:
+    id: str = field(metadata={"is_primary_key": True, "is_partition_key": True})
+    category: str = field(metadata={"is_custom_index": True})
+    name: str
+    value: int
+
+
 @pytest.fixture(scope="module")
 def cassandra_keyspace():
     cluster = Cluster(contact_points=["127.0.0.1"], port=9042)
@@ -597,3 +605,80 @@ def test_sync_iceberg_to_cassandra_map_type(
         }
     ).sort("id")
     assert_frame_equal(synced_records, expected_records, check_column_order=False)
+
+
+def test_sync_iceberg_to_cassandra_custom_index(
+    cassandra_client: VanillaCassandraClient,
+    cassandra_keyspace: str,
+    iceberg_catalog: Catalog,
+    logger: SemanticLogger,
+):
+    iceberg_table_name, cassandra_table_name = _get_table_names()
+
+    initial_data = polars.DataFrame(
+        {
+            "id": ["1", "2", "3"],
+            "category": ["cat_a", "cat_b", "cat_c"],
+            "name": ["alice", "bob", "charlie"],
+            "value": [10, 20, 30],
+        }
+    )
+    write_using_catalog(
+        schema_name="test",
+        table_name=iceberg_table_name,
+        catalog=iceberg_catalog,
+        data=initial_data,
+        overwrite=True,
+    )
+
+    cassandra_client.create_table(SyncItemWithCustomIndex, cassandra_table_name, cassandra_keyspace)
+
+    iceberg_source = DataSocket(
+        alias="source",
+        data_path=f"iceberg://test@{iceberg_table_name}",
+        data_format="iceberg",
+    )
+    cassandra_target = DataSocket(
+        alias="target",
+        data_path=f"cass+tests.sync.test_iceberg_to_cass.SyncItemWithCustomIndex://{cassandra_keyspace}@{cassandra_table_name}",
+        data_format="cassandra",
+    )
+
+    sync_iceberg_to_cassandra(
+        iceberg_catalog=iceberg_catalog,
+        client=cassandra_client,
+        iceberg_source=iceberg_source,
+        version_field="value",
+        cassandra_target=cassandra_target,
+        read_chunk_size=2,
+        logger=logger,
+        threads=4,
+    )
+
+    # Validate base Cassandra table
+    synced_records = (
+        cassandra_client.get_entities_raw(f"SELECT * FROM {cassandra_keyspace}.{cassandra_table_name};")
+        .to_polars()
+        .sort("id")
+    )
+    assert_frame_equal(synced_records, initial_data, check_column_order=False)
+
+    # Validate index Iceberg table exists
+    idx_iceberg_table = f"{iceberg_table_name}__idx_category"
+    assert iceberg_catalog.table_exists(identifier=("test", idx_iceberg_table))
+
+    # Validate index Cassandra table exists and data matches
+    idx_cassandra_table = f"{cassandra_table_name}__idx_category"
+    synced_idx_records = (
+        cassandra_client.get_entities_raw(f"SELECT * FROM {cassandra_keyspace}.{idx_cassandra_table};")
+        .to_polars()
+        .sort("category")
+    )
+    expected_idx_records = polars.DataFrame(
+        {
+            "category": ["cat_a", "cat_b", "cat_c"],
+            "id": ["1", "2", "3"],
+            "value": [10, 20, 30],
+        }
+    ).sort("category")
+    assert_frame_equal(synced_idx_records, expected_idx_records, check_column_order=False)
