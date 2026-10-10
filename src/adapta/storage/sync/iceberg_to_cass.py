@@ -1,4 +1,5 @@
-import uuid
+from enum import Enum
+from typing import final
 
 from polars import LazyFrame
 from pyiceberg.catalog import Catalog
@@ -15,8 +16,12 @@ from adapta.storage.iceberg.v1 import (
     set_property,
 )
 from adapta.storage.models import CassandraPath, IcebergPath
-from adapta.utils import run_time_metrics
-from adapta.utils.concurrent_task_runner import ConcurrentTaskRunner, Executable
+
+
+@final
+class CassandraUploadMode(Enum):
+    CONCURRENT_BATCH = "batch"
+    CONCURRENT_NATIVE = "native"
 
 
 def sync_iceberg_to_cassandra(
@@ -29,96 +34,56 @@ def sync_iceberg_to_cassandra(
     logger: LoggerInterface,
     metrics: MetricsProvider,
     threads: int,
+    upload_mode: CassandraUploadMode = CassandraUploadMode.CONCURRENT_BATCH,
 ) -> None:
     """
     Synchronizes data from the provided Iceberg source to Cassandra target table. Assumes schemas are compatible.
+
+    When uploading a lot of rows, use exec profile with high requests/connection for Cassandra client.
+
+    profile = ExecutionProfile(
+        request_timeout=30.0,
+        max_requests_per_connection=2048  # Allows thousands of individual async writes on one connection
+    )
+
     """
-
-    def _fix_map_type(entity: dict) -> dict:
-        """Polars remaps map<k, v> to list[{"key": ..., "value": ...}]"""
-        fixed = {}
-        for cell_key, cell_value in entity.items():
-            if (
-                isinstance(cell_value, list)
-                and len(cell_value) > 0
-                and "key" in cell_value[0]
-                and "value" in cell_value[0]
-            ):
-                fixed[cell_key] = {a["key"]: a["value"] for a in cell_value}
-            else:
-                fixed[cell_key] = cell_value
-        return fixed
-
-    def _sync_lazyframe(source: LazyFrame) -> int:
-        @run_time_metrics(metric_name="adapta.cassandra.iceberg_batch_upsert_duration")
-        def _upsert_with_metric(entities: list[dict], **kwargs) -> int:
-            client.upsert_batch(
-                entities=entities,
-                entity_type=kwargs["entity_type"],
-                keyspace=kwargs["keyspace"],
-                table_name=kwargs["table_name"],
-                batch_size=kwargs["batch_size"],
-            )
-            kwargs["logger"].info("Upserted {rows} rows", rows=len(entities))
-            return len(entities)
-
-        ctr = ConcurrentTaskRunner[int](
-            [
-                Executable(
-                    _upsert_with_metric,
-                    str(uuid.uuid4()),
-                    kwargs={
-                        "entities": [_fix_map_type(batch_row) for batch_row in source_batch.to_dicts()],
-                        "entity_type": cassandra_model,
-                        "keyspace": target_path.keyspace,
-                        "table_name": target_path.table,
-                        "batch_size": source_batch.height,
-                        "metrics_provider": metrics,
-                        "logger": logger,
-                    },
-                )
-                for source_batch in source.collect_batches(chunk_size=read_chunk_size, maintain_order=False)
-            ],
-            num_threads=threads,
-        )
-        return sum([rows_synced for _, rows_synced in ctr.eager().items()])
-
-    def _sync_deletes_from_lazyframe(source: LazyFrame, primary_keys: list[str]) -> int:
-        @run_time_metrics(metric_name="adapta.cassandra.iceberg_batch_upsert_duration")
-        def _delete_with_metric(entities: list[dict], **kwargs) -> int:
-            for entity in entities:
-                client.delete_entity_by_key(
-                    model=kwargs["entity_type"],
-                    primary_keys={key: entity[key] for key in primary_keys},
-                    keyspace=kwargs["keyspace"],
-                    table_name=kwargs["table_name"],
-                )
-            kwargs["logger"].info("Deleted {rows} rows", rows=len(entities))
-            return len(entities)
-
-        ctr = ConcurrentTaskRunner[int](
-            [
-                Executable(
-                    _delete_with_metric,
-                    str(uuid.uuid4()),
-                    kwargs={
-                        "entities": [_fix_map_type(batch_row) for batch_row in source_batch.to_dicts()],
-                        "entity_type": cassandra_model,
-                        "keyspace": target_path.keyspace,
-                        "table_name": target_path.table,
-                        "metrics_provider": metrics,
-                        "logger": logger,
-                    },
-                )
-                for source_batch in source.collect_batches(chunk_size=read_chunk_size, maintain_order=False)
-            ],
-            num_threads=threads,
-        )
-        return sum([rows_synced for _, rows_synced in ctr.eager().items()])
 
     source_path: IcebergPath = iceberg_source.parse_data_path()
     target_path: CassandraPath = cassandra_target.parse_data_path()
     cassandra_model = target_path.model_class()
+
+    client._logger = logger
+    client._metrics_provider = metrics
+
+    def _sync_lazyframe(source: LazyFrame) -> int:
+        if upload_mode == CassandraUploadMode.CONCURRENT_BATCH:
+            return client.upload_concurrent_batch(
+                source=source,
+                table_name=target_path.table,
+                entity_type=cassandra_model,
+                keyspace=target_path.keyspace,
+                batch_size=read_chunk_size,
+                threads=threads,
+            )
+        if upload_mode == CassandraUploadMode.CONCURRENT_NATIVE:
+            return client.upload_concurrent_native(
+                source=source,
+                table_name=target_path.table,
+                entity_type=cassandra_model,
+                keyspace=target_path.keyspace,
+                batch_size=read_chunk_size,
+            )
+        raise ValueError(f"Unsupported upload mode: {upload_mode}")
+
+    def _sync_deletes(source: LazyFrame) -> int:
+        return client.delete_batch_concurrent(
+            source=source,
+            table_name=target_path.table,
+            entity_type=cassandra_model,
+            keyspace=target_path.keyspace,
+            batch_size=read_chunk_size,
+            threads=threads,
+        )
 
     logger.info(
         "Running incremental sync to table {sync_to_table}. Looking for changes to sync.",
@@ -173,7 +138,7 @@ def sync_iceberg_to_cassandra(
                 total_synced_records += _sync_lazyframe(updates)
             # keep deletes out of parallelism for now
             if deletes is not None:
-                total_synced_records += _sync_deletes_from_lazyframe(deletes, mapper.primary_keys)
+                total_synced_records += _sync_deletes(deletes)
             set_property(
                 source_path.schema,
                 source_path.table,

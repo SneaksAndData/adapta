@@ -45,13 +45,16 @@ from cassandra.query import dict_factory
 from polars.exceptions import ComputeError
 
 import adapta
+from adapta.logs import LoggerInterface, VoidLogger
+from adapta.metrics import MetricsProvider
+from adapta.metrics.providers.void_provider import VoidMetricsProvider
 from adapta.storage.distributed_object_store.v3.cassandra_client._client_configuration import (
     CassandraClientConfiguration,
 )
 from adapta.storage.models.enum import QueryEnabledStoreOptions
 from adapta.storage.models.expression_dsl.cassandra_filter_expression import CassandraFilterExpression
 from adapta.storage.models.expression_dsl.filter_expression import Expression, compile_expression
-from adapta.utils import chunk_list, rate_limit
+from adapta.utils import chunk_list, rate_limit, run_time_metrics
 from adapta.utils.concurrent_task_runner import ConcurrentTaskRunner, Executable
 from adapta.utils.metaframe import MetaFrame, concat
 
@@ -73,10 +76,17 @@ class CassandraClient(ABC):
     """Generic Cassandra client"""
 
     def __init__(
-        self, client_name: str, keyspace: str | None, client_config: CassandraClientConfiguration | None
+        self,
+        client_name: str,
+        keyspace: str | None,
+        client_config: CassandraClientConfiguration | None = None,
+        logger: LoggerInterface | None = None,
+        metrics_provider: MetricsProvider | None = None,
     ) -> None:
         self._client_name = client_name
         self._keyspace = keyspace
+        self._logger = logger or VoidLogger()
+        self._metrics_provider = metrics_provider or VoidMetricsProvider()
         self._session: Session | None = None
         self._cluster: Cluster | None = None
         self._snake_pattern = re.compile(r"(?<!^)(?=[A-Z])")
@@ -659,7 +669,7 @@ class CassandraClient(ABC):
 
         _execute_concurrent()
 
-    def upload_lazyframe(
+    def upload_concurrent_native(
         self,
         source: polars.LazyFrame | polars.DataFrame,
         table_name: str,
@@ -683,21 +693,35 @@ class CassandraClient(ABC):
         """
         lazy_source = source.lazy() if isinstance(source, polars.DataFrame) else source
 
+        @run_time_metrics(metric_name="adapta.cassandra.iceberg_batch_upsert_duration")
+        def _upsert_with_metric(entities: list[dict], **kwargs) -> int:
+            self.upsert_concurrent(
+                rows=entities,
+                table_name=kwargs["table_name"],
+                entity_type=kwargs["entity_type"],
+                keyspace=kwargs["keyspace"],
+                concurrency=kwargs.get("concurrency"),
+            )
+            self._logger.info("Upserted {rows} rows", rows=len(entities))
+            return len(entities)
+
         total_rows = 0
         for batch in lazy_source.collect_batches(chunk_size=batch_size, maintain_order=False):
             rows = [_fix_map_type(row) for row in batch.to_dicts()]
-            self.upsert_concurrent(
-                rows=rows,
+            _upsert_with_metric(
+                rows,
                 table_name=table_name,
                 entity_type=entity_type,
                 keyspace=keyspace,
                 concurrency=concurrency,
+                metrics_provider=self._metrics_provider,
+                logger=self._logger,
             )
             total_rows += len(rows)
 
         return total_rows
 
-    def upsert_batch_concurrent(
+    def upload_concurrent_batch(
         self,
         source: polars.LazyFrame | polars.DataFrame,
         table_name: str,
@@ -720,7 +744,8 @@ class CassandraClient(ABC):
         """
         lazy_source = source.lazy() if isinstance(source, polars.DataFrame) else source
 
-        def _upsert(entities: list[dict], **kwargs) -> int:
+        @run_time_metrics(metric_name="adapta.cassandra.iceberg_batch_upsert_duration")
+        def _upsert_with_metric(entities: list[dict], **kwargs) -> int:
             self.upsert_batch(
                 entities=entities,
                 entity_type=kwargs["entity_type"],
@@ -728,12 +753,13 @@ class CassandraClient(ABC):
                 table_name=kwargs["table_name"],
                 batch_size=kwargs["batch_size"],
             )
+            self._logger.info("Upserted {rows} rows", rows=len(entities))
             return len(entities)
 
         ctr = ConcurrentTaskRunner[int](
             [
                 Executable(
-                    _upsert,
+                    _upsert_with_metric,
                     str(uuid.uuid4()),
                     kwargs={
                         "entities": [_fix_map_type(batch_row) for batch_row in source_batch.to_dicts()],
@@ -741,6 +767,8 @@ class CassandraClient(ABC):
                         "keyspace": keyspace or self._keyspace,
                         "table_name": table_name,
                         "batch_size": source_batch.height,
+                        "metrics_provider": self._metrics_provider,
+                        "logger": self._logger,
                     },
                 )
                 for source_batch in lazy_source.collect_batches(chunk_size=batch_size, maintain_order=False)
@@ -780,7 +808,8 @@ class CassandraClient(ABC):
         )
         primary_keys = cassandra_mapper.primary_keys
 
-        def _delete(entities: list[dict], **kwargs) -> int:
+        @run_time_metrics(metric_name="adapta.cassandra.iceberg_batch_upsert_duration")
+        def _delete_with_metric(entities: list[dict], **kwargs) -> int:
             for entity in entities:
                 self.delete_entity_by_key(
                     model=kwargs["entity_type"],
@@ -788,12 +817,13 @@ class CassandraClient(ABC):
                     keyspace=kwargs["keyspace"],
                     table_name=kwargs["table_name"],
                 )
+            self._logger.info("Deleted {rows} rows", rows=len(entities))
             return len(entities)
 
         ctr = ConcurrentTaskRunner[int](
             [
                 Executable(
-                    _delete,
+                    _delete_with_metric,
                     str(uuid.uuid4()),
                     kwargs={
                         "entities": [_fix_map_type(batch_row) for batch_row in source_batch.to_dicts()],
@@ -801,6 +831,8 @@ class CassandraClient(ABC):
                         "keyspace": target_keyspace,
                         "table_name": table_name,
                         "primary_keys": primary_keys,
+                        "metrics_provider": self._metrics_provider,
+                        "logger": self._logger,
                     },
                 )
                 for source_batch in lazy_source.collect_batches(chunk_size=batch_size, maintain_order=False)
