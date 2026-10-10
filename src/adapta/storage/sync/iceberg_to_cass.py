@@ -2,7 +2,6 @@ import dataclasses
 from enum import Enum
 from typing import Any, final
 
-import polars
 from polars import LazyFrame
 from pyiceberg.catalog import Catalog
 
@@ -74,144 +73,107 @@ def _get_custom_index_models(
     return index_models
 
 
-def _sync_custom_index_full(
+def _sync_custom_index(
     index_model: Any,
+    idx_field_name: str,
     idx_iceberg_table: str,
     idx_cassandra_table: str,
+    index_cols: list[str],
     source_schema: str,
+    source_table: str,
     target_keyspace: str,
+    version_field: str,
     iceberg_catalog: Catalog,
     client: CassandraClient,
     upload_mode: CassandraUploadMode,
     read_chunk_size: int,
     threads: int,
     logger: LoggerInterface,
-    data: LazyFrame,
 ) -> None:
+    logger.info("Reading source table {source_table} for custom index", source_table=source_table)
+    full_source: LazyFrame = load_using_catalog(
+        source_schema,
+        source_table,
+        iceberg_catalog,
+        lazy_read=True,
+    ).to_polars()
+    idx_data = full_source.select(index_cols)
+
+    idx_exists = iceberg_catalog.table_exists(identifier=(source_schema, idx_iceberg_table))
+    idx_previous_snapshot = (
+        get_current_snapshot(source_schema, idx_iceberg_table, iceberg_catalog) if idx_exists else None
+    )
+
     logger.info("Writing index data to Iceberg table {iceberg_table}", iceberg_table=idx_iceberg_table)
     write_using_catalog(
         schema_name=source_schema,
         table_name=idx_iceberg_table,
         catalog=iceberg_catalog,
-        data=data,
+        data=idx_data,
         overwrite=True,
     )
 
-    logger.info("Syncing index table {cassandra_table} to Cassandra", cassandra_table=idx_cassandra_table)
-    if upload_mode == CassandraUploadMode.CONCURRENT_BATCH:
-        client.upload_concurrent_batch(
-            source=data,
-            table_name=idx_cassandra_table,
-            entity_type=index_model,
-            keyspace=target_keyspace,
-            batch_size=read_chunk_size,
-            threads=threads,
-        )
-    elif upload_mode == CassandraUploadMode.CONCURRENT_NATIVE:
-        client.upload_concurrent_native(
-            source=data,
-            table_name=idx_cassandra_table,
-            entity_type=index_model,
-            keyspace=target_keyspace,
-            batch_size=read_chunk_size,
-            threads=threads,
-        )
+    idx_current_snapshot = get_current_snapshot(source_schema, idx_iceberg_table, iceberg_catalog)
 
-
-def _sync_custom_index_incremental(
-    index_model: Any,
-    idx_field_name: str,
-    idx_iceberg_table: str,
-    idx_cassandra_table: str,
-    source_schema: str,
-    target_keyspace: str,
-    iceberg_catalog: Catalog,
-    client: CassandraClient,
-    upload_mode: CassandraUploadMode,
-    read_chunk_size: int,
-    threads: int,
-    logger: LoggerInterface,
-    inserts: LazyFrame | None = None,
-    updates: LazyFrame | None = None,
-    deletes: LazyFrame | None = None,
-) -> None:
-    idx_upsert_dfs = [df for df in [inserts, updates] if df is not None]
-    if idx_upsert_dfs:
-        idx_upserts = polars.concat(idx_upsert_dfs)
-        logger.info(
-            "Writing incremental updates to Iceberg index table {iceberg_table}",
-            iceberg_table=idx_iceberg_table,
-        )
-        write_using_catalog(
-            schema_name=source_schema,
-            table_name=idx_iceberg_table,
-            catalog=iceberg_catalog,
-            data=idx_upserts,
-            overwrite=False,
-            merge_columns=[idx_field_name],
-        )
-
-    if deletes is not None:
-        del_rows = deletes.collect().to_dicts()
-        if del_rows:
-            logger.info(
-                "Deleting {count} rows from Iceberg index table {iceberg_table}",
-                count=len(del_rows),
-                iceberg_table=idx_iceberg_table,
+    def _upload_index(source: LazyFrame) -> None:
+        if upload_mode == CassandraUploadMode.CONCURRENT_BATCH:
+            client.upload_concurrent_batch(
+                source=source,
+                table_name=idx_cassandra_table,
+                entity_type=index_model,
+                keyspace=target_keyspace,
+                batch_size=read_chunk_size,
+                threads=threads,
             )
-            idx_iceberg_tbl = iceberg_catalog.load_table(identifier=(source_schema, idx_iceberg_table))
-            for del_row in del_rows:
-                val = del_row[idx_field_name]
-                del_expr = f"{idx_field_name} = '{val}'" if isinstance(val, str) else f"{idx_field_name} = {val}"
-                idx_iceberg_tbl.delete(del_expr)
+            return
+        if upload_mode == CassandraUploadMode.CONCURRENT_NATIVE:
+            client.upload_concurrent_native(
+                source=source,
+                table_name=idx_cassandra_table,
+                entity_type=index_model,
+                keyspace=target_keyspace,
+                batch_size=read_chunk_size,
+                threads=threads,
+            )
+            return
+        raise ValueError(f"Unsupported upload mode: {upload_mode}")
 
-    # Sync changes to Cassandra
-    if inserts is not None:
+    if not idx_previous_snapshot:
+        logger.info("Syncing index table {cassandra_table} to Cassandra", cassandra_table=idx_cassandra_table)
+        _upload_index(idx_data)
+        return
+
+    if idx_previous_snapshot == idx_current_snapshot:
+        return
+
+    logger.info(
+        "Retrieving changes for index table {iceberg_table} between snapshots {prev_snap} and {curr_snap}",
+        iceberg_table=idx_iceberg_table,
+        prev_snap=idx_previous_snapshot,
+        curr_snap=idx_current_snapshot,
+    )
+    idx_inserts, idx_updates, idx_deletes = get_changes(
+        schema_name=source_schema,
+        table_name=idx_iceberg_table,
+        catalog=iceberg_catalog,
+        from_snapshot_id=idx_previous_snapshot,
+        to_snapshot_id=idx_current_snapshot,
+        tracking_column=version_field,
+        primary_key_columns=(idx_field_name,),
+    )
+
+    if idx_inserts is not None:
         logger.info("Syncing index inserts to Cassandra table {cassandra_table}", cassandra_table=idx_cassandra_table)
-        if upload_mode == CassandraUploadMode.CONCURRENT_BATCH:
-            client.upload_concurrent_batch(
-                source=inserts,
-                table_name=idx_cassandra_table,
-                entity_type=index_model,
-                keyspace=target_keyspace,
-                batch_size=read_chunk_size,
-                threads=threads,
-            )
-        elif upload_mode == CassandraUploadMode.CONCURRENT_NATIVE:
-            client.upload_concurrent_native(
-                source=inserts,
-                table_name=idx_cassandra_table,
-                entity_type=index_model,
-                keyspace=target_keyspace,
-                batch_size=read_chunk_size,
-                threads=threads,
-            )
+        _upload_index(idx_inserts)
 
-    if updates is not None:
+    if idx_updates is not None:
         logger.info("Syncing index updates to Cassandra table {cassandra_table}", cassandra_table=idx_cassandra_table)
-        if upload_mode == CassandraUploadMode.CONCURRENT_BATCH:
-            client.upload_concurrent_batch(
-                source=updates,
-                table_name=idx_cassandra_table,
-                entity_type=index_model,
-                keyspace=target_keyspace,
-                batch_size=read_chunk_size,
-                threads=threads,
-            )
-        elif upload_mode == CassandraUploadMode.CONCURRENT_NATIVE:
-            client.upload_concurrent_native(
-                source=updates,
-                table_name=idx_cassandra_table,
-                entity_type=index_model,
-                keyspace=target_keyspace,
-                batch_size=read_chunk_size,
-                threads=threads,
-            )
+        _upload_index(idx_updates)
 
-    if deletes is not None:
+    if idx_deletes is not None:
         logger.info("Syncing index deletes to Cassandra table {cassandra_table}", cassandra_table=idx_cassandra_table)
         client.delete_batch_concurrent(
-            source=deletes,
+            source=idx_deletes,
             table_name=idx_cassandra_table,
             entity_type=index_model,
             keyspace=target_keyspace,
@@ -315,20 +277,23 @@ def sync_iceberg_to_cassandra(
             "adapta.cassandra.last-synced-snapshot-id",
             str(current_snapshot),
         )
-        for index_model, _, idx_iceberg_table, idx_cassandra_table, index_cols in custom_index_models:
-            _sync_custom_index_full(
+        for index_model, idx_f_name, idx_iceberg_table, idx_cassandra_table, index_cols in custom_index_models:
+            _sync_custom_index(
                 index_model=index_model,
+                idx_field_name=idx_f_name,
                 idx_iceberg_table=idx_iceberg_table,
                 idx_cassandra_table=idx_cassandra_table,
+                index_cols=index_cols,
                 source_schema=source_path.schema,
+                source_table=source_path.table,
                 target_keyspace=target_path.keyspace,
+                version_field=version_field,
                 iceberg_catalog=iceberg_catalog,
                 client=client,
                 upload_mode=upload_mode,
                 read_chunk_size=read_chunk_size,
                 threads=threads,
                 logger=logger,
-                data=source_data.select(index_cols),
             )
     else:
         current_snapshot = get_current_snapshot(source_path.schema, source_path.table, iceberg_catalog)
@@ -362,22 +327,22 @@ def sync_iceberg_to_cassandra(
                 str(current_snapshot),
             )
             for index_model, idx_f_name, idx_iceberg_table, idx_cassandra_table, index_cols in custom_index_models:
-                _sync_custom_index_incremental(
+                _sync_custom_index(
                     index_model=index_model,
                     idx_field_name=idx_f_name,
                     idx_iceberg_table=idx_iceberg_table,
                     idx_cassandra_table=idx_cassandra_table,
+                    index_cols=index_cols,
                     source_schema=source_path.schema,
+                    source_table=source_path.table,
                     target_keyspace=target_path.keyspace,
+                    version_field=version_field,
                     iceberg_catalog=iceberg_catalog,
                     client=client,
                     upload_mode=upload_mode,
                     read_chunk_size=read_chunk_size,
                     threads=threads,
                     logger=logger,
-                    inserts=inserts.select(index_cols),
-                    updates=updates.select(index_cols) if updates is not None else None,
-                    deletes=deletes.select(index_cols) if deletes is not None else None,
                 )
 
     logger.info(

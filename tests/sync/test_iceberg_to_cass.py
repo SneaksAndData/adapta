@@ -691,3 +691,45 @@ def test_sync_iceberg_to_cassandra_custom_index(
         }
     ).sort("category")
     assert_frame_equal(synced_idx_records, expected_idx_records, check_column_order=False)
+
+    # Incremental update on base Iceberg table
+    updated_data = polars.DataFrame(
+        {
+            "id": ["4"],
+            "category": ["cat_d"],
+            "name": ["david"],
+            "value": [40],
+        }
+    )
+    write_using_catalog(
+        schema_name="test",
+        table_name=iceberg_table_name,
+        catalog=iceberg_catalog,
+        data=updated_data,
+        overwrite=False,
+    )
+
+    sync_iceberg_to_cassandra(
+        iceberg_catalog=iceberg_catalog,
+        client=cassandra_client,
+        iceberg_source=iceberg_source,
+        version_field="value",
+        cassandra_target=cassandra_target,
+        read_chunk_size=2,
+        logger=logger,
+        threads=4,
+    )
+
+    synced_idx_records_after_update = (
+        cassandra_client.get_entities_raw(f"SELECT * FROM {cassandra_keyspace}.{idx_cassandra_table};")
+        .to_polars()
+        .sort("category")
+    )
+    expected_idx_records_after_update = polars.DataFrame(
+        {
+            "category": ["cat_a", "cat_b", "cat_c", "cat_d"],
+            "id": ["1", "2", "3", "4"],
+            "value": [10, 20, 30, 40],
+        }
+    ).sort("category")
+    assert_frame_equal(synced_idx_records_after_update, expected_idx_records_after_update, check_column_order=False)
