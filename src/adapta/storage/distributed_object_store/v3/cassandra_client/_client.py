@@ -3,6 +3,7 @@ import os
 import platform
 import re
 import ssl
+import uuid
 
 from cassandra.cqlengine.connection import set_session
 from cassandra.cqlengine.management import sync_table
@@ -51,9 +52,21 @@ from adapta.storage.models.enum import QueryEnabledStoreOptions
 from adapta.storage.models.expression_dsl.cassandra_filter_expression import CassandraFilterExpression
 from adapta.storage.models.expression_dsl.filter_expression import Expression, compile_expression
 from adapta.utils import chunk_list, rate_limit
+from adapta.utils.concurrent_task_runner import ConcurrentTaskRunner, Executable
 from adapta.utils.metaframe import MetaFrame, concat
 
 TCassandraModel = TypeVar("TCassandraModel")
+
+
+def _fix_map_type(entity: dict) -> dict:
+    """Polars <2 remaps map<k, v> to list[{"key": ..., "value": ...}]"""
+    fixed = {}
+    for cell_key, cell_value in entity.items():
+        if isinstance(cell_value, list) and len(cell_value) > 0 and "key" in cell_value[0] and "value" in cell_value[0]:
+            fixed[cell_key] = {a["key"]: a["value"] for a in cell_value}
+        else:
+            fixed[cell_key] = cell_value
+    return fixed
 
 
 class CassandraClient(ABC):
@@ -654,7 +667,7 @@ class CassandraClient(ABC):
         keyspace: str | None = None,
         batch_size: int = 100_000,
         concurrency: int | None = None,
-    ) -> None:
+    ) -> int:
         """
         Uploads a Polars LazyFrame or DataFrame in batches using upsert_concurrent.
 
@@ -666,29 +679,132 @@ class CassandraClient(ABC):
         :param keyspace: Optional keyspace name, if not provided in the client constructor.
         :param batch_size: Number of rows per batch to collect and upsert. Defaults to 100,000.
         :param concurrency: Maximum number of concurrent statements per batch.
+        :return: Total number of rows upserted.
         """
         lazy_source = source.lazy() if isinstance(source, polars.DataFrame) else source
 
-        def _fix_map_type(entity: dict) -> dict:
-            """Polars <2 remaps map<k, v> to list[{"key": ..., "value": ...}]"""
-            fixed = {}
-            for cell_key, cell_value in entity.items():
-                if (
-                    isinstance(cell_value, list)
-                    and len(cell_value) > 0
-                    and "key" in cell_value[0]
-                    and "value" in cell_value[0]
-                ):
-                    fixed[cell_key] = {a["key"]: a["value"] for a in cell_value}
-                else:
-                    fixed[cell_key] = cell_value
-            return fixed
-
+        total_rows = 0
         for batch in lazy_source.collect_batches(chunk_size=batch_size, maintain_order=False):
+            rows = [_fix_map_type(row) for row in batch.to_dicts()]
             self.upsert_concurrent(
-                rows=[_fix_map_type(row) for row in batch.to_dicts()],
+                rows=rows,
                 table_name=table_name,
                 entity_type=entity_type,
                 keyspace=keyspace,
                 concurrency=concurrency,
             )
+            total_rows += len(rows)
+
+        return total_rows
+
+    def upsert_batch_concurrent(
+        self,
+        source: polars.LazyFrame | polars.DataFrame,
+        table_name: str,
+        entity_type: type[TCassandraModel],
+        keyspace: str | None = None,
+        batch_size: int = 1_000,
+        threads: int = 4,
+    ) -> int:
+        """
+        Uploads a Polars LazyFrame or DataFrame concurrently using Cassandra batch upserts and ConcurrentTaskRunner.
+
+        Note: Map type row adjustments (_fix_map_type) are applied for Polars <2 compatibility.
+
+        :param source: Polars LazyFrame or DataFrame to upload.
+        :param table_name: Table to insert entities into.
+        :param entity_type: Entity type to map data model and metadata.
+        :param keyspace: Optional keyspace name, if not provided in the client constructor.
+        :param batch_size: Number of rows per batch to collect and upsert. Defaults to 1,000.
+        :param threads: Number of parallel threads to use. Defaults to 4.
+        """
+        lazy_source = source.lazy() if isinstance(source, polars.DataFrame) else source
+
+        def _upsert(entities: list[dict], **kwargs) -> int:
+            self.upsert_batch(
+                entities=entities,
+                entity_type=kwargs["entity_type"],
+                keyspace=kwargs["keyspace"],
+                table_name=kwargs["table_name"],
+                batch_size=kwargs["batch_size"],
+            )
+            return len(entities)
+
+        ctr = ConcurrentTaskRunner[int](
+            [
+                Executable(
+                    _upsert,
+                    str(uuid.uuid4()),
+                    kwargs={
+                        "entities": [_fix_map_type(batch_row) for batch_row in source_batch.to_dicts()],
+                        "entity_type": entity_type,
+                        "keyspace": keyspace or self._keyspace,
+                        "table_name": table_name,
+                        "batch_size": source_batch.height,
+                    },
+                )
+                for source_batch in lazy_source.collect_batches(chunk_size=batch_size, maintain_order=False)
+            ],
+            num_threads=threads,
+        )
+        return sum([rows_synced for _, rows_synced in ctr.eager().items()])
+
+    def delete_batch_concurrent(
+        self,
+        source: polars.LazyFrame | polars.DataFrame,
+        table_name: str,
+        entity_type: type[TCassandraModel],
+        keyspace: str | None = None,
+        batch_size: int = 1_000,
+        threads: int = 4,
+    ) -> int:
+        """
+        Deletes entities in batches from a Polars LazyFrame or DataFrame concurrently using ConcurrentTaskRunner.
+
+        Note: Map type row adjustments (_fix_map_type) are applied for Polars <2 compatibility.
+
+        :param source: Polars LazyFrame or DataFrame containing entities to delete.
+        :param table_name: Table to delete entities from.
+        :param entity_type: Entity type to map data model and metadata.
+        :param keyspace: Optional keyspace name, if not provided in the client constructor.
+        :param batch_size: Number of rows per batch to collect and delete. Defaults to 1,000.
+        :param threads: Number of parallel threads to use. Defaults to 4.
+        """
+        lazy_source = source.lazy() if isinstance(source, polars.DataFrame) else source
+
+        target_keyspace = keyspace or self._keyspace
+        cassandra_mapper = get_mapper(
+            data_model=entity_type,
+            table_name=table_name,
+            keyspace=target_keyspace,
+        )
+        primary_keys = cassandra_mapper.primary_keys
+
+        def _delete(entities: list[dict], **kwargs) -> int:
+            for entity in entities:
+                self.delete_entity_by_key(
+                    model=kwargs["entity_type"],
+                    primary_keys={key: entity[key] for key in kwargs["primary_keys"]},
+                    keyspace=kwargs["keyspace"],
+                    table_name=kwargs["table_name"],
+                )
+            return len(entities)
+
+        ctr = ConcurrentTaskRunner[int](
+            [
+                Executable(
+                    _delete,
+                    str(uuid.uuid4()),
+                    kwargs={
+                        "entities": [_fix_map_type(batch_row) for batch_row in source_batch.to_dicts()],
+                        "entity_type": entity_type,
+                        "keyspace": target_keyspace,
+                        "table_name": table_name,
+                        "primary_keys": primary_keys,
+                    },
+                )
+                for source_batch in lazy_source.collect_batches(chunk_size=batch_size, maintain_order=False)
+            ],
+            num_threads=threads,
+        )
+        return sum([rows_deleted for _, rows_deleted in ctr.eager().items()])
