@@ -24,11 +24,10 @@ from pyiceberg.catalog import Catalog
 
 from adapta.logs import SemanticLogger
 from adapta.logs.models import LogLevel
-from adapta.metrics.providers.void_provider import VoidMetricsProvider
 from adapta.process_communication import DataSocket
 from adapta.storage.distributed_object_store.v3.vanilla_cassandra import VanillaCassandraClient
 from adapta.storage.iceberg.v1 import write_using_catalog
-from adapta.storage.sync.iceberg_to_cass import sync_iceberg_to_cassandra
+from adapta.storage.sync.iceberg_to_cass import CassandraUploadMode, sync_iceberg_to_cassandra
 from tests.iceberg_clients._functions import generate_random_string
 
 
@@ -96,11 +95,13 @@ def _get_table_names() -> tuple[str, str]:
     return iceberg_table_name, cassandra_table_name
 
 
+@pytest.mark.parametrize("upload_mode", [CassandraUploadMode.CONCURRENT_BATCH, CassandraUploadMode.CONCURRENT_NATIVE])
 def test_sync_iceberg_to_cassandra(
     cassandra_client: VanillaCassandraClient,
     cassandra_keyspace: str,
     iceberg_catalog: Catalog,
     logger: SemanticLogger,
+    upload_mode: CassandraUploadMode,
 ):
     iceberg_table_name, cassandra_table_name = _get_table_names()
 
@@ -143,8 +144,8 @@ def test_sync_iceberg_to_cassandra(
         cassandra_target=cassandra_target,
         read_chunk_size=2,
         logger=logger,
-        metrics=VoidMetricsProvider(),
         threads=4,
+        upload_mode=upload_mode,
     )
 
     # 5. Update iceberg table (no schema changes)
@@ -172,8 +173,8 @@ def test_sync_iceberg_to_cassandra(
         cassandra_target=cassandra_target,
         read_chunk_size=2,
         logger=logger,
-        metrics=VoidMetricsProvider(),
         threads=4,
+        upload_mode=upload_mode,
     )
 
     # 7. Validate the expected data looks as it should
@@ -194,8 +195,8 @@ def test_sync_iceberg_to_cassandra(
         cassandra_target=cassandra_target,
         read_chunk_size=2,
         logger=logger,
-        metrics=VoidMetricsProvider(),
         threads=4,
+        upload_mode=upload_mode,
     )
     synced_records_unchanged = (
         cassandra_client.get_entities_raw(f"SELECT * FROM {cassandra_keyspace}.{cassandra_table_name};")
@@ -250,7 +251,6 @@ def test_sync_iceberg_to_cassandra_insert_update(
         cassandra_target=cassandra_target,
         read_chunk_size=2,
         logger=logger,
-        metrics=VoidMetricsProvider(),
         threads=4,
     )
 
@@ -280,7 +280,6 @@ def test_sync_iceberg_to_cassandra_insert_update(
         cassandra_target=cassandra_target,
         read_chunk_size=2,
         logger=logger,
-        metrics=VoidMetricsProvider(),
         threads=4,
     )
 
@@ -344,7 +343,6 @@ def test_sync_iceberg_to_cassandra_insert_delete_update(
         cassandra_target=cassandra_target,
         read_chunk_size=2,
         logger=logger,
-        metrics=VoidMetricsProvider(),
         threads=4,
     )
 
@@ -361,7 +359,6 @@ def test_sync_iceberg_to_cassandra_insert_delete_update(
         cassandra_target=cassandra_target,
         read_chunk_size=2,
         logger=logger,
-        metrics=VoidMetricsProvider(),
         threads=4,
     )
 
@@ -405,7 +402,6 @@ def test_sync_iceberg_to_cassandra_insert_delete_update(
         cassandra_target=cassandra_target,
         read_chunk_size=2,
         logger=logger,
-        metrics=VoidMetricsProvider(),
         threads=4,
     )
 
@@ -469,7 +465,6 @@ def test_sync_iceberg_to_cassandra_insert_delete_update_single_hop(
         cassandra_target=cassandra_target,
         read_chunk_size=2,
         logger=logger,
-        metrics=VoidMetricsProvider(),
         threads=4,
     )
 
@@ -503,7 +498,6 @@ def test_sync_iceberg_to_cassandra_insert_delete_update_single_hop(
         cassandra_target=cassandra_target,
         read_chunk_size=2,
         logger=logger,
-        metrics=VoidMetricsProvider(),
         threads=4,
     )
 
@@ -522,11 +516,13 @@ def test_sync_iceberg_to_cassandra_insert_delete_update_single_hop(
     assert_frame_equal(synced_records_after_update, expected_after_update, check_column_order=False)
 
 
+@pytest.mark.parametrize("upload_mode", [CassandraUploadMode.CONCURRENT_BATCH, CassandraUploadMode.CONCURRENT_NATIVE])
 def test_sync_iceberg_to_cassandra_map_type(
     cassandra_client: VanillaCassandraClient,
     cassandra_keyspace: str,
     iceberg_catalog: Catalog,
     logger: SemanticLogger,
+    upload_mode: CassandraUploadMode,
 ):
     iceberg_table_name, cassandra_table_name = _get_table_names()
 
@@ -580,8 +576,8 @@ def test_sync_iceberg_to_cassandra_map_type(
         cassandra_target=cassandra_target,
         read_chunk_size=2,
         logger=logger,
-        metrics=VoidMetricsProvider(),
         threads=4,
+        upload_mode=upload_mode,
     )
 
     synced_records = (

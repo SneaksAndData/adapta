@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 
+import polars
 import pytest
 from cassandra.cluster import Cluster
 
@@ -94,3 +95,64 @@ def test_vanilla_cassandra_client_connect_and_crud(setup_keyspace_and_table):
         after_delete = client.get_entities_raw("SELECT * FROM test_vanilla.test_item;").to_pandas()
         assert len(after_delete) == 2
         assert "item-1" not in set(after_delete["id"])
+
+        # Test upload_concurrent_native
+        native_data = polars.DataFrame(
+            [
+                {"id": "item-4", "name": "fourth", "value": 400},
+                {"id": "item-5", "name": "fifth", "value": 500},
+            ]
+        )
+        upserted_native = client.upload_concurrent_native(
+            source=native_data.lazy(),
+            table_name="test_item",
+            entity_type=VanillaItem,
+            batch_size=2,
+            threads=2,
+        )
+        assert upserted_native == 2
+
+        after_native = client.get_entities_raw("SELECT * FROM test_vanilla.test_item;").to_pandas()
+        assert len(after_native) == 4
+        assert {"item-4", "item-5"}.issubset(set(after_native["id"]))
+
+        # Test upload_concurrent_batch
+        batch_data = polars.DataFrame(
+            [
+                {"id": "item-6", "name": "sixth", "value": 600},
+                {"id": "item-7", "name": "seventh", "value": 700},
+            ]
+        )
+        upserted_batch = client.upload_concurrent_batch(
+            source=batch_data.lazy(),
+            table_name="test_item",
+            entity_type=VanillaItem,
+            batch_size=2,
+            threads=2,
+        )
+        assert upserted_batch == 2
+
+        after_batch = client.get_entities_raw("SELECT * FROM test_vanilla.test_item;").to_pandas()
+        assert len(after_batch) == 6
+        assert {"item-6", "item-7"}.issubset(set(after_batch["id"]))
+
+        # Test delete_batch_concurrent
+        deletes_data = polars.DataFrame(
+            [
+                {"id": "item-6", "name": "sixth", "value": 600},
+                {"id": "item-7", "name": "seventh", "value": 700},
+            ]
+        )
+        deleted_count = client.delete_batch_concurrent(
+            source=deletes_data.lazy(),
+            table_name="test_item",
+            entity_type=VanillaItem,
+            batch_size=2,
+            threads=2,
+        )
+        assert deleted_count == 2
+
+        after_concurrent_delete = client.get_entities_raw("SELECT * FROM test_vanilla.test_item;").to_pandas()
+        assert len(after_concurrent_delete) == 4
+        assert "item-6" not in set(after_concurrent_delete["id"])
+        assert "item-7" not in set(after_concurrent_delete["id"])
