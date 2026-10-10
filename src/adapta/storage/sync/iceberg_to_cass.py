@@ -233,17 +233,10 @@ def sync_iceberg_to_cassandra(
     logger: LoggerInterface,
     threads: int,
     upload_mode: CassandraUploadMode = CassandraUploadMode.CONCURRENT_BATCH,
+    ignore_index_updates: bool = False,
 ) -> None:
     """
     Synchronizes data from the provided Iceberg source to Cassandra target table. Assumes schemas are compatible.
-
-    When uploading a lot of rows, use exec profile with high requests/connection for Cassandra client.
-
-    profile = ExecutionProfile(
-        request_timeout=30.0,
-        max_requests_per_connection=2048  # Allows thousands of individual async writes on one connection
-    )
-
     """
 
     source_path: IcebergPath = iceberg_source.parse_data_path()
@@ -293,12 +286,16 @@ def sync_iceberg_to_cassandra(
         table_name=iceberg_source.alias,
         keyspace="any",
     )
-    custom_index_models = _get_custom_index_models(
-        cassandra_model=cassandra_model,
-        source_table=source_path.table,
-        target_table=target_path.table,
-        version_field=version_field,
-        logger=logger,
+    custom_index_models = (
+        []
+        if ignore_index_updates
+        else _get_custom_index_models(
+            cassandra_model=cassandra_model,
+            source_table=source_path.table,
+            target_table=target_path.table,
+            version_field=version_field,
+            logger=logger,
+        )
     )
     total_synced_records = 0
     current_snapshot = get_current_snapshot(source_path.schema, source_path.table, iceberg_catalog)

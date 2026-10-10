@@ -733,3 +733,65 @@ def test_sync_iceberg_to_cassandra_custom_index(
         }
     ).sort("category")
     assert_frame_equal(synced_idx_records_after_update, expected_idx_records_after_update, check_column_order=False)
+
+
+def test_sync_iceberg_to_cassandra_ignore_index_updates(
+    cassandra_client: VanillaCassandraClient,
+    cassandra_keyspace: str,
+    iceberg_catalog: Catalog,
+    logger: SemanticLogger,
+):
+    iceberg_table_name, cassandra_table_name = _get_table_names()
+
+    initial_data = polars.DataFrame(
+        {
+            "id": ["1", "2"],
+            "category": ["cat_a", "cat_b"],
+            "name": ["alice", "bob"],
+            "value": [10, 20],
+        }
+    )
+    write_using_catalog(
+        schema_name="test",
+        table_name=iceberg_table_name,
+        catalog=iceberg_catalog,
+        data=initial_data,
+        overwrite=True,
+    )
+
+    cassandra_client.create_table(SyncItemWithCustomIndex, cassandra_table_name, cassandra_keyspace)
+
+    iceberg_source = DataSocket(
+        alias="source",
+        data_path=f"iceberg://test@{iceberg_table_name}",
+        data_format="iceberg",
+    )
+    cassandra_target = DataSocket(
+        alias="target",
+        data_path=f"cass+tests.sync.test_iceberg_to_cass.SyncItemWithCustomIndex://{cassandra_keyspace}@{cassandra_table_name}",
+        data_format="cassandra",
+    )
+
+    sync_iceberg_to_cassandra(
+        iceberg_catalog=iceberg_catalog,
+        client=cassandra_client,
+        iceberg_source=iceberg_source,
+        version_field="value",
+        cassandra_target=cassandra_target,
+        read_chunk_size=2,
+        logger=logger,
+        threads=4,
+        ignore_index_updates=True,
+    )
+
+    # Base table synced
+    synced_records = (
+        cassandra_client.get_entities_raw(f"SELECT * FROM {cassandra_keyspace}.{cassandra_table_name};")
+        .to_polars()
+        .sort("id")
+    )
+    assert_frame_equal(synced_records, initial_data, check_column_order=False)
+
+    # Index table in Iceberg was NOT created
+    idx_iceberg_table = f"{iceberg_table_name}__idx_category"
+    assert not iceberg_catalog.table_exists(identifier=("test", idx_iceberg_table))
