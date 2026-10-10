@@ -676,7 +676,7 @@ class CassandraClient(ABC):
         entity_type: type[TCassandraModel],
         keyspace: str | None = None,
         batch_size: int = 100_000,
-        concurrency: int | None = None,
+        threads: int | None = None,
     ) -> int:
         """
         Uploads a Polars LazyFrame or DataFrame in batches using upsert_concurrent.
@@ -688,7 +688,7 @@ class CassandraClient(ABC):
         :param entity_type: Entity type to map data model and metadata.
         :param keyspace: Optional keyspace name, if not provided in the client constructor.
         :param batch_size: Number of rows per batch to collect and upsert. Defaults to 100,000.
-        :param concurrency: Maximum number of concurrent statements per batch.
+        :param threads: Maximum number of concurrent statements per batch.
         :return: Total number of rows upserted.
         """
         lazy_source = source.lazy() if isinstance(source, polars.DataFrame) else source
@@ -713,7 +713,7 @@ class CassandraClient(ABC):
                 table_name=table_name,
                 entity_type=entity_type,
                 keyspace=keyspace,
-                concurrency=concurrency,
+                concurrency=threads,
                 metrics_provider=self._metrics_provider,
                 logger=self._logger,
             )

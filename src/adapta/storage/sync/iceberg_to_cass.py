@@ -5,7 +5,6 @@ from polars import LazyFrame
 from pyiceberg.catalog import Catalog
 
 from adapta.logs import LoggerInterface
-from adapta.metrics import MetricsProvider
 from adapta.process_communication import DataSocket
 from adapta.storage.distributed_object_store.v3.cassandra_client import CassandraClient, get_mapper
 from adapta.storage.iceberg.v1 import (
@@ -32,7 +31,6 @@ def sync_iceberg_to_cassandra(
     cassandra_target: DataSocket,
     read_chunk_size: int,
     logger: LoggerInterface,
-    metrics: MetricsProvider,
     threads: int,
     upload_mode: CassandraUploadMode = CassandraUploadMode.CONCURRENT_BATCH,
 ) -> None:
@@ -52,9 +50,6 @@ def sync_iceberg_to_cassandra(
     target_path: CassandraPath = cassandra_target.parse_data_path()
     cassandra_model = target_path.model_class()
 
-    client._logger = logger
-    client._metrics_provider = metrics
-
     def _sync_lazyframe(source: LazyFrame) -> int:
         if upload_mode == CassandraUploadMode.CONCURRENT_BATCH:
             return client.upload_concurrent_batch(
@@ -72,6 +67,7 @@ def sync_iceberg_to_cassandra(
                 entity_type=cassandra_model,
                 keyspace=target_path.keyspace,
                 batch_size=read_chunk_size,
+                threads=threads,
             )
         raise ValueError(f"Unsupported upload mode: {upload_mode}")
 
