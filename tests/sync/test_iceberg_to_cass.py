@@ -26,7 +26,7 @@ from adapta.logs import SemanticLogger
 from adapta.logs.models import LogLevel
 from adapta.process_communication import DataSocket
 from adapta.storage.distributed_object_store.v3.vanilla_cassandra import VanillaCassandraClient
-from adapta.storage.iceberg.v1 import write_using_catalog
+from adapta.storage.iceberg.v1 import load_using_catalog, write_using_catalog
 from adapta.storage.sync.iceberg_to_cass import CassandraUploadMode, sync_iceberg_to_cassandra
 from tests.iceberg_clients._functions import generate_random_string
 
@@ -44,6 +44,21 @@ class SyncMapItem:
     name: str
     value: int
     metadata: dict[str, str]
+
+
+@dataclass
+class SyncItemWithCustomIndex:
+    id: str = field(metadata={"is_primary_key": True, "is_partition_key": True})
+    category: str = field(metadata={"is_custom_index": True})
+    name: str
+    value: int
+
+
+@dataclass
+class SyncItemCategoryIndex:
+    category: str = field(metadata={"is_primary_key": True, "is_partition_key": True})
+    id: str
+    value: int
 
 
 @pytest.fixture(scope="module")
@@ -597,3 +612,266 @@ def test_sync_iceberg_to_cassandra_map_type(
         }
     ).sort("id")
     assert_frame_equal(synced_records, expected_records, check_column_order=False)
+
+
+@pytest.mark.parametrize("upload_mode", [CassandraUploadMode.CONCURRENT_BATCH, CassandraUploadMode.CONCURRENT_NATIVE])
+def test_sync_iceberg_to_cassandra_custom_index(
+    cassandra_client: VanillaCassandraClient,
+    cassandra_keyspace: str,
+    iceberg_catalog: Catalog,
+    logger: SemanticLogger,
+    upload_mode: CassandraUploadMode,
+):
+    iceberg_table_name, cassandra_table_name = _get_table_names()
+    idx_iceberg_table = f"{iceberg_table_name}__idx_category"
+    idx_cassandra_table = f"{cassandra_table_name}__idx_category"
+
+    # Setup: pre-create both base and index Cassandra tables
+    cassandra_client.create_table(SyncItemWithCustomIndex, cassandra_table_name, cassandra_keyspace)
+    cassandra_client.create_table(SyncItemCategoryIndex, idx_cassandra_table, cassandra_keyspace)
+
+    initial_data = polars.DataFrame(
+        {
+            "id": ["1", "2", "3"],
+            "category": ["cat_a", "cat_b", "cat_c"],
+            "name": ["alice", "bob", "charlie"],
+            "value": [10, 20, 30],
+        }
+    )
+    write_using_catalog(
+        schema_name="test",
+        table_name=iceberg_table_name,
+        catalog=iceberg_catalog,
+        data=initial_data,
+        overwrite=True,
+    )
+
+    iceberg_source = DataSocket(
+        alias="source",
+        data_path=f"iceberg://test@{iceberg_table_name}",
+        data_format="iceberg",
+    )
+    cassandra_target = DataSocket(
+        alias="target",
+        data_path=f"cass+tests.sync.test_iceberg_to_cass.SyncItemWithCustomIndex://{cassandra_keyspace}@{cassandra_table_name}",
+        data_format="cassandra",
+    )
+
+    # 1. Full sync
+    sync_iceberg_to_cassandra(
+        iceberg_catalog=iceberg_catalog,
+        client=cassandra_client,
+        iceberg_source=iceberg_source,
+        version_field="value",
+        cassandra_target=cassandra_target,
+        read_chunk_size=2,
+        logger=logger,
+        threads=4,
+        upload_mode=upload_mode,
+    )
+
+    # Validate base Cassandra table on full sync
+    synced_records = (
+        cassandra_client.get_entities_raw(f"SELECT * FROM {cassandra_keyspace}.{cassandra_table_name};")
+        .to_polars()
+        .sort("id")
+    )
+    assert_frame_equal(synced_records, initial_data, check_column_order=False)
+
+    # Validate index Iceberg table content on full sync
+    expected_idx_initial = polars.DataFrame(
+        {
+            "category": ["cat_a", "cat_b", "cat_c"],
+            "id": ["1", "2", "3"],
+            "value": [10, 20, 30],
+        }
+    ).sort("category")
+    iceberg_idx_records = load_using_catalog("test", idx_iceberg_table, iceberg_catalog).to_polars().sort("category")
+    assert_frame_equal(iceberg_idx_records, expected_idx_initial, check_column_order=False)
+
+    # Validate index Cassandra table content on full sync
+    synced_idx_records = (
+        cassandra_client.get_entities_raw(f"SELECT * FROM {cassandra_keyspace}.{idx_cassandra_table};")
+        .to_polars()
+        .sort("category")
+    )
+    assert_frame_equal(synced_idx_records, expected_idx_initial, check_column_order=False)
+
+    # 2. Incremental insert: add row with id="4", category="cat_d"
+    inserted_data = polars.DataFrame(
+        {
+            "id": ["4"],
+            "category": ["cat_d"],
+            "name": ["david"],
+            "value": [40],
+        }
+    )
+    write_using_catalog(
+        schema_name="test",
+        table_name=iceberg_table_name,
+        catalog=iceberg_catalog,
+        data=inserted_data,
+        overwrite=False,
+    )
+
+    sync_iceberg_to_cassandra(
+        iceberg_catalog=iceberg_catalog,
+        client=cassandra_client,
+        iceberg_source=iceberg_source,
+        version_field="value",
+        cassandra_target=cassandra_target,
+        read_chunk_size=2,
+        logger=logger,
+        threads=4,
+        upload_mode=upload_mode,
+    )
+
+    expected_idx_after_insert = polars.DataFrame(
+        {
+            "category": ["cat_a", "cat_b", "cat_c", "cat_d"],
+            "id": ["1", "2", "3", "4"],
+            "value": [10, 20, 30, 40],
+        }
+    ).sort("category")
+    synced_idx_after_insert = (
+        cassandra_client.get_entities_raw(f"SELECT * FROM {cassandra_keyspace}.{idx_cassandra_table};")
+        .to_polars()
+        .sort("category")
+    )
+    assert_frame_equal(synced_idx_after_insert, expected_idx_after_insert, check_column_order=False)
+
+    # 3. Incremental update: update row 3 (value 30 -> 35)
+    updated_data = polars.DataFrame(
+        {
+            "id": ["3"],
+            "category": ["cat_c"],
+            "name": ["charlie"],
+            "value": [35],
+        }
+    )
+    write_using_catalog(
+        schema_name="test",
+        table_name=iceberg_table_name,
+        catalog=iceberg_catalog,
+        data=updated_data,
+        overwrite=False,
+        merge_columns=["id"],
+    )
+
+    sync_iceberg_to_cassandra(
+        iceberg_catalog=iceberg_catalog,
+        client=cassandra_client,
+        iceberg_source=iceberg_source,
+        version_field="value",
+        cassandra_target=cassandra_target,
+        read_chunk_size=2,
+        logger=logger,
+        threads=4,
+        upload_mode=upload_mode,
+    )
+
+    expected_idx_after_update = polars.DataFrame(
+        {
+            "category": ["cat_a", "cat_b", "cat_c", "cat_d"],
+            "id": ["1", "2", "3", "4"],
+            "value": [10, 20, 35, 40],
+        }
+    ).sort("category")
+    synced_idx_after_update = (
+        cassandra_client.get_entities_raw(f"SELECT * FROM {cassandra_keyspace}.{idx_cassandra_table};")
+        .to_polars()
+        .sort("category")
+    )
+    assert_frame_equal(synced_idx_after_update, expected_idx_after_update, check_column_order=False)
+
+    # 4. Incremental delete: delete row 2 (cat_b)
+    iceberg_table = iceberg_catalog.load_table(identifier=("test", iceberg_table_name))
+    iceberg_table.delete("id = '2'")
+
+    sync_iceberg_to_cassandra(
+        iceberg_catalog=iceberg_catalog,
+        client=cassandra_client,
+        iceberg_source=iceberg_source,
+        version_field="value",
+        cassandra_target=cassandra_target,
+        read_chunk_size=2,
+        logger=logger,
+        threads=4,
+        upload_mode=upload_mode,
+    )
+
+    expected_idx_after_delete = polars.DataFrame(
+        {
+            "category": ["cat_a", "cat_c", "cat_d"],
+            "id": ["1", "3", "4"],
+            "value": [10, 35, 40],
+        }
+    ).sort("category")
+    synced_idx_after_delete = (
+        cassandra_client.get_entities_raw(f"SELECT * FROM {cassandra_keyspace}.{idx_cassandra_table};")
+        .to_polars()
+        .sort("category")
+    )
+    assert_frame_equal(synced_idx_after_delete, expected_idx_after_delete, check_column_order=False)
+
+
+def test_sync_iceberg_to_cassandra_ignore_index_updates(
+    cassandra_client: VanillaCassandraClient,
+    cassandra_keyspace: str,
+    iceberg_catalog: Catalog,
+    logger: SemanticLogger,
+):
+    iceberg_table_name, cassandra_table_name = _get_table_names()
+
+    initial_data = polars.DataFrame(
+        {
+            "id": ["1", "2"],
+            "category": ["cat_a", "cat_b"],
+            "name": ["alice", "bob"],
+            "value": [10, 20],
+        }
+    )
+    write_using_catalog(
+        schema_name="test",
+        table_name=iceberg_table_name,
+        catalog=iceberg_catalog,
+        data=initial_data,
+        overwrite=True,
+    )
+
+    cassandra_client.create_table(SyncItemWithCustomIndex, cassandra_table_name, cassandra_keyspace)
+
+    iceberg_source = DataSocket(
+        alias="source",
+        data_path=f"iceberg://test@{iceberg_table_name}",
+        data_format="iceberg",
+    )
+    cassandra_target = DataSocket(
+        alias="target",
+        data_path=f"cass+tests.sync.test_iceberg_to_cass.SyncItemWithCustomIndex://{cassandra_keyspace}@{cassandra_table_name}",
+        data_format="cassandra",
+    )
+
+    sync_iceberg_to_cassandra(
+        iceberg_catalog=iceberg_catalog,
+        client=cassandra_client,
+        iceberg_source=iceberg_source,
+        version_field="value",
+        cassandra_target=cassandra_target,
+        read_chunk_size=2,
+        logger=logger,
+        threads=4,
+        ignore_index_updates=True,
+    )
+
+    # Base table synced
+    synced_records = (
+        cassandra_client.get_entities_raw(f"SELECT * FROM {cassandra_keyspace}.{cassandra_table_name};")
+        .to_polars()
+        .sort("id")
+    )
+    assert_frame_equal(synced_records, initial_data, check_column_order=False)
+
+    # Index table in Iceberg was NOT created
+    idx_iceberg_table = f"{iceberg_table_name}__idx_category"
+    assert not iceberg_catalog.table_exists(identifier=("test", idx_iceberg_table))
