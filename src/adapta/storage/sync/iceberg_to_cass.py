@@ -48,8 +48,30 @@ class CustomIndexMetadata:
         target_table: str,
         version_field: str,
     ) -> Self:
+        """
+        Builds custom index metadata and a dynamic dataclass model for an index field.
+
+        Example:
+            Original model:
+            ```python
+            @dataclass
+            class ExampleModel:
+                col_a: str = field(metadata={"is_primary_key": True, "is_partition_key": True})
+                col_b: str = field(metadata={"is_custom_index": True})
+                col_c: str
+                col_version: int
+            ```
+
+            Generated index model:
+            ```python
+            @dataclass
+            class ExampleModel__idx_col_b:
+                col_b: str = field(metadata={"is_primary_key": True, "is_partition_key": True})
+                col_a: str
+                col_version: int
+            ```
+        """
         model_fields = {f.name: f for f in dataclasses.fields(base_model)}
-        orig_pks = [f for f in dataclasses.fields(base_model) if f.metadata.get("is_primary_key", False)]
         ver_field = model_fields.get(version_field)
 
         fields_spec = [
@@ -59,21 +81,18 @@ class CustomIndexMetadata:
                 dataclasses.field(metadata={"is_primary_key": True, "is_partition_key": True}),
             )
         ]
-        for pk in orig_pks:
-            if pk.name != index_field.name:
+        for pk in dataclasses.fields(base_model):
+            if pk.metadata.get("is_primary_key", False) and pk.name != index_field.name:
                 fields_spec.append((pk.name, pk.type, dataclasses.field()))
         if ver_field and ver_field.name != index_field.name:
             fields_spec.append((ver_field.name, ver_field.type, dataclasses.field()))
 
-        index_model = dataclasses.make_dataclass(f"{base_model.__name__}__idx_{index_field.name}", fields_spec)
-        index_cols = [f[0] for f in fields_spec]
-
         return cls(
-            index_model=index_model,
+            index_model=dataclasses.make_dataclass(f"{base_model.__name__}__idx_{index_field.name}", fields_spec),
             field_name=index_field.name,
             iceberg_table=f"{source_table}__idx_{index_field.name}",
             cassandra_table=f"{target_table}__idx_{index_field.name}",
-            index_columns=index_cols,
+            index_columns=[f[0] for f in fields_spec],
         )
 
 
@@ -98,7 +117,7 @@ def _get_custom_index_models(
             version_field=version_field,
         )
         logger.info(
-            "Identified custom index field {field_name} with columns {columns}",
+            "Model contains a custom index on a field {field_name}. Index table will contain columns {columns}",
             field_name=idx_meta.field_name,
             columns=idx_meta.index_columns,
         )
@@ -130,22 +149,6 @@ def _sync_custom_index(
         ).to_polars()
         return full_source.select(index_metadata.index_columns)
 
-    idx_exists = iceberg_catalog.table_exists(identifier=(source_schema, index_metadata.iceberg_table))
-    idx_previous_snapshot = (
-        get_current_snapshot(source_schema, index_metadata.iceberg_table, iceberg_catalog) if idx_exists else None
-    )
-
-    logger.info("Writing index data to Iceberg table {iceberg_table}", iceberg_table=index_metadata.iceberg_table)
-    write_using_catalog(
-        schema_name=source_schema,
-        table_name=index_metadata.iceberg_table,
-        catalog=iceberg_catalog,
-        data=_read_index_data(),
-        overwrite=True,
-    )
-
-    idx_current_snapshot = get_current_snapshot(source_schema, index_metadata.iceberg_table, iceberg_catalog)
-
     def _upload_index(source: LazyFrame) -> None:
         if upload_mode == CassandraUploadMode.CONCURRENT_BATCH:
             client.upload_concurrent_batch(
@@ -168,6 +171,22 @@ def _sync_custom_index(
             )
             return
         raise ValueError(f"Unsupported upload mode: {upload_mode}")
+
+    idx_exists = iceberg_catalog.table_exists(identifier=(source_schema, index_metadata.iceberg_table))
+    idx_previous_snapshot = (
+        get_current_snapshot(source_schema, index_metadata.iceberg_table, iceberg_catalog) if idx_exists else None
+    )
+
+    logger.info("Writing index data to Iceberg table {iceberg_table}", iceberg_table=index_metadata.iceberg_table)
+    write_using_catalog(
+        schema_name=source_schema,
+        table_name=index_metadata.iceberg_table,
+        catalog=iceberg_catalog,
+        data=_read_index_data(),
+        overwrite=True,
+    )
+
+    idx_current_snapshot = get_current_snapshot(source_schema, index_metadata.iceberg_table, iceberg_catalog)
 
     if not idx_previous_snapshot:
         logger.info(
