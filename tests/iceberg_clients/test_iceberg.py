@@ -57,7 +57,10 @@ def test_lazy_read(trino_test_connection: sqlalchemy.engine.Engine, iceberg_cata
 def test_map_read(trino_test_connection: sqlalchemy.engine.Engine, iceberg_catalog: Catalog):
     input_data = get_input_data() | {
         "cold": [
-            [{"key": "key1", "value": random.random() * 100}, {"key": "key2", "value": random.random() * 100}]
+            [
+                {"key": "key1", "value": float(random.randint(1, 100))},
+                {"key": "key2", "value": float(random.randint(1, 100))},
+            ]
             for _ in range(10)
         ],
     }
@@ -65,7 +68,7 @@ def test_map_read(trino_test_connection: sqlalchemy.engine.Engine, iceberg_catal
         "cola": polars.Int32,
         "colb": polars.String,
         "colc": polars.List(polars.Int32),
-        "cold": polars.List(polars.Struct({"key": polars.String, "value": polars.Float64})),
+        "cold": polars.Map(polars.String, polars.Float64),
     }
     expected_pl = polars.DataFrame(input_data, schema=schema)
 

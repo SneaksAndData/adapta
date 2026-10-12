@@ -3,8 +3,7 @@
 from functools import wraps
 from typing import Any
 
-from adapta.logs import SemanticLogger
-from adapta.logs._async_logger import _AsyncLogger
+from adapta.logs import LoggerInterface
 from adapta.logs.models import LogLevel
 from adapta.metrics import MetricsProvider
 from adapta.utils._common import operation_time
@@ -22,7 +21,7 @@ def run_time_metrics(metric_name: str, tag_function_name: bool = False, log_leve
     def outer_runtime_decorator(func):
         @wraps(func)
         def inner_runtime_decorator(*args, **kwargs):
-            logger: SemanticLogger = kwargs.get("logger", None)
+            logger: LoggerInterface = kwargs.get("logger", None)
             metrics_provider: MetricsProvider = kwargs.get("metrics_provider", None)
             if logger is None or metrics_provider is None:
                 raise AttributeError(
@@ -75,7 +74,7 @@ def run_time_metrics_async(
         @wraps(func)
         async def inner_runtime_decorator(
             metrics_provider: MetricsProvider,
-            logger: _AsyncLogger,
+            logger: LoggerInterface,
             metric_tags: dict[str, str] | None = None,
             **kwargs,
         ):

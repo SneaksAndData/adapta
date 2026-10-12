@@ -3,6 +3,8 @@ from typing import final
 
 from cassandra.auth import AuthProvider, PlainTextAuthProvider
 
+from adapta.logs import LoggerInterface
+from adapta.metrics import MetricsProvider
 from adapta.storage.distributed_object_store.v3.cassandra_client import (
     CassandraClient,
     CassandraClientConfiguration,
@@ -25,8 +27,16 @@ class VanillaCassandraClient(CassandraClient):
         port: int = 9042,
         ssl_context: ssl.SSLContext | None = None,
         client_config: CassandraClientConfiguration | None = None,
+        logger: LoggerInterface | None = None,
+        metrics_provider: MetricsProvider | None = None,
     ) -> None:
-        super().__init__(client_name, keyspace, client_config)
+        super().__init__(
+            client_name=client_name,
+            keyspace=keyspace,
+            client_config=client_config,
+            logger=logger,
+            metrics_provider=metrics_provider,
+        )
         self._contact_points = contact_points or ["127.0.0.1"]
         self._port = port
         self._username = username
