@@ -57,7 +57,7 @@ class SyncItemWithCustomIndex:
 @dataclass
 class SyncItemCategoryIndex:
     category: str = field(metadata={"is_primary_key": True, "is_partition_key": True})
-    id: str
+    id: str = field(metadata={"is_primary_key": True, "is_partition_key": False})
     value: int
 
 
@@ -697,6 +697,9 @@ def test_sync_iceberg_to_cassandra_custom_index(
     )
     assert_frame_equal(synced_idx_records, expected_idx_initial, check_column_order=False)
 
+    # Validate row count in index table is the same as in base table
+    assert len(synced_records) == len(synced_idx_records) == len(initial_data)
+
     # 2. Incremental insert: add row with id="4", category="cat_d"
     inserted_data = polars.DataFrame(
         {
@@ -733,12 +736,16 @@ def test_sync_iceberg_to_cassandra_custom_index(
             "value": [10, 20, 30, 40],
         }
     ).sort("category")
+    synced_base_after_insert = cassandra_client.get_entities_raw(
+        f"SELECT * FROM {cassandra_keyspace}.{cassandra_table_name};"
+    ).to_polars()
     synced_idx_after_insert = (
         cassandra_client.get_entities_raw(f"SELECT * FROM {cassandra_keyspace}.{idx_cassandra_table};")
         .to_polars()
         .sort("category")
     )
     assert_frame_equal(synced_idx_after_insert, expected_idx_after_insert, check_column_order=False)
+    assert len(synced_base_after_insert) == len(synced_idx_after_insert) == 4
 
     # 3. Incremental update: update row 3 (value 30 -> 35)
     updated_data = polars.DataFrame(
@@ -777,12 +784,16 @@ def test_sync_iceberg_to_cassandra_custom_index(
             "value": [10, 20, 35, 40],
         }
     ).sort("category")
+    synced_base_after_update = cassandra_client.get_entities_raw(
+        f"SELECT * FROM {cassandra_keyspace}.{cassandra_table_name};"
+    ).to_polars()
     synced_idx_after_update = (
         cassandra_client.get_entities_raw(f"SELECT * FROM {cassandra_keyspace}.{idx_cassandra_table};")
         .to_polars()
         .sort("category")
     )
     assert_frame_equal(synced_idx_after_update, expected_idx_after_update, check_column_order=False)
+    assert len(synced_base_after_update) == len(synced_idx_after_update) == 4
 
     # 4. Incremental delete: delete row 2 (cat_b)
     iceberg_table = iceberg_catalog.load_table(identifier=("test", iceberg_table_name))
@@ -807,12 +818,63 @@ def test_sync_iceberg_to_cassandra_custom_index(
             "value": [10, 35, 40],
         }
     ).sort("category")
+    synced_base_after_delete = cassandra_client.get_entities_raw(
+        f"SELECT * FROM {cassandra_keyspace}.{cassandra_table_name};"
+    ).to_polars()
     synced_idx_after_delete = (
         cassandra_client.get_entities_raw(f"SELECT * FROM {cassandra_keyspace}.{idx_cassandra_table};")
         .to_polars()
         .sort("category")
     )
     assert_frame_equal(synced_idx_after_delete, expected_idx_after_delete, check_column_order=False)
+    assert len(synced_base_after_delete) == len(synced_idx_after_delete) == 3
+
+    # 5. Insert another row with an existing category ("cat_a") to verify clustering key prevents deduplication
+    duplicate_category_data = polars.DataFrame(
+        {
+            "id": ["5"],
+            "category": ["cat_a"],
+            "name": ["eve"],
+            "value": [50],
+        }
+    )
+    write_using_catalog(
+        schema_name="test",
+        table_name=iceberg_table_name,
+        catalog=iceberg_catalog,
+        data=duplicate_category_data,
+        overwrite=False,
+    )
+
+    sync_iceberg_to_cassandra(
+        iceberg_catalog=iceberg_catalog,
+        client=cassandra_client,
+        iceberg_source=iceberg_source,
+        version_field="value",
+        cassandra_target=cassandra_target,
+        read_chunk_size=2,
+        logger=logger,
+        threads=4,
+        upload_mode=upload_mode,
+    )
+
+    synced_base_after_dup = cassandra_client.get_entities_raw(
+        f"SELECT * FROM {cassandra_keyspace}.{cassandra_table_name};"
+    ).to_polars()
+    synced_idx_after_dup = (
+        cassandra_client.get_entities_raw(f"SELECT * FROM {cassandra_keyspace}.{idx_cassandra_table};")
+        .to_polars()
+        .sort(["category", "id"])
+    )
+    assert len(synced_base_after_dup) == len(synced_idx_after_dup) == 4
+    expected_idx_after_dup = polars.DataFrame(
+        {
+            "category": ["cat_a", "cat_a", "cat_c", "cat_d"],
+            "id": ["1", "5", "3", "4"],
+            "value": [10, 50, 35, 40],
+        }
+    ).sort(["category", "id"])
+    assert_frame_equal(synced_idx_after_dup, expected_idx_after_dup, check_column_order=False)
 
 
 def test_sync_iceberg_to_cassandra_ignore_index_updates(
