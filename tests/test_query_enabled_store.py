@@ -55,11 +55,11 @@ from adapta.storage.query_enabled_store import (
             AwsKeyspaceQueryEnabledStore,
         ),
         (
-            'qes://engine=adapta.storage.query_enabled_store.KeyspacesQueryEnabledStore;plaintext_credentials={};settings={"client_name": "test", "keyspace": "tmp", "region": "eu-west-1", "profile_name": "test"}',
+            'qes://engine=adapta.storage.query_enabled_store.AwsKeyspaceQueryEnabledStore;plaintext_credentials={};settings={"client_name": "test", "keyspace": "tmp", "region": "eu-west-1", "profile_name": "test"}',
             AwsKeyspaceQueryEnabledStore,
         ),
         (
-            'qes://engine=adapta.storage.query_enabled_store.KeyspacesQueryEnabledStore;plaintext_credentials={};settings={"client_name": "test", "keyspace": "tmp"}',
+            'qes://engine=adapta.storage.query_enabled_store.AwsKeyspaceQueryEnabledStore;plaintext_credentials={};settings={"client_name": "test", "keyspace": "tmp"}',
             RuntimeError,
         ),
         (
