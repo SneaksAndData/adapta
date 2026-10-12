@@ -207,4 +207,3 @@ def test_prepare_lazy_source_converts_list_struct_to_map():
     df_regular = polars.DataFrame({"id": ["1", "2"], "val": [10, 20]})
     prepared_regular = _prepare_lazy_source(df_regular)
     assert prepared_regular.collect_schema() == df_regular.schema
-

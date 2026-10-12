@@ -7,8 +7,12 @@ import uuid
 
 from cassandra.cqlengine.connection import set_session
 from cassandra.cqlengine.management import sync_table
+from cassandra.query import PreparedStatement
 
-from adapta.storage.distributed_object_store.v3.cassandra_client._model_mappers import get_mapper
+from adapta.storage.distributed_object_store.v3.cassandra_client._model_mappers import (
+    CassandraModelMapper,
+    get_mapper,
+)
 
 try:
     from _socket import IPPROTO_TCP, TCP_NODELAY, TCP_USER_TIMEOUT
@@ -625,6 +629,39 @@ class CassandraClient(ABC):
                 ttl=time_to_live,
             )
 
+    def _prepare_insert_statement(self, table_identifier: str, columns: list[str]) -> PreparedStatement:
+        columns_str = ", ".join(columns)
+        placeholders = ", ".join(["?" for _ in columns])
+        query = f"INSERT INTO {table_identifier} ({columns_str}) VALUES ({placeholders});"
+        return self._session.prepare(query)
+
+    def _build_statements_and_params(
+        self,
+        rows: list[dict] | polars.LazyFrame,
+        table_identifier: str,
+        cassandra_mapper: CassandraModelMapper,
+    ) -> list[tuple[PreparedStatement, tuple]]:
+        if isinstance(rows, polars.LazyFrame):
+            lazy_rows = _prepare_lazy_source(rows)
+            schema = lazy_rows.collect_schema()
+            columns = [col for col in cassandra_mapper.column_names if col in schema]
+            if not columns:
+                return []
+
+            df = lazy_rows.select(columns).collect()
+            if df.is_empty():
+                return []
+
+            prepared_stmt = self._prepare_insert_statement(table_identifier, columns)
+            return [(prepared_stmt, row) for row in df.iter_rows()]
+
+        if not rows:
+            return []
+
+        columns = cassandra_mapper.column_names
+        prepared_stmt = self._prepare_insert_statement(table_identifier, columns)
+        return [(prepared_stmt, tuple(row.get(col) for col in columns)) for row in rows]
+
     def upsert_concurrent(
         self,
         rows: list[dict] | polars.LazyFrame,
@@ -657,33 +694,15 @@ class CassandraClient(ABC):
 
         table_identifier = f"{target_keyspace}.{target_table_name}" if target_keyspace else target_table_name
 
-        concurrency = concurrency or (os.cpu_count() or 1) * 2
-
-        if isinstance(rows, polars.LazyFrame):
-            lazy_rows = _prepare_lazy_source(rows)
-            schema = lazy_rows.collect_schema()
-            columns = [col for col in cassandra_mapper.column_names if col in schema]
-            if not columns:
-                return
-
-            df = lazy_rows.select(columns).collect()
-            if df.is_empty():
-                return
-        elif not rows:
+        statements_and_params = self._build_statements_and_params(
+            rows=rows,
+            table_identifier=table_identifier,
+            cassandra_mapper=cassandra_mapper,
+        )
+        if not statements_and_params:
             return
-        else:
-            columns = cassandra_mapper.column_names
-            df = None
 
-        columns_str = ", ".join(columns)
-        placeholders = ", ".join(["?" for _ in columns])
-        query = f"INSERT INTO {table_identifier} ({columns_str}) VALUES ({placeholders});"
-        prepared_stmt = self._session.prepare(query)
-
-        if df is not None:
-            statements_and_params = [(prepared_stmt, row) for row in df.iter_rows()]
-        else:
-            statements_and_params = [(prepared_stmt, tuple(row.get(col) for col in columns)) for row in rows]
+        concurrency = concurrency or (os.cpu_count() or 1) * 2
 
         @on_exception(
             wait_gen=expo,
