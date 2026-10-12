@@ -64,6 +64,7 @@ class BundledQueryEnabledStores(Enum):
 
     DELTA = "adapta.storage.query_enabled_store.DeltaQueryEnabledStore"
     ASTRA = "adapta.storage.query_enabled_store.AstraQueryEnabledStore"
+    KEYSPACES = "adapta.storage.query_enabled_store.KeyspacesQueryEnabledStore"
     LOCAL = "adapta.storage.query_enabled_store.LocalQueryEnabledStore"
     TRINO = "adapta.storage.query_enabled_store.TrinoQueryEnabledStore"
     ICEBERG = "adapta.storage.query_enabled_store.IcebergQueryEnabledStore"

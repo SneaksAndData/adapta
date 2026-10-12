@@ -2,6 +2,7 @@ from adapta.process_communication import DataSocket
 from adapta.storage.models import (
     AdlsGen2Path,
     AstraPath,
+    CassandraPath,
     IcebergPath,
     LocalPath,
     S3Path,
@@ -14,6 +15,11 @@ try:
     from adapta.storage.query_enabled_store._qes_astra import AstraQueryEnabledStore
 except (ImportError, ModuleNotFoundError) as ex:
     print(f"Query Enabled Store (Astra) not configured: {ex}")
+
+try:
+    from adapta.storage.query_enabled_store._qes_ksp import KeyspacesQueryEnabledStore
+except (ImportError, ModuleNotFoundError) as ex:
+    print(f"Query Enabled Store (AWS Keyspaces) not configured: {ex}")
 
 try:
     from adapta.storage.query_enabled_store._qes_iceberg import IcebergQueryEnabledStore
@@ -45,6 +51,8 @@ def suggest_store(socket: DataSocket) -> type[QueryEnabledStore] | None:
         return LocalQueryEnabledStore
     if isinstance(path_impl, AstraPath):
         return AstraQueryEnabledStore
+    if isinstance(path_impl, CassandraPath):
+        return KeyspacesQueryEnabledStore
     if isinstance(path_impl, (S3Path, WasbPath, AdlsGen2Path)):
         return DeltaQueryEnabledStore
     if isinstance(path_impl, TrinoPath):

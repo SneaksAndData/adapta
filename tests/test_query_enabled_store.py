@@ -4,6 +4,7 @@ from adapta.storage.query_enabled_store import (
     AstraQueryEnabledStore,
     DeltaQueryEnabledStore,
     IcebergQueryEnabledStore,
+    KeyspacesQueryEnabledStore,
     LocalQueryEnabledStore,
     QueryEnabledStore,
     TrinoQueryEnabledStore,
@@ -47,6 +48,18 @@ from adapta.storage.query_enabled_store import (
         ),
         (
             'qes://engine=adapta.storage.query_enabled_store.AstraQueryEnabledStore;plaintext_credentials={};settings={"client_name": "test", "keyspace": "tmp"}',
+            RuntimeError,
+        ),
+        (
+            'qes://engine=KEYSPACES;plaintext_credentials={};settings={"keyspace": "tmp", "region": "eu-west-1"}',
+            KeyspacesQueryEnabledStore,
+        ),
+        (
+            'qes://engine=adapta.storage.query_enabled_store.KeyspacesQueryEnabledStore;plaintext_credentials={};settings={"client_name": "test", "keyspace": "tmp", "region": "eu-west-1", "profile_name": "test"}',
+            KeyspacesQueryEnabledStore,
+        ),
+        (
+            'qes://engine=adapta.storage.query_enabled_store.KeyspacesQueryEnabledStore;plaintext_credentials={};settings={"client_name": "test", "keyspace": "tmp"}',
             RuntimeError,
         ),
         (

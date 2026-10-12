@@ -39,7 +39,6 @@ def parse_data_path(
         TrinoPath,
         IcebergPath,
         CassandraPath,
-        AstraPath,
     ),
 ) -> DataPath | None:
     """
