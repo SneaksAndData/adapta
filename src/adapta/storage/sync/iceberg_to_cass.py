@@ -190,6 +190,10 @@ def _sync_custom_index(
             data=_read_index_data(),
             overwrite=True,
         )
+        if wait_for_current_snapshot(source_schema, index_metadata.iceberg_table, iceberg_catalog) is None:
+            raise RuntimeError(
+                f"Failed to read current snapshot for table {source_schema}.{index_metadata.iceberg_table} after write"
+            )
         logger.info(
             "Syncing index table {cassandra_table} to Cassandra", cassandra_table=index_metadata.cassandra_table
         )
