@@ -1,6 +1,7 @@
 """Iceberg reader (via REST Catalog)"""
 
 import os
+import time
 from typing import Literal
 
 import polars
@@ -347,9 +348,39 @@ def get_current_snapshot(
     schema_name: str,
     table_name: str,
     catalog: Catalog,
-) -> int:
+) -> int | None:
     """
     Retrieves a latest snapshot of the table
     """
     table = _apply_s3_endpoint_override(catalog.load_table(identifier=(schema_name, table_name)))
-    return table.current_snapshot().snapshot_id
+    current_snapshot = table.current_snapshot()
+    if current_snapshot:
+        return current_snapshot.snapshot_id
+
+    return None
+
+
+def wait_for_current_snapshot(
+    schema_name: str,
+    table_name: str,
+    catalog: Catalog,
+    timeout_seconds: int = 60,
+    poll_interval_seconds: float = 0.2,
+) -> int | None:
+    """
+    Waits for a table snapshot commit to appear on the catalog.
+
+    :param schema_name: Catalog schema/namespace name.
+    :param table_name: Table name.
+    :param catalog: Iceberg catalog.
+    :param timeout_seconds: Maximum time to wait in seconds. Defaults to 60.
+    :param poll_interval_seconds: Sleep interval between polls. Defaults to 0.2s (200ms).
+    :return: Current snapshot ID or None if timed out / table has no snapshot.
+    """
+    start_time = time.monotonic()
+    current_snapshot = get_current_snapshot(schema_name, table_name, catalog)
+    while current_snapshot is None and (time.monotonic() - start_time) < timeout_seconds:
+        time.sleep(poll_interval_seconds)
+        current_snapshot = get_current_snapshot(schema_name, table_name, catalog)
+
+    return current_snapshot

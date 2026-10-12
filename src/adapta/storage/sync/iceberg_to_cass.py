@@ -11,10 +11,10 @@ from adapta.process_communication import DataSocket
 from adapta.storage.distributed_object_store.v3.cassandra_client import CassandraClient, TCassandraModel, get_mapper
 from adapta.storage.iceberg.v1 import (
     get_changes,
-    get_current_snapshot,
     get_property,
     load_using_catalog,
     set_property,
+    wait_for_current_snapshot,
     write_using_catalog,
 )
 from adapta.storage.models import CassandraPath, IcebergPath
@@ -178,10 +178,31 @@ def _sync_custom_index(
             return
         raise ValueError(f"Unsupported upload mode: {upload_mode}")
 
-    idx_exists = iceberg_catalog.table_exists(identifier=(source_schema, index_metadata.iceberg_table))
-    idx_previous_snapshot = (
-        get_current_snapshot(source_schema, index_metadata.iceberg_table, iceberg_catalog) if idx_exists else None
-    )
+    if not iceberg_catalog.table_exists(identifier=(source_schema, index_metadata.iceberg_table)):
+        logger.info(
+            "Index table {iceberg_table} does not exist in Iceberg. Running full sync.",
+            iceberg_table=index_metadata.iceberg_table,
+        )
+        write_using_catalog(
+            schema_name=source_schema,
+            table_name=index_metadata.iceberg_table,
+            catalog=iceberg_catalog,
+            data=_read_index_data(),
+            overwrite=True,
+        )
+        if wait_for_current_snapshot(source_schema, index_metadata.iceberg_table, iceberg_catalog) is None:
+            raise RuntimeError(
+                f"Failed to read current snapshot for table {source_schema}.{index_metadata.iceberg_table} after write"
+            )
+        logger.info(
+            "Syncing index table {cassandra_table} to Cassandra", cassandra_table=index_metadata.cassandra_table
+        )
+        _upload_index(_read_index_data())
+        return
+
+    idx_previous_snapshot = wait_for_current_snapshot(source_schema, index_metadata.iceberg_table, iceberg_catalog)
+    if idx_previous_snapshot is None:
+        raise RuntimeError(f"Table {source_schema}.{index_metadata.iceberg_table} exists but has no current snapshot")
 
     logger.info("Writing index data to Iceberg table {iceberg_table}", iceberg_table=index_metadata.iceberg_table)
     write_using_catalog(
@@ -192,14 +213,15 @@ def _sync_custom_index(
         overwrite=True,
     )
 
-    idx_current_snapshot = get_current_snapshot(source_schema, index_metadata.iceberg_table, iceberg_catalog)
-
-    if not idx_previous_snapshot:
-        logger.info(
-            "Syncing index table {cassandra_table} to Cassandra", cassandra_table=index_metadata.cassandra_table
+    idx_current_snapshot = wait_for_current_snapshot(
+        schema_name=source_schema,
+        table_name=index_metadata.iceberg_table,
+        catalog=iceberg_catalog,
+    )
+    if idx_current_snapshot is None:
+        raise RuntimeError(
+            f"Failed to read current snapshot for table {source_schema}.{index_metadata.iceberg_table} after write"
         )
-        _upload_index(_read_index_data())
-        return
 
     if idx_previous_snapshot == idx_current_snapshot:
         return
@@ -324,7 +346,9 @@ def sync_iceberg_to_cassandra(
         )
     )
     total_synced_records = 0
-    current_snapshot = get_current_snapshot(source_path.schema, source_path.table, iceberg_catalog)
+    current_snapshot = wait_for_current_snapshot(source_path.schema, source_path.table, iceberg_catalog)
+    if current_snapshot is None:
+        raise RuntimeError(f"Failed to read current snapshot for table {source_path.schema}.{source_path.table}")
 
     if not last_synced_snapshot or last_synced_snapshot == "-1":
         logger.info("Last sync snapshot data not available. Will perform a full sync.")
