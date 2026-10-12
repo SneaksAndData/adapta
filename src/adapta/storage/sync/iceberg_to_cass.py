@@ -11,10 +11,10 @@ from adapta.process_communication import DataSocket
 from adapta.storage.distributed_object_store.v3.cassandra_client import CassandraClient, TCassandraModel, get_mapper
 from adapta.storage.iceberg.v1 import (
     get_changes,
-    get_current_snapshot,
     get_property,
     load_using_catalog,
     set_property,
+    wait_for_current_snapshot,
     write_using_catalog,
 )
 from adapta.storage.models import CassandraPath, IcebergPath
@@ -180,7 +180,7 @@ def _sync_custom_index(
 
     idx_exists = iceberg_catalog.table_exists(identifier=(source_schema, index_metadata.iceberg_table))
     idx_previous_snapshot = (
-        get_current_snapshot(source_schema, index_metadata.iceberg_table, iceberg_catalog) if idx_exists else None
+        wait_for_current_snapshot(source_schema, index_metadata.iceberg_table, iceberg_catalog) if idx_exists else None
     )
 
     logger.info("Writing index data to Iceberg table {iceberg_table}", iceberg_table=index_metadata.iceberg_table)
@@ -192,8 +192,6 @@ def _sync_custom_index(
         overwrite=True,
     )
 
-    idx_current_snapshot = get_current_snapshot(source_schema, index_metadata.iceberg_table, iceberg_catalog)
-
     if not idx_previous_snapshot:
         logger.info(
             "Syncing index table {cassandra_table} to Cassandra", cassandra_table=index_metadata.cassandra_table
@@ -201,7 +199,13 @@ def _sync_custom_index(
         _upload_index(_read_index_data())
         return
 
-    if idx_previous_snapshot == idx_current_snapshot:
+    idx_current_snapshot = wait_for_current_snapshot(
+        schema_name=source_schema,
+        table_name=index_metadata.iceberg_table,
+        catalog=iceberg_catalog,
+    )
+
+    if idx_previous_snapshot == idx_current_snapshot or idx_current_snapshot is None:
         return
 
     logger.info(
@@ -324,7 +328,7 @@ def sync_iceberg_to_cassandra(
         )
     )
     total_synced_records = 0
-    current_snapshot = get_current_snapshot(source_path.schema, source_path.table, iceberg_catalog)
+    current_snapshot = wait_for_current_snapshot(source_path.schema, source_path.table, iceberg_catalog)
 
     if not last_synced_snapshot or last_synced_snapshot == "-1":
         logger.info("Last sync snapshot data not available. Will perform a full sync.")
