@@ -67,7 +67,7 @@ class CustomIndexMetadata:
             @dataclass
             class ExampleModel__idx_col_b:
                 col_b: str = field(metadata={"is_primary_key": True, "is_partition_key": True})
-                col_a: str
+                col_a: str = field(metadata={"is_primary_key": True, "is_partition_key": False})
                 col_version: int
             ```
         """
@@ -83,7 +83,13 @@ class CustomIndexMetadata:
         ]
         for pk in dataclasses.fields(base_model):
             if pk.metadata.get("is_primary_key", False) and pk.name != index_field.name:
-                fields_spec.append((pk.name, pk.type, dataclasses.field()))
+                fields_spec.append(
+                    (
+                        pk.name,
+                        pk.type,
+                        dataclasses.field(metadata={"is_primary_key": True, "is_partition_key": False}),
+                    )
+                )
         if ver_field and ver_field.name != index_field.name:
             fields_spec.append((ver_field.name, ver_field.type, dataclasses.field()))
 
