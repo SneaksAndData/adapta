@@ -2,9 +2,9 @@ import pytest
 
 from adapta.storage.query_enabled_store import (
     AstraQueryEnabledStore,
+    AwsKeyspaceQueryEnabledStore,
     DeltaQueryEnabledStore,
     IcebergQueryEnabledStore,
-    KeyspacesQueryEnabledStore,
     LocalQueryEnabledStore,
     QueryEnabledStore,
     TrinoQueryEnabledStore,
@@ -52,11 +52,11 @@ from adapta.storage.query_enabled_store import (
         ),
         (
             'qes://engine=KEYSPACES;plaintext_credentials={};settings={"keyspace": "tmp", "region": "eu-west-1"}',
-            KeyspacesQueryEnabledStore,
+            AwsKeyspaceQueryEnabledStore,
         ),
         (
             'qes://engine=adapta.storage.query_enabled_store.KeyspacesQueryEnabledStore;plaintext_credentials={};settings={"client_name": "test", "keyspace": "tmp", "region": "eu-west-1", "profile_name": "test"}',
-            KeyspacesQueryEnabledStore,
+            AwsKeyspaceQueryEnabledStore,
         ),
         (
             'qes://engine=adapta.storage.query_enabled_store.KeyspacesQueryEnabledStore;plaintext_credentials={};settings={"client_name": "test", "keyspace": "tmp"}',

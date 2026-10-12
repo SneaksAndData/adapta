@@ -1,5 +1,5 @@
 """
-QES implementations for AWS Keyspaces.
+QES implementations for AWS Keyspace.
 """
 
 import os
@@ -24,17 +24,17 @@ from adapta.utils.metaframe import MetaFrame
 
 
 @dataclass
-class KeyspacesCredential(DataClassJsonMixin):
+class AwsKeyspaceCredential(DataClassJsonMixin):
     """
-    AWS Keyspaces credential placeholder for QES. Authentication is performed via SigV4 using the AWS profile
+    AWS Keyspace credential placeholder for QES. Authentication is performed via SigV4 using the AWS profile
     defined in settings, so no secrets are held here.
     """
 
 
 @dataclass
-class KeyspacesSettings(DataClassJsonMixin):
+class AwsKeyspaceSettings(DataClassJsonMixin):
     """
-    AWS Keyspaces connection settings for QES.
+    AWS Keyspace connection settings for QES.
 
     :attr client_name: Name of the client reported to the cluster.
     :attr keyspace: Keyspace to connect to.
@@ -60,9 +60,9 @@ class KeyspacesSettings(DataClassJsonMixin):
 
 
 @final
-class KeyspacesQueryEnabledStore(QueryEnabledStore[KeyspacesCredential, KeyspacesSettings]):
+class AwsKeyspaceQueryEnabledStore(QueryEnabledStore[AwsKeyspaceCredential, AwsKeyspaceSettings]):
     """
-    QES Client for AWS Keyspaces (Cassandra).
+    QES Client for AWS Keyspace (Cassandra).
     """
 
     def _write(
@@ -78,11 +78,11 @@ class KeyspacesQueryEnabledStore(QueryEnabledStore[KeyspacesCredential, Keyspace
 
     def close(self) -> None:
         if not self._lazy:
-            self._keyspaces_client.disconnect()
+            self._aws_keyspace_client.disconnect()
 
-    def __init__(self, credentials: KeyspacesCredential, settings: KeyspacesSettings, lazy_init: bool):
+    def __init__(self, credentials: AwsKeyspaceCredential, settings: AwsKeyspaceSettings, lazy_init: bool):
         super().__init__(credentials, settings)
-        self._keyspaces_client = AwsKeyspaceClient(
+        self._aws_keyspace_client = AwsKeyspaceClient(
             keyspace=self.settings.keyspace,
             client_name=self.settings.client_name,
             region=self.settings.region,
@@ -90,7 +90,7 @@ class KeyspacesQueryEnabledStore(QueryEnabledStore[KeyspacesCredential, Keyspace
         )
         self._lazy = lazy_init
         if not lazy_init:
-            self._keyspaces_client.connect()
+            self._aws_keyspace_client.connect()
 
     def _apply_filter(
         self,
@@ -103,8 +103,8 @@ class KeyspacesQueryEnabledStore(QueryEnabledStore[KeyspacesCredential, Keyspace
         assert isinstance(path, CassandraPath)
         cassandra_path: CassandraPath = path
         if self._lazy:
-            with self._keyspaces_client as keyspaces_client:
-                return keyspaces_client.filter_entities(
+            with self._aws_keyspace_client as aws_keyspace_client:
+                return aws_keyspace_client.filter_entities(
                     model_class=cassandra_path.model_class(),
                     key_column_filter_values=filter_expression,
                     keyspace=cassandra_path.keyspace,
@@ -115,7 +115,7 @@ class KeyspacesQueryEnabledStore(QueryEnabledStore[KeyspacesCredential, Keyspace
                     limit=limit,
                 )
 
-        return self._keyspaces_client.filter_entities(
+        return self._aws_keyspace_client.filter_entities(
             model_class=cassandra_path.model_class(),
             key_column_filter_values=filter_expression,
             keyspace=cassandra_path.keyspace,
@@ -128,17 +128,17 @@ class KeyspacesQueryEnabledStore(QueryEnabledStore[KeyspacesCredential, Keyspace
 
     def _apply_query(self, query: str) -> MetaFrame | Iterator[MetaFrame]:
         if self._lazy:
-            with self._keyspaces_client as keyspaces_client:
-                return keyspaces_client.get_entities_raw(query)
-        return self._keyspaces_client.get_entities_raw(query)
+            with self._aws_keyspace_client as aws_keyspace_client:
+                return aws_keyspace_client.get_entities_raw(query)
+        return self._aws_keyspace_client.get_entities_raw(query)
 
     @classmethod
     def _from_connection_string(
         cls, connection_string: str, lazy_init: bool = False
-    ) -> "QueryEnabledStore[KeyspacesCredential, KeyspacesSettings]":
+    ) -> "QueryEnabledStore[AwsKeyspaceCredential, AwsKeyspaceSettings]":
         _, credentials, settings = re.findall(re.compile(CONNECTION_STRING_REGEX), connection_string)[0]
         return cls(
-            credentials=KeyspacesCredential.from_json(credentials),
-            settings=KeyspacesSettings.from_json(settings),
+            credentials=AwsKeyspaceCredential.from_json(credentials),
+            settings=AwsKeyspaceSettings.from_json(settings),
             lazy_init=lazy_init,
         )
