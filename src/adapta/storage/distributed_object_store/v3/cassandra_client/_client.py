@@ -627,7 +627,7 @@ class CassandraClient(ABC):
 
     def upsert_concurrent(
         self,
-        rows: list[dict],
+        rows: list[dict] | polars.LazyFrame,
         table_name: str,
         entity_type: type[TCassandraModel],
         keyspace: str | None = None,
@@ -636,7 +636,7 @@ class CassandraClient(ABC):
         """
         Upserts rows concurrently using cassandra.concurrent.execute_concurrent.
 
-        :param rows: List of dictionaries representing rows to upsert.
+        :param rows: List of dictionaries or a Polars LazyFrame representing rows to upsert.
         :param table_name: Table to insert entities into.
         :param entity_type: Entity type to map data model and metadata.
         :param keyspace: Optional keyspace name, if not provided in the client constructor.
@@ -645,9 +645,6 @@ class CassandraClient(ABC):
         assert self._session is not None, (
             "Please connect to Cassandra using connect() or with CassandraClient(...) before calling this method"
         )
-
-        if not rows:
-            return
 
         target_keyspace = keyspace or self._keyspace
 
@@ -660,13 +657,33 @@ class CassandraClient(ABC):
 
         table_identifier = f"{target_keyspace}.{target_table_name}" if target_keyspace else target_table_name
 
-        columns = cassandra_mapper.column_names
+        concurrency = concurrency or (os.cpu_count() or 1) * 2
+
+        if isinstance(rows, polars.LazyFrame):
+            lazy_rows = _prepare_lazy_source(rows)
+            schema = lazy_rows.collect_schema()
+            columns = [col for col in cassandra_mapper.column_names if col in schema]
+            if not columns:
+                return
+
+            df = lazy_rows.select(columns).collect()
+            if df.is_empty():
+                return
+        elif not rows:
+            return
+        else:
+            columns = cassandra_mapper.column_names
+            df = None
+
         columns_str = ", ".join(columns)
         placeholders = ", ".join(["?" for _ in columns])
         query = f"INSERT INTO {table_identifier} ({columns_str}) VALUES ({placeholders});"
         prepared_stmt = self._session.prepare(query)
 
-        concurrency = concurrency or (os.cpu_count() or 1) * 2
+        if df is not None:
+            statements_and_params = [(prepared_stmt, row) for row in df.iter_rows()]
+        else:
+            statements_and_params = [(prepared_stmt, tuple(row.get(col) for col in columns)) for row in rows]
 
         @on_exception(
             wait_gen=expo,
@@ -676,7 +693,6 @@ class CassandraClient(ABC):
             raise_on_giveup=True,
         )
         def _execute_concurrent():
-            statements_and_params = [(prepared_stmt, tuple(row.get(col) for col in columns)) for row in rows]
             execute_concurrent(
                 self._session,
                 statements_and_params,
@@ -710,7 +726,7 @@ class CassandraClient(ABC):
         lazy_source = _prepare_lazy_source(source)
 
         @run_time_metrics(metric_name="adapta.cassandra.iceberg_batch_upsert_duration")
-        def _upsert_with_metric(entities: list[dict], **kwargs) -> int:
+        def _upsert_with_metric(entities: list[dict] | polars.LazyFrame, **kwargs) -> int:
             self.upsert_concurrent(
                 rows=entities,
                 table_name=kwargs["table_name"],
@@ -718,22 +734,23 @@ class CassandraClient(ABC):
                 keyspace=kwargs["keyspace"],
                 concurrency=kwargs.get("concurrency"),
             )
-            self._logger.info("Upserted {rows} rows", rows=len(entities))
-            return len(entities)
+            row_count = kwargs.get("row_count") or (len(entities) if isinstance(entities, list) else 0)
+            self._logger.info("Upserted {rows} rows", rows=row_count)
+            return row_count
 
         total_rows = 0
         for batch in lazy_source.collect_batches(chunk_size=batch_size, maintain_order=False):
-            rows = batch.to_dicts()
             _upsert_with_metric(
-                rows,
+                batch.lazy(),
                 table_name=table_name,
                 entity_type=entity_type,
                 keyspace=keyspace,
                 concurrency=threads,
+                row_count=batch.height,
                 metrics_provider=self._metrics_provider,
                 logger=self._logger,
             )
-            total_rows += len(rows)
+            total_rows += batch.height
 
         return total_rows
 
