@@ -61,6 +61,25 @@ from adapta.utils.metaframe import MetaFrame, concat
 TCassandraModel = TypeVar("TCassandraModel")
 
 
+def _prepare_lazy_source(source: polars.LazyFrame | polars.DataFrame) -> polars.LazyFrame:
+    """
+    Prepares a Polars LazyFrame or DataFrame, casting any list[struct{"key": ..., "value": ...}] columns to native Map types.
+    """
+    lazy_source = source.lazy() if isinstance(source, polars.DataFrame) else source
+    schema = lazy_source.collect_schema()
+    map_transforms = []
+    for col_name, dtype in schema.items():
+        if isinstance(dtype, (polars.List, polars.Array)) and isinstance(dtype.inner, polars.Struct):
+            fields = {f.name: f.dtype for f in dtype.inner.fields}
+            if len(fields) == 2 and "key" in fields and "value" in fields:
+                map_transforms.append(polars.col(col_name).cast(polars.Map(fields["key"], fields["value"])))
+
+    if map_transforms:
+        lazy_source = lazy_source.with_columns(*map_transforms)
+
+    return lazy_source
+
+
 def _fix_map_type(entity: dict) -> dict:
     """Polars <2 remaps map<k, v> to list[{"key": ..., "value": ...}]"""
     fixed = {}
@@ -678,7 +697,7 @@ class CassandraClient(ABC):
         """
         Uploads a Polars LazyFrame or DataFrame in batches using upsert_concurrent.
 
-        Note: Map type row adjustments (_fix_map_type) are applied for Polars <2 compatibility.
+        Note: Map type column adjustments are applied to lazy_source as native Polars Map types.
 
         :param source: Polars LazyFrame or DataFrame to upload.
         :param table_name: Table to insert entities into.
@@ -688,7 +707,7 @@ class CassandraClient(ABC):
         :param threads: Maximum number of concurrent statements per batch.
         :return: Total number of rows upserted.
         """
-        lazy_source = source.lazy() if isinstance(source, polars.DataFrame) else source
+        lazy_source = _prepare_lazy_source(source)
 
         @run_time_metrics(metric_name="adapta.cassandra.iceberg_batch_upsert_duration")
         def _upsert_with_metric(entities: list[dict], **kwargs) -> int:
@@ -704,7 +723,7 @@ class CassandraClient(ABC):
 
         total_rows = 0
         for batch in lazy_source.collect_batches(chunk_size=batch_size, maintain_order=False):
-            rows = [_fix_map_type(row) for row in batch.to_dicts()]
+            rows = batch.to_dicts()
             _upsert_with_metric(
                 rows,
                 table_name=table_name,
@@ -730,7 +749,7 @@ class CassandraClient(ABC):
         """
         Uploads a Polars LazyFrame or DataFrame concurrently using Cassandra batch upserts and ConcurrentTaskRunner.
 
-        Note: Map type row adjustments (_fix_map_type) are applied for Polars <2 compatibility.
+        Note: Map type column adjustments are applied to lazy_source as native Polars Map types.
 
         :param source: Polars LazyFrame or DataFrame to upload.
         :param table_name: Table to insert entities into.
@@ -739,7 +758,7 @@ class CassandraClient(ABC):
         :param batch_size: Number of rows per batch to collect and upsert. Defaults to 1,000.
         :param threads: Number of parallel threads to use. Defaults to 4.
         """
-        lazy_source = source.lazy() if isinstance(source, polars.DataFrame) else source
+        lazy_source = _prepare_lazy_source(source)
 
         @run_time_metrics(metric_name="adapta.cassandra.iceberg_batch_upsert_duration")
         def _upsert_with_metric(entities: list[dict], **kwargs) -> int:
@@ -759,7 +778,7 @@ class CassandraClient(ABC):
                     _upsert_with_metric,
                     str(uuid.uuid4()),
                     kwargs={
-                        "entities": [_fix_map_type(batch_row) for batch_row in source_batch.to_dicts()],
+                        "entities": source_batch.to_dicts(),
                         "entity_type": entity_type,
                         "keyspace": keyspace or self._keyspace,
                         "table_name": table_name,
@@ -786,7 +805,7 @@ class CassandraClient(ABC):
         """
         Deletes entities in batches from a Polars LazyFrame or DataFrame concurrently using ConcurrentTaskRunner.
 
-        Note: Map type row adjustments (_fix_map_type) are applied for Polars <2 compatibility.
+        Note: Map type column adjustments are applied to lazy_source as native Polars Map types.
 
         :param source: Polars LazyFrame or DataFrame containing entities to delete.
         :param table_name: Table to delete entities from.
@@ -795,7 +814,7 @@ class CassandraClient(ABC):
         :param batch_size: Number of rows per batch to collect and delete. Defaults to 1,000.
         :param threads: Number of parallel threads to use. Defaults to 4.
         """
-        lazy_source = source.lazy() if isinstance(source, polars.DataFrame) else source
+        lazy_source = _prepare_lazy_source(source)
 
         target_keyspace = keyspace or self._keyspace
         cassandra_mapper = get_mapper(
@@ -823,7 +842,7 @@ class CassandraClient(ABC):
                     _delete_with_metric,
                     str(uuid.uuid4()),
                     kwargs={
-                        "entities": [_fix_map_type(batch_row) for batch_row in source_batch.to_dicts()],
+                        "entities": source_batch.to_dicts(),
                         "entity_type": entity_type,
                         "keyspace": target_keyspace,
                         "table_name": table_name,

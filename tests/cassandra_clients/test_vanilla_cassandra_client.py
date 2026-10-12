@@ -156,3 +156,29 @@ def test_vanilla_cassandra_client_connect_and_crud(setup_keyspace_and_table):
         assert len(after_concurrent_delete) == 4
         assert "item-6" not in set(after_concurrent_delete["id"])
         assert "item-7" not in set(after_concurrent_delete["id"])
+
+
+def test_prepare_lazy_source_converts_list_struct_to_map():
+    from adapta.storage.distributed_object_store.v3.cassandra_client._client import _prepare_lazy_source
+
+    df_list_struct = polars.DataFrame(
+        {
+            "id": ["1", "2"],
+            "metadata": [
+                [{"key": "env", "value": "prod"}, {"key": "region", "value": "eu"}],
+                [{"key": "env", "value": "dev"}, {"key": "region", "value": "us"}],
+            ],
+        }
+    )
+    prepared = _prepare_lazy_source(df_list_struct)
+    assert isinstance(prepared.collect_schema()["metadata"], polars.Map)
+    assert prepared.collect().to_dicts() == [
+        {"id": "1", "metadata": {"env": "prod", "region": "eu"}},
+        {"id": "2", "metadata": {"env": "dev", "region": "us"}},
+    ]
+
+    # DataFrame with no map structures remains untouched
+    df_regular = polars.DataFrame({"id": ["1", "2"], "val": [10, 20]})
+    prepared_regular = _prepare_lazy_source(df_regular)
+    assert prepared_regular.collect_schema() == df_regular.schema
+
