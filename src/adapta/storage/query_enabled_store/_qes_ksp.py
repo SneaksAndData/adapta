@@ -142,4 +142,3 @@ class KeyspacesQueryEnabledStore(QueryEnabledStore[KeyspacesCredential, Keyspace
             settings=KeyspacesSettings.from_json(settings),
             lazy_init=lazy_init,
         )
-
