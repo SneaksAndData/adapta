@@ -347,9 +347,13 @@ def get_current_snapshot(
     schema_name: str,
     table_name: str,
     catalog: Catalog,
-) -> int:
+) -> int | None:
     """
     Retrieves a latest snapshot of the table
     """
     table = _apply_s3_endpoint_override(catalog.load_table(identifier=(schema_name, table_name)))
-    return table.current_snapshot().snapshot_id
+    current_snapshot = table.current_snapshot()
+    if current_snapshot:
+        return current_snapshot.snapshot_id
+
+    return None
