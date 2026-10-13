@@ -5,6 +5,7 @@ import pytest
 import sqlalchemy
 from polars.testing import assert_frame_equal
 from pyiceberg.catalog import Catalog
+from pyiceberg.exceptions import NoSuchNamespaceError
 from sqlalchemy import text
 
 from adapta.storage.iceberg.v1 import (
@@ -314,6 +315,49 @@ def test_partial_overwrite_table(iceberg_catalog: Catalog, lazy: bool):
 
     read_data = load_using_catalog(
         schema="test",
+        table_name=table_name,
+        catalog=iceberg_catalog,
+    )
+    assert_frame_equal(read_data.to_polars().sort("cola"), expected_df.sort("cola"), check_column_order=False)
+
+
+def test_create_schema(iceberg_catalog: Catalog):
+    table_name = f"test_create_schema_{generate_random_string(8)}".lower()
+    input_data1 = {
+        "cola": [1, 2],
+        "colb": ["a", "b"],
+        "colc": [[1], [2]],
+    }
+    df1 = polars.DataFrame(input_data1)
+
+    with pytest.raises(NoSuchNamespaceError):
+        write_using_catalog(
+            schema_name="test_schema",
+            table_name=table_name,
+            catalog=iceberg_catalog,
+            data=df1,
+            overwrite=True,
+        )
+
+    write_using_catalog(
+        schema_name="test_schema",
+        table_name=table_name,
+        catalog=iceberg_catalog,
+        data=df1,
+        overwrite=True,
+        create_schema=True,
+    )
+
+    expected_df = polars.DataFrame(
+        {
+            "cola": [1, 2],
+            "colb": ["a", "b"],
+            "colc": [[1], [2]],
+        }
+    )
+
+    read_data = load_using_catalog(
+        schema="test_schema",
         table_name=table_name,
         catalog=iceberg_catalog,
     )
