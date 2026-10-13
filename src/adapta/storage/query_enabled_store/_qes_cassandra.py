@@ -123,8 +123,8 @@ class CassandraQueryEnabledStore(QueryEnabledStore[CassandraCredential, Cassandr
         assert isinstance(path, CassandraPath)
         cassandra_path: CassandraPath = path
         if self._lazy:
-            with self._cassandra_client as aws_keyspace_client:
-                return aws_keyspace_client.filter_entities(
+            with self._cassandra_client as cassandra_client:
+                return cassandra_client.filter_entities(
                     model_class=cassandra_path.model_class(),
                     key_column_filter_values=filter_expression,
                     keyspace=cassandra_path.keyspace,
@@ -148,8 +148,8 @@ class CassandraQueryEnabledStore(QueryEnabledStore[CassandraCredential, Cassandr
 
     def _apply_query(self, query: str) -> MetaFrame | Iterator[MetaFrame]:
         if self._lazy:
-            with self._cassandra_client as aws_keyspace_client:
-                return aws_keyspace_client.get_entities_raw(query)
+            with self._cassandra_client as cassandra_client:
+                return cassandra_client.get_entities_raw(query)
         return self._cassandra_client.get_entities_raw(query)
 
     @classmethod
