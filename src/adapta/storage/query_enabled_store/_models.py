@@ -25,6 +25,9 @@ from functools import partial
 from pydoc import locate
 from typing import Any, Generic, Self, TypeVar, final
 
+from adapta.logs import LoggerInterface, VoidLogger
+from adapta.metrics import MetricsProvider
+from adapta.metrics.providers.void_provider import VoidMetricsProvider
 from adapta.storage.models.base import DataPath
 from adapta.storage.models.enum import QueryEnabledStoreOptions
 from adapta.storage.models.expression_dsl.filter_expression import Expression
@@ -64,6 +67,7 @@ class BundledQueryEnabledStores(Enum):
 
     DELTA = "adapta.storage.query_enabled_store.DeltaQueryEnabledStore"
     ASTRA = "adapta.storage.query_enabled_store.AstraQueryEnabledStore"
+    CASSANDRA = "adapta.storage.query_enabled_store.CassandraQueryEnabledStore"
     LOCAL = "adapta.storage.query_enabled_store.LocalQueryEnabledStore"
     TRINO = "adapta.storage.query_enabled_store.TrinoQueryEnabledStore"
     ICEBERG = "adapta.storage.query_enabled_store.IcebergQueryEnabledStore"
@@ -77,9 +81,17 @@ class QueryEnabledStore(ABC, Generic[TCredential, TSettings]):
     QES base class.
     """
 
-    def __init__(self, credentials: TCredential, settings: TSettings):
+    def __init__(
+        self,
+        credentials: TCredential,
+        settings: TSettings,
+        logger: LoggerInterface | None = None,
+        metrics_provider: MetricsProvider | None = None,
+    ):
         self._credentials = credentials
         self._settings = settings
+        self._logger = logger or VoidLogger()
+        self._metrics_provider = metrics_provider or VoidMetricsProvider()
 
     @property
     def credentials(self) -> TCredential:

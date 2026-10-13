@@ -2,6 +2,7 @@ import pytest
 
 from adapta.storage.query_enabled_store import (
     AstraQueryEnabledStore,
+    CassandraQueryEnabledStore,
     DeltaQueryEnabledStore,
     IcebergQueryEnabledStore,
     LocalQueryEnabledStore,
@@ -47,6 +48,26 @@ from adapta.storage.query_enabled_store import (
         ),
         (
             'qes://engine=adapta.storage.query_enabled_store.AstraQueryEnabledStore;plaintext_credentials={};settings={"client_name": "test", "keyspace": "tmp"}',
+            RuntimeError,
+        ),
+        (
+            'qes://engine=CASSANDRA;plaintext_credentials={};settings={"keyspace": "tmp", "client_name": "test"}',
+            CassandraQueryEnabledStore,
+        ),
+        (
+            'qes://engine=adapta.storage.query_enabled_store.CassandraQueryEnabledStore;plaintext_credentials={"username": "user1", "password": "something"};settings={"keyspace": "tmp", "client_name": "test"}',
+            CassandraQueryEnabledStore,
+        ),
+        (
+            'qes://engine=adapta.storage.query_enabled_store.CassandraQueryEnabledStore;plaintext_credentials={};settings={"client_name": "test", "keyspace": "tmp", "aws_region": "eu-west-1", "aws_profile_name": "test"}',
+            CassandraQueryEnabledStore,
+        ),
+        (
+            'qes://engine=adapta.storage.query_enabled_store.CassandraQueryEnabledStore;plaintext_credentials={};settings={"client_name": "test", "aws_profile_name": "test"}',
+            RuntimeError,
+        ),
+        (
+            'qes://engine=adapta.storage.query_enabled_store.CassandraQueryEnabledStore;plaintext_credentials={};settings={"keyspace": "test", "aws_profile_name": "test"}',
             RuntimeError,
         ),
         (
