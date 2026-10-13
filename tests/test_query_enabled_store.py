@@ -51,7 +51,7 @@ from adapta.storage.query_enabled_store import (
             RuntimeError,
         ),
         (
-            'qes://engine=CASSANDRA;plaintext_credentials={};settings={"keyspace": "tmp", "region": "eu-west-1"}',
+            'qes://engine=CASSANDRA;plaintext_credentials={};settings={"keyspace": "tmp", "client_name": "test"}',
             CassandraQueryEnabledStore,
         ),
         (
