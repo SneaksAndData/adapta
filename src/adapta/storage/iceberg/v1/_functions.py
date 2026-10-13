@@ -154,6 +154,7 @@ def write_using_catalog(
     data: polars.DataFrame | polars.LazyFrame,
     write_chunk_size: int = 50_000,
     overwrite: bool = True,
+    create_schema: bool = False,
     merge_columns: list[str] | None = None,
     delete_filter: Expression | None = None,
 ) -> None:
@@ -165,10 +166,22 @@ def write_using_catalog(
     Note when using S3 compatible storage: if you are getting checksum validation errors, add these two env variables:
         os.environ["AWS_REQUEST_CHECKSUM_CALCULATION"] = "WHEN_REQUIRED"
         os.environ["AWS_RESPONSE_CHECKSUM_VALIDATION"] = "WHEN_REQUIRED"
+
+    :param schema_name: name of the schema 
+    :param table_name: name of the table
+    :param catalog: catalog to use for writing
+    :param data: dataframe containing the data to write
+    :param write_chunk_size: number of rows to write per chunk
+    :param overwrite: flag to overwrite the existing data
+    :param create_schema: flag to automatically create the schema if not exists
+    :param merge_column: if provided an upsert will be performed using the list of columns for merging
+    :param delete_filter: if provided all rows that match this expression will be deleted before writing data
+
     """
 
     def _get_table(table_schema: Schema) -> pyiceberg.table.Table:
-        catalog.create_namespace_if_not_exists(namespace=schema_name)
+        if create_schema:
+            catalog.create_namespace_if_not_exists(namespace=schema_name)
         if catalog.table_exists(identifier=(schema_name, table_name)):
             return catalog.load_table(identifier=(schema_name, table_name))
 
