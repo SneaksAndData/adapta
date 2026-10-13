@@ -30,6 +30,13 @@ class CassandraCredential(DataClassJsonMixin):
     defined in settings, so no secrets are held here.
     """
 
+    username: str | None = None
+    password: str | None = None
+
+    def __post_init__(self):
+        self.username = self.username or os.getenv("ADAPTA__CASS_USERNAME")
+        self.password = self.password or os.getenv("ADAPTA__CASS_PASSWORD")
+
 
 @dataclass
 class CassandraSettings(DataClassJsonMixin):
@@ -46,12 +53,14 @@ class CassandraSettings(DataClassJsonMixin):
     keyspace: str | None = None
     aws_region: str | None = None
     aws_profile_name: str | None = None
+    contact_points: list[str] | None = None
 
     def __post_init__(self):
         self.client_name = self.client_name or os.getenv("ADAPTA__CASS_CLIENT_NAME")
-        self.keyspace = self.keyspace or os.getenv("PROTEUS__KSP_KEYSPACE")
-        self.region = self.region or os.getenv("PROTEUS__KSP_REGION")
-        self.profile_name = self.profile_name or os.getenv("PROTEUS__KSP_PROFILE_NAME")
+        self.keyspace = self.keyspace or os.getenv("ADAPTA__CASS_KEYSPACE")
+        self.aws_region = self.aws_region or os.getenv("ADAPTA__CASS_REGION")
+        self.aws_profile_name = self.aws_profile_name or os.getenv("ADAPTA__CASS_PROFILE_NAME")
+        self.contact_points = self.contact_points or os.getenv("ADAPTA_CONTACT_POINTS") or ["127.0.0.1"]
 
         if not all([self.keyspace, self.client_name]):
             raise RuntimeError(
@@ -92,12 +101,12 @@ class CassandraQueryEnabledStore(QueryEnabledStore[CassandraCredential, Cassandr
         """
         Resolves the Cassandra client.
         """
-        if self.settings.region:
+        if self.settings.aws_region:
             return AwsKeyspaceClient(
                 keyspace=self.settings.keyspace,
                 client_name=self.settings.client_name,
-                region=self.settings.region,
-                profile_name=self.settings.profile_name,
+                region=self.settings.aws_region,
+                profile_name=self.settings.aws_profile_name,
                 logger=self._logger,
                 metrics_provider=self._metrics_provider,
             )
@@ -105,9 +114,9 @@ class CassandraQueryEnabledStore(QueryEnabledStore[CassandraCredential, Cassandr
         return VanillaCassandraClient(
             keyspace=self.settings.keyspace,
             client_name=self.settings.client_name,
-            username="",
-            password="",
-            contact_points=["127.0.0.1"],
+            username=self.credentials.username,
+            password=self.credentials.password,
+            contact_points=self.settings.contact_points,
             logger=self._logger,
             metrics_provider=self._metrics_provider,
         )
