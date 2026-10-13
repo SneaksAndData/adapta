@@ -48,7 +48,7 @@ class CassandraSettings(DataClassJsonMixin):
     profile_name: str | None = None
 
     def __post_init__(self):
-        self.client_name = self.client_name or os.getenv("PROTEUS__KSP_CLIENT_NAME")
+        self.client_name = self.client_name or os.getenv("ADAPTA__CASS_CLIENT_NAME")
         self.keyspace = self.keyspace or os.getenv("PROTEUS__KSP_KEYSPACE")
         self.region = self.region or os.getenv("PROTEUS__KSP_REGION")
         self.profile_name = self.profile_name or os.getenv("PROTEUS__KSP_PROFILE_NAME")
