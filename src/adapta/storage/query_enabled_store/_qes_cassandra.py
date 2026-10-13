@@ -1,5 +1,5 @@
 """
-QES implementations for AWS Keyspace.
+QES implementations for Cassandra.
 """
 
 import os
@@ -53,11 +53,6 @@ class CassandraSettings(DataClassJsonMixin):
         self.keyspace = self.keyspace or os.getenv("PROTEUS__KSP_KEYSPACE")
         self.region = self.region or os.getenv("PROTEUS__KSP_REGION")
         self.profile_name = self.profile_name or os.getenv("PROTEUS__KSP_PROFILE_NAME")
-
-        if not self.region:
-            raise RuntimeError(
-                "AWS region is required. Please supply it either via connection string or via PROTEUS__KSP_REGION."
-            )
 
 
 @final
