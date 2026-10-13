@@ -85,8 +85,8 @@ class QueryEnabledStore(ABC, Generic[TCredential, TSettings]):
         self,
         credentials: TCredential,
         settings: TSettings,
-        logger: LoggerInterface | None,
-        metrics_provider: MetricsProvider | None,
+        logger: LoggerInterface | None = None,
+        metrics_provider: MetricsProvider | None = None,
     ):
         self._credentials = credentials
         self._settings = settings
