@@ -19,3 +19,4 @@ Module index.
 from adapta.logs._async_logger import create_async_logger as create_async_logger
 from adapta.logs._base import SemanticLogger as SemanticLogger
 from adapta.logs._logger_interface import LoggerInterface as LoggerInterface
+from adapta.logs.providers.void_logger import VoidLogger as VoidLogger

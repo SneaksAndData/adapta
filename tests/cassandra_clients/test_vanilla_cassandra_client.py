@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 
+import polars
 import pytest
 from cassandra.cluster import Cluster
 
@@ -94,3 +95,115 @@ def test_vanilla_cassandra_client_connect_and_crud(setup_keyspace_and_table):
         after_delete = client.get_entities_raw("SELECT * FROM test_vanilla.test_item;").to_pandas()
         assert len(after_delete) == 2
         assert "item-1" not in set(after_delete["id"])
+
+        # Test upload_concurrent_native
+        native_data = polars.DataFrame(
+            [
+                {"id": "item-4", "name": "fourth", "value": 400},
+                {"id": "item-5", "name": "fifth", "value": 500},
+            ]
+        )
+        upserted_native = client.upload_concurrent_native(
+            source=native_data.lazy(),
+            table_name="test_item",
+            entity_type=VanillaItem,
+            batch_size=2,
+            threads=2,
+        )
+        assert upserted_native == 2
+
+        after_native = client.get_entities_raw("SELECT * FROM test_vanilla.test_item;").to_pandas()
+        assert len(after_native) == 4
+        assert {"item-4", "item-5"}.issubset(set(after_native["id"]))
+
+        # Test upload_concurrent_batch
+        batch_data = polars.DataFrame(
+            [
+                {"id": "item-6", "name": "sixth", "value": 600},
+                {"id": "item-7", "name": "seventh", "value": 700},
+            ]
+        )
+        upserted_batch = client.upload_concurrent_batch(
+            source=batch_data.lazy(),
+            table_name="test_item",
+            entity_type=VanillaItem,
+            batch_size=2,
+            threads=2,
+        )
+        assert upserted_batch == 2
+
+        after_batch = client.get_entities_raw("SELECT * FROM test_vanilla.test_item;").to_pandas()
+        assert len(after_batch) == 6
+        assert {"item-6", "item-7"}.issubset(set(after_batch["id"]))
+
+        # Test delete_batch_concurrent
+        deletes_data = polars.DataFrame(
+            [
+                {"id": "item-6", "name": "sixth", "value": 600},
+                {"id": "item-7", "name": "seventh", "value": 700},
+            ]
+        )
+        deleted_count = client.delete_batch_concurrent(
+            source=deletes_data.lazy(),
+            table_name="test_item",
+            entity_type=VanillaItem,
+            batch_size=2,
+            threads=2,
+        )
+        assert deleted_count == 2
+
+        after_concurrent_delete = client.get_entities_raw("SELECT * FROM test_vanilla.test_item;").to_pandas()
+        assert len(after_concurrent_delete) == 4
+        assert "item-6" not in set(after_concurrent_delete["id"])
+        assert "item-7" not in set(after_concurrent_delete["id"])
+
+        # Test direct upsert_concurrent with LazyFrame
+        direct_lf_data = polars.DataFrame(
+            [
+                {"id": "item-8", "name": "eighth", "value": 800},
+            ]
+        ).lazy()
+        client.upsert_concurrent(
+            rows=direct_lf_data,
+            table_name="test_item",
+            entity_type=VanillaItem,
+        )
+        after_lf_upsert = client.get_entities_raw("SELECT * FROM test_vanilla.test_item;").to_pandas()
+        assert "item-8" in set(after_lf_upsert["id"])
+
+        # Test empty LazyFrame and empty list handling
+        client.upsert_concurrent(
+            rows=polars.LazyFrame(schema={"id": polars.String, "name": polars.String, "value": polars.Int32}),
+            table_name="test_item",
+            entity_type=VanillaItem,
+        )
+        client.upsert_concurrent(
+            rows=[],
+            table_name="test_item",
+            entity_type=VanillaItem,
+        )
+
+
+def test_prepare_lazy_source_converts_list_struct_to_map():
+    from adapta.storage.distributed_object_store.v3.cassandra_client._client import _prepare_lazy_source
+
+    df_list_struct = polars.DataFrame(
+        {
+            "id": ["1", "2"],
+            "metadata": [
+                [{"key": "env", "value": "prod"}, {"key": "region", "value": "eu"}],
+                [{"key": "env", "value": "dev"}, {"key": "region", "value": "us"}],
+            ],
+        }
+    )
+    prepared = _prepare_lazy_source(df_list_struct)
+    assert isinstance(prepared.collect_schema()["metadata"], polars.Map)
+    assert prepared.collect().to_dicts() == [
+        {"id": "1", "metadata": {"env": "prod", "region": "eu"}},
+        {"id": "2", "metadata": {"env": "dev", "region": "us"}},
+    ]
+
+    # DataFrame with no map structures remains untouched
+    df_regular = polars.DataFrame({"id": ["1", "2"], "val": [10, 20]})
+    prepared_regular = _prepare_lazy_source(df_regular)
+    assert prepared_regular.collect_schema() == df_regular.schema

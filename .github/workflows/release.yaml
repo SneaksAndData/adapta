@@ -22,4 +22,4 @@ jobs:
         uses: SneaksAndData/github-actions/semver_release@e3f4ea513c548adf4e774364872966d0d4a3d2fe # v0.1.12
         with:
           major_v: 5
-          minor_v: 1
+          minor_v: 2

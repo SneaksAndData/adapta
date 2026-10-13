@@ -6,6 +6,8 @@ import boto3
 from cassandra.auth import AuthProvider
 from cassandra_sigv4.auth import SigV4AuthProvider
 
+from adapta.logs import LoggerInterface
+from adapta.metrics import MetricsProvider
 from adapta.storage.distributed_object_store.v3.cassandra_client import CassandraClient, CassandraClientConfiguration
 
 
@@ -22,8 +24,16 @@ class AwsKeyspaceClient(CassandraClient):
         region: str,
         profile_name: str | None = None,
         client_config: CassandraClientConfiguration | None = None,
+        logger: LoggerInterface | None = None,
+        metrics_provider: MetricsProvider | None = None,
     ) -> None:
-        super().__init__(client_name, keyspace, client_config)
+        super().__init__(
+            client_name=client_name,
+            keyspace=keyspace,
+            client_config=client_config,
+            logger=logger,
+            metrics_provider=metrics_provider,
+        )
         self._region = region
         self._profile = profile_name
 

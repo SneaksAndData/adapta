@@ -3,11 +3,16 @@ import os
 import platform
 import re
 import ssl
+import uuid
 
 from cassandra.cqlengine.connection import set_session
 from cassandra.cqlengine.management import sync_table
+from cassandra.query import PreparedStatement
 
-from adapta.storage.distributed_object_store.v3.cassandra_client._model_mappers import get_mapper
+from adapta.storage.distributed_object_store.v3.cassandra_client._model_mappers import (
+    CassandraModelMapper,
+    get_mapper,
+)
 
 try:
     from _socket import IPPROTO_TCP, TCP_NODELAY, TCP_USER_TIMEOUT
@@ -24,7 +29,7 @@ from typing import Any, Self, TypeVar
 import pandas
 import polars
 from backoff import expo, on_exception
-from cassandra import ConsistencyLevel, WriteTimeout
+from cassandra import ConsistencyLevel, WriteFailure, WriteTimeout
 from cassandra.auth import AuthProvider
 from cassandra.cluster import (
     EXEC_PROFILE_DEFAULT,
@@ -34,6 +39,7 @@ from cassandra.cluster import (
     RetryPolicy,
     Session,
 )
+from cassandra.concurrent import execute_concurrent
 from cassandra.cqlengine.models import Model
 from cassandra.cqlengine.named import NamedTable
 from cassandra.cqlengine.query import BatchQuery, BatchType
@@ -43,26 +49,67 @@ from cassandra.query import dict_factory
 from polars.exceptions import ComputeError
 
 import adapta
+from adapta.logs import LoggerInterface, VoidLogger
+from adapta.metrics import MetricsProvider
+from adapta.metrics.providers.void_provider import VoidMetricsProvider
 from adapta.storage.distributed_object_store.v3.cassandra_client._client_configuration import (
     CassandraClientConfiguration,
 )
 from adapta.storage.models.enum import QueryEnabledStoreOptions
 from adapta.storage.models.expression_dsl.cassandra_filter_expression import CassandraFilterExpression
 from adapta.storage.models.expression_dsl.filter_expression import Expression, compile_expression
-from adapta.utils import chunk_list, rate_limit
+from adapta.utils import chunk_list, rate_limit, run_time_metrics
+from adapta.utils.concurrent_task_runner import ConcurrentTaskRunner, Executable
 from adapta.utils.metaframe import MetaFrame, concat
 
 TCassandraModel = TypeVar("TCassandraModel")
+
+
+def _prepare_lazy_source(source: polars.LazyFrame | polars.DataFrame) -> polars.LazyFrame:
+    """
+    Prepares a Polars LazyFrame or DataFrame, casting any list[struct{"key": ..., "value": ...}] columns to native Map types.
+    """
+    lazy_source = source.lazy() if isinstance(source, polars.DataFrame) else source
+    schema = lazy_source.collect_schema()
+    map_transforms = []
+    for col_name, dtype in schema.items():
+        if isinstance(dtype, (polars.List, polars.Array)) and isinstance(dtype.inner, polars.Struct):
+            fields = {f.name: f.dtype for f in dtype.inner.fields}
+            if len(fields) == 2 and "key" in fields and "value" in fields:
+                map_transforms.append(polars.col(col_name).cast(polars.Map(fields["key"], fields["value"])))
+
+    if map_transforms:
+        lazy_source = lazy_source.with_columns(*map_transforms)
+
+    return lazy_source
+
+
+def _fix_map_type(entity: dict) -> dict:
+    """Polars <2 remaps map<k, v> to list[{"key": ..., "value": ...}]"""
+    fixed = {}
+    for cell_key, cell_value in entity.items():
+        if isinstance(cell_value, list) and len(cell_value) > 0 and "key" in cell_value[0] and "value" in cell_value[0]:
+            fixed[cell_key] = {a["key"]: a["value"] for a in cell_value}
+        else:
+            fixed[cell_key] = cell_value
+    return fixed
 
 
 class CassandraClient(ABC):
     """Generic Cassandra client"""
 
     def __init__(
-        self, client_name: str, keyspace: str | None, client_config: CassandraClientConfiguration | None
+        self,
+        client_name: str,
+        keyspace: str | None,
+        client_config: CassandraClientConfiguration | None = None,
+        logger: LoggerInterface | None = None,
+        metrics_provider: MetricsProvider | None = None,
     ) -> None:
         self._client_name = client_name
         self._keyspace = keyspace
+        self._logger = logger or VoidLogger()
+        self._metrics_provider = metrics_provider or VoidMetricsProvider()
         self._session: Session | None = None
         self._cluster: Cluster | None = None
         self._snake_pattern = re.compile(r"(?<!^)(?=[A-Z])")
@@ -327,7 +374,7 @@ class CassandraClient(ABC):
             )
 
         assert self._session is not None, (
-            "Please instantiate an CassandraClient using with CassandraClient(...) before calling this method"
+            "Please connect to Cassandra using connect() or with CassandraClient(...) before calling this method"
         )
 
         cassandra_model_mapper = get_mapper(
@@ -558,7 +605,7 @@ class CassandraClient(ABC):
 
         @on_exception(
             wait_gen=expo,
-            exception=(OverloadedErrorMessage, IsBootstrappingErrorMessage, WriteTimeout),
+            exception=(OverloadedErrorMessage, IsBootstrappingErrorMessage, WriteTimeout, WriteFailure),
             max_tries=self._client_config.transient_error_max_retries,
             max_time=self._client_config.transient_error_max_wait_s,
             raise_on_giveup=True,
@@ -581,3 +628,265 @@ class CassandraClient(ABC):
                 values=chunk,
                 ttl=time_to_live,
             )
+
+    def _prepare_insert_statement(self, table_identifier: str, columns: list[str]) -> PreparedStatement:
+        columns_str = ", ".join(columns)
+        placeholders = ", ".join(["?" for _ in columns])
+        query = f"INSERT INTO {table_identifier} ({columns_str}) VALUES ({placeholders});"
+        return self._session.prepare(query)
+
+    def _build_statements_and_params(
+        self,
+        rows: list[dict] | polars.LazyFrame,
+        table_identifier: str,
+        cassandra_mapper: CassandraModelMapper,
+    ) -> list[tuple[PreparedStatement, tuple]]:
+        if isinstance(rows, polars.LazyFrame):
+            batch_rows = _prepare_lazy_source(rows)
+            batch_columns = [col for col in cassandra_mapper.column_names if col in batch_rows.collect_schema()]
+            if not batch_columns:
+                return []
+
+            prepared_rows = batch_rows.select(batch_columns).collect()
+            if prepared_rows.is_empty():
+                return []
+
+            prepared_stmt = self._prepare_insert_statement(table_identifier, batch_columns)
+            return [(prepared_stmt, row) for row in prepared_rows.iter_rows()]
+
+        if not rows:
+            return []
+
+        prepared_stmt = self._prepare_insert_statement(table_identifier, cassandra_mapper.column_names)
+        return [(prepared_stmt, tuple(row.get(col) for col in cassandra_mapper.column_names)) for row in rows]
+
+    def upsert_concurrent(
+        self,
+        rows: list[dict] | polars.LazyFrame,
+        table_name: str,
+        entity_type: type[TCassandraModel],
+        keyspace: str | None = None,
+        concurrency: int | None = None,
+    ) -> None:
+        """
+        Upserts rows concurrently using cassandra.concurrent.execute_concurrent.
+
+        :param rows: List of dictionaries or a Polars LazyFrame representing rows to upsert.
+        :param table_name: Table to insert entities into.
+        :param entity_type: Entity type to map data model and metadata.
+        :param keyspace: Optional keyspace name, if not provided in the client constructor.
+        :param concurrency: Maximum number of concurrent statements. Defaults to cpu_count * 2.
+        """
+        assert self._session is not None, (
+            "Please connect to Cassandra using connect() or with CassandraClient(...) before calling this method"
+        )
+
+        target_keyspace = keyspace or self._keyspace
+
+        cassandra_mapper = get_mapper(
+            data_model=entity_type,
+            table_name=table_name,
+            keyspace=target_keyspace,
+        )
+        target_table_name = table_name or cassandra_mapper.table_name
+
+        table_identifier = f"{target_keyspace}.{target_table_name}" if target_keyspace else target_table_name
+
+        statements_and_params = self._build_statements_and_params(
+            rows=rows,
+            table_identifier=table_identifier,
+            cassandra_mapper=cassandra_mapper,
+        )
+        if not statements_and_params:
+            return
+
+        concurrency = concurrency or (os.cpu_count() or 1) * 2
+
+        @on_exception(
+            wait_gen=expo,
+            exception=(OverloadedErrorMessage, IsBootstrappingErrorMessage, WriteTimeout, WriteFailure),
+            max_tries=self._client_config.transient_error_max_retries,
+            max_time=self._client_config.transient_error_max_wait_s,
+            raise_on_giveup=True,
+        )
+        def _execute_concurrent():
+            execute_concurrent(
+                self._session,
+                statements_and_params,
+                concurrency=concurrency,
+            )
+
+        _execute_concurrent()
+
+    def upload_concurrent_native(
+        self,
+        source: polars.LazyFrame | polars.DataFrame,
+        table_name: str,
+        entity_type: type[TCassandraModel],
+        keyspace: str | None = None,
+        batch_size: int = 100_000,
+        threads: int | None = None,
+    ) -> int:
+        """
+        Uploads a Polars LazyFrame or DataFrame in batches using upsert_concurrent.
+
+        Note: Map type column adjustments are applied to lazy_source as native Polars Map types.
+
+        :param source: Polars LazyFrame or DataFrame to upload.
+        :param table_name: Table to insert entities into.
+        :param entity_type: Entity type to map data model and metadata.
+        :param keyspace: Optional keyspace name, if not provided in the client constructor.
+        :param batch_size: Number of rows per batch to collect and upsert. Defaults to 100,000.
+        :param threads: Maximum number of concurrent statements per batch.
+        :return: Total number of rows upserted.
+        """
+        lazy_source = _prepare_lazy_source(source)
+
+        @run_time_metrics(metric_name="adapta.cassandra.iceberg_batch_upsert_duration")
+        def _upsert_with_metric(entities: list[dict] | polars.LazyFrame, **kwargs) -> int:
+            self.upsert_concurrent(
+                rows=entities,
+                table_name=kwargs["table_name"],
+                entity_type=kwargs["entity_type"],
+                keyspace=kwargs["keyspace"],
+                concurrency=kwargs.get("concurrency"),
+            )
+            row_count = kwargs.get("row_count") or (len(entities) if isinstance(entities, list) else 0)
+            self._logger.info("Upserted {rows} rows", rows=row_count)
+            return row_count
+
+        total_rows = 0
+        for batch in lazy_source.collect_batches(chunk_size=batch_size, maintain_order=False):
+            _upsert_with_metric(
+                batch.lazy(),
+                table_name=table_name,
+                entity_type=entity_type,
+                keyspace=keyspace,
+                concurrency=threads,
+                row_count=batch.height,
+                metrics_provider=self._metrics_provider,
+                logger=self._logger,
+            )
+            total_rows += batch.height
+
+        return total_rows
+
+    def upload_concurrent_batch(
+        self,
+        source: polars.LazyFrame | polars.DataFrame,
+        table_name: str,
+        entity_type: type[TCassandraModel],
+        keyspace: str | None = None,
+        batch_size: int = 1_000,
+        threads: int = 4,
+    ) -> int:
+        """
+        Uploads a Polars LazyFrame or DataFrame concurrently using Cassandra batch upserts and ConcurrentTaskRunner.
+
+        Note: Map type column adjustments are applied to lazy_source as native Polars Map types.
+
+        :param source: Polars LazyFrame or DataFrame to upload.
+        :param table_name: Table to insert entities into.
+        :param entity_type: Entity type to map data model and metadata.
+        :param keyspace: Optional keyspace name, if not provided in the client constructor.
+        :param batch_size: Number of rows per batch to collect and upsert. Defaults to 1,000.
+        :param threads: Number of parallel threads to use. Defaults to 4.
+        """
+        lazy_source = _prepare_lazy_source(source)
+
+        @run_time_metrics(metric_name="adapta.cassandra.iceberg_batch_upsert_duration")
+        def _upsert_with_metric(entities: list[dict], **kwargs) -> int:
+            self.upsert_batch(
+                entities=entities,
+                entity_type=kwargs["entity_type"],
+                keyspace=kwargs["keyspace"],
+                table_name=kwargs["table_name"],
+                batch_size=kwargs["batch_size"],
+            )
+            self._logger.info("Upserted {rows} rows", rows=len(entities))
+            return len(entities)
+
+        ctr = ConcurrentTaskRunner[int](
+            [
+                Executable(
+                    _upsert_with_metric,
+                    str(uuid.uuid4()),
+                    kwargs={
+                        "entities": source_batch.to_dicts(),
+                        "entity_type": entity_type,
+                        "keyspace": keyspace or self._keyspace,
+                        "table_name": table_name,
+                        "batch_size": source_batch.height,
+                        "metrics_provider": self._metrics_provider,
+                        "logger": self._logger,
+                    },
+                )
+                for source_batch in lazy_source.collect_batches(chunk_size=batch_size, maintain_order=False)
+            ],
+            num_threads=threads,
+        )
+        return sum([rows_synced for _, rows_synced in ctr.eager().items()])
+
+    def delete_batch_concurrent(
+        self,
+        source: polars.LazyFrame | polars.DataFrame,
+        table_name: str,
+        entity_type: type[TCassandraModel],
+        keyspace: str | None = None,
+        batch_size: int = 1_000,
+        threads: int = 4,
+    ) -> int:
+        """
+        Deletes entities in batches from a Polars LazyFrame or DataFrame concurrently using ConcurrentTaskRunner.
+
+        Note: Map type column adjustments are applied to lazy_source as native Polars Map types.
+
+        :param source: Polars LazyFrame or DataFrame containing entities to delete.
+        :param table_name: Table to delete entities from.
+        :param entity_type: Entity type to map data model and metadata.
+        :param keyspace: Optional keyspace name, if not provided in the client constructor.
+        :param batch_size: Number of rows per batch to collect and delete. Defaults to 1,000.
+        :param threads: Number of parallel threads to use. Defaults to 4.
+        """
+        lazy_source = _prepare_lazy_source(source)
+
+        target_keyspace = keyspace or self._keyspace
+        cassandra_mapper = get_mapper(
+            data_model=entity_type,
+            table_name=table_name,
+            keyspace=target_keyspace,
+        )
+        primary_keys = cassandra_mapper.primary_keys
+
+        @run_time_metrics(metric_name="adapta.cassandra.iceberg_batch_upsert_duration")
+        def _delete_with_metric(entities: list[dict], **kwargs) -> int:
+            for entity in entities:
+                self.delete_entity_by_key(
+                    model=kwargs["entity_type"],
+                    primary_keys={key: entity[key] for key in kwargs["primary_keys"]},
+                    keyspace=kwargs["keyspace"],
+                    table_name=kwargs["table_name"],
+                )
+            self._logger.info("Deleted {rows} rows", rows=len(entities))
+            return len(entities)
+
+        ctr = ConcurrentTaskRunner[int](
+            [
+                Executable(
+                    _delete_with_metric,
+                    str(uuid.uuid4()),
+                    kwargs={
+                        "entities": source_batch.to_dicts(),
+                        "entity_type": entity_type,
+                        "keyspace": target_keyspace,
+                        "table_name": table_name,
+                        "primary_keys": primary_keys,
+                        "metrics_provider": self._metrics_provider,
+                        "logger": self._logger,
+                    },
+                )
+                for source_batch in lazy_source.collect_batches(chunk_size=batch_size, maintain_order=False)
+            ],
+            num_threads=threads,
+        )
+        return sum([rows_deleted for _, rows_deleted in ctr.eager().items()])
