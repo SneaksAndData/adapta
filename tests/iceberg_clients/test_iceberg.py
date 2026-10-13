@@ -321,8 +321,7 @@ def test_partial_overwrite_table(iceberg_catalog: Catalog, lazy: bool):
     assert_frame_equal(read_data.to_polars().sort("cola"), expected_df.sort("cola"), check_column_order=False)
 
 
-@pytest.mark.parametrize("lazy", [False, True])
-def test_create_schema(iceberg_catalog: Catalog, lazy: bool):
+def test_create_schema(iceberg_catalog: Catalog):
     table_name = f"test_create_schema_{generate_random_string(8)}".lower()
     input_data1 = {
         "cola": [1, 2],
@@ -330,21 +329,21 @@ def test_create_schema(iceberg_catalog: Catalog, lazy: bool):
         "colc": [[1], [2]],
     }
     df1 = polars.DataFrame(input_data1)
-    data1_to_write = df1.lazy() if lazy else df1
+
+    with pytest.raises(NoSuchNamespaceError):
+        write_using_catalog(
+            schema_name="test_schema",
+            table_name=table_name,
+            catalog=iceberg_catalog,
+            data=df1,
+            overwrite=True,
+        )
 
     write_using_catalog(
         schema_name="test_schema",
         table_name=table_name,
         catalog=iceberg_catalog,
-        data=data1_to_write,
-        overwrite=True,
-    )
-
-    write_using_catalog(
-        schema_name="test_schema",
-        table_name=table_name,
-        catalog=iceberg_catalog,
-        data=data1_to_write,
+        data=df1,
         overwrite=True,
         create_schema=True,
     )
