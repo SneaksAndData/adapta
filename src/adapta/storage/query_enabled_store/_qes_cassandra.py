@@ -45,7 +45,7 @@ class CassandraSettings(DataClassJsonMixin):
     client_name: str | None = None
     keyspace: str | None = None
     aws_region: str | None = None
-    profile_name: str | None = None
+    aws_profile_name: str | None = None
 
     def __post_init__(self):
         self.client_name = self.client_name or os.getenv("ADAPTA__CASS_CLIENT_NAME")
