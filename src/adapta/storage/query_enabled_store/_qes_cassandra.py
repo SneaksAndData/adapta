@@ -10,7 +10,6 @@ from typing import final
 
 from dataclasses_json import DataClassJsonMixin
 
-from adapta._version import __version__
 from adapta.storage.distributed_object_store.v3.aws_keyspaces.keyspace_client import AwsKeyspaceClient
 from adapta.storage.distributed_object_store.v3.vanilla_cassandra import VanillaCassandraClient
 from adapta.storage.models.base import DataPath
@@ -49,12 +48,12 @@ class CassandraSettings(DataClassJsonMixin):
     profile_name: str | None = None
 
     def __post_init__(self):
-        self.client_name = self.client_name or f"Adapta Client {__version__}"
+        self.client_name = self.client_name or os.getenv("PROTEUS__KSP_CLIENT_NAME")
         self.keyspace = self.keyspace or os.getenv("PROTEUS__KSP_KEYSPACE")
         self.region = self.region or os.getenv("PROTEUS__KSP_REGION")
         self.profile_name = self.profile_name or os.getenv("PROTEUS__KSP_PROFILE_NAME")
 
-        if not self.keyspace:
+        if not all([self.keyspace, self.client_name]):
             raise RuntimeError(
                 "Authentication information provided is insufficient. Please verify you are supplying keyspace and "
                 "client name via connection string or via environment variables."

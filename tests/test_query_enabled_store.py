@@ -63,6 +63,10 @@ from adapta.storage.query_enabled_store import (
             RuntimeError,
         ),
         (
+            'qes://engine=adapta.storage.query_enabled_store.CassandraQueryEnabledStore;plaintext_credentials={};settings={"keyspace": "test", "profile_name": "test"}',
+            RuntimeError,
+        ),
+        (
             'qes://engine=DELT;plaintext_credentials={"auth_client_class":"adapta.security.clients.AzureClient"};settings={}',
             ModuleNotFoundError,
         ),
