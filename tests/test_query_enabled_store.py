@@ -59,7 +59,7 @@ from adapta.storage.query_enabled_store import (
             CassandraQueryEnabledStore,
         ),
         (
-            'qes://engine=adapta.storage.query_enabled_store.CassandraQueryEnabledStore;plaintext_credentials={};settings={"region": "test", "keyspace": "tmp"}',
+            'qes://engine=adapta.storage.query_enabled_store.CassandraQueryEnabledStore;plaintext_credentials={};settings={"client_name": "test", "profile_name": "test"}',
             RuntimeError,
         ),
         (

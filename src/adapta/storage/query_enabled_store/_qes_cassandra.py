@@ -54,7 +54,7 @@ class CassandraSettings(DataClassJsonMixin):
         self.region = self.region or os.getenv("PROTEUS__KSP_REGION")
         self.profile_name = self.profile_name or os.getenv("PROTEUS__KSP_PROFILE_NAME")
 
-        if not all([self.keyspace, self.client_name]):
+        if not self.keyspace:
             raise RuntimeError(
                 "Authentication information provided is insufficient. Please verify you are supplying keyspace and "
                 "client name via connection string or via environment variables."
