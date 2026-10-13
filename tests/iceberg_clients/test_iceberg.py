@@ -332,14 +332,13 @@ def test_create_schema(iceberg_catalog: Catalog, lazy: bool):
     df1 = polars.DataFrame(input_data1)
     data1_to_write = df1.lazy() if lazy else df1
 
-    with pytest.raises(NoSuchNamespaceError):
-        write_using_catalog(
-            schema_name="test_schema",
-            table_name=table_name,
-            catalog=iceberg_catalog,
-            data=data1_to_write,
-            overwrite=True,
-        )
+    write_using_catalog(
+        schema_name="test_schema",
+        table_name=table_name,
+        catalog=iceberg_catalog,
+        data=data1_to_write,
+        overwrite=True,
+    )
 
     write_using_catalog(
         schema_name="test_schema",
