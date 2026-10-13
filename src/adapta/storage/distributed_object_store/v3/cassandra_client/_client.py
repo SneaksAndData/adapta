@@ -642,25 +642,23 @@ class CassandraClient(ABC):
         cassandra_mapper: CassandraModelMapper,
     ) -> list[tuple[PreparedStatement, tuple]]:
         if isinstance(rows, polars.LazyFrame):
-            lazy_rows = _prepare_lazy_source(rows)
-            schema = lazy_rows.collect_schema()
-            columns = [col for col in cassandra_mapper.column_names if col in schema]
-            if not columns:
+            batch_rows = _prepare_lazy_source(rows)
+            batch_columns = [col for col in cassandra_mapper.column_names if col in batch_rows.collect_schema()]
+            if not batch_columns:
                 return []
 
-            df = lazy_rows.select(columns).collect()
-            if df.is_empty():
+            prepared_rows = batch_rows.select(batch_columns).collect()
+            if prepared_rows.is_empty():
                 return []
 
-            prepared_stmt = self._prepare_insert_statement(table_identifier, columns)
-            return [(prepared_stmt, row) for row in df.iter_rows()]
+            prepared_stmt = self._prepare_insert_statement(table_identifier, batch_columns)
+            return [(prepared_stmt, row) for row in prepared_rows.iter_rows()]
 
         if not rows:
             return []
 
-        columns = cassandra_mapper.column_names
-        prepared_stmt = self._prepare_insert_statement(table_identifier, columns)
-        return [(prepared_stmt, tuple(row.get(col) for col in columns)) for row in rows]
+        prepared_stmt = self._prepare_insert_statement(table_identifier, cassandra_mapper.column_names)
+        return [(prepared_stmt, tuple(row.get(col) for col in cassandra_mapper.column_names)) for row in rows]
 
     def upsert_concurrent(
         self,
