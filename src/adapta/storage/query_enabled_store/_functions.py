@@ -17,9 +17,9 @@ except (ImportError, ModuleNotFoundError) as ex:
     print(f"Query Enabled Store (Astra) not configured: {ex}")
 
 try:
-    from adapta.storage.query_enabled_store._qes_ksp import AwsKeyspaceQueryEnabledStore
+    from adapta.storage.query_enabled_store._qes_cassandra import CassandraQueryEnabledStore
 except (ImportError, ModuleNotFoundError) as ex:
-    print(f"Query Enabled Store (AWS Keyspaces) not configured: {ex}")
+    print(f"Query Enabled Store (Cassandra) not configured: {ex}")
 
 try:
     from adapta.storage.query_enabled_store._qes_iceberg import IcebergQueryEnabledStore
@@ -52,7 +52,7 @@ def suggest_store(socket: DataSocket) -> type[QueryEnabledStore] | None:
     if isinstance(path_impl, AstraPath):
         return AstraQueryEnabledStore
     if isinstance(path_impl, CassandraPath):
-        return AwsKeyspaceQueryEnabledStore
+        return CassandraQueryEnabledStore
     if isinstance(path_impl, (S3Path, WasbPath, AdlsGen2Path)):
         return DeltaQueryEnabledStore
     if isinstance(path_impl, TrinoPath):

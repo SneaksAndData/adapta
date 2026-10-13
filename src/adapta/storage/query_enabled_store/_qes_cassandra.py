@@ -98,6 +98,8 @@ class CassandraQueryEnabledStore(QueryEnabledStore[CassandraCredential, Cassandr
                 client_name=self.settings.client_name,
                 region=self.settings.region,
                 profile_name=self.settings.profile_name,
+                logger=self._logger,
+                metrics_provider=self._metrics_provider,
             )
 
         return VanillaCassandraClient(
@@ -106,6 +108,8 @@ class CassandraQueryEnabledStore(QueryEnabledStore[CassandraCredential, Cassandr
             username="",
             password="",
             contact_points=["127.0.0.1"],
+            logger=self._logger,
+            metrics_provider=self._metrics_provider,
         )
 
     def _apply_filter(

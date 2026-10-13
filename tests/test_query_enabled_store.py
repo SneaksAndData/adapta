@@ -2,7 +2,7 @@ import pytest
 
 from adapta.storage.query_enabled_store import (
     AstraQueryEnabledStore,
-    AwsKeyspaceQueryEnabledStore,
+    CassandraQueryEnabledStore,
     DeltaQueryEnabledStore,
     IcebergQueryEnabledStore,
     LocalQueryEnabledStore,
@@ -52,14 +52,14 @@ from adapta.storage.query_enabled_store import (
         ),
         (
             'qes://engine=CASSANDRA;plaintext_credentials={};settings={"keyspace": "tmp", "region": "eu-west-1"}',
-            AwsKeyspaceQueryEnabledStore,
+            CassandraQueryEnabledStore,
         ),
         (
-            'qes://engine=adapta.storage.query_enabled_store.AwsKeyspaceQueryEnabledStore;plaintext_credentials={};settings={"client_name": "test", "keyspace": "tmp", "region": "eu-west-1", "profile_name": "test"}',
-            AwsKeyspaceQueryEnabledStore,
+            'qes://engine=adapta.storage.query_enabled_store.CassandraQueryEnabledStore;plaintext_credentials={};settings={"client_name": "test", "keyspace": "tmp", "region": "eu-west-1", "profile_name": "test"}',
+            CassandraQueryEnabledStore,
         ),
         (
-            'qes://engine=adapta.storage.query_enabled_store.AwsKeyspaceQueryEnabledStore;plaintext_credentials={};settings={"client_name": "test", "keyspace": "tmp"}',
+            'qes://engine=adapta.storage.query_enabled_store.CassandraQueryEnabledStore;plaintext_credentials={};settings={"client_name": "test", "keyspace": "tmp"}',
             RuntimeError,
         ),
         (

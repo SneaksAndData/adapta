@@ -24,9 +24,9 @@ except (ImportError, ModuleNotFoundError) as ex:
     print(f"Query Enabled Store (Astra - Cassandra) not configured: {ex}")
 
 try:
-    from adapta.storage.query_enabled_store._qes_ksp import *
+    from adapta.storage.query_enabled_store._qes_cassandra import *
 except (ImportError, ModuleNotFoundError) as ex:
-    print(f"Query Enabled Store (AWS Keyspaces - Cassandra) not configured: {ex}")
+    print(f"Query Enabled Store (Cassandra) not configured: {ex}")
 
 try:
     from adapta.storage.query_enabled_store._qes_delta import *
