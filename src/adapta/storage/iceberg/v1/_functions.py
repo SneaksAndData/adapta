@@ -170,7 +170,7 @@ def write_using_catalog(
         os.environ["AWS_REQUEST_CHECKSUM_CALCULATION"] = "WHEN_REQUIRED"
         os.environ["AWS_RESPONSE_CHECKSUM_VALIDATION"] = "WHEN_REQUIRED"
 
-    :param schema_name: name of the schema 
+    :param schema_name: name of the schema
     :param table_name: name of the table
     :param catalog: catalog to use for writing
     :param data: dataframe containing the data to write

@@ -320,6 +320,7 @@ def test_partial_overwrite_table(iceberg_catalog: Catalog, lazy: bool):
     )
     assert_frame_equal(read_data.to_polars().sort("cola"), expected_df.sort("cola"), check_column_order=False)
 
+
 @pytest.mark.parametrize("lazy", [False, True])
 def test_create_schema(iceberg_catalog: Catalog, lazy: bool):
     table_name = f"test_create_schema_{generate_random_string(8)}".lower()
@@ -341,14 +342,13 @@ def test_create_schema(iceberg_catalog: Catalog, lazy: bool):
         )
 
     write_using_catalog(
-            schema_name="test_schema",
-            table_name=table_name,
-            catalog=iceberg_catalog,
-            data=data1_to_write,
-            overwrite=True,
-            create_schema=True
-        )
-   
+        schema_name="test_schema",
+        table_name=table_name,
+        catalog=iceberg_catalog,
+        data=data1_to_write,
+        overwrite=True,
+        create_schema=True,
+    )
 
     expected_df = polars.DataFrame(
         {
