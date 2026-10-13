@@ -58,9 +58,9 @@ class CassandraSettings(DataClassJsonMixin):
     def __post_init__(self):
         self.client_name = self.client_name or os.getenv("ADAPTA__CASS_CLIENT_NAME")
         self.keyspace = self.keyspace or os.getenv("ADAPTA__CASS_KEYSPACE")
-        self.aws_region = self.aws_region or os.getenv("ADAPTA__CASS_REGION")
-        self.aws_profile_name = self.aws_profile_name or os.getenv("ADAPTA__CASS_PROFILE_NAME")
-        self.contact_points = self.contact_points or os.getenv("ADAPTA_CONTACT_POINTS") or ["127.0.0.1"]
+        self.aws_region = self.aws_region or os.getenv("ADAPTA__CASS_AWS_REGION")
+        self.aws_profile_name = self.aws_profile_name or os.getenv("ADAPTA__CASS_AWS_PROFILE_NAME")
+        self.contact_points = self.contact_points or os.getenv("ADAPTA__CONTACT_POINTS") or ["127.0.0.1"]
 
         if not all([self.keyspace, self.client_name]):
             raise RuntimeError(
