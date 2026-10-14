@@ -1,14 +1,17 @@
+import logging
 import math
 import os
 import platform
 import re
 import ssl
+import sys
 import uuid
 
 from cassandra.cqlengine.connection import set_session
 from cassandra.cqlengine.management import sync_table
 from cassandra.query import PreparedStatement
 
+from adapta.logs.handlers.safe_stream_handler import SafeStreamHandler
 from adapta.storage.distributed_object_store.v3.cassandra_client._model_mappers import (
     CassandraModelMapper,
     get_mapper,
@@ -115,6 +118,8 @@ class CassandraClient(ABC):
         self._snake_pattern = re.compile(r"(?<!^)(?=[A-Z])")
         self._filter_pattern = re.compile(r"(__\w+)")
         self._client_config = client_config or CassandraClientConfiguration.default()
+        if self._client_config.log_transient_errors:
+            logging.getLogger("backoff").addHandler(SafeStreamHandler(sys.stdout))
 
     def connect(self) -> None:
         """Sync connect to this Cassandra cluster"""
@@ -707,6 +712,7 @@ class CassandraClient(ABC):
             exception=(OverloadedErrorMessage, IsBootstrappingErrorMessage, WriteTimeout, WriteFailure),
             max_tries=self._client_config.transient_error_max_retries,
             max_time=self._client_config.transient_error_max_wait_s,
+            max_value=self._client_config.transient_error_max_wait_s_per_retry,
             raise_on_giveup=True,
         )
         def _execute_concurrent():
