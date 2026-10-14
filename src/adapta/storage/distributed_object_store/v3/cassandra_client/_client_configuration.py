@@ -29,6 +29,7 @@ class CassandraClientConfiguration:
     socket_read_timeout_ms: int
     transient_error_max_retries: int
     transient_error_max_wait_s: int
+    transient_error_max_wait_s_per_retry: int
     log_transient_errors: bool
     metadata_fetch_timeout_s: int
     protocol_version: Any
@@ -43,6 +44,7 @@ class CassandraClientConfiguration:
             socket_read_timeout_ms=180000,
             transient_error_max_retries=10,
             transient_error_max_wait_s=300,
+            transient_error_max_wait_s_per_retry=30,
             log_transient_errors=True,
             metadata_fetch_timeout_s=30,
             protocol_version=_NOT_SET,
@@ -58,6 +60,7 @@ class CassandraClientConfiguration:
             socket_read_timeout_ms=180000,
             transient_error_max_retries=10,
             transient_error_max_wait_s=300,
+            transient_error_max_wait_s_per_retry=30,
             log_transient_errors=True,
             metadata_fetch_timeout_s=30,
             protocol_version=ProtocolVersion.V4,
