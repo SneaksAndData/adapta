@@ -144,6 +144,7 @@ def _sync_custom_index(
     read_chunk_size: int,
     threads: int,
     logger: LoggerInterface,
+    full_sync: bool = False,
 ) -> None:
     def _read_index_data() -> LazyFrame:
         logger.info("Reading source table {source_table} for custom index", source_table=source_table)
@@ -178,11 +179,19 @@ def _sync_custom_index(
             return
         raise ValueError(f"Unsupported upload mode: {upload_mode}")
 
-    if not iceberg_catalog.table_exists(identifier=(source_schema, index_metadata.iceberg_table)):
-        logger.info(
-            "Index table {iceberg_table} does not exist in Iceberg. Running full sync.",
-            iceberg_table=index_metadata.iceberg_table,
-        )
+    table_exists = iceberg_catalog.table_exists(identifier=(source_schema, index_metadata.iceberg_table))
+    if full_sync or not table_exists:
+        if not table_exists:
+            logger.info(
+                "Index table {iceberg_table} does not exist in Iceberg. Running full sync.",
+                iceberg_table=index_metadata.iceberg_table,
+            )
+        else:
+            logger.info(
+                "Base table {source_table} has been reloaded. Running full sync for index table {iceberg_table}.",
+                source_table=source_table,
+                iceberg_table=index_metadata.iceberg_table,
+            )
         write_using_catalog(
             schema_name=source_schema,
             table_name=index_metadata.iceberg_table,
@@ -350,7 +359,8 @@ def sync_iceberg_to_cassandra(
     if current_snapshot is None:
         raise RuntimeError(f"Failed to read current snapshot for table {source_path.schema}.{source_path.table}")
 
-    if not last_synced_snapshot or last_synced_snapshot == "-1":
+    is_full_sync = not last_synced_snapshot or last_synced_snapshot == "-1"
+    if is_full_sync:
         logger.info("Last sync snapshot data not available. Will perform a full sync.")
         source_data: LazyFrame = load_using_catalog(
             source_path.schema,
@@ -410,6 +420,7 @@ def sync_iceberg_to_cassandra(
             read_chunk_size=read_chunk_size,
             threads=threads,
             logger=logger,
+            full_sync=is_full_sync,
         )
 
     logger.info(
