@@ -417,6 +417,76 @@ def test_get_changes(iceberg_catalog: Catalog):
     assert_frame_equal(result_df.sort("cola"), df2.sort("cola"), check_column_order=False)
 
 
+def test_get_changes_updates(iceberg_catalog: Catalog):
+    table_name = f"test_get_changes_updates_{generate_random_string(8)}".lower()
+    input_data1 = {
+        "cola": [1, 2],
+        "colb": ["a", "b"],
+        "rowhash": [100, 200],
+    }
+    df1 = polars.DataFrame(input_data1)
+
+    write_using_catalog(
+        schema_name="test",
+        table_name=table_name,
+        catalog=iceberg_catalog,
+        data=df1,
+        overwrite=True,
+    )
+
+    table = iceberg_catalog.load_table(identifier=("test", table_name))
+    from_snapshot_id = table.current_snapshot().snapshot_id
+
+    # Update cola=1 with changed colb and rowhash; insert cola=3
+    input_data2 = {
+        "cola": [1, 3],
+        "colb": ["updated_a", "c"],
+        "rowhash": [101, 300],
+    }
+    df2 = polars.DataFrame(input_data2)
+
+    write_using_catalog(
+        schema_name="test",
+        table_name=table_name,
+        catalog=iceberg_catalog,
+        data=df2,
+        overwrite=False,
+        merge_columns=["cola"],
+    )
+
+    table.refresh()
+    to_snapshot_id = table.current_snapshot().snapshot_id
+
+    inserts, updates, deletes = get_changes(
+        schema_name="test",
+        table_name=table_name,
+        catalog=iceberg_catalog,
+        from_snapshot_id=from_snapshot_id,
+        to_snapshot_id=to_snapshot_id,
+        tracking_column="rowhash",
+        primary_key_columns=("cola",),
+    )
+
+    expected_updates = polars.DataFrame(
+        {
+            "cola": [1],
+            "colb": ["updated_a"],
+            "rowhash": [101],
+        }
+    )
+    expected_inserts = polars.DataFrame(
+        {
+            "cola": [3],
+            "colb": ["c"],
+            "rowhash": [300],
+        }
+    )
+
+    assert_frame_equal(updates.collect().sort("cola"), expected_updates.sort("cola"), check_column_order=False)
+    assert_frame_equal(inserts.collect().sort("cola"), expected_inserts.sort("cola"), check_column_order=False)
+    assert deletes.collect().is_empty()
+
+
 def test_table_properties(iceberg_catalog: Catalog):
     table_name = f"test_properties_{generate_random_string(8)}".lower()
     input_data = get_input_data()

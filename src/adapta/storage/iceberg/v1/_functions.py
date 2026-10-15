@@ -273,13 +273,15 @@ def get_changes(
         version_id=from_snapshot_id,
         lazy_read=True,
     ).to_polars()
-    current_version_full: LazyFrame = load_using_catalog(
-        schema_name,
-        table_name,
-        catalog,
-        version_id=to_snapshot_id,
-        lazy_read=True,
-    ).to_polars()
+
+    def _current_version_full() -> LazyFrame:
+        return load_using_catalog(
+            schema_name,
+            table_name,
+            catalog,
+            version_id=to_snapshot_id,
+            lazy_read=True,
+        ).to_polars()
 
     diff_table = (
         current_version.join(
@@ -292,16 +294,20 @@ def get_changes(
     )
 
     # Inserts: pk exists now, but didn't exist previously
-    inserts = current_version_full.join(
+    inserts = _current_version_full().join(
         diff_table.filter(_null_expr("right", primary_key_columns)), on=primary_key_columns, how="semi"
     )
 
     # Updates: pk exists in both, pick latest
-    updates = diff_table.filter(
-        _not_null_expr("", primary_key_columns)
-        & _not_null_expr("right", primary_key_columns)
-        & (polars.col(tracking_column) != polars.col(f"{tracking_column}_right"))
-    ).drop(polars.selectors.contains("_right"))
+    updates = _current_version_full().join(
+        diff_table.filter(
+            _not_null_expr("", primary_key_columns)
+            & _not_null_expr("right", primary_key_columns)
+            & (polars.col(tracking_column) != polars.col(f"{tracking_column}_right"))
+        ).drop(polars.selectors.contains("_right")),
+        on=primary_key_columns,
+        how="semi",
+    )
 
     # Deletes: pk existed previously, but doesn't exist now
     deletes = (
