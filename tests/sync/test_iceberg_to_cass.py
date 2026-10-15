@@ -26,7 +26,7 @@ from adapta.logs import SemanticLogger
 from adapta.logs.models import LogLevel
 from adapta.process_communication import DataSocket
 from adapta.storage.distributed_object_store.v3.vanilla_cassandra import VanillaCassandraClient
-from adapta.storage.iceberg.v1 import load_using_catalog, write_using_catalog
+from adapta.storage.iceberg.v1 import load_using_catalog, set_property, write_using_catalog
 from adapta.storage.sync.iceberg_to_cass import CassandraUploadMode, sync_iceberg_to_cassandra
 from tests.iceberg_clients._functions import generate_random_string
 
@@ -937,3 +937,109 @@ def test_sync_iceberg_to_cassandra_ignore_index_updates(
     # Index table in Iceberg was NOT created
     idx_iceberg_table = f"{iceberg_table_name}__idx_category"
     assert not iceberg_catalog.table_exists(identifier=("test", idx_iceberg_table))
+
+
+def test_sync_iceberg_to_cassandra_custom_index_full_refresh(
+    cassandra_client: VanillaCassandraClient,
+    cassandra_keyspace: str,
+    iceberg_catalog: Catalog,
+    logger: SemanticLogger,
+):
+    iceberg_table_name, cassandra_table_name = _get_table_names()
+    idx_cassandra_table = f"{cassandra_table_name}__idx_category"
+
+    cassandra_client.create_table(SyncItemWithCustomIndex, cassandra_table_name, cassandra_keyspace)
+    cassandra_client.create_table(SyncItemCategoryIndex, idx_cassandra_table, cassandra_keyspace)
+
+    initial_data = polars.DataFrame(
+        {
+            "id": ["1", "2"],
+            "category": ["cat_a", "cat_b"],
+            "name": ["alice", "bob"],
+            "value": [10, 20],
+        }
+    )
+    write_using_catalog(
+        schema_name="test",
+        table_name=iceberg_table_name,
+        catalog=iceberg_catalog,
+        data=initial_data,
+        overwrite=True,
+    )
+
+    iceberg_source = DataSocket(
+        alias="source",
+        data_path=f"iceberg://test@{iceberg_table_name}",
+        data_format="iceberg",
+    )
+    cassandra_target = DataSocket(
+        alias="target",
+        data_path=f"cass+tests.sync.test_iceberg_to_cass.SyncItemWithCustomIndex://{cassandra_keyspace}@{cassandra_table_name}",
+        data_format="cassandra",
+    )
+
+    # 1. Initial full sync
+    sync_iceberg_to_cassandra(
+        iceberg_catalog=iceberg_catalog,
+        client=cassandra_client,
+        iceberg_source=iceberg_source,
+        version_field="value",
+        cassandra_target=cassandra_target,
+        read_chunk_size=2,
+        logger=logger,
+        threads=4,
+    )
+
+    expected_idx = polars.DataFrame(
+        {
+            "category": ["cat_a", "cat_b"],
+            "id": ["1", "2"],
+            "value": [10, 20],
+        }
+    ).sort("category")
+    synced_idx = (
+        cassandra_client.get_entities_raw(f"SELECT * FROM {cassandra_keyspace}.{idx_cassandra_table};")
+        .to_polars()
+        .sort("category")
+    )
+    assert_frame_equal(synced_idx, expected_idx, check_column_order=False)
+
+    # 2. Simulate Cassandra data loss in index table by deleting row 1 from Cassandra directly
+    cassandra_client.delete_entity_by_key(
+        model=SyncItemCategoryIndex,
+        primary_keys={"category": "cat_a", "id": "1"},
+        table_name=idx_cassandra_table,
+        keyspace=cassandra_keyspace,
+    )
+    idx_after_delete = cassandra_client.get_entities_raw(
+        f"SELECT * FROM {cassandra_keyspace}.{idx_cassandra_table};"
+    ).to_polars()
+    assert len(idx_after_delete) == 1
+
+    # 3. Reset snapshot id to "-1" on base table to force full refresh
+    set_property(
+        schema_name="test",
+        table_name=iceberg_table_name,
+        catalog=iceberg_catalog,
+        property_name="adapta.cassandra.last-synced-snapshot-id",
+        property_value="-1",
+    )
+
+    # 4. Sync again - full refresh should restore the deleted row in the index table
+    sync_iceberg_to_cassandra(
+        iceberg_catalog=iceberg_catalog,
+        client=cassandra_client,
+        iceberg_source=iceberg_source,
+        version_field="value",
+        cassandra_target=cassandra_target,
+        read_chunk_size=2,
+        logger=logger,
+        threads=4,
+    )
+
+    synced_idx_restored = (
+        cassandra_client.get_entities_raw(f"SELECT * FROM {cassandra_keyspace}.{idx_cassandra_table};")
+        .to_polars()
+        .sort("category")
+    )
+    assert_frame_equal(synced_idx_restored, expected_idx, check_column_order=False)
