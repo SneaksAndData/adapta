@@ -13,9 +13,10 @@ from pyiceberg.catalog import Catalog
 
 from adapta.storage.iceberg.v1 import (
     IcebergRestCatalogConfig,
+    IcebergRestOAuth2Config,
     get_catalog,
     load_using_catalog,
-    write_using_catalog, IcebergRestOAuth2Config,
+    write_using_catalog,
 )
 from adapta.storage.models.enum import QueryEnabledStoreOptions
 from adapta.storage.models.expression_dsl.filter_expression import Expression
@@ -34,9 +35,9 @@ class IcebergCredential(DataClassJsonMixin):
     """
 
     oauth_enabled: bool
-    read_from_warehouse: str | None
-    write_to_warehouse: str | None
-    uri: str | None
+    read_from_warehouse: str | None = None
+    write_to_warehouse: str | None = None
+    uri: str | None = None
 
     def __post_init__(self):
         self._read_catalog_config: IcebergRestCatalogConfig | None = None

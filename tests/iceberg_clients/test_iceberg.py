@@ -322,6 +322,13 @@ def test_partial_overwrite_table(iceberg_catalog: Catalog, lazy: bool):
 
 
 def test_create_schema(iceberg_catalog: Catalog):
+    try:
+        for table in iceberg_catalog.list_tables("test_schema"):
+            iceberg_catalog.drop_table(table)
+        iceberg_catalog.drop_namespace("test_schema")
+    except NoSuchNamespaceError:
+        pass
+
     table_name = f"test_create_schema_{generate_random_string(8)}".lower()
     input_data1 = {
         "cola": [1, 2],
