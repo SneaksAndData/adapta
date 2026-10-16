@@ -143,7 +143,7 @@ def test_iceberg_qes_write(
     assert_frame_equal(data.to_polars().sort("cola"), expected.sort("cola"), check_column_order=False)
 
 
-def test_iceberg_qes_separate_read_write_warehouses(monkeypatch: pytest.MonkeyPatch):
+def test_iceberg_qes_separate_read_write_warehouses():
     catalog_uri = os.environ.get("ADAPTA__ICEBERG_REST_CATALOG_URI", "http://localhost:20001/catalog")
     warehouse_a = "demo"
     schema_a = "test"
@@ -192,9 +192,8 @@ def test_iceberg_qes_separate_read_write_warehouses(monkeypatch: pytest.MonkeyPa
         access_mode=QueryEnabledStoreMode.READ,
     ).execute()
 
-    monkeypatch.setenv("ADAPTA__ICEBERG_REST_CATALOG_WAREHOUSE", warehouse_b)
     store_b = QueryEnabledStore.from_string(
-        'qes://engine=ICEBERG;plaintext_credentials={"oauth_enabled": false};settings={"lazy_read": false}'
+        f'qes://engine=ICEBERG;plaintext_credentials={{"oauth_enabled": false, "warehouse": "{warehouse_b}", "uri": "{catalog_uri}"}};settings={{"lazy_read": false}}'
     )
     read_b = store_b.open(
         parse_data_path(f"iceberg://{schema_b}@{table_b}"),
@@ -211,6 +210,7 @@ def test_iceberg_qes_separate_read_write_warehouses(monkeypatch: pytest.MonkeyPa
         {"oauth_enabled": False, "read_from_warehouse": "demo"},
         {"oauth_enabled": False, "write_to_warehouse": "demo"},
         {"oauth_enabled": False, "read_from_warehouse": "demo", "write_to_warehouse": "demo_alt"},
+        {"oauth_enabled": False, "warehouse": "demo"},
     ],
 )
 def test_iceberg_qes_invalid_credentials(credentials: dict):
