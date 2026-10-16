@@ -15,7 +15,7 @@ from adapta.storage.iceberg.v1 import (
     IcebergRestCatalogConfig,
     get_catalog,
     load_using_catalog,
-    write_using_catalog,
+    write_using_catalog, IcebergRestOAuth2Config,
 )
 from adapta.storage.models.enum import QueryEnabledStoreOptions
 from adapta.storage.models.expression_dsl.filter_expression import Expression
@@ -34,16 +34,49 @@ class IcebergCredential(DataClassJsonMixin):
     """
 
     oauth_enabled: bool
+    read_from_warehouse: str | None
+    write_to_warehouse: str | None
+    uri: str | None
 
     def __post_init__(self):
-        self._catalog_config = IcebergRestCatalogConfig.from_environment(oauth2_enabled=self.oauth_enabled)
+        self._read_catalog_config: IcebergRestCatalogConfig | None = None
+        self._write_catalog_config: IcebergRestCatalogConfig | None = None
+
+        if self.read_from_warehouse is None and self.write_to_warehouse is None:
+            self._read_catalog_config = IcebergRestCatalogConfig.from_environment(oauth2_enabled=self.oauth_enabled)
+            self._write_catalog_config = self._read_catalog_config
+
+        if self.read_from_warehouse is not None and self.write_to_warehouse is not None and self.uri is not None:
+            self._read_catalog_config = IcebergRestCatalogConfig(
+                uri=self.uri,
+                warehouse=self.read_from_warehouse,
+                oauth2_config=IcebergRestOAuth2Config.from_environment() if self.oauth_enabled else None,
+            )
+            self._write_catalog_config = IcebergRestCatalogConfig(
+                uri=self.uri,
+                warehouse=self.write_to_warehouse,
+                oauth2_config=IcebergRestOAuth2Config.from_environment() if self.oauth_enabled else None,
+            )
+
+        raise RuntimeError("Invalid IcebergCredential value supplied for Iceberg QES: you must either provide no values in both read_from_warehouse/write_to_warehouse, or provide both of them together with catalog url.")
 
     @property
-    def catalog_config(self) -> IcebergRestCatalogConfig:
+    def read_catalog_config(self) -> IcebergRestCatalogConfig:
         """
-        Catalog configuration for Iceberg QES.
+        Catalog configuration for Iceberg QES (read only).
         """
-        return self._catalog_config
+        assert self._read_catalog_config is not None, "Catalog not initialized for read"
+
+        return self._read_catalog_config
+
+    @property
+    def write_catalog_config(self) -> IcebergRestCatalogConfig:
+        """
+        Catalog configuration for Iceberg QES (write only).
+        """
+        assert self._write_catalog_config is not None, "Catalog not initialized for write"
+
+        return self._write_catalog_config
 
 
 @dataclass
@@ -64,10 +97,12 @@ class IcebergQueryEnabledStore(QueryEnabledStore[IcebergCredential, IcebergSetti
 
     def __init__(self, credentials: IcebergCredential, settings: IcebergSettings):
         super().__init__(credentials, settings)
-        self._catalog: Catalog | None = None
+        self._read_catalog: Catalog | None = None
+        self._write_catalog: Catalog | None = None
 
     def _init_catalog(self) -> Self:
-        self._catalog = get_catalog(self.settings.catalog_name, self.credentials.catalog_config)
+        self._read_catalog = get_catalog(self.settings.catalog_name, self.credentials.read_catalog_config)
+        self._write_catalog = get_catalog(self.settings.catalog_name, self.credentials.write_catalog_config)
         return self
 
     def close(self) -> None:
@@ -98,7 +133,7 @@ class IcebergQueryEnabledStore(QueryEnabledStore[IcebergCredential, IcebergSetti
             limit=limit,
             version_id=options.get(QueryEnabledStoreOptions.VERSION_ID, None) if options else None,
             lazy_read=self.settings.lazy_read,
-            catalog=self._catalog,
+            catalog=self._read_catalog,
         )
 
     def _apply_query(self, query: str) -> MetaFrame | Iterator[MetaFrame]:
@@ -120,12 +155,12 @@ class IcebergQueryEnabledStore(QueryEnabledStore[IcebergCredential, IcebergSetti
 
             return data.to_polars()
 
-        assert self._catalog is not None, "Catalog not initialized"
+        assert self._write_catalog is not None, "Catalog not initialized"
 
         write_using_catalog(
             schema_name=path.schema,
             table_name=path.table,
-            catalog=self._catalog,
+            catalog=self._write_catalog,
             data=_resolve_dataframe(),
             write_chunk_size=block_size,
             overwrite=overwrite,
