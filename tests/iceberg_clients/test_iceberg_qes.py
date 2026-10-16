@@ -159,7 +159,9 @@ def test_iceberg_qes_separate_read_write_warehouses():
     store_a = QueryEnabledStore.from_string(
         'qes://engine=ICEBERG;plaintext_credentials={"oauth_enabled": false};settings={"lazy_read": false}'
     )
-    store_a.open(parse_data_path(f"iceberg://{schema_a}@{table_a}"), access_mode=QueryEnabledStoreMode.WRITE).set_parameters(
+    store_a.open(
+        parse_data_path(f"iceberg://{schema_a}@{table_a}"), access_mode=QueryEnabledStoreMode.WRITE
+    ).set_parameters(
         QueryEnabledStoreDataParameter(MetaFrame.from_polars(dataset)),
         QueryEnabledStoreOverwriteParameter(True),
         QueryEnabledStoreBlockSizeParameter(10_000),

@@ -76,9 +76,9 @@ def init_lk():
         resp_alt.raise_for_status()
 
     # add namespace in second warehouse
-    alt_warehouse_prefix = requests.get("http://localhost:20001/catalog/v1/config?warehouse=demo_alt").json()["defaults"][
-        "prefix"
-    ]
+    alt_warehouse_prefix = requests.get("http://localhost:20001/catalog/v1/config?warehouse=demo_alt").json()[
+        "defaults"
+    ]["prefix"]
     alt_ns_resp = requests.post(
         f"http://localhost:20001/catalog/v1/{alt_warehouse_prefix}/namespaces", json={"namespace": ["test_b"]}
     )
