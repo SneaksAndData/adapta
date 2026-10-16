@@ -45,6 +45,7 @@ class IcebergCredential(DataClassJsonMixin):
         if self.read_from_warehouse is None and self.write_to_warehouse is None:
             self._read_catalog_config = IcebergRestCatalogConfig.from_environment(oauth2_enabled=self.oauth_enabled)
             self._write_catalog_config = self._read_catalog_config
+            return
 
         if self.read_from_warehouse is not None and self.write_to_warehouse is not None and self.uri is not None:
             self._read_catalog_config = IcebergRestCatalogConfig(
@@ -57,6 +58,7 @@ class IcebergCredential(DataClassJsonMixin):
                 warehouse=self.write_to_warehouse,
                 oauth2_config=IcebergRestOAuth2Config.from_environment() if self.oauth_enabled else None,
             )
+            return
 
         raise RuntimeError("Invalid IcebergCredential value supplied for Iceberg QES: you must either provide no values in both read_from_warehouse/write_to_warehouse, or provide both of them together with catalog url.")
 
