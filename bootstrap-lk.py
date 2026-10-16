@@ -33,7 +33,7 @@ def init_lk():
         },
     )
 
-    if resp.status_code not in [409, 200]:
+    if resp.status_code not in [409, 400, 200, 201]:
         resp.raise_for_status()
 
     # add namespace
@@ -43,7 +43,47 @@ def init_lk():
     ns_resp = requests.post(
         f"http://localhost:20001/catalog/v1/{warehouse_prefix}/namespaces", json={"namespace": ["test"]}
     )
-    ns_resp.raise_for_status()
+    if ns_resp.status_code not in [409, 200, 201]:
+        ns_resp.raise_for_status()
+
+    # create second warehouse
+    resp_alt = requests.post(
+        url="http://localhost:20001/management/v1/warehouse",
+        json={
+            "warehouse-name": "demo_alt",
+            "project-id": "00000000-0000-0000-0000-000000000000",
+            "storage-profile": {
+                "type": "s3",
+                "bucket": "tmp",
+                "key-prefix": "secondary-warehouse",
+                "assume-role-arn": None,
+                "endpoint": "http://localhost:9000",
+                "region": "us-east-1",
+                "path-style-access": True,
+                "flavor": "minio",
+                "sts-enabled": False,
+            },
+            "storage-credential": {
+                "type": "s3",
+                "credential-type": "access-key",
+                "aws-access-key-id": "minioadmin",
+                "aws-secret-access-key": "minioadmin",
+            },
+        },
+    )
+
+    if resp_alt.status_code not in [409, 400, 200, 201]:
+        resp_alt.raise_for_status()
+
+    # add namespace in second warehouse
+    alt_warehouse_prefix = requests.get("http://localhost:20001/catalog/v1/config?warehouse=demo_alt").json()[
+        "defaults"
+    ]["prefix"]
+    alt_ns_resp = requests.post(
+        f"http://localhost:20001/catalog/v1/{alt_warehouse_prefix}/namespaces", json={"namespace": ["test_b"]}
+    )
+    if alt_ns_resp.status_code not in [409, 200, 201]:
+        alt_ns_resp.raise_for_status()
 
 
 if __name__ == "__main__":
