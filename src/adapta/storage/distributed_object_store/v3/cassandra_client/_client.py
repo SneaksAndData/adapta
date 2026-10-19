@@ -758,6 +758,7 @@ class CassandraClient(ABC):
                 concurrency=kwargs.get("concurrency"),
             )
             row_count = kwargs.get("row_count") or (len(entities) if isinstance(entities, list) else 0)
+            self._metrics_provider.gauge("adapta.cassandra.upserted_rows", row_count)
             self._logger.info("Upserted {rows} rows", rows=row_count)
             return row_count
 
@@ -800,7 +801,7 @@ class CassandraClient(ABC):
         """
         lazy_source = _prepare_lazy_source(source)
 
-        @run_time_metrics(metric_name="adapta.cassandra.iceberg_batch_upsert_duration")
+        @run_time_metrics(metric_name="adapta.cassandra.batch_upsert_duration")
         def _upsert_with_metric(entities: list[dict], **kwargs) -> int:
             self.upsert_batch(
                 entities=entities,
@@ -809,6 +810,7 @@ class CassandraClient(ABC):
                 table_name=kwargs["table_name"],
                 batch_size=kwargs["batch_size"],
             )
+            self._metrics_provider.gauge("adapta.cassandra.upserted_rows", len(entities))
             self._logger.info("Upserted {rows} rows", rows=len(entities))
             return len(entities)
 
@@ -864,7 +866,7 @@ class CassandraClient(ABC):
         )
         primary_keys = cassandra_mapper.primary_keys
 
-        @run_time_metrics(metric_name="adapta.cassandra.iceberg_batch_upsert_duration")
+        @run_time_metrics(metric_name="adapta.cassandra.batch_upsert_duration")
         def _delete_with_metric(entities: list[dict], **kwargs) -> int:
             for entity in entities:
                 self.delete_entity_by_key(
@@ -873,6 +875,7 @@ class CassandraClient(ABC):
                     keyspace=kwargs["keyspace"],
                     table_name=kwargs["table_name"],
                 )
+            self._metrics_provider.gauge("adapta.cassandra.deleted_rows", len(entities))
             self._logger.info("Deleted {rows} rows", rows=len(entities))
             return len(entities)
 
