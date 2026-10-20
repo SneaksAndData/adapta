@@ -38,7 +38,27 @@ def setup_keyspace_and_table():
         );
         """
     )
+    session.execute(
+        """
+        CREATE TABLE IF NOT EXISTS test_vanilla.test_item_0 (
+            id text PRIMARY KEY,
+            name text,
+            value int
+        );
+        """
+    )
+    session.execute(
+        """
+        CREATE TABLE IF NOT EXISTS test_vanilla.test_item_1 (
+            id text PRIMARY KEY,
+            name text,
+            value int
+        );
+        """
+    )
     session.execute("TRUNCATE test_vanilla.test_item;")
+    session.execute("TRUNCATE test_vanilla.test_item_0;")
+    session.execute("TRUNCATE test_vanilla.test_item_1;")
 
     yield
 
@@ -183,6 +203,70 @@ def test_vanilla_cassandra_client_connect_and_crud(setup_keyspace_and_table):
             entity_type=VanillaItem,
         )
 
+        # Test upload_concurrent_native with shard_count
+        sharded_native_data = polars.DataFrame(
+            [
+                {"id": "item-9", "name": "ninth", "value": 900, "rowhash": "00000000"},
+                {"id": "item-10", "name": "tenth", "value": 1000, "rowhash": "00000001"},
+                {"id": "item-11", "name": "eleventh", "value": 1100, "rowhash": "00000002"},
+            ]
+        )
+        upserted_sharded_native = client.upload_concurrent_native(
+            source=sharded_native_data.lazy(),
+            table_name="test_item",
+            entity_type=VanillaItem,
+            batch_size=2,
+            threads=2,
+            shard_count=2,
+        )
+        assert upserted_sharded_native == 3
+
+        # Test upload_concurrent_batch with shard_count
+        sharded_batch_data = polars.DataFrame(
+            [
+                {"id": "item-12", "name": "twelfth", "value": 1200, "rowhash": "00000004"},
+                {"id": "item-13", "name": "thirteenth", "value": 1300, "rowhash": "00000005"},
+            ]
+        )
+        upserted_sharded_batch = client.upload_concurrent_batch(
+            source=sharded_batch_data.lazy(),
+            table_name="test_item",
+            entity_type=VanillaItem,
+            batch_size=2,
+            threads=2,
+            shard_count=2,
+        )
+        assert upserted_sharded_batch == 2
+
+        after_shard_0 = client.get_entities_raw("SELECT * FROM test_vanilla.test_item_0;").to_pandas()
+        assert set(after_shard_0["id"]) == {"item-9", "item-11", "item-12"}
+
+        after_shard_1 = client.get_entities_raw("SELECT * FROM test_vanilla.test_item_1;").to_pandas()
+        assert set(after_shard_1["id"]) == {"item-10", "item-13"}
+
+        # Test delete_batch_concurrent with shard_count (deletes PKs from all shard tables, rowhash not required)
+        sharded_deletes_data = polars.DataFrame(
+            [
+                {"id": "item-9", "name": "ninth", "value": 900},
+                {"id": "item-10", "name": "tenth", "value": 1000},
+            ]
+        )
+        deleted_sharded_count = client.delete_batch_concurrent(
+            source=sharded_deletes_data.lazy(),
+            table_name="test_item",
+            entity_type=VanillaItem,
+            batch_size=2,
+            threads=2,
+            shard_count=2,
+        )
+        assert deleted_sharded_count == 4
+
+        after_delete_shard_0 = client.get_entities_raw("SELECT * FROM test_vanilla.test_item_0;").to_pandas()
+        assert set(after_delete_shard_0["id"]) == {"item-11", "item-12"}
+
+        after_delete_shard_1 = client.get_entities_raw("SELECT * FROM test_vanilla.test_item_1;").to_pandas()
+        assert set(after_delete_shard_1["id"]) == {"item-13"}
+
 
 def test_prepare_lazy_source_converts_list_struct_to_map():
     from adapta.storage.distributed_object_store.v3.cassandra_client._client import _prepare_lazy_source
@@ -207,3 +291,88 @@ def test_prepare_lazy_source_converts_list_struct_to_map():
     df_regular = polars.DataFrame({"id": ["1", "2"], "val": [10, 20]})
     prepared_regular = _prepare_lazy_source(df_regular)
     assert prepared_regular.collect_schema() == df_regular.schema
+
+
+def test_shard_source():
+    from adapta.storage.distributed_object_store.v3.cassandra_client._client import _shard_source
+
+    # Hexstring rowhash
+    df_hex = polars.DataFrame(
+        {
+            "id": ["1", "2", "3", "4"],
+            "rowhash": [
+                "c87cbaa39f7c0a31967508cc48bd4260",
+                "c87cbaa49f7c0a31967508cc48bd4260",
+                "000000001234567890abcdef12345678",
+                "000000011234567890abcdef12345678",
+            ],
+        }
+    )
+    shards = _shard_source(df_hex.lazy(), shard_count=2)
+    assert len(shards) == 2
+    s0 = shards[0].collect()
+    s1 = shards[1].collect()
+    assert len(s0) + len(s1) == 4
+    assert "__bucket" not in s0.columns
+    assert "__bucket" not in s1.columns
+
+    # Missing rowhash raises ValueError
+    df_no_hash = polars.DataFrame({"id": ["1", "2"]})
+    with pytest.raises(ValueError, match="A 'rowhash' column is required"):
+        _shard_source(df_no_hash.lazy(), shard_count=2)
+
+
+def test_upload_concurrent_shard_validation(setup_keyspace_and_table):
+    client = VanillaCassandraClient(
+        client_name="test_vanilla_client",
+        keyspace="test_vanilla",
+        contact_points=["127.0.0.1"],
+        port=9042,
+        username="cassandra",
+        password="cassandra",
+    )
+
+    with client:
+        df_no_hash = polars.DataFrame([{"id": "item-err", "name": "err", "value": 1}])
+
+        # Missing rowhash when shard_count > 1
+        with pytest.raises(ValueError, match="A 'rowhash' column is required"):
+            client.upload_concurrent_native(
+                source=df_no_hash.lazy(),
+                table_name="test_item",
+                entity_type=VanillaItem,
+                shard_count=2,
+            )
+
+        with pytest.raises(ValueError, match="A 'rowhash' column is required"):
+            client.upload_concurrent_batch(
+                source=df_no_hash.lazy(),
+                table_name="test_item",
+                entity_type=VanillaItem,
+                shard_count=2,
+            )
+
+        # Invalid shard_count <= 0
+        with pytest.raises(ValueError, match="shard_count must be greater than 0"):
+            client.upload_concurrent_native(
+                source=df_no_hash.lazy(),
+                table_name="test_item",
+                entity_type=VanillaItem,
+                shard_count=0,
+            )
+
+        with pytest.raises(ValueError, match="shard_count must be greater than 0"):
+            client.upload_concurrent_batch(
+                source=df_no_hash.lazy(),
+                table_name="test_item",
+                entity_type=VanillaItem,
+                shard_count=-1,
+            )
+
+        with pytest.raises(ValueError, match="shard_count must be greater than 0"):
+            client.delete_batch_concurrent(
+                source=df_no_hash.lazy(),
+                table_name="test_item",
+                entity_type=VanillaItem,
+                shard_count=0,
+            )
