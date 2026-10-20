@@ -444,9 +444,7 @@ def test_cassandra_qes_sharded_read(setup_keyspace_and_table):
 
     # Read all rows across shards as a single table
     result = (
-        store.open(path, QueryEnabledStoreMode.READ)
-        .set_parameters(QueryEnabledStoreShardCountParameter(2))
-        .execute()
+        store.open(path, QueryEnabledStoreMode.READ).set_parameters(QueryEnabledStoreShardCountParameter(2)).execute()
     )
     df = result.to_pandas()
     assert {"qes-1", "qes-2", "qes-3"}.issubset(set(df["id"]))
@@ -463,4 +461,3 @@ def test_cassandra_qes_sharded_read(setup_keyspace_and_table):
     df_filtered = filtered_result.to_pandas()
     assert len(df_filtered) == 1
     assert df_filtered.iloc[0]["id"] == "qes-3"
-

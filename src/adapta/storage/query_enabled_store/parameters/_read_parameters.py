@@ -65,4 +65,3 @@ class QueryEnabledStoreShardCountParameter(QueryEnabledStoreReadParameter[int | 
     def name(self) -> str:
         """See base class."""
         return "shard_count"
-
