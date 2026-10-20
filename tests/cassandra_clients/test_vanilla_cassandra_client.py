@@ -376,4 +376,3 @@ def test_upload_concurrent_shard_validation(setup_keyspace_and_table):
                 entity_type=VanillaItem,
                 shard_count=0,
             )
-

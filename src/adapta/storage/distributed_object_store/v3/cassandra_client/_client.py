@@ -95,19 +95,10 @@ def _shard_source(lazy_source: polars.LazyFrame, shard_count: int) -> list[polar
     if "rowhash" not in schema:
         raise ValueError("A 'rowhash' column is required for sharded uploads (shard_count > 1)")
 
-    bucket_expr = (
-        polars.col("rowhash")
-        .str.replace("^0x", "")
-        .str.slice(0, 8)
-        .str.to_integer(base=16)
-        % shard_count
-    )
+    bucket_expr = polars.col("rowhash").str.replace("^0x", "").str.slice(0, 8).str.to_integer(base=16) % shard_count
 
     source_with_bucket = lazy_source.with_columns(bucket_expr.alias("__bucket"))
-    return [
-        source_with_bucket.filter(polars.col("__bucket") == i).drop("__bucket")
-        for i in range(shard_count)
-    ]
+    return [source_with_bucket.filter(polars.col("__bucket") == i).drop("__bucket") for i in range(shard_count)]
 
 
 def _fix_map_type(entity: dict) -> dict:
@@ -865,6 +856,7 @@ class CassandraClient(ABC):
             return len(entities)
 
         if shard_count and shard_count > 1:
+
             def _upload_shard(shard_source: polars.LazyFrame, target_table: str) -> int:
                 shard_rows = 0
                 for source_batch in shard_source.collect_batches(chunk_size=batch_size, maintain_order=False):
@@ -965,6 +957,7 @@ class CassandraClient(ABC):
             return len(entities)
 
         if shard_count and shard_count > 1:
+
             def _delete_shard(shard_source: polars.LazyFrame, target_table: str) -> int:
                 shard_rows = 0
                 for source_batch in shard_source.collect_batches(chunk_size=batch_size, maintain_order=False):
