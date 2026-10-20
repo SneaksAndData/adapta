@@ -267,6 +267,26 @@ def test_vanilla_cassandra_client_connect_and_crud(setup_keyspace_and_table):
         after_delete_shard_1 = client.get_entities_raw("SELECT * FROM test_vanilla.test_item_1;").to_pandas()
         assert set(after_delete_shard_1["id"]) == {"item-13"}
 
+        # Test filter_entities with shard_count
+        sharded_filtered = client.filter_entities(
+            model_class=VanillaItem,
+            table_name="test_item",
+            key_column_filter_values=[],
+            select_columns=["id", "name"],
+            shard_count=2,
+        ).to_pandas()
+        assert set(sharded_filtered["id"]) == {"item-11", "item-12", "item-13"}
+
+        sharded_filtered_single = client.filter_entities(
+            model_class=VanillaItem,
+            table_name="test_item",
+            key_column_filter_values=[{"id": "item-13"}],
+            select_columns=["id", "name"],
+            shard_count=2,
+        ).to_pandas()
+        assert len(sharded_filtered_single) == 1
+        assert sharded_filtered_single.iloc[0]["id"] == "item-13"
+
 
 def test_prepare_lazy_source_converts_list_struct_to_map():
     from adapta.storage.distributed_object_store.v3.cassandra_client._client import _prepare_lazy_source
@@ -376,3 +396,68 @@ def test_upload_concurrent_shard_validation(setup_keyspace_and_table):
                 entity_type=VanillaItem,
                 shard_count=0,
             )
+
+
+def test_cassandra_qes_sharded_read(setup_keyspace_and_table):
+    from adapta.storage.models.cassandra import CassandraPath
+    from adapta.storage.query_enabled_store import QueryEnabledStore, QueryEnabledStoreMode
+    from adapta.storage.query_enabled_store.parameters import (
+        QueryEnabledStoreFilterParameter,
+        QueryEnabledStoreShardCountParameter,
+    )
+
+    client = VanillaCassandraClient(
+        client_name="test_vanilla_client",
+        keyspace="test_vanilla",
+        contact_points=["127.0.0.1"],
+        port=9042,
+        username="cassandra",
+        password="cassandra",
+    )
+    with client:
+        client.upsert_batch(
+            entities=[
+                {"id": "qes-1", "name": "one", "value": 10},
+                {"id": "qes-2", "name": "two", "value": 20},
+            ],
+            entity_type=VanillaItem,
+            table_name="test_item_0",
+        )
+        client.upsert_batch(
+            entities=[
+                {"id": "qes-3", "name": "three", "value": 30},
+            ],
+            entity_type=VanillaItem,
+            table_name="test_item_1",
+        )
+
+    connection_string = (
+        'qes://engine=CASSANDRA;plaintext_credentials={"username": "cassandra", "password": "cassandra"};'
+        'settings={"keyspace": "test_vanilla", "client_name": "test_vanilla_client", "contact_points": ["127.0.0.1"]}'
+    )
+    store = QueryEnabledStore.from_string(connection_string, lazy_init=True)
+    path = CassandraPath(
+        keyspace="test_vanilla",
+        table="test_item",
+        model_class_name="tests.cassandra_clients.test_vanilla_cassandra_client.VanillaItem",
+    )
+
+    # Read all rows across shards as a single table
+    result = (
+        store.open(path, QueryEnabledStoreMode.READ).set_parameters(QueryEnabledStoreShardCountParameter(2)).execute()
+    )
+    df = result.to_pandas()
+    assert {"qes-1", "qes-2", "qes-3"}.issubset(set(df["id"]))
+
+    # Read with filter across shards
+    filtered_result = (
+        store.open(path, QueryEnabledStoreMode.READ)
+        .set_parameters(
+            QueryEnabledStoreFilterParameter([{"id": "qes-3"}]),
+            QueryEnabledStoreShardCountParameter(2),
+        )
+        .execute()
+    )
+    df_filtered = filtered_result.to_pandas()
+    assert len(df_filtered) == 1
+    assert df_filtered.iloc[0]["id"] == "qes-3"

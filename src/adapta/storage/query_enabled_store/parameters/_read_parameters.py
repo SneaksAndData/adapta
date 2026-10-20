@@ -53,3 +53,15 @@ class QueryEnabledStoreLimitParameter(QueryEnabledStoreReadParameter[int | None]
     def name(self) -> str:
         """See base class."""
         return "limit"
+
+
+@final
+class QueryEnabledStoreShardCountParameter(QueryEnabledStoreReadParameter[int | None]):
+    """
+    Number of shards for sharded tables.
+    """
+
+    @property
+    def name(self) -> str:
+        """See base class."""
+        return "shard_count"

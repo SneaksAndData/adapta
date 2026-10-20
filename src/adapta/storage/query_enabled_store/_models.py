@@ -17,6 +17,7 @@ Query Enabled Store Connection interface.
 #  limitations under the License.
 #
 
+import inspect
 import re
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterator
@@ -40,6 +41,7 @@ from adapta.storage.query_enabled_store.parameters import (
     QueryEnabledStoreOverwriteParameter,
     QueryEnabledStoreReadOptionsParameter,
     QueryEnabledStoreSelectParameter,
+    QueryEnabledStoreShardCountParameter,
 )
 from adapta.utils.metaframe import MetaFrame
 
@@ -236,10 +238,15 @@ class QueryEnabledStoreOperationBuilder(ABC):
         """
         Build and execute the operation.
         """
+        callable_params = inspect.signature(self._operation_callable()).parameters
         return partial(
             self._operation_callable(),
             **(
-                {parameter.name: parameter.value for _, parameter in self._operation_parameters.items()}
+                {
+                    parameter.name: parameter.value
+                    for parameter in self._operation_parameters.values()
+                    if parameter.name in callable_params
+                }
                 | {"path": self._path}
             ),
         )()
@@ -262,6 +269,7 @@ class _QueryEnabledStoreReadBuilder(QueryEnabledStoreOperationBuilder):
                 QueryEnabledStoreSelectParameter([]),
                 QueryEnabledStoreReadOptionsParameter({}),
                 QueryEnabledStoreLimitParameter(None),
+                QueryEnabledStoreShardCountParameter(None),
             ]
         }
 
