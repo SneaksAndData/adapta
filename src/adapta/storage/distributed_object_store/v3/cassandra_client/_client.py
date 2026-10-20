@@ -1,3 +1,4 @@
+import atexit
 import logging
 import math
 import os
@@ -5,6 +6,7 @@ import platform
 import re
 import ssl
 import sys
+import tempfile
 import uuid
 
 from cassandra.cqlengine.connection import set_session
@@ -58,12 +60,11 @@ from adapta.metrics.providers.void_provider import VoidMetricsProvider
 from adapta.storage.distributed_object_store.v3.cassandra_client._client_configuration import (
     CassandraClientConfiguration,
 )
-from adapta.storage.models.enum import QueryEnabledStoreOptions
 from adapta.storage.models.expression_dsl.cassandra_filter_expression import CassandraFilterExpression
 from adapta.storage.models.expression_dsl.filter_expression import Expression, compile_expression
 from adapta.utils import chunk_list, rate_limit, run_time_metrics
 from adapta.utils.concurrent_task_runner import ConcurrentTaskRunner, Executable
-from adapta.utils.metaframe import MetaFrame, concat
+from adapta.utils.metaframe import MetaFrame, MetaFrameOptions, concat
 
 TCassandraModel = TypeVar("TCassandraModel")
 
@@ -87,6 +88,18 @@ def _prepare_lazy_source(source: polars.LazyFrame | polars.DataFrame) -> polars.
     return lazy_source
 
 
+def _cache_lazyframe(lazy_source: polars.LazyFrame) -> polars.LazyFrame:
+    """
+    Streams a LazyFrame into a temporary Arrow IPC file and returns a scan_ipc LazyFrame.
+    """
+    with tempfile.NamedTemporaryFile(suffix=".ipc", delete=False) as tmp_file:
+        tmp_path = tmp_file.name
+
+    lazy_source.sink_ipc(tmp_path)
+    atexit.register(lambda: os.path.exists(tmp_path) and os.remove(tmp_path))
+    return polars.scan_ipc(tmp_path)
+
+
 def _shard_source(lazy_source: polars.LazyFrame, shard_count: int) -> list[polars.LazyFrame]:
     """
     Splits a Polars LazyFrame into shard_count buckets using the 'rowhash' column.
@@ -97,7 +110,8 @@ def _shard_source(lazy_source: polars.LazyFrame, shard_count: int) -> list[polar
 
     bucket_expr = polars.col("rowhash").str.replace("^0x", "").str.slice(0, 8).str.to_integer(base=16) % shard_count
 
-    source_with_bucket = lazy_source.with_columns(bucket_expr.alias("__bucket"))
+    cached_source = _cache_lazyframe(lazy_source)
+    source_with_bucket = cached_source.with_columns(bucket_expr.alias("__bucket"))
     return [source_with_bucket.filter(polars.col("__bucket") == i).drop("__bucket") for i in range(shard_count)]
 
 
@@ -314,7 +328,7 @@ class CassandraClient(ABC):
         custom_indexes: list[str] | None = None,
         deduplicate=False,
         num_threads: int | None = None,
-        options: dict[QueryEnabledStoreOptions, Any] | None = None,
+        concat_options: list[MetaFrameOptions] | None = None,
         limit: int | None = None,
         shard_count: int | None = None,
     ) -> MetaFrame:
@@ -341,62 +355,10 @@ class CassandraClient(ABC):
         :param: custom_indexes: An optional list of custom indexes, if it cannot be inferred, if it cannot be inferred from the data model.
         :param: deduplicate: Optionally deduplicate query result, for example when only the partition key part of a primary key is used to fetch results.
         :param: num_threads: Optionally run filtering using multiple threads. Setting this to -1 will cause this method to automatically evaluate number of threads based on filter expression size.
+        :param: concat_options: Optional list of MetaFrameOptions passed to concat when combining query results.
         :param: limit: Optionally limit the number of results returned. NOTE the limit works per call to Cassandra and not on the final result.
         :param: shard_count: Number of shards if the table is sharded into {table_name}_{i} tables. When specified (>1), all shard tables are queried concurrently and combined into a single MetaFrame.
         """
-        if options is None:
-            options = {}
-
-        if shard_count is not None and shard_count <= 0:
-            raise ValueError("shard_count must be greater than 0")
-
-        if shard_count and shard_count > 1:
-            cassandra_model_mapper = get_mapper(
-                data_model=model_class,
-                keyspace=keyspace,
-                table_name=table_name,
-                primary_keys=primary_keys,
-                partition_keys=partition_keys,
-                custom_indexes=custom_indexes,
-            )
-            resolved_table_name = table_name or cassandra_model_mapper.table_name
-
-            def _filter_shard(shard_index: int) -> MetaFrame:
-                return self.filter_entities(
-                    model_class=model_class,
-                    key_column_filter_values=key_column_filter_values,
-                    keyspace=keyspace,
-                    table_name=f"{resolved_table_name}_{shard_index}",
-                    select_columns=select_columns,
-                    primary_keys=primary_keys,
-                    partition_keys=partition_keys,
-                    custom_indexes=custom_indexes,
-                    deduplicate=deduplicate,
-                    num_threads=num_threads,
-                    options=options,
-                    limit=limit,
-                )
-
-            ctr = ConcurrentTaskRunner[MetaFrame](
-                [
-                    Executable(
-                        _filter_shard,
-                        str(uuid.uuid4()),
-                        args=[i],
-                    )
-                    for i in range(shard_count)
-                ],
-                num_threads=shard_count,
-            )
-            shard_frames = list(ctr.eager().values())
-            res = concat(shard_frames, options=options.get(QueryEnabledStoreOptions.CONCAT_OPTIONS, None))
-            if deduplicate:
-                return MetaFrame(
-                    data=res,
-                    convert_to_polars=lambda r: r.to_polars().unique(),
-                    convert_to_pandas=lambda r: r.to_pandas().drop_duplicates(),
-                )
-            return res
 
         @on_exception(
             wait_gen=expo,
@@ -414,7 +376,7 @@ class CassandraClient(ABC):
             else:
                 model = model.filter(**key_column_filter).limit(limit)
             if columns_to_select:
-                return model.only(select_columns)
+                return model.only(columns_to_select)
 
             return model
 
@@ -425,25 +387,44 @@ class CassandraClient(ABC):
 
             return column_name.replace(filter_suffix[0], "")
 
-        def convert_to_polars(x: list[dict]) -> polars.DataFrame:
+        def convert_to_polars(x: list[dict], target_columns: list[str]) -> polars.DataFrame:
             try:
                 for row in x:
-                    for col in select_columns:
+                    for col in target_columns:
                         if isinstance(row[col], dict):
                             row[col] = [{"key": k, "value": v} for k, v in row[col].items()]
-                return polars.DataFrame(x, schema=select_columns)
+                return polars.DataFrame(x, schema=target_columns)
             except ComputeError:
                 # Catches errors related to incorrect schema inference and tries again with unlimited schema inference length
-                return polars.DataFrame(x, schema=select_columns, infer_schema_length=None)
+                return polars.DataFrame(x, schema=target_columns, infer_schema_length=None)
 
         def to_frame(
             model: type[Model], key_column_filter: dict[str, Any], columns_to_select: list[str] | None
         ) -> MetaFrame:
             return MetaFrame(
                 [dict(v.items()) for v in list(apply(model, key_column_filter, columns_to_select))],
-                convert_to_polars=convert_to_polars,
-                convert_to_pandas=lambda x: pandas.DataFrame(x, columns=select_columns),
+                convert_to_polars=lambda x: convert_to_polars(x, columns_to_select),
+                convert_to_pandas=lambda x: pandas.DataFrame(x, columns=columns_to_select),
             )
+
+        def _filter_shard(shard_index: int, target_table_base: str) -> MetaFrame:
+            return self.filter_entities(
+                model_class=model_class,
+                key_column_filter_values=key_column_filter_values,
+                keyspace=keyspace,
+                table_name=f"{target_table_base}_{shard_index}",
+                select_columns=select_columns,
+                primary_keys=primary_keys,
+                partition_keys=partition_keys,
+                custom_indexes=custom_indexes,
+                deduplicate=deduplicate,
+                num_threads=num_threads,
+                concat_options=concat_options,
+                limit=limit,
+            )
+
+        if shard_count is not None and shard_count <= 0:
+            raise ValueError("shard_count must be greater than 0")
 
         assert self._session is not None, (
             "Please connect to Cassandra using connect() or with CassandraClient(...) before calling this method"
@@ -457,6 +438,30 @@ class CassandraClient(ABC):
             partition_keys=partition_keys,
             custom_indexes=custom_indexes,
         )
+
+        if shard_count and shard_count > 1:
+            resolved_table_name = table_name or cassandra_model_mapper.table_name
+
+            ctr = ConcurrentTaskRunner[MetaFrame](
+                [
+                    Executable(
+                        _filter_shard,
+                        str(uuid.uuid4()),
+                        args=[i, resolved_table_name],
+                    )
+                    for i in range(shard_count)
+                ],
+                num_threads=shard_count,
+            )
+            shard_frames = list(ctr.eager().values())
+            res = concat(shard_frames, options=concat_options)
+            if deduplicate:
+                return MetaFrame(
+                    data=res,
+                    convert_to_polars=lambda r: r.to_polars().unique(),
+                    convert_to_pandas=lambda r: r.to_pandas().drop_duplicates(),
+                )
+            return res
 
         select_columns = (
             list(map(normalize_column_name, select_columns)) if select_columns else cassandra_model_mapper.column_names
@@ -496,23 +501,23 @@ class CassandraClient(ABC):
                         ],
                         chunksize=max(int(len(compiled_filter_values) / num_threads), 1),
                     ),
-                    options=options.get(QueryEnabledStoreOptions.CONCAT_OPTIONS, None),
+                    options=concat_options,
                 )
         else:
             return concat(
                 [
                     MetaFrame(
                         [dict(v.items()) for v in list(apply(cassandra_model, key_column_filter, select_columns))],
-                        convert_to_polars=convert_to_polars
+                        convert_to_polars=(lambda x: convert_to_polars(x, select_columns))
                         if not deduplicate
-                        else (lambda x: convert_to_polars(x).unique()),
+                        else (lambda x: convert_to_polars(x, select_columns).unique()),
                         convert_to_pandas=(lambda x: pandas.DataFrame(x, columns=select_columns))
                         if not deduplicate
                         else (lambda x: pandas.DataFrame(x, columns=select_columns).drop_duplicates()),
                     )
                     for key_column_filter in compiled_filter_values
                 ],
-                options=options.get(QueryEnabledStoreOptions.CONCAT_OPTIONS, None),
+                options=concat_options,
             )
 
     def get_entities_raw(self, query: str, force_eager: bool = False) -> MetaFrame:
@@ -890,10 +895,6 @@ class CassandraClient(ABC):
         :param threads: Number of parallel threads to use. Defaults to 4.
         :param shard_count: Number of shards to split rows into for parallel upload. When specified (>1), rows are split into buckets by 'rowhash' and uploaded concurrently using ConcurrentTaskRunner.
         """
-        if shard_count is not None and shard_count <= 0:
-            raise ValueError("shard_count must be greater than 0")
-
-        lazy_source = _prepare_lazy_source(source)
 
         @run_time_metrics(metric_name="adapta.cassandra.batch_upsert_duration")
         def _upsert_with_metric(entities: list[dict], **kwargs) -> int:
@@ -908,23 +909,27 @@ class CassandraClient(ABC):
             self._logger.info("Upserted {rows} rows", rows=len(entities))
             return len(entities)
 
+        def _upload_shard(shard_source: polars.LazyFrame, target_table: str) -> int:
+            shard_rows = 0
+            for source_batch in shard_source.collect_batches(chunk_size=batch_size, maintain_order=False):
+                _upsert_with_metric(
+                    source_batch.to_dicts(),
+                    entity_type=entity_type,
+                    keyspace=keyspace or self._keyspace,
+                    table_name=target_table,
+                    batch_size=source_batch.height,
+                    metrics_provider=self._metrics_provider,
+                    logger=self._logger,
+                )
+                shard_rows += source_batch.height
+            return shard_rows
+
+        if shard_count is not None and shard_count <= 0:
+            raise ValueError("shard_count must be greater than 0")
+
+        lazy_source = _prepare_lazy_source(source)
+
         if shard_count and shard_count > 1:
-
-            def _upload_shard(shard_source: polars.LazyFrame, target_table: str) -> int:
-                shard_rows = 0
-                for source_batch in shard_source.collect_batches(chunk_size=batch_size, maintain_order=False):
-                    _upsert_with_metric(
-                        source_batch.to_dicts(),
-                        entity_type=entity_type,
-                        keyspace=keyspace or self._keyspace,
-                        table_name=target_table,
-                        batch_size=source_batch.height,
-                        metrics_provider=self._metrics_provider,
-                        logger=self._logger,
-                    )
-                    shard_rows += source_batch.height
-                return shard_rows
-
             shards = _shard_source(lazy_source, shard_count)
             ctr = ConcurrentTaskRunner[int](
                 [
@@ -983,18 +988,6 @@ class CassandraClient(ABC):
         :param threads: Number of parallel threads to use. Defaults to 4.
         :param shard_count: Number of shards if the table is sharded. When specified (>1), entities are deleted from all shard tables concurrently using ConcurrentTaskRunner.
         """
-        if shard_count is not None and shard_count <= 0:
-            raise ValueError("shard_count must be greater than 0")
-
-        lazy_source = _prepare_lazy_source(source)
-
-        target_keyspace = keyspace or self._keyspace
-        cassandra_mapper = get_mapper(
-            data_model=entity_type,
-            table_name=table_name,
-            keyspace=target_keyspace,
-        )
-        primary_keys = cassandra_mapper.primary_keys
 
         @run_time_metrics(metric_name="adapta.cassandra.batch_upsert_duration")
         def _delete_with_metric(entities: list[dict], **kwargs) -> int:
@@ -1009,29 +1002,44 @@ class CassandraClient(ABC):
             self._logger.info("Deleted {rows} rows", rows=len(entities))
             return len(entities)
 
-        if shard_count and shard_count > 1:
+        def _delete_shard(shard_source: polars.LazyFrame, target_table: str, target_pks: list[str]) -> int:
+            shard_rows = 0
+            for source_batch in shard_source.collect_batches(chunk_size=batch_size, maintain_order=False):
+                _delete_with_metric(
+                    source_batch.to_dicts(),
+                    entity_type=entity_type,
+                    keyspace=target_keyspace,
+                    table_name=target_table,
+                    primary_keys=target_pks,
+                    metrics_provider=self._metrics_provider,
+                    logger=self._logger,
+                )
+                shard_rows += source_batch.height
+            return shard_rows
 
-            def _delete_shard(shard_source: polars.LazyFrame, target_table: str) -> int:
-                shard_rows = 0
-                for source_batch in shard_source.collect_batches(chunk_size=batch_size, maintain_order=False):
-                    _delete_with_metric(
-                        source_batch.to_dicts(),
-                        entity_type=entity_type,
-                        keyspace=target_keyspace,
-                        table_name=target_table,
-                        primary_keys=primary_keys,
-                        metrics_provider=self._metrics_provider,
-                        logger=self._logger,
-                    )
-                    shard_rows += source_batch.height
-                return shard_rows
+        target_keyspace = keyspace or self._keyspace
+
+        if shard_count is not None and shard_count <= 0:
+            raise ValueError("shard_count must be greater than 0")
+
+        lazy_source = _prepare_lazy_source(source)
+
+        cassandra_mapper = get_mapper(
+            data_model=entity_type,
+            table_name=table_name,
+            keyspace=target_keyspace,
+        )
+        primary_keys = cassandra_mapper.primary_keys
+
+        if shard_count and shard_count > 1:
+            lazy_source = _cache_lazyframe(lazy_source)
 
             ctr = ConcurrentTaskRunner[int](
                 [
                     Executable(
                         _delete_shard,
                         str(uuid.uuid4()),
-                        args=[lazy_source, f"{table_name}_{i}"],
+                        args=[lazy_source, f"{table_name}_{i}", primary_keys],
                     )
                     for i in range(shard_count)
                 ],

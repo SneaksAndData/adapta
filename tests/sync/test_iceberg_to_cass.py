@@ -61,6 +61,14 @@ class SyncItemCategoryIndex:
     value: int
 
 
+@dataclass
+class SyncShardedItem:
+    id: str = field(metadata={"is_primary_key": True, "is_partition_key": True})
+    name: str
+    value: int
+    rowhash: str
+
+
 @pytest.fixture(scope="module")
 def cassandra_keyspace():
     cluster = Cluster(contact_points=["127.0.0.1"], port=9042)
@@ -875,6 +883,109 @@ def test_sync_iceberg_to_cassandra_custom_index(
         }
     ).sort(["category", "id"])
     assert_frame_equal(synced_idx_after_dup, expected_idx_after_dup, check_column_order=False)
+
+
+@pytest.mark.parametrize("upload_mode", [CassandraUploadMode.CONCURRENT_BATCH, CassandraUploadMode.CONCURRENT_NATIVE])
+def test_sync_iceberg_to_cassandra_sharded(
+    cassandra_client: VanillaCassandraClient,
+    cassandra_keyspace: str,
+    iceberg_catalog: Catalog,
+    logger: SemanticLogger,
+    upload_mode: CassandraUploadMode,
+):
+    iceberg_table_name, cassandra_table_name = _get_table_names()
+
+    # Pre-create shard tables: cassandra_table_name_0 and cassandra_table_name_1
+    cassandra_client.create_table(SyncShardedItem, f"{cassandra_table_name}_0", cassandra_keyspace)
+    cassandra_client.create_table(SyncShardedItem, f"{cassandra_table_name}_1", cassandra_keyspace)
+
+    initial_data = polars.DataFrame(
+        {
+            "id": ["1", "2", "3", "4"],
+            "name": ["alice", "bob", "charlie", "david"],
+            "value": [10, 20, 30, 40],
+            "rowhash": [
+                "0000000012345678",  # bucket 0
+                "0000000112345678",  # bucket 1
+                "0000000212345678",  # bucket 0
+                "0000000312345678",  # bucket 1
+            ],
+        }
+    )
+    write_using_catalog(
+        schema_name="test",
+        table_name=iceberg_table_name,
+        catalog=iceberg_catalog,
+        data=initial_data,
+        overwrite=True,
+    )
+
+    iceberg_source = DataSocket(
+        alias="source",
+        data_path=f"iceberg://test@{iceberg_table_name}",
+        data_format="iceberg",
+    )
+    cassandra_target = DataSocket(
+        alias="target",
+        data_path=f"cass+tests.sync.test_iceberg_to_cass.SyncShardedItem://{cassandra_keyspace}@{cassandra_table_name}",
+        data_format="cassandra",
+    )
+
+    # 1. Full sync to sharded tables
+    sync_iceberg_to_cassandra(
+        iceberg_catalog=iceberg_catalog,
+        client=cassandra_client,
+        iceberg_source=iceberg_source,
+        version_field="value",
+        cassandra_target=cassandra_target,
+        read_chunk_size=2,
+        logger=logger,
+        threads=4,
+        upload_mode=upload_mode,
+        shard_count=2,
+    )
+
+    # Validate shard 0 and shard 1
+    shard_0_records = (
+        cassandra_client.get_entities_raw(f"SELECT * FROM {cassandra_keyspace}.{cassandra_table_name}_0;")
+        .to_polars()
+        .sort("id")
+    )
+    shard_1_records = (
+        cassandra_client.get_entities_raw(f"SELECT * FROM {cassandra_keyspace}.{cassandra_table_name}_1;")
+        .to_polars()
+        .sort("id")
+    )
+
+    assert set(shard_0_records["id"]) == {"1", "3"}
+    assert set(shard_1_records["id"]) == {"2", "4"}
+
+    # 2. Incremental delete: delete row 1
+    iceberg_table = iceberg_catalog.load_table(identifier=("test", iceberg_table_name))
+    iceberg_table.delete("id = '1'")
+
+    sync_iceberg_to_cassandra(
+        iceberg_catalog=iceberg_catalog,
+        client=cassandra_client,
+        iceberg_source=iceberg_source,
+        version_field="value",
+        cassandra_target=cassandra_target,
+        read_chunk_size=2,
+        logger=logger,
+        threads=4,
+        upload_mode=upload_mode,
+        shard_count=2,
+    )
+
+    shard_0_after_delete = cassandra_client.get_entities_raw(
+        f"SELECT * FROM {cassandra_keyspace}.{cassandra_table_name}_0;"
+    ).to_polars()
+    shard_1_after_delete = cassandra_client.get_entities_raw(
+        f"SELECT * FROM {cassandra_keyspace}.{cassandra_table_name}_1;"
+    ).to_polars()
+    assert "1" not in set(shard_0_after_delete["id"])
+    assert set(shard_0_after_delete["id"]) == {"3"}
+    assert set(shard_1_after_delete["id"]) == {"2", "4"}
 
 
 def test_sync_iceberg_to_cassandra_ignore_index_updates(

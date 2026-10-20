@@ -132,6 +132,7 @@ class CassandraQueryEnabledStore(QueryEnabledStore[CassandraCredential, Cassandr
     ) -> MetaFrame | Iterator[MetaFrame]:
         assert isinstance(path, CassandraPath)
         cassandra_path: CassandraPath = path
+        concat_options = options.get(QueryEnabledStoreOptions.CONCAT_OPTIONS, None) if options else None
         if self._lazy:
             with self._cassandra_client as cassandra_client:
                 return cassandra_client.filter_entities(
@@ -141,7 +142,7 @@ class CassandraQueryEnabledStore(QueryEnabledStore[CassandraCredential, Cassandr
                     table_name=cassandra_path.table,
                     select_columns=columns,
                     num_threads=-1,  # auto-infer, see method documentation
-                    options=options,
+                    concat_options=concat_options,
                     limit=limit,
                     shard_count=shard_count,
                 )
@@ -153,7 +154,7 @@ class CassandraQueryEnabledStore(QueryEnabledStore[CassandraCredential, Cassandr
             table_name=cassandra_path.table,
             select_columns=columns,
             num_threads=-1,  # auto-infer, see method documentation
-            options=options,
+            concat_options=concat_options,
             limit=limit,
             shard_count=shard_count,
         )
