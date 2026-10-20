@@ -387,24 +387,24 @@ class CassandraClient(ABC):
 
             return column_name.replace(filter_suffix[0], "")
 
-        def convert_to_polars(x: list[dict], target_columns: list[str]) -> polars.DataFrame:
+        def convert_to_polars(x: list[dict]) -> polars.DataFrame:
             try:
                 for row in x:
-                    for col in target_columns:
-                        if isinstance(row[col], dict):
+                    for col in select_columns:
+                        if isinstance(row.get(col), dict):
                             row[col] = [{"key": k, "value": v} for k, v in row[col].items()]
-                return polars.DataFrame(x, schema=target_columns)
+                return polars.DataFrame(x, schema=select_columns)
             except ComputeError:
                 # Catches errors related to incorrect schema inference and tries again with unlimited schema inference length
-                return polars.DataFrame(x, schema=target_columns, infer_schema_length=None)
+                return polars.DataFrame(x, schema=select_columns, infer_schema_length=None)
 
         def to_frame(
             model: type[Model], key_column_filter: dict[str, Any], columns_to_select: list[str] | None
         ) -> MetaFrame:
             return MetaFrame(
                 [dict(v.items()) for v in list(apply(model, key_column_filter, columns_to_select))],
-                convert_to_polars=lambda x: convert_to_polars(x, columns_to_select),
-                convert_to_pandas=lambda x: pandas.DataFrame(x, columns=columns_to_select),
+                convert_to_polars=convert_to_polars,
+                convert_to_pandas=lambda x: pandas.DataFrame(x, columns=select_columns),
             )
 
         def _filter_shard(shard_index: int, target_table_base: str) -> MetaFrame:
@@ -508,9 +508,9 @@ class CassandraClient(ABC):
                 [
                     MetaFrame(
                         [dict(v.items()) for v in list(apply(cassandra_model, key_column_filter, select_columns))],
-                        convert_to_polars=(lambda x: convert_to_polars(x, select_columns))
+                        convert_to_polars=convert_to_polars
                         if not deduplicate
-                        else (lambda x: convert_to_polars(x, select_columns).unique()),
+                        else (lambda x: convert_to_polars(x).unique()),
                         convert_to_pandas=(lambda x: pandas.DataFrame(x, columns=select_columns))
                         if not deduplicate
                         else (lambda x: pandas.DataFrame(x, columns=select_columns).drop_duplicates()),
