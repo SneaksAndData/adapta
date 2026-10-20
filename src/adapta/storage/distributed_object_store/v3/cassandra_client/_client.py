@@ -58,12 +58,11 @@ from adapta.metrics.providers.void_provider import VoidMetricsProvider
 from adapta.storage.distributed_object_store.v3.cassandra_client._client_configuration import (
     CassandraClientConfiguration,
 )
-from adapta.storage.models.enum import QueryEnabledStoreOptions
 from adapta.storage.models.expression_dsl.cassandra_filter_expression import CassandraFilterExpression
 from adapta.storage.models.expression_dsl.filter_expression import Expression, compile_expression
 from adapta.utils import chunk_list, rate_limit, run_time_metrics
 from adapta.utils.concurrent_task_runner import ConcurrentTaskRunner, Executable
-from adapta.utils.metaframe import MetaFrame, concat
+from adapta.utils.metaframe import MetaFrame, MetaFrameOptions, concat
 
 TCassandraModel = TypeVar("TCassandraModel")
 
@@ -314,7 +313,7 @@ class CassandraClient(ABC):
         custom_indexes: list[str] | None = None,
         deduplicate=False,
         num_threads: int | None = None,
-        options: dict[QueryEnabledStoreOptions, Any] | None = None,
+        concat_options: list[MetaFrameOptions] | None = None,
         limit: int | None = None,
         shard_count: int | None = None,
     ) -> MetaFrame:
@@ -341,12 +340,10 @@ class CassandraClient(ABC):
         :param: custom_indexes: An optional list of custom indexes, if it cannot be inferred, if it cannot be inferred from the data model.
         :param: deduplicate: Optionally deduplicate query result, for example when only the partition key part of a primary key is used to fetch results.
         :param: num_threads: Optionally run filtering using multiple threads. Setting this to -1 will cause this method to automatically evaluate number of threads based on filter expression size.
+        :param: concat_options: Optional list of MetaFrameOptions passed to concat when combining query results.
         :param: limit: Optionally limit the number of results returned. NOTE the limit works per call to Cassandra and not on the final result.
         :param: shard_count: Number of shards if the table is sharded into {table_name}_{i} tables. When specified (>1), all shard tables are queried concurrently and combined into a single MetaFrame.
         """
-        if options is None:
-            options = {}
-
         if shard_count is not None and shard_count <= 0:
             raise ValueError("shard_count must be greater than 0")
 
@@ -373,7 +370,7 @@ class CassandraClient(ABC):
                     custom_indexes=custom_indexes,
                     deduplicate=deduplicate,
                     num_threads=num_threads,
-                    options=options,
+                    concat_options=concat_options,
                     limit=limit,
                 )
 
@@ -389,7 +386,7 @@ class CassandraClient(ABC):
                 num_threads=shard_count,
             )
             shard_frames = list(ctr.eager().values())
-            res = concat(shard_frames, options=options.get(QueryEnabledStoreOptions.CONCAT_OPTIONS, None))
+            res = concat(shard_frames, options=concat_options)
             if deduplicate:
                 return MetaFrame(
                     data=res,
@@ -496,7 +493,7 @@ class CassandraClient(ABC):
                         ],
                         chunksize=max(int(len(compiled_filter_values) / num_threads), 1),
                     ),
-                    options=options.get(QueryEnabledStoreOptions.CONCAT_OPTIONS, None),
+                    options=concat_options,
                 )
         else:
             return concat(
@@ -512,7 +509,7 @@ class CassandraClient(ABC):
                     )
                     for key_column_filter in compiled_filter_values
                 ],
-                options=options.get(QueryEnabledStoreOptions.CONCAT_OPTIONS, None),
+                options=concat_options,
             )
 
     def get_entities_raw(self, query: str, force_eager: bool = False) -> MetaFrame:

@@ -103,6 +103,7 @@ class AstraQueryEnabledStore(QueryEnabledStore[AstraCredential, AstraSettings]):
     ) -> MetaFrame | Iterator[MetaFrame]:
         assert isinstance(path, AstraPath)
         astra_path: AstraPath = path
+        concat_options = options.get(QueryEnabledStoreOptions.CONCAT_OPTIONS, None) if options else None
         if self._lazy:
             with self._astra_client as astra_client:
                 return astra_client.filter_entities(
@@ -112,7 +113,7 @@ class AstraQueryEnabledStore(QueryEnabledStore[AstraCredential, AstraSettings]):
                     table_name=astra_path.table,
                     select_columns=columns,
                     num_threads=-1,  # auto-infer, see method documentation
-                    options=options,
+                    concat_options=concat_options,
                     limit=limit,
                 )
 
@@ -123,7 +124,7 @@ class AstraQueryEnabledStore(QueryEnabledStore[AstraCredential, AstraSettings]):
             table_name=astra_path.table,
             select_columns=columns,
             num_threads=-1,  # auto-infer, see method documentation
-            options=options,
+            concat_options=concat_options,
             limit=limit,
         )
 
