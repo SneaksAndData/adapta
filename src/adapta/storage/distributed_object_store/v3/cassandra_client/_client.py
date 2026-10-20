@@ -359,6 +359,7 @@ class CassandraClient(ABC):
         :param: limit: Optionally limit the number of results returned. NOTE the limit works per call to Cassandra and not on the final result.
         :param: shard_count: Number of shards if the table is sharded into {table_name}_{i} tables. When specified (>1), all shard tables are queried concurrently and combined into a single MetaFrame.
         """
+
         @on_exception(
             wait_gen=expo,
             exception=(
@@ -894,6 +895,7 @@ class CassandraClient(ABC):
         :param threads: Number of parallel threads to use. Defaults to 4.
         :param shard_count: Number of shards to split rows into for parallel upload. When specified (>1), rows are split into buckets by 'rowhash' and uploaded concurrently using ConcurrentTaskRunner.
         """
+
         @run_time_metrics(metric_name="adapta.cassandra.batch_upsert_duration")
         def _upsert_with_metric(entities: list[dict], **kwargs) -> int:
             self.upsert_batch(
@@ -986,12 +988,6 @@ class CassandraClient(ABC):
         :param threads: Number of parallel threads to use. Defaults to 4.
         :param shard_count: Number of shards if the table is sharded. When specified (>1), entities are deleted from all shard tables concurrently using ConcurrentTaskRunner.
         """
-        if shard_count is not None and shard_count <= 0:
-            raise ValueError("shard_count must be greater than 0")
-
-        lazy_source = _prepare_lazy_source(source)
-
-        target_keyspace = keyspace or self._keyspace
 
         @run_time_metrics(metric_name="adapta.cassandra.batch_upsert_duration")
         def _delete_with_metric(entities: list[dict], **kwargs) -> int:
@@ -1020,6 +1016,8 @@ class CassandraClient(ABC):
                 )
                 shard_rows += source_batch.height
             return shard_rows
+
+        target_keyspace = keyspace or self._keyspace
 
         if shard_count is not None and shard_count <= 0:
             raise ValueError("shard_count must be greater than 0")

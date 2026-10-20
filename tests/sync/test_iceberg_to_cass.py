@@ -946,12 +946,16 @@ def test_sync_iceberg_to_cassandra_sharded(
     )
 
     # Validate shard 0 and shard 1
-    shard_0_records = cassandra_client.get_entities_raw(
-        f"SELECT * FROM {cassandra_keyspace}.{cassandra_table_name}_0;"
-    ).to_polars().sort("id")
-    shard_1_records = cassandra_client.get_entities_raw(
-        f"SELECT * FROM {cassandra_keyspace}.{cassandra_table_name}_1;"
-    ).to_polars().sort("id")
+    shard_0_records = (
+        cassandra_client.get_entities_raw(f"SELECT * FROM {cassandra_keyspace}.{cassandra_table_name}_0;")
+        .to_polars()
+        .sort("id")
+    )
+    shard_1_records = (
+        cassandra_client.get_entities_raw(f"SELECT * FROM {cassandra_keyspace}.{cassandra_table_name}_1;")
+        .to_polars()
+        .sort("id")
+    )
 
     assert set(shard_0_records["id"]) == {"1", "3"}
     assert set(shard_1_records["id"]) == {"2", "4"}
@@ -982,7 +986,6 @@ def test_sync_iceberg_to_cassandra_sharded(
     assert "1" not in set(shard_0_after_delete["id"])
     assert set(shard_0_after_delete["id"]) == {"3"}
     assert set(shard_1_after_delete["id"]) == {"2", "4"}
-
 
 
 def test_sync_iceberg_to_cassandra_ignore_index_updates(
