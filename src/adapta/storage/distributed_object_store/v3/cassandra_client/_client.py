@@ -923,6 +923,7 @@ class CassandraClient(ABC):
         keyspace: str | None = None,
         batch_size: int = 1_000,
         threads: int = 4,
+        shard_count: int | None = None,
     ) -> int:
         """
         Deletes entities in batches from a Polars LazyFrame or DataFrame concurrently using ConcurrentTaskRunner.
@@ -935,7 +936,11 @@ class CassandraClient(ABC):
         :param keyspace: Optional keyspace name, if not provided in the client constructor.
         :param batch_size: Number of rows per batch to collect and delete. Defaults to 1,000.
         :param threads: Number of parallel threads to use. Defaults to 4.
+        :param shard_count: Number of shards if the table is sharded. When specified (>1), entities are deleted from all shard tables concurrently using ConcurrentTaskRunner.
         """
+        if shard_count is not None and shard_count <= 0:
+            raise ValueError("shard_count must be greater than 0")
+
         lazy_source = _prepare_lazy_source(source)
 
         target_keyspace = keyspace or self._keyspace
@@ -958,6 +963,35 @@ class CassandraClient(ABC):
             self._metrics_provider.gauge("adapta.cassandra.deleted_rows", len(entities))
             self._logger.info("Deleted {rows} rows", rows=len(entities))
             return len(entities)
+
+        if shard_count and shard_count > 1:
+            def _delete_shard(shard_source: polars.LazyFrame, target_table: str) -> int:
+                shard_rows = 0
+                for source_batch in shard_source.collect_batches(chunk_size=batch_size, maintain_order=False):
+                    _delete_with_metric(
+                        source_batch.to_dicts(),
+                        entity_type=entity_type,
+                        keyspace=target_keyspace,
+                        table_name=target_table,
+                        primary_keys=primary_keys,
+                        metrics_provider=self._metrics_provider,
+                        logger=self._logger,
+                    )
+                    shard_rows += source_batch.height
+                return shard_rows
+
+            ctr = ConcurrentTaskRunner[int](
+                [
+                    Executable(
+                        _delete_shard,
+                        str(uuid.uuid4()),
+                        args=[lazy_source, f"{table_name}_{i}"],
+                    )
+                    for i in range(shard_count)
+                ],
+                num_threads=shard_count,
+            )
+            return sum([rows_deleted for _, rows_deleted in ctr.eager().items()])
 
         ctr = ConcurrentTaskRunner[int](
             [

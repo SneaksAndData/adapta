@@ -244,6 +244,29 @@ def test_vanilla_cassandra_client_connect_and_crud(setup_keyspace_and_table):
         after_shard_1 = client.get_entities_raw("SELECT * FROM test_vanilla.test_item_1;").to_pandas()
         assert set(after_shard_1["id"]) == {"item-10", "item-13"}
 
+        # Test delete_batch_concurrent with shard_count (deletes PKs from all shard tables, rowhash not required)
+        sharded_deletes_data = polars.DataFrame(
+            [
+                {"id": "item-9", "name": "ninth", "value": 900},
+                {"id": "item-10", "name": "tenth", "value": 1000},
+            ]
+        )
+        deleted_sharded_count = client.delete_batch_concurrent(
+            source=sharded_deletes_data.lazy(),
+            table_name="test_item",
+            entity_type=VanillaItem,
+            batch_size=2,
+            threads=2,
+            shard_count=2,
+        )
+        assert deleted_sharded_count == 4
+
+        after_delete_shard_0 = client.get_entities_raw("SELECT * FROM test_vanilla.test_item_0;").to_pandas()
+        assert set(after_delete_shard_0["id"]) == {"item-11", "item-12"}
+
+        after_delete_shard_1 = client.get_entities_raw("SELECT * FROM test_vanilla.test_item_1;").to_pandas()
+        assert set(after_delete_shard_1["id"]) == {"item-13"}
+
 
 def test_prepare_lazy_source_converts_list_struct_to_map():
     from adapta.storage.distributed_object_store.v3.cassandra_client._client import _prepare_lazy_source
@@ -344,5 +367,13 @@ def test_upload_concurrent_shard_validation(setup_keyspace_and_table):
                 table_name="test_item",
                 entity_type=VanillaItem,
                 shard_count=-1,
+            )
+
+        with pytest.raises(ValueError, match="shard_count must be greater than 0"):
+            client.delete_batch_concurrent(
+                source=df_no_hash.lazy(),
+                table_name="test_item",
+                entity_type=VanillaItem,
+                shard_count=0,
             )
 
