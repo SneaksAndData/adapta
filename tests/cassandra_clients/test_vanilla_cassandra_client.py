@@ -111,6 +111,32 @@ def test_vanilla_cassandra_client_connect_and_crud(setup_keyspace_and_table):
         assert filtered.iloc[0]["id"] == "item-2"
         assert filtered.iloc[0]["name"] == "second"
 
+        all_polars = client.filter_entities(
+            model_class=VanillaItem,
+            table_name="test_item",
+            key_column_filter_values=[],
+            select_columns=["id", "name"],
+        ).to_polars()
+        assert len(all_polars) == 3
+
+        all_polars_empty_cols = client.filter_entities(
+            model_class=VanillaItem,
+            table_name="test_item",
+            key_column_filter_values=[],
+            select_columns=[],
+        ).to_polars()
+        assert len(all_polars_empty_cols) == 3
+        assert set(all_polars_empty_cols.columns) == {"id", "name", "value"}
+
+        all_polars_none_cols = client.filter_entities(
+            model_class=VanillaItem,
+            table_name="test_item",
+            key_column_filter_values=[],
+            select_columns=None,
+        ).to_polars()
+        assert len(all_polars_none_cols) == 3
+        assert set(all_polars_none_cols.columns) == {"id", "name", "value"}
+
         client.delete_entity(entity=item, table_name="test_item")
         after_delete = client.get_entities_raw("SELECT * FROM test_vanilla.test_item;").to_pandas()
         assert len(after_delete) == 2
