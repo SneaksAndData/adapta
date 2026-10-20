@@ -1,3 +1,4 @@
+import atexit
 import logging
 import math
 import os
@@ -5,6 +6,7 @@ import platform
 import re
 import ssl
 import sys
+import tempfile
 import uuid
 
 from cassandra.cqlengine.connection import set_session
@@ -96,7 +98,14 @@ def _shard_source(lazy_source: polars.LazyFrame, shard_count: int) -> list[polar
 
     bucket_expr = polars.col("rowhash").str.replace("^0x", "").str.slice(0, 8).str.to_integer(base=16) % shard_count
 
-    source_with_bucket = lazy_source.with_columns(bucket_expr.alias("__bucket"))
+    with tempfile.NamedTemporaryFile(suffix=".ipc", delete=False) as tmp_file:
+        tmp_path = tmp_file.name
+
+    lazy_source.sink_ipc(tmp_path)
+    scan = polars.scan_ipc(tmp_path)
+    atexit.register(lambda: os.path.exists(tmp_path) and os.remove(tmp_path))
+
+    source_with_bucket = scan.with_columns(bucket_expr.alias("__bucket"))
     return [source_with_bucket.filter(polars.col("__bucket") == i).drop("__bucket") for i in range(shard_count)]
 
 
@@ -1007,6 +1016,13 @@ class CassandraClient(ABC):
             return len(entities)
 
         if shard_count and shard_count > 1:
+            with tempfile.NamedTemporaryFile(suffix=".ipc", delete=False) as tmp_file:
+                tmp_path = tmp_file.name
+
+            lazy_source.sink_ipc(tmp_path)
+            scan = polars.scan_ipc(tmp_path)
+            atexit.register(lambda: os.path.exists(tmp_path) and os.remove(tmp_path))
+            lazy_source = scan
 
             def _delete_shard(shard_source: polars.LazyFrame, target_table: str) -> int:
                 shard_rows = 0

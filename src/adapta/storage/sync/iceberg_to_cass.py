@@ -93,6 +93,10 @@ class CustomIndexMetadata:
         if ver_field and ver_field.name != index_field.name:
             fields_spec.append((ver_field.name, ver_field.type, dataclasses.field()))
 
+        rowhash_field = model_fields.get("rowhash")
+        if rowhash_field and rowhash_field.name not in [f[0] for f in fields_spec]:
+            fields_spec.append((rowhash_field.name, rowhash_field.type, dataclasses.field()))
+
         return cls(
             index_model=dataclasses.make_dataclass(f"{base_model.__name__}__idx_{index_field.name}", fields_spec),
             field_name=index_field.name,
@@ -145,6 +149,7 @@ def _sync_custom_index(
     threads: int,
     logger: LoggerInterface,
     full_sync: bool = False,
+    shard_count: int | None = None,
 ) -> None:
     def _read_index_data() -> LazyFrame:
         logger.info("Reading source table {source_table} for custom index", source_table=source_table)
@@ -165,6 +170,7 @@ def _sync_custom_index(
                 keyspace=target_keyspace,
                 batch_size=read_chunk_size,
                 threads=threads,
+                shard_count=shard_count,
             )
             return
         if upload_mode == CassandraUploadMode.CONCURRENT_NATIVE:
@@ -175,6 +181,7 @@ def _sync_custom_index(
                 keyspace=target_keyspace,
                 batch_size=read_chunk_size,
                 threads=threads,
+                shard_count=shard_count,
             )
             return
         raise ValueError(f"Unsupported upload mode: {upload_mode}")
@@ -277,6 +284,7 @@ def _sync_custom_index(
             keyspace=target_keyspace,
             batch_size=read_chunk_size,
             threads=threads,
+            shard_count=shard_count,
         )
 
 
@@ -291,6 +299,7 @@ def sync_iceberg_to_cassandra(
     threads: int,
     upload_mode: CassandraUploadMode = CassandraUploadMode.CONCURRENT_BATCH,
     ignore_index_updates: bool = False,
+    shard_count: int | None = None,
 ) -> None:
     """
     Synchronizes data from the provided Iceberg source to Cassandra target table. Assumes schemas are compatible.
@@ -309,6 +318,7 @@ def sync_iceberg_to_cassandra(
                 keyspace=target_path.keyspace,
                 batch_size=read_chunk_size,
                 threads=threads,
+                shard_count=shard_count,
             )
         if upload_mode == CassandraUploadMode.CONCURRENT_NATIVE:
             return client.upload_concurrent_native(
@@ -318,6 +328,7 @@ def sync_iceberg_to_cassandra(
                 keyspace=target_path.keyspace,
                 batch_size=read_chunk_size,
                 threads=threads,
+                shard_count=shard_count,
             )
         raise ValueError(f"Unsupported upload mode: {upload_mode}")
 
@@ -329,6 +340,7 @@ def sync_iceberg_to_cassandra(
             keyspace=target_path.keyspace,
             batch_size=read_chunk_size,
             threads=threads,
+            shard_count=shard_count,
         )
 
     logger.info(
@@ -421,6 +433,7 @@ def sync_iceberg_to_cassandra(
             threads=threads,
             logger=logger,
             full_sync=is_full_sync,
+            shard_count=shard_count,
         )
 
     logger.info(
