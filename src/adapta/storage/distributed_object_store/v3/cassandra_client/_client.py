@@ -87,6 +87,29 @@ def _prepare_lazy_source(source: polars.LazyFrame | polars.DataFrame) -> polars.
     return lazy_source
 
 
+def _shard_source(lazy_source: polars.LazyFrame, shard_count: int) -> list[polars.LazyFrame]:
+    """
+    Splits a Polars LazyFrame into shard_count buckets using the 'rowhash' column.
+    """
+    schema = lazy_source.collect_schema()
+    if "rowhash" not in schema:
+        raise ValueError("A 'rowhash' column is required for sharded uploads (shard_count > 1)")
+
+    bucket_expr = (
+        polars.col("rowhash")
+        .str.replace("^0x", "")
+        .str.slice(0, 8)
+        .str.to_integer(base=16)
+        % shard_count
+    )
+
+    source_with_bucket = lazy_source.with_columns(bucket_expr.alias("__bucket"))
+    return [
+        source_with_bucket.filter(polars.col("__bucket") == i).drop("__bucket")
+        for i in range(shard_count)
+    ]
+
+
 def _fix_map_type(entity: dict) -> dict:
     """Polars <2 remaps map<k, v> to list[{"key": ..., "value": ...}]"""
     fixed = {}
@@ -732,6 +755,7 @@ class CassandraClient(ABC):
         keyspace: str | None = None,
         batch_size: int = 100_000,
         threads: int | None = None,
+        shard_count: int | None = None,
     ) -> int:
         """
         Uploads a Polars LazyFrame or DataFrame in batches using upsert_concurrent.
@@ -744,8 +768,12 @@ class CassandraClient(ABC):
         :param keyspace: Optional keyspace name, if not provided in the client constructor.
         :param batch_size: Number of rows per batch to collect and upsert. Defaults to 100,000.
         :param threads: Maximum number of concurrent statements per batch.
+        :param shard_count: Number of shards to split rows into for parallel upload. When specified (>1), rows are split into buckets by 'rowhash' and uploaded concurrently using ConcurrentTaskRunner.
         :return: Total number of rows upserted.
         """
+        if shard_count is not None and shard_count <= 0:
+            raise ValueError("shard_count must be greater than 0")
+
         lazy_source = _prepare_lazy_source(source)
 
         @run_time_metrics(metric_name="adapta.cassandra.iceberg_batch_upsert_duration")
@@ -762,21 +790,38 @@ class CassandraClient(ABC):
             self._logger.info("Upserted {rows} rows", rows=row_count)
             return row_count
 
-        total_rows = 0
-        for batch in lazy_source.collect_batches(chunk_size=batch_size, maintain_order=False):
-            _upsert_with_metric(
-                batch.lazy(),
-                table_name=table_name,
-                entity_type=entity_type,
-                keyspace=keyspace,
-                concurrency=threads,
-                row_count=batch.height,
-                metrics_provider=self._metrics_provider,
-                logger=self._logger,
-            )
-            total_rows += batch.height
+        def _upload_batches(source_batches: polars.LazyFrame, target_table: str) -> int:
+            total = 0
+            for batch in source_batches.collect_batches(chunk_size=batch_size, maintain_order=False):
+                _upsert_with_metric(
+                    batch.lazy(),
+                    table_name=target_table,
+                    entity_type=entity_type,
+                    keyspace=keyspace,
+                    concurrency=threads,
+                    row_count=batch.height,
+                    metrics_provider=self._metrics_provider,
+                    logger=self._logger,
+                )
+                total += batch.height
+            return total
 
-        return total_rows
+        if shard_count and shard_count > 1:
+            shards = _shard_source(lazy_source, shard_count)
+            ctr = ConcurrentTaskRunner[int](
+                [
+                    Executable(
+                        _upload_batches,
+                        str(uuid.uuid4()),
+                        args=[shard, f"{table_name}_{i}"],
+                    )
+                    for i, shard in enumerate(shards)
+                ],
+                num_threads=shard_count,
+            )
+            return sum([rows_synced for _, rows_synced in ctr.eager().items()])
+
+        return _upload_batches(lazy_source, table_name)
 
     def upload_concurrent_batch(
         self,
@@ -786,6 +831,7 @@ class CassandraClient(ABC):
         keyspace: str | None = None,
         batch_size: int = 1_000,
         threads: int = 4,
+        shard_count: int | None = None,
     ) -> int:
         """
         Uploads a Polars LazyFrame or DataFrame concurrently using Cassandra batch upserts and ConcurrentTaskRunner.
@@ -798,7 +844,11 @@ class CassandraClient(ABC):
         :param keyspace: Optional keyspace name, if not provided in the client constructor.
         :param batch_size: Number of rows per batch to collect and upsert. Defaults to 1,000.
         :param threads: Number of parallel threads to use. Defaults to 4.
+        :param shard_count: Number of shards to split rows into for parallel upload. When specified (>1), rows are split into buckets by 'rowhash' and uploaded concurrently using ConcurrentTaskRunner.
         """
+        if shard_count is not None and shard_count <= 0:
+            raise ValueError("shard_count must be greater than 0")
+
         lazy_source = _prepare_lazy_source(source)
 
         @run_time_metrics(metric_name="adapta.cassandra.batch_upsert_duration")
@@ -813,6 +863,36 @@ class CassandraClient(ABC):
             self._metrics_provider.gauge("adapta.cassandra.upserted_rows", len(entities))
             self._logger.info("Upserted {rows} rows", rows=len(entities))
             return len(entities)
+
+        if shard_count and shard_count > 1:
+            def _upload_shard(shard_source: polars.LazyFrame, target_table: str) -> int:
+                shard_rows = 0
+                for source_batch in shard_source.collect_batches(chunk_size=batch_size, maintain_order=False):
+                    _upsert_with_metric(
+                        source_batch.to_dicts(),
+                        entity_type=entity_type,
+                        keyspace=keyspace or self._keyspace,
+                        table_name=target_table,
+                        batch_size=source_batch.height,
+                        metrics_provider=self._metrics_provider,
+                        logger=self._logger,
+                    )
+                    shard_rows += source_batch.height
+                return shard_rows
+
+            shards = _shard_source(lazy_source, shard_count)
+            ctr = ConcurrentTaskRunner[int](
+                [
+                    Executable(
+                        _upload_shard,
+                        str(uuid.uuid4()),
+                        args=[shard, f"{table_name}_{i}"],
+                    )
+                    for i, shard in enumerate(shards)
+                ],
+                num_threads=shard_count,
+            )
+            return sum([rows_synced for _, rows_synced in ctr.eager().items()])
 
         ctr = ConcurrentTaskRunner[int](
             [
