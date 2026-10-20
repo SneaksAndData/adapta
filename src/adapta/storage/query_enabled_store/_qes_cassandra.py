@@ -128,6 +128,7 @@ class CassandraQueryEnabledStore(QueryEnabledStore[CassandraCredential, Cassandr
         columns: list[str],
         options: dict[QueryEnabledStoreOptions, any] | None = None,
         limit: int | None = 10000,
+        shard_count: int | None = None,
     ) -> MetaFrame | Iterator[MetaFrame]:
         assert isinstance(path, CassandraPath)
         cassandra_path: CassandraPath = path
@@ -142,6 +143,7 @@ class CassandraQueryEnabledStore(QueryEnabledStore[CassandraCredential, Cassandr
                     num_threads=-1,  # auto-infer, see method documentation
                     options=options,
                     limit=limit,
+                    shard_count=shard_count,
                 )
 
         return self._cassandra_client.filter_entities(
@@ -153,6 +155,7 @@ class CassandraQueryEnabledStore(QueryEnabledStore[CassandraCredential, Cassandr
             num_threads=-1,  # auto-infer, see method documentation
             options=options,
             limit=limit,
+            shard_count=shard_count,
         )
 
     def _apply_query(self, query: str) -> MetaFrame | Iterator[MetaFrame]:

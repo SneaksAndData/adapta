@@ -316,6 +316,7 @@ class CassandraClient(ABC):
         num_threads: int | None = None,
         options: dict[QueryEnabledStoreOptions, Any] | None = None,
         limit: int | None = None,
+        shard_count: int | None = None,
     ) -> MetaFrame:
         """
         Run a filter query on the entity of type TModel backed by table `table_name`.
@@ -341,9 +342,61 @@ class CassandraClient(ABC):
         :param: deduplicate: Optionally deduplicate query result, for example when only the partition key part of a primary key is used to fetch results.
         :param: num_threads: Optionally run filtering using multiple threads. Setting this to -1 will cause this method to automatically evaluate number of threads based on filter expression size.
         :param: limit: Optionally limit the number of results returned. NOTE the limit works per call to Cassandra and not on the final result.
+        :param: shard_count: Number of shards if the table is sharded into {table_name}_{i} tables. When specified (>1), all shard tables are queried concurrently and combined into a single MetaFrame.
         """
         if options is None:
             options = {}
+
+        if shard_count is not None and shard_count <= 0:
+            raise ValueError("shard_count must be greater than 0")
+
+        if shard_count and shard_count > 1:
+            cassandra_model_mapper = get_mapper(
+                data_model=model_class,
+                keyspace=keyspace,
+                table_name=table_name,
+                primary_keys=primary_keys,
+                partition_keys=partition_keys,
+                custom_indexes=custom_indexes,
+            )
+            resolved_table_name = table_name or cassandra_model_mapper.table_name
+
+            def _filter_shard(shard_index: int) -> MetaFrame:
+                return self.filter_entities(
+                    model_class=model_class,
+                    key_column_filter_values=key_column_filter_values,
+                    keyspace=keyspace,
+                    table_name=f"{resolved_table_name}_{shard_index}",
+                    select_columns=select_columns,
+                    primary_keys=primary_keys,
+                    partition_keys=partition_keys,
+                    custom_indexes=custom_indexes,
+                    deduplicate=deduplicate,
+                    num_threads=num_threads,
+                    options=options,
+                    limit=limit,
+                )
+
+            ctr = ConcurrentTaskRunner[MetaFrame](
+                [
+                    Executable(
+                        _filter_shard,
+                        str(uuid.uuid4()),
+                        args=[i],
+                    )
+                    for i in range(shard_count)
+                ],
+                num_threads=shard_count,
+            )
+            shard_frames = list(ctr.eager().values())
+            res = concat(shard_frames, options=options.get(QueryEnabledStoreOptions.CONCAT_OPTIONS, None))
+            if deduplicate:
+                return MetaFrame(
+                    data=res,
+                    convert_to_polars=lambda r: r.to_polars().unique(),
+                    convert_to_pandas=lambda r: r.to_pandas().drop_duplicates(),
+                )
+            return res
 
         @on_exception(
             wait_gen=expo,
@@ -414,7 +467,7 @@ class CassandraClient(ABC):
         compiled_filter_values = (
             compile_expression(key_column_filter_values, CassandraFilterExpression)
             if isinstance(key_column_filter_values, Expression)
-            else key_column_filter_values
+            else (key_column_filter_values or [])
         )
 
         # return entire table if no filter was supplied
