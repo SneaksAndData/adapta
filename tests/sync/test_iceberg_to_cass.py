@@ -26,7 +26,7 @@ from adapta.logs import SemanticLogger
 from adapta.logs.models import LogLevel
 from adapta.process_communication import DataSocket
 from adapta.storage.distributed_object_store.v3.vanilla_cassandra import VanillaCassandraClient
-from adapta.storage.iceberg.v1 import load_using_catalog, set_property, write_using_catalog
+from adapta.storage.iceberg.v1 import get_property, load_using_catalog, set_property, write_using_catalog
 from adapta.storage.sync.iceberg_to_cass import CassandraUploadMode, sync_iceberg_to_cassandra
 from tests.iceberg_clients._functions import generate_random_string
 
@@ -952,8 +952,16 @@ def test_sync_iceberg_to_cassandra_sharded(
     assert set(shard_0_records["id"]) == {"1", "2"}
     assert len(shard_1_df) == 0
 
-    # 2. Full sync shard 1 (reset snapshot property on source table so shard 1 can perform full sync)
-    set_property("test", iceberg_table_name, iceberg_catalog, "adapta.cassandra.last-synced-snapshot-id", "-1")
+    assert (
+        get_property("test", iceberg_table_name, iceberg_catalog, "adapta.cassandra.shard_0.last-synced-snapshot-id")
+        is not None
+    )
+    assert (
+        get_property("test", iceberg_table_name, iceberg_catalog, "adapta.cassandra.shard_1.last-synced-snapshot-id")
+        is None
+    )
+
+    # 2. Full sync shard 1 without needing to touch shard 0's snapshot state
     sync_iceberg_to_cassandra(
         iceberg_catalog=iceberg_catalog,
         client=cassandra_client,
@@ -966,6 +974,11 @@ def test_sync_iceberg_to_cassandra_sharded(
         upload_mode=upload_mode,
         shard_count=2,
         shard_id=1,
+    )
+
+    assert (
+        get_property("test", iceberg_table_name, iceberg_catalog, "adapta.cassandra.shard_1.last-synced-snapshot-id")
+        is not None
     )
 
     shard_1_records_after = (
@@ -1166,3 +1179,50 @@ def test_sync_iceberg_to_cassandra_custom_index_full_refresh(
         .sort("category")
     )
     assert_frame_equal(synced_idx_restored, expected_idx, check_column_order=False)
+
+
+def test_sync_iceberg_to_cassandra_sharded_validation(
+    cassandra_client: VanillaCassandraClient,
+    cassandra_keyspace: str,
+    iceberg_catalog: Catalog,
+    logger: SemanticLogger,
+):
+    iceberg_table_name, cassandra_table_name = _get_table_names()
+    iceberg_source = DataSocket(
+        alias="source",
+        data_path=f"iceberg://test@{iceberg_table_name}",
+        data_format="iceberg",
+    )
+    cassandra_target = DataSocket(
+        alias="target",
+        data_path=f"cass+tests.sync.test_iceberg_to_cass.SyncItem://{cassandra_keyspace}@{cassandra_table_name}",
+        data_format="cassandra",
+    )
+
+    with pytest.raises(ValueError, match="Both shard_count and shard_id must be provided together"):
+        sync_iceberg_to_cassandra(
+            iceberg_catalog=iceberg_catalog,
+            client=cassandra_client,
+            iceberg_source=iceberg_source,
+            version_field="value",
+            cassandra_target=cassandra_target,
+            read_chunk_size=2,
+            logger=logger,
+            threads=4,
+            shard_count=2,
+            shard_id=None,
+        )
+
+    with pytest.raises(ValueError, match="Both shard_count and shard_id must be provided together"):
+        sync_iceberg_to_cassandra(
+            iceberg_catalog=iceberg_catalog,
+            client=cassandra_client,
+            iceberg_source=iceberg_source,
+            version_field="value",
+            cassandra_target=cassandra_target,
+            read_chunk_size=2,
+            logger=logger,
+            threads=4,
+            shard_count=None,
+            shard_id=0,
+        )

@@ -146,6 +146,7 @@ def _sync_custom_index(
     logger: LoggerInterface,
     full_sync: bool = False,
     shard_count: int | None = None,
+    shard_id: int | None = None,
 ) -> None:
     def _read_index_data() -> LazyFrame:
         logger.info("Reading source table {source_table} for custom index", source_table=source_table)
@@ -167,6 +168,7 @@ def _sync_custom_index(
                 batch_size=read_chunk_size,
                 threads=threads,
                 shard_count=shard_count,
+                shard_id=shard_id,
             )
             return
         if upload_mode == CassandraUploadMode.CONCURRENT_NATIVE:
@@ -178,6 +180,7 @@ def _sync_custom_index(
                 batch_size=read_chunk_size,
                 threads=threads,
                 shard_count=shard_count,
+                shard_id=shard_id,
             )
             return
         raise ValueError(f"Unsupported upload mode: {upload_mode}")
@@ -281,6 +284,7 @@ def _sync_custom_index(
             batch_size=read_chunk_size,
             threads=threads,
             shard_count=shard_count,
+            shard_id=shard_id,
         )
 
 
@@ -349,6 +353,43 @@ def sync_iceberg_to_cassandra(
             shard_id=shard_id,
         )
 
+    def _get_last_synced_snapshot(schema: str, table: str) -> str | None:
+        if shard_id is not None:
+            return get_property(
+                schema,
+                table,
+                iceberg_catalog,
+                f"adapta.cassandra.shard_{shard_id}.last-synced-snapshot-id",
+            )
+        return get_property(schema, table, iceberg_catalog, "adapta.cassandra.last-synced-snapshot-id")
+
+    def _set_last_synced_snapshot(schema: str, table: str, snapshot: int) -> None:
+        if shard_id is not None:
+            set_property(
+                schema,
+                table,
+                iceberg_catalog,
+                f"adapta.cassandra.shard_{shard_id}.last-synced-snapshot-id",
+                str(snapshot),
+            )
+        else:
+            set_property(
+                schema,
+                table,
+                iceberg_catalog,
+                "adapta.cassandra.last-synced-snapshot-id",
+                str(snapshot),
+            )
+
+    if (shard_count is not None and shard_id is None) or (shard_count is None and shard_id is not None):
+        raise ValueError("Both shard_count and shard_id must be provided together, or both must be omitted")
+
+    if shard_count is not None and shard_count <= 0:
+        raise ValueError("shard_count must be greater than 0")
+
+    if shard_id is not None and shard_count is not None and (shard_id < 0 or shard_id >= shard_count):
+        raise ValueError(f"shard_id must be between 0 and {shard_count - 1}")
+
     source_path: IcebergPath = iceberg_source.parse_data_path()
     target_path: CassandraPath = cassandra_target.parse_data_path()
     cassandra_model = target_path.model_class()
@@ -357,9 +398,7 @@ def sync_iceberg_to_cassandra(
         "Running incremental sync to table {sync_to_table}. Looking for changes to sync.",
         sync_to_table=target_path.table,
     )
-    last_synced_snapshot = get_property(
-        source_path.schema, source_path.table, iceberg_catalog, "adapta.cassandra.last-synced-snapshot-id"
-    )
+    last_synced_snapshot = _get_last_synced_snapshot(source_path.schema, source_path.table)
     mapper = get_mapper(
         data_model=cassandra_model,
         table_name=iceberg_source.alias,
@@ -442,13 +481,7 @@ def sync_iceberg_to_cassandra(
         )
         return
 
-    set_property(
-        source_path.schema,
-        source_path.table,
-        iceberg_catalog,
-        "adapta.cassandra.last-synced-snapshot-id",
-        str(current_snapshot),
-    )
+    _set_last_synced_snapshot(source_path.schema, source_path.table, current_snapshot)
     for idx_meta in custom_index_models:
         _sync_custom_index(
             index_metadata=idx_meta,
@@ -464,6 +497,7 @@ def sync_iceberg_to_cassandra(
             logger=logger,
             full_sync=is_full_sync,
             shard_count=shard_count,
+            shard_id=shard_id,
         )
 
     logger.info(
