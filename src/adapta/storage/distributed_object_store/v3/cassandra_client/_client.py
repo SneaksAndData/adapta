@@ -831,6 +831,7 @@ class CassandraClient(ABC):
         :param shard_id: Optional specific shard index (0-based) to upload. When specified, only this shard is uploaded to {table_name}_{shard_id}.
         :return: Total number of rows upserted.
         """
+
         @run_time_metrics(metric_name="adapta.cassandra.iceberg_batch_upsert_duration")
         def _upsert_with_metric(entities: list[dict] | polars.LazyFrame, **kwargs) -> int:
             self.upsert_concurrent(
