@@ -762,6 +762,22 @@ class CassandraClient(ABC):
         :param keyspace: Optional keyspace name, if not provided in the client constructor.
         :param concurrency: Maximum number of concurrent statements. Defaults to cpu_count * 2.
         """
+
+        @on_exception(
+            wait_gen=expo,
+            exception=(OverloadedErrorMessage, IsBootstrappingErrorMessage, WriteTimeout, WriteFailure),
+            max_tries=self._client_config.transient_error_max_retries,
+            max_time=self._client_config.transient_error_max_wait_s,
+            max_value=self._client_config.transient_error_max_wait_s_per_retry,
+            raise_on_giveup=True,
+        )
+        def _execute_concurrent(statements: list[tuple[PreparedStatement, tuple]], target_concurrency: int):
+            execute_concurrent(
+                self._session,
+                statements,
+                concurrency=target_concurrency,
+            )
+
         assert self._session is not None, (
             "Please connect to Cassandra using connect() or with CassandraClient(...) before calling this method"
         )
@@ -787,22 +803,7 @@ class CassandraClient(ABC):
 
         concurrency = concurrency or (os.cpu_count() or 1) * 2
 
-        @on_exception(
-            wait_gen=expo,
-            exception=(OverloadedErrorMessage, IsBootstrappingErrorMessage, WriteTimeout, WriteFailure),
-            max_tries=self._client_config.transient_error_max_retries,
-            max_time=self._client_config.transient_error_max_wait_s,
-            max_value=self._client_config.transient_error_max_wait_s_per_retry,
-            raise_on_giveup=True,
-        )
-        def _execute_concurrent():
-            execute_concurrent(
-                self._session,
-                statements_and_params,
-                concurrency=concurrency,
-            )
-
-        _execute_concurrent()
+        _execute_concurrent(statements_and_params, concurrency)
 
     def upload_concurrent_native(
         self,
@@ -830,25 +831,6 @@ class CassandraClient(ABC):
         :param shard_id: Optional specific shard index (0-based) to upload. When specified, only this shard is uploaded to {table_name}_{shard_id}.
         :return: Total number of rows upserted.
         """
-        if shard_count is not None and shard_count <= 0:
-            raise ValueError("shard_count must be greater than 0")
-
-        if shard_id is not None:
-            if shard_count is None:
-                raise ValueError("shard_count must be specified when shard_id is provided")
-            if shard_id < 0 or shard_id >= shard_count:
-                raise ValueError(f"shard_id must be between 0 and {shard_count - 1}")
-
-        lazy_source = _prepare_lazy_source(source)
-
-        target_keyspace = keyspace or self._keyspace
-        cassandra_mapper = get_mapper(
-            data_model=entity_type,
-            table_name=table_name,
-            keyspace=target_keyspace,
-        )
-        primary_keys = cassandra_mapper.primary_keys
-
         @run_time_metrics(metric_name="adapta.cassandra.iceberg_batch_upsert_duration")
         def _upsert_with_metric(entities: list[dict] | polars.LazyFrame, **kwargs) -> int:
             self.upsert_concurrent(
@@ -870,7 +852,7 @@ class CassandraClient(ABC):
                     batch.lazy(),
                     table_name=target_table,
                     entity_type=entity_type,
-                    keyspace=keyspace,
+                    keyspace=keyspace or self._keyspace,
                     concurrency=threads,
                     row_count=batch.height,
                     metrics_provider=self._metrics_provider,
@@ -878,6 +860,24 @@ class CassandraClient(ABC):
                 )
                 total += batch.height
             return total
+
+        if shard_count is not None and shard_count <= 0:
+            raise ValueError("shard_count must be greater than 0")
+
+        if shard_id is not None:
+            if shard_count is None:
+                raise ValueError("shard_count must be specified when shard_id is provided")
+            if shard_id < 0 or shard_id >= shard_count:
+                raise ValueError(f"shard_id must be between 0 and {shard_count - 1}")
+
+        lazy_source = _prepare_lazy_source(source)
+
+        cassandra_mapper = get_mapper(
+            data_model=entity_type,
+            table_name=table_name,
+            keyspace=keyspace or self._keyspace,
+        )
+        primary_keys = cassandra_mapper.primary_keys
 
         if shard_count and shard_count > 1:
             shards = _shard_source(lazy_source, shard_count, primary_keys)
@@ -964,11 +964,10 @@ class CassandraClient(ABC):
 
         lazy_source = _prepare_lazy_source(source)
 
-        target_keyspace = keyspace or self._keyspace
         cassandra_mapper = get_mapper(
             data_model=entity_type,
             table_name=table_name,
-            keyspace=target_keyspace,
+            keyspace=keyspace or self._keyspace,
         )
         primary_keys = cassandra_mapper.primary_keys
 
@@ -1056,7 +1055,7 @@ class CassandraClient(ABC):
                 _delete_with_metric(
                     source_batch.to_dicts(),
                     entity_type=entity_type,
-                    keyspace=target_keyspace,
+                    keyspace=keyspace or self._keyspace,
                     table_name=target_table,
                     primary_keys=target_pks,
                     metrics_provider=self._metrics_provider,
@@ -1064,8 +1063,6 @@ class CassandraClient(ABC):
                 )
                 shard_rows += source_batch.height
             return shard_rows
-
-        target_keyspace = keyspace or self._keyspace
 
         if shard_count is not None and shard_count <= 0:
             raise ValueError("shard_count must be greater than 0")
@@ -1081,7 +1078,7 @@ class CassandraClient(ABC):
         cassandra_mapper = get_mapper(
             data_model=entity_type,
             table_name=table_name,
-            keyspace=target_keyspace,
+            keyspace=keyspace or self._keyspace,
         )
         primary_keys = cassandra_mapper.primary_keys
 
@@ -1111,7 +1108,7 @@ class CassandraClient(ABC):
                     kwargs={
                         "entities": source_batch.to_dicts(),
                         "entity_type": entity_type,
-                        "keyspace": target_keyspace,
+                        "keyspace": keyspace or self._keyspace,
                         "table_name": table_name,
                         "primary_keys": primary_keys,
                         "metrics_provider": self._metrics_provider,

@@ -301,17 +301,19 @@ def sync_iceberg_to_cassandra(
     """
     Synchronizes data from the provided Iceberg source to Cassandra target table. Assumes schemas are compatible.
     """
-    source_path: IcebergPath = iceberg_source.parse_data_path()
-    target_path: CassandraPath = cassandra_target.parse_data_path()
-    cassandra_model = target_path.model_class()
 
-    def _sync_lazyframe(source: LazyFrame) -> int:
+    def _sync_lazyframe(
+        source: LazyFrame,
+        target_table: str,
+        target_model: type[TCassandraModel],
+        keyspace: str,
+    ) -> int:
         if upload_mode == CassandraUploadMode.CONCURRENT_BATCH:
             return client.upload_concurrent_batch(
                 source=source,
-                table_name=target_path.table,
-                entity_type=cassandra_model,
-                keyspace=target_path.keyspace,
+                table_name=target_table,
+                entity_type=target_model,
+                keyspace=keyspace,
                 batch_size=read_chunk_size,
                 threads=threads,
                 shard_count=shard_count,
@@ -320,9 +322,9 @@ def sync_iceberg_to_cassandra(
         if upload_mode == CassandraUploadMode.CONCURRENT_NATIVE:
             return client.upload_concurrent_native(
                 source=source,
-                table_name=target_path.table,
-                entity_type=cassandra_model,
-                keyspace=target_path.keyspace,
+                table_name=target_table,
+                entity_type=target_model,
+                keyspace=keyspace,
                 batch_size=read_chunk_size,
                 threads=threads,
                 shard_count=shard_count,
@@ -330,17 +332,26 @@ def sync_iceberg_to_cassandra(
             )
         raise ValueError(f"Unsupported upload mode: {upload_mode}")
 
-    def _sync_deletes(source: LazyFrame) -> int:
+    def _sync_deletes(
+        source: LazyFrame,
+        target_table: str,
+        target_model: type[TCassandraModel],
+        keyspace: str,
+    ) -> int:
         return client.delete_batch_concurrent(
             source=source,
-            table_name=target_path.table,
-            entity_type=cassandra_model,
-            keyspace=target_path.keyspace,
+            table_name=target_table,
+            entity_type=target_model,
+            keyspace=keyspace,
             batch_size=read_chunk_size,
             threads=threads,
             shard_count=shard_count,
             shard_id=shard_id,
         )
+
+    source_path: IcebergPath = iceberg_source.parse_data_path()
+    target_path: CassandraPath = cassandra_target.parse_data_path()
+    cassandra_model = target_path.model_class()
 
     logger.info(
         "Running incremental sync to table {sync_to_table}. Looking for changes to sync.",
@@ -379,7 +390,12 @@ def sync_iceberg_to_cassandra(
             iceberg_catalog,
             lazy_read=True,
         ).to_polars()
-        total_synced_records = _sync_lazyframe(source_data)
+        total_synced_records = _sync_lazyframe(
+            source_data,
+            target_path.table,
+            cassandra_model,
+            target_path.keyspace,
+        )
     elif int(last_synced_snapshot) != current_snapshot:
         logger.info(
             "Last sync snapshot: {snapshot}. Performing incremental sync to {latest_snapshot}",
@@ -396,12 +412,27 @@ def sync_iceberg_to_cassandra(
             primary_key_columns=tuple(mapper.primary_keys),
         )
         # insert/update first
-        total_synced_records += _sync_lazyframe(inserts)
+        total_synced_records += _sync_lazyframe(
+            inserts,
+            target_path.table,
+            cassandra_model,
+            target_path.keyspace,
+        )
         if updates is not None:
-            total_synced_records += _sync_lazyframe(updates)
+            total_synced_records += _sync_lazyframe(
+                updates,
+                target_path.table,
+                cassandra_model,
+                target_path.keyspace,
+            )
         # keep deletes out of parallelism for now
         if deletes is not None:
-            total_synced_records += _sync_deletes(deletes)
+            total_synced_records += _sync_deletes(
+                deletes,
+                target_path.table,
+                cassandra_model,
+                target_path.keyspace,
+            )
     else:
         logger.info(
             "Table {target} is already up to date with {source} at snapshot {snapshot}",
