@@ -805,6 +805,7 @@ class CassandraClient(ABC):
         batch_size: int = 100_000,
         threads: int | None = None,
         shard_count: int | None = None,
+        shard_id: int | None = None,
     ) -> int:
         """
         Uploads a Polars LazyFrame or DataFrame in batches using upsert_concurrent.
@@ -818,10 +819,17 @@ class CassandraClient(ABC):
         :param batch_size: Number of rows per batch to collect and upsert. Defaults to 100,000.
         :param threads: Maximum number of concurrent statements per batch.
         :param shard_count: Number of shards to split rows into for parallel upload. When specified (>1), rows are split into buckets by 'rowhash' and uploaded concurrently using ConcurrentTaskRunner.
+        :param shard_id: Optional specific shard index (0-based) to upload. When specified, only this shard is uploaded to {table_name}_{shard_id}.
         :return: Total number of rows upserted.
         """
         if shard_count is not None and shard_count <= 0:
             raise ValueError("shard_count must be greater than 0")
+
+        if shard_id is not None:
+            if shard_count is None:
+                raise ValueError("shard_count must be specified when shard_id is provided")
+            if shard_id < 0 or shard_id >= shard_count:
+                raise ValueError(f"shard_id must be between 0 and {shard_count - 1}")
 
         lazy_source = _prepare_lazy_source(source)
 
@@ -857,6 +865,9 @@ class CassandraClient(ABC):
 
         if shard_count and shard_count > 1:
             shards = _shard_source(lazy_source, shard_count)
+            if shard_id is not None:
+                return _upload_batches(shards[shard_id], f"{table_name}_{shard_id}")
+
             ctr = ConcurrentTaskRunner[int](
                 [
                     Executable(
@@ -881,6 +892,7 @@ class CassandraClient(ABC):
         batch_size: int = 1_000,
         threads: int = 4,
         shard_count: int | None = None,
+        shard_id: int | None = None,
     ) -> int:
         """
         Uploads a Polars LazyFrame or DataFrame concurrently using Cassandra batch upserts and ConcurrentTaskRunner.
@@ -894,6 +906,7 @@ class CassandraClient(ABC):
         :param batch_size: Number of rows per batch to collect and upsert. Defaults to 1,000.
         :param threads: Number of parallel threads to use. Defaults to 4.
         :param shard_count: Number of shards to split rows into for parallel upload. When specified (>1), rows are split into buckets by 'rowhash' and uploaded concurrently using ConcurrentTaskRunner.
+        :param shard_id: Optional specific shard index (0-based) to upload. When specified, only this shard is uploaded to {table_name}_{shard_id}.
         """
 
         @run_time_metrics(metric_name="adapta.cassandra.batch_upsert_duration")
@@ -927,10 +940,19 @@ class CassandraClient(ABC):
         if shard_count is not None and shard_count <= 0:
             raise ValueError("shard_count must be greater than 0")
 
+        if shard_id is not None:
+            if shard_count is None:
+                raise ValueError("shard_count must be specified when shard_id is provided")
+            if shard_id < 0 or shard_id >= shard_count:
+                raise ValueError(f"shard_id must be between 0 and {shard_count - 1}")
+
         lazy_source = _prepare_lazy_source(source)
 
         if shard_count and shard_count > 1:
             shards = _shard_source(lazy_source, shard_count)
+            if shard_id is not None:
+                return _upload_shard(shards[shard_id], f"{table_name}_{shard_id}")
+
             ctr = ConcurrentTaskRunner[int](
                 [
                     Executable(
@@ -974,6 +996,7 @@ class CassandraClient(ABC):
         batch_size: int = 1_000,
         threads: int = 4,
         shard_count: int | None = None,
+        shard_id: int | None = None,
     ) -> int:
         """
         Deletes entities in batches from a Polars LazyFrame or DataFrame concurrently using ConcurrentTaskRunner.
@@ -987,6 +1010,7 @@ class CassandraClient(ABC):
         :param batch_size: Number of rows per batch to collect and delete. Defaults to 1,000.
         :param threads: Number of parallel threads to use. Defaults to 4.
         :param shard_count: Number of shards if the table is sharded. When specified (>1), entities are deleted from all shard tables concurrently using ConcurrentTaskRunner.
+        :param shard_id: Optional specific shard index (0-based) to delete from. When specified, deletes are only run on {table_name}_{shard_id}.
         """
 
         @run_time_metrics(metric_name="adapta.cassandra.batch_upsert_duration")
@@ -1022,6 +1046,12 @@ class CassandraClient(ABC):
         if shard_count is not None and shard_count <= 0:
             raise ValueError("shard_count must be greater than 0")
 
+        if shard_id is not None:
+            if shard_count is None:
+                raise ValueError("shard_count must be specified when shard_id is provided")
+            if shard_id < 0 or shard_id >= shard_count:
+                raise ValueError(f"shard_id must be between 0 and {shard_count - 1}")
+
         lazy_source = _prepare_lazy_source(source)
 
         cassandra_mapper = get_mapper(
@@ -1032,6 +1062,9 @@ class CassandraClient(ABC):
         primary_keys = cassandra_mapper.primary_keys
 
         if shard_count and shard_count > 1:
+            if shard_id is not None:
+                return _delete_shard(lazy_source, f"{table_name}_{shard_id}", primary_keys)
+
             lazy_source = _cache_lazyframe(lazy_source)
 
             ctr = ConcurrentTaskRunner[int](

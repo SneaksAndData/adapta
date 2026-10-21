@@ -300,11 +300,11 @@ def sync_iceberg_to_cassandra(
     upload_mode: CassandraUploadMode = CassandraUploadMode.CONCURRENT_BATCH,
     ignore_index_updates: bool = False,
     shard_count: int | None = None,
+    shard_id: int | None = None,
 ) -> None:
     """
     Synchronizes data from the provided Iceberg source to Cassandra target table. Assumes schemas are compatible.
     """
-
     source_path: IcebergPath = iceberg_source.parse_data_path()
     target_path: CassandraPath = cassandra_target.parse_data_path()
     cassandra_model = target_path.model_class()
@@ -319,6 +319,7 @@ def sync_iceberg_to_cassandra(
                 batch_size=read_chunk_size,
                 threads=threads,
                 shard_count=shard_count,
+                shard_id=shard_id,
             )
         if upload_mode == CassandraUploadMode.CONCURRENT_NATIVE:
             return client.upload_concurrent_native(
@@ -329,6 +330,7 @@ def sync_iceberg_to_cassandra(
                 batch_size=read_chunk_size,
                 threads=threads,
                 shard_count=shard_count,
+                shard_id=shard_id,
             )
         raise ValueError(f"Unsupported upload mode: {upload_mode}")
 
@@ -341,6 +343,7 @@ def sync_iceberg_to_cassandra(
             batch_size=read_chunk_size,
             threads=threads,
             shard_count=shard_count,
+            shard_id=shard_id,
         )
 
     logger.info(
