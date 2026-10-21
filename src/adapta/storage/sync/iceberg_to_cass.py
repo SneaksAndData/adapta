@@ -28,6 +28,28 @@ class CassandraUploadMode(Enum):
 
 @final
 @dataclass
+class ShardingConfig:
+    """
+    Configuration for sharded Cassandra target table uploads.
+
+    :param shard_count: Total number of shards.
+    :param shard_id: Specific shard index (0-based) to sync.
+    """
+
+    shard_count: int
+    shard_id: int
+
+    def __post_init__(self) -> None:
+        if self.shard_count is None or self.shard_id is None:
+            raise ValueError("Both shard_count and shard_id must be provided")
+        if self.shard_count <= 0:
+            raise ValueError("shard_count must be greater than 0")
+        if not (0 <= self.shard_id < self.shard_count):
+            raise ValueError(f"shard_id must be between 0 and {self.shard_count - 1}")
+
+
+@final
+@dataclass
 class CustomIndexMetadata:
     """
     Metadata describing a custom index table in Iceberg and Cassandra.
@@ -145,8 +167,7 @@ def _sync_custom_index(
     threads: int,
     logger: LoggerInterface,
     full_sync: bool = False,
-    shard_count: int | None = None,
-    shard_id: int | None = None,
+    sharding_config: ShardingConfig | None = None,
 ) -> None:
     def _read_index_data() -> LazyFrame:
         logger.info("Reading source table {source_table} for custom index", source_table=source_table)
@@ -167,8 +188,8 @@ def _sync_custom_index(
                 keyspace=target_keyspace,
                 batch_size=read_chunk_size,
                 threads=threads,
-                shard_count=shard_count,
-                shard_id=shard_id,
+                shard_count=sharding_config.shard_count if sharding_config else None,
+                shard_id=sharding_config.shard_id if sharding_config else None,
             )
             return
         if upload_mode == CassandraUploadMode.CONCURRENT_NATIVE:
@@ -179,8 +200,8 @@ def _sync_custom_index(
                 keyspace=target_keyspace,
                 batch_size=read_chunk_size,
                 threads=threads,
-                shard_count=shard_count,
-                shard_id=shard_id,
+                shard_count=sharding_config.shard_count if sharding_config else None,
+                shard_id=sharding_config.shard_id if sharding_config else None,
             )
             return
         raise ValueError(f"Unsupported upload mode: {upload_mode}")
@@ -283,8 +304,8 @@ def _sync_custom_index(
             keyspace=target_keyspace,
             batch_size=read_chunk_size,
             threads=threads,
-            shard_count=shard_count,
-            shard_id=shard_id,
+            shard_count=sharding_config.shard_count if sharding_config else None,
+            shard_id=sharding_config.shard_id if sharding_config else None,
         )
 
 
@@ -299,8 +320,7 @@ def sync_iceberg_to_cassandra(
     threads: int,
     upload_mode: CassandraUploadMode = CassandraUploadMode.CONCURRENT_BATCH,
     ignore_index_updates: bool = False,
-    shard_count: int | None = None,
-    shard_id: int | None = None,
+    sharding_config: ShardingConfig | None = None,
 ) -> None:
     """
     Synchronizes data from the provided Iceberg source to Cassandra target table. Assumes schemas are compatible.
@@ -320,8 +340,8 @@ def sync_iceberg_to_cassandra(
                 keyspace=keyspace,
                 batch_size=read_chunk_size,
                 threads=threads,
-                shard_count=shard_count,
-                shard_id=shard_id,
+                shard_count=sharding_config.shard_count if sharding_config else None,
+                shard_id=sharding_config.shard_id if sharding_config else None,
             )
         if upload_mode == CassandraUploadMode.CONCURRENT_NATIVE:
             return client.upload_concurrent_native(
@@ -331,8 +351,8 @@ def sync_iceberg_to_cassandra(
                 keyspace=keyspace,
                 batch_size=read_chunk_size,
                 threads=threads,
-                shard_count=shard_count,
-                shard_id=shard_id,
+                shard_count=sharding_config.shard_count if sharding_config else None,
+                shard_id=sharding_config.shard_id if sharding_config else None,
             )
         raise ValueError(f"Unsupported upload mode: {upload_mode}")
 
@@ -349,27 +369,27 @@ def sync_iceberg_to_cassandra(
             keyspace=keyspace,
             batch_size=read_chunk_size,
             threads=threads,
-            shard_count=shard_count,
-            shard_id=shard_id,
+            shard_count=sharding_config.shard_count if sharding_config else None,
+            shard_id=sharding_config.shard_id if sharding_config else None,
         )
 
     def _get_last_synced_snapshot(schema: str, table: str) -> str | None:
-        if shard_id is not None:
+        if sharding_config is not None:
             return get_property(
                 schema,
                 table,
                 iceberg_catalog,
-                f"adapta.cassandra.shard_{shard_id}.last-synced-snapshot-id",
+                f"adapta.cassandra.shard_{sharding_config.shard_id}.last-synced-snapshot-id",
             )
         return get_property(schema, table, iceberg_catalog, "adapta.cassandra.last-synced-snapshot-id")
 
     def _set_last_synced_snapshot(schema: str, table: str, snapshot: int) -> None:
-        if shard_id is not None:
+        if sharding_config is not None:
             set_property(
                 schema,
                 table,
                 iceberg_catalog,
-                f"adapta.cassandra.shard_{shard_id}.last-synced-snapshot-id",
+                f"adapta.cassandra.shard_{sharding_config.shard_id}.last-synced-snapshot-id",
                 str(snapshot),
             )
         else:
@@ -380,15 +400,6 @@ def sync_iceberg_to_cassandra(
                 "adapta.cassandra.last-synced-snapshot-id",
                 str(snapshot),
             )
-
-    if (shard_count is not None and shard_id is None) or (shard_count is None and shard_id is not None):
-        raise ValueError("Both shard_count and shard_id must be provided together, or both must be omitted")
-
-    if shard_count is not None and shard_count <= 0:
-        raise ValueError("shard_count must be greater than 0")
-
-    if shard_id is not None and shard_count is not None and (shard_id < 0 or shard_id >= shard_count):
-        raise ValueError(f"shard_id must be between 0 and {shard_count - 1}")
 
     source_path: IcebergPath = iceberg_source.parse_data_path()
     target_path: CassandraPath = cassandra_target.parse_data_path()
@@ -496,8 +507,7 @@ def sync_iceberg_to_cassandra(
             threads=threads,
             logger=logger,
             full_sync=is_full_sync,
-            shard_count=shard_count,
-            shard_id=shard_id,
+            sharding_config=sharding_config,
         )
 
     logger.info(
