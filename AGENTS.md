@@ -34,6 +34,9 @@ The project uses `uv` for dependency management and execution.
   uv run ruff format --check src tests
   ```
 
+### Dependency Management
+- **Prompt User for New Dependencies**: Always prompt the user before adding or installing any new third-party library or dependency. Never install or add packages to `pyproject.toml` without explicit user confirmation.
+
 ---
 
 ## 3. Code Style & Implementation Standards
@@ -95,4 +98,5 @@ def upload_concurrent_batch(self, source: LazyFrame, table_name: str, ...):
 ## 5. Agent Workflow Guidelines
 
 - **Direct Action Over Overhead**: Do not generate unnecessary tracking issues, tasks, or planning markdown files unless explicitly requested. Directly implement code changes, verify them, and report results concisely.
+- **Dependency Installs**: Always prompt the user before adding or installing any new library or dependency.
 - **Verification Requirement**: Always validate changes using `uv run ruff check` and `uv run pytest` before concluding a task. Ensure all affected integration and unit tests pass without regressions.
