@@ -66,7 +66,6 @@ class SyncShardedItem:
     id: str = field(metadata={"is_primary_key": True, "is_partition_key": True})
     name: str
     value: int
-    rowhash: str
 
 
 @pytest.fixture(scope="module")
@@ -901,15 +900,9 @@ def test_sync_iceberg_to_cassandra_sharded(
 
     initial_data = polars.DataFrame(
         {
-            "id": ["1", "2", "3", "4"],
-            "name": ["alice", "bob", "charlie", "david"],
-            "value": [10, 20, 30, 40],
-            "rowhash": [
-                "0000000012345678",  # bucket 0
-                "0000000112345678",  # bucket 1
-                "0000000212345678",  # bucket 0
-                "0000000312345678",  # bucket 1
-            ],
+            "id": ["1", "2", "4", "6"],
+            "name": ["alice", "bob", "david", "frank"],
+            "value": [10, 20, 40, 60],
         }
     )
     write_using_catalog(
@@ -956,7 +949,7 @@ def test_sync_iceberg_to_cassandra_sharded(
         f"SELECT * FROM {cassandra_keyspace}.{cassandra_table_name}_1;"
     ).to_pandas()
 
-    assert set(shard_0_records["id"]) == {"1", "3"}
+    assert set(shard_0_records["id"]) == {"1", "2"}
     assert len(shard_1_df) == 0
 
     # 2. Full sync shard 1 (reset snapshot property on source table so shard 1 can perform full sync)
@@ -980,7 +973,7 @@ def test_sync_iceberg_to_cassandra_sharded(
         .to_polars()
         .sort("id")
     )
-    assert set(shard_1_records_after["id"]) == {"2", "4"}
+    assert set(shard_1_records_after["id"]) == {"4", "6"}
 
     # 3. Incremental delete on shard 0: delete row 1
     iceberg_table = iceberg_catalog.load_table(identifier=("test", iceberg_table_name))
@@ -1004,7 +997,7 @@ def test_sync_iceberg_to_cassandra_sharded(
         f"SELECT * FROM {cassandra_keyspace}.{cassandra_table_name}_0;"
     ).to_polars()
     assert "1" not in set(shard_0_after_delete["id"])
-    assert set(shard_0_after_delete["id"]) == {"3"}
+    assert set(shard_0_after_delete["id"]) == {"2"}
 
 
 def test_sync_iceberg_to_cassandra_ignore_index_updates(

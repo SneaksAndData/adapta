@@ -100,15 +100,23 @@ def _cache_lazyframe(lazy_source: polars.LazyFrame) -> polars.LazyFrame:
     return polars.scan_ipc(tmp_path)
 
 
-def _shard_source(lazy_source: polars.LazyFrame, shard_count: int) -> list[polars.LazyFrame]:
+def _shard_source(
+    lazy_source: polars.LazyFrame,
+    shard_count: int,
+    primary_keys: list[str],
+) -> list[polars.LazyFrame]:
     """
-    Splits a Polars LazyFrame into shard_count buckets using the 'rowhash' column.
+    Splits a Polars LazyFrame into shard_count buckets using a hash of the primary key columns.
     """
-    schema = lazy_source.collect_schema()
-    if "rowhash" not in schema:
-        raise ValueError("A 'rowhash' column is required for sharded uploads (shard_count > 1)")
+    if not primary_keys:
+        raise ValueError("At least one primary key is required for sharded operations (shard_count > 1)")
 
-    bucket_expr = polars.col("rowhash").str.replace("^0x", "").str.slice(0, 8).str.to_integer(base=16) % shard_count
+    schema = lazy_source.collect_schema()
+    missing_keys = [pk for pk in primary_keys if pk not in schema]
+    if missing_keys:
+        raise ValueError(f"Primary key columns {missing_keys} are missing from source")
+
+    bucket_expr = polars.struct(sorted(primary_keys)).hash() % shard_count
 
     cached_source = _cache_lazyframe(lazy_source)
     source_with_bucket = cached_source.with_columns(bucket_expr.alias("__bucket"))
@@ -818,7 +826,7 @@ class CassandraClient(ABC):
         :param keyspace: Optional keyspace name, if not provided in the client constructor.
         :param batch_size: Number of rows per batch to collect and upsert. Defaults to 100,000.
         :param threads: Maximum number of concurrent statements per batch.
-        :param shard_count: Number of shards to split rows into for parallel upload. When specified (>1), rows are split into buckets by 'rowhash' and uploaded concurrently using ConcurrentTaskRunner.
+        :param shard_count: Number of shards to split rows into for parallel upload. When specified (>1), rows are split into buckets by a hash of primary key fields and uploaded concurrently using ConcurrentTaskRunner.
         :param shard_id: Optional specific shard index (0-based) to upload. When specified, only this shard is uploaded to {table_name}_{shard_id}.
         :return: Total number of rows upserted.
         """
@@ -832,6 +840,14 @@ class CassandraClient(ABC):
                 raise ValueError(f"shard_id must be between 0 and {shard_count - 1}")
 
         lazy_source = _prepare_lazy_source(source)
+
+        target_keyspace = keyspace or self._keyspace
+        cassandra_mapper = get_mapper(
+            data_model=entity_type,
+            table_name=table_name,
+            keyspace=target_keyspace,
+        )
+        primary_keys = cassandra_mapper.primary_keys
 
         @run_time_metrics(metric_name="adapta.cassandra.iceberg_batch_upsert_duration")
         def _upsert_with_metric(entities: list[dict] | polars.LazyFrame, **kwargs) -> int:
@@ -864,7 +880,7 @@ class CassandraClient(ABC):
             return total
 
         if shard_count and shard_count > 1:
-            shards = _shard_source(lazy_source, shard_count)
+            shards = _shard_source(lazy_source, shard_count, primary_keys)
             if shard_id is not None:
                 return _upload_batches(shards[shard_id], f"{table_name}_{shard_id}")
 
@@ -905,7 +921,7 @@ class CassandraClient(ABC):
         :param keyspace: Optional keyspace name, if not provided in the client constructor.
         :param batch_size: Number of rows per batch to collect and upsert. Defaults to 1,000.
         :param threads: Number of parallel threads to use. Defaults to 4.
-        :param shard_count: Number of shards to split rows into for parallel upload. When specified (>1), rows are split into buckets by 'rowhash' and uploaded concurrently using ConcurrentTaskRunner.
+        :param shard_count: Number of shards to split rows into for parallel upload. When specified (>1), rows are split into buckets by a hash of primary key fields and uploaded concurrently using ConcurrentTaskRunner.
         :param shard_id: Optional specific shard index (0-based) to upload. When specified, only this shard is uploaded to {table_name}_{shard_id}.
         """
 
@@ -948,8 +964,16 @@ class CassandraClient(ABC):
 
         lazy_source = _prepare_lazy_source(source)
 
+        target_keyspace = keyspace or self._keyspace
+        cassandra_mapper = get_mapper(
+            data_model=entity_type,
+            table_name=table_name,
+            keyspace=target_keyspace,
+        )
+        primary_keys = cassandra_mapper.primary_keys
+
         if shard_count and shard_count > 1:
-            shards = _shard_source(lazy_source, shard_count)
+            shards = _shard_source(lazy_source, shard_count, primary_keys)
             if shard_id is not None:
                 return _upload_shard(shards[shard_id], f"{table_name}_{shard_id}")
 
@@ -1062,19 +1086,18 @@ class CassandraClient(ABC):
         primary_keys = cassandra_mapper.primary_keys
 
         if shard_count and shard_count > 1:
+            shards = _shard_source(lazy_source, shard_count, primary_keys)
             if shard_id is not None:
-                return _delete_shard(lazy_source, f"{table_name}_{shard_id}", primary_keys)
-
-            lazy_source = _cache_lazyframe(lazy_source)
+                return _delete_shard(shards[shard_id], f"{table_name}_{shard_id}", primary_keys)
 
             ctr = ConcurrentTaskRunner[int](
                 [
                     Executable(
                         _delete_shard,
                         str(uuid.uuid4()),
-                        args=[lazy_source, f"{table_name}_{i}", primary_keys],
+                        args=[shard, f"{table_name}_{i}", primary_keys],
                     )
-                    for i in range(shard_count)
+                    for i, shard in enumerate(shards)
                 ],
                 num_threads=shard_count,
             )
