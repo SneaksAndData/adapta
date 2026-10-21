@@ -379,7 +379,7 @@ def sync_iceberg_to_cassandra(
                 schema,
                 table,
                 iceberg_catalog,
-                f"adapta.cassandra.shard_{sharding_config.shard_id}.last-synced-snapshot-id",
+                f"adapta.cassandra.shard-{sharding_config.shard_id}.last-synced-snapshot-id",
             )
         return get_property(schema, table, iceberg_catalog, "adapta.cassandra.last-synced-snapshot-id")
 
@@ -389,7 +389,7 @@ def sync_iceberg_to_cassandra(
                 schema,
                 table,
                 iceberg_catalog,
-                f"adapta.cassandra.shard_{sharding_config.shard_id}.last-synced-snapshot-id",
+                f"adapta.cassandra.shard-{sharding_config.shard_id}.last-synced-snapshot-id",
                 str(snapshot),
             )
         else:

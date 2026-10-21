@@ -952,11 +952,11 @@ def test_sync_iceberg_to_cassandra_sharded(
     assert len(shard_1_df) == 0
 
     assert (
-        get_property("test", iceberg_table_name, iceberg_catalog, "adapta.cassandra.shard_0.last-synced-snapshot-id")
+        get_property("test", iceberg_table_name, iceberg_catalog, "adapta.cassandra.shard-0.last-synced-snapshot-id")
         is not None
     )
     assert (
-        get_property("test", iceberg_table_name, iceberg_catalog, "adapta.cassandra.shard_1.last-synced-snapshot-id")
+        get_property("test", iceberg_table_name, iceberg_catalog, "adapta.cassandra.shard-1.last-synced-snapshot-id")
         is None
     )
 
@@ -975,7 +975,7 @@ def test_sync_iceberg_to_cassandra_sharded(
     )
 
     assert (
-        get_property("test", iceberg_table_name, iceberg_catalog, "adapta.cassandra.shard_1.last-synced-snapshot-id")
+        get_property("test", iceberg_table_name, iceberg_catalog, "adapta.cassandra.shard-1.last-synced-snapshot-id")
         is not None
     )
 
