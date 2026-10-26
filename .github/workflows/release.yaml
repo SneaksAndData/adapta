@@ -19,7 +19,7 @@ jobs:
           persist-credentials: false
 
       - name: Create Release
-        uses: SneaksAndData/github-actions/semver_release@e3f4ea513c548adf4e774364872966d0d4a3d2fe # v0.1.12
+        uses: SneaksAndData/github-actions/semver_release@42d1e71a9297cc52e824d9405604073a1da7a5cf # v0.1.13
         with:
           major_v: 5
           minor_v: 3
