@@ -18,20 +18,24 @@ This document outlines key architecture principles, coding standards, performanc
 
 The project uses `uv` for dependency management and execution.
 
-- **Python Version**: Python 3.11+
+- **Python Version**: Python 3.11+ (CI matrix tests 3.11–3.14).
+- **Setup**: `uv sync --frozen --all-extras` (optional extras like `azure`, `aws`, `storage-iceberg`, `storage-delta`, `storage-cassandra`, `trino`, `snowflake` must be installed for their respective tests/doctests to pass).
 - **Run Tests**:
   ```bash
   uv run pytest
   ```
+  - `pytest.ini_options` sets `--doctest-modules` and `--cov=.`, so a full run also executes doctests in `src/` and requires coverage config (`.coveragerc`) — don't strip these flags when running the full suite.
+  - Many tests are integration tests requiring live services. CI brings these up via `docker compose up -d` (Scylla/Cassandra, MinIO/S2 object storage, Lakekeeper Iceberg REST catalog + its Postgres backend, Trino) before running pytest, and sleeps 10s for Trino to boot. Without these containers, Cassandra/Iceberg/Trino-related tests will fail or hang — run `docker compose up --quiet-pull -d` first if touching those connectors.
 - **Targeted Test Execution**:
   ```bash
   uv run pytest tests/path/to/test_file.py
   uv run pytest tests/path/to/test_file.py -k "test_function_name"
   ```
-- **Linting & Code Style**:
+  (add `-p no:cacheprovider --no-cov` or similar if coverage/doctest flags from `pyproject.toml` get in the way of a quick focused run)
+- **Linting & Code Style** (CI runs both, in this order):
   ```bash
-  uv run ruff check src tests
-  uv run ruff format --check src tests
+  uv run ruff check --output-format=github
+  uv run ruff format --check
   ```
 
 ### Dependency Management

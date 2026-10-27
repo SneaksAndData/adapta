@@ -22,3 +22,21 @@ Please refer to the [module](adapta/storage/distributed_object_store/v3/datastax
 
 ## Dataclass Validation framework
 Please refer to the [module](adapta/dataclass_validation/README.md) documentation for examples.
+
+## Development
+
+### Debugging tests
+
+`pyproject.toml` enables code coverage for every `pytest` run via `addopts` (`--cov=.`). Coverage's tracer
+conflicts with debugger tracers, so breakpoints are silently ignored while coverage is active.
+
+To debug a test, disable coverage for that run without editing `pyproject.toml`, since `--no-cov` always
+overrides the `--cov` option configured in `addopts`:
+
+```bash
+uv run pytest tests/path/to/test_file.py --no-cov
+```
+
+In an IDE run/debug configuration, add `--no-cov` to the test runner's arguments (e.g. PyCharm's
+"Additional Arguments" field), or set the `PYTEST_ADDOPTS=--no-cov` environment variable on the debug
+configuration template so it applies automatically whenever you debug.
