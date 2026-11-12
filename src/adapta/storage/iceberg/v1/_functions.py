@@ -321,6 +321,13 @@ def get_changes(
     return inserts, updates, deletes
 
 
+@on_exception(
+    wait_gen=expo,
+    exception=CommitFailedException,
+    max_tries=5,
+    max_time=60,
+    raise_on_giveup=True,
+)
 def set_property(
     schema_name: str,
     table_name: str,
@@ -332,25 +339,14 @@ def set_property(
     Sets or updates a custom property on the specified Iceberg table.
     Retries with a freshly loaded table when the commit conflicts with a concurrent update.
     """
+    table = _apply_s3_endpoint_override(catalog.load_table(identifier=(schema_name, table_name)))
 
-    @on_exception(
-        wait_gen=expo,
-        exception=CommitFailedException,
-        max_tries=5,
-        max_time=60,
-        raise_on_giveup=True,
-    )
-    def _commit_property() -> None:
-        table = _apply_s3_endpoint_override(catalog.load_table(identifier=(schema_name, table_name)))
-
-        with table.transaction() as tx:
-            tx.set_properties(
-                {
-                    property_name: property_value,
-                }
-            )
-
-    _commit_property()
+    with table.transaction() as tx:
+        tx.set_properties(
+            {
+                property_name: property_value,
+            }
+        )
 
 
 def get_property(
