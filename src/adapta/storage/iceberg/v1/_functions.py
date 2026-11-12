@@ -6,9 +6,11 @@ from typing import Literal
 
 import polars
 import pyiceberg
+from backoff import expo, on_exception
 from polars import Expr, LazyFrame
 from pyarrow.lib import Schema
 from pyiceberg.catalog import Catalog, load_catalog
+from pyiceberg.exceptions import CommitFailedException
 from pyiceberg.schema import Schema as IcebergSchema
 from pyiceberg.table import ALWAYS_TRUE
 from pyiceberg.table import Table as IcebergTable
@@ -327,16 +329,28 @@ def set_property(
     property_value: str,
 ) -> None:
     """
-    Sets or updates a custom property on the specified Iceberg table
+    Sets or updates a custom property on the specified Iceberg table.
+    Retries with a freshly loaded table when the commit conflicts with a concurrent update.
     """
-    table = _apply_s3_endpoint_override(catalog.load_table(identifier=(schema_name, table_name)))
 
-    with table.transaction() as tx:
-        tx.set_properties(
-            {
-                property_name: property_value,
-            }
-        )
+    @on_exception(
+        wait_gen=expo,
+        exception=CommitFailedException,
+        max_tries=5,
+        max_time=60,
+        raise_on_giveup=True,
+    )
+    def _commit_property() -> None:
+        table = _apply_s3_endpoint_override(catalog.load_table(identifier=(schema_name, table_name)))
+
+        with table.transaction() as tx:
+            tx.set_properties(
+                {
+                    property_name: property_value,
+                }
+            )
+
+    _commit_property()
 
 
 def get_property(
