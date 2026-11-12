@@ -324,6 +324,7 @@ def get_changes(
 @on_exception(
     wait_gen=expo,
     exception=CommitFailedException,
+    giveup=lambda error: "ConcurrentUpdateError" not in str(error),
     max_tries=5,
     max_time=60,
     raise_on_giveup=True,
