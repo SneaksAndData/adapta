@@ -573,14 +573,27 @@ def test_set_property_retries_on_concurrent_updates(iceberg_catalog: Catalog, ca
         data=polars.DataFrame(get_input_data()),
         overwrite=True,
     )
-    start_barrier = threading.Barrier(parties=worker_count)
+    load_barrier = threading.Barrier(parties=worker_count)
+    load_lock = threading.Lock()
+    initial_loads = []
+
+    class SynchronizedLoadCatalog:
+        """Makes the first load of every worker wait for all others, so all commit against the same table version."""
+
+        def load_table(self, identifier: tuple[str, str]):
+            table = iceberg_catalog.load_table(identifier=identifier)
+            with load_lock:
+                is_initial_load = len(initial_loads) < worker_count
+                initial_loads.append(identifier)
+            if is_initial_load:
+                load_barrier.wait(timeout=60)
+            return table
 
     def update_property(property_name: str) -> None:
-        start_barrier.wait(timeout=30)
         set_property(
             schema_name="test",
             table_name=table_name,
-            catalog=iceberg_catalog,
+            catalog=SynchronizedLoadCatalog(),
             property_name=property_name,
             property_value=property_name,
         )
