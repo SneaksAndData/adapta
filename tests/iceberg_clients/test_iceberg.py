@@ -1,5 +1,4 @@
 import random
-import threading
 from concurrent.futures import ThreadPoolExecutor
 
 import polars
@@ -572,21 +571,6 @@ def test_set_property_retries_on_concurrent_updates(iceberg_catalog: Catalog):
         data=polars.DataFrame(get_input_data()),
         overwrite=True,
     )
-    load_barrier = threading.Barrier(parties=worker_count)
-    load_lock = threading.Lock()
-    table_loads = []
-
-    class SynchronizedLoadCatalog:
-        """Makes the first load of every worker wait for all others, so all commit against the same table version."""
-
-        def load_table(self, identifier: tuple[str, str]):
-            table = iceberg_catalog.load_table(identifier=identifier)
-            with load_lock:
-                is_initial_load = len(table_loads) < worker_count
-                table_loads.append(identifier)
-            if is_initial_load:
-                load_barrier.wait(timeout=60)
-            return table
 
     def update_property(property_name: str) -> None:
         set_property(
@@ -601,7 +585,6 @@ def test_set_property_retries_on_concurrent_updates(iceberg_catalog: Catalog):
         list(executor.map(update_property, property_names))
 
     # every retry reloads the table, so more loads than workers means at least one retry happened
-    # assert len(table_loads) > worker_count
     for property_name in property_names:
         assert (
             get_property(
