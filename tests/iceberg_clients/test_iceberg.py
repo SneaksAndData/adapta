@@ -1,4 +1,3 @@
-import logging
 import random
 import threading
 from concurrent.futures import ThreadPoolExecutor
@@ -558,7 +557,7 @@ def test_table_properties(iceberg_catalog: Catalog):
     )
 
 
-def test_set_property_retries_on_concurrent_updates(iceberg_catalog: Catalog, caplog: pytest.LogCaptureFixture):
+def test_set_property_retries_on_concurrent_updates(iceberg_catalog: Catalog):
     """
     Test that set_property retries when table is updated concurrently.
     """
@@ -575,7 +574,7 @@ def test_set_property_retries_on_concurrent_updates(iceberg_catalog: Catalog, ca
     )
     load_barrier = threading.Barrier(parties=worker_count)
     load_lock = threading.Lock()
-    initial_loads = []
+    table_loads = []
 
     class SynchronizedLoadCatalog:
         """Makes the first load of every worker wait for all others, so all commit against the same table version."""
@@ -583,8 +582,8 @@ def test_set_property_retries_on_concurrent_updates(iceberg_catalog: Catalog, ca
         def load_table(self, identifier: tuple[str, str]):
             table = iceberg_catalog.load_table(identifier=identifier)
             with load_lock:
-                is_initial_load = len(initial_loads) < worker_count
-                initial_loads.append(identifier)
+                is_initial_load = len(table_loads) < worker_count
+                table_loads.append(identifier)
             if is_initial_load:
                 load_barrier.wait(timeout=60)
             return table
@@ -598,10 +597,11 @@ def test_set_property_retries_on_concurrent_updates(iceberg_catalog: Catalog, ca
             property_value=property_name,
         )
 
-    with caplog.at_level(logging.INFO, logger="backoff"), ThreadPoolExecutor(max_workers=worker_count) as executor:
+    with ThreadPoolExecutor(max_workers=worker_count) as executor:
         list(executor.map(update_property, property_names))
 
-    assert any("Backing off set_property" in record.getMessage() for record in caplog.records)
+    # every retry reloads the table, so more loads than workers means at least one retry happened
+    assert len(table_loads) > worker_count
     for property_name in property_names:
         assert (
             get_property(
