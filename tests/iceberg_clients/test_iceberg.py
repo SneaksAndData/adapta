@@ -1,4 +1,7 @@
+import logging
 import random
+import threading
+from concurrent.futures import ThreadPoolExecutor
 
 import polars
 import pytest
@@ -553,3 +556,46 @@ def test_table_properties(iceberg_catalog: Catalog):
         )
         == "updated_value"
     )
+
+
+def test_set_property_retries_on_concurrent_updates(iceberg_catalog: Catalog, caplog: pytest.LogCaptureFixture):
+    """
+    Test that set_property retries when table is updated concurrently.
+    """
+    table_name = f"test_concurrent_properties_{generate_random_string(8)}".lower()
+    worker_count = 8
+    property_names = [f"custom.test.prop_{index}" for index in range(worker_count)]
+
+    write_using_catalog(
+        schema_name="test",
+        table_name=table_name,
+        catalog=iceberg_catalog,
+        data=polars.DataFrame(get_input_data()),
+        overwrite=True,
+    )
+    start_barrier = threading.Barrier(parties=worker_count)
+
+    def update_property(property_name: str) -> None:
+        start_barrier.wait(timeout=30)
+        set_property(
+            schema_name="test",
+            table_name=table_name,
+            catalog=iceberg_catalog,
+            property_name=property_name,
+            property_value=property_name,
+        )
+
+    with caplog.at_level(logging.INFO, logger="backoff"), ThreadPoolExecutor(max_workers=worker_count) as executor:
+        list(executor.map(update_property, property_names))
+
+    assert any("Backing off set_property" in record.getMessage() for record in caplog.records)
+    for property_name in property_names:
+        assert (
+            get_property(
+                schema_name="test",
+                table_name=table_name,
+                catalog=iceberg_catalog,
+                property_name=property_name,
+            )
+            == property_name
+        )
