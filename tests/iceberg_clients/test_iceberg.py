@@ -1,4 +1,5 @@
 import random
+from concurrent.futures import ThreadPoolExecutor
 
 import polars
 import pytest
@@ -553,3 +554,44 @@ def test_table_properties(iceberg_catalog: Catalog):
         )
         == "updated_value"
     )
+
+
+def test_set_property_retries_on_concurrent_updates(iceberg_catalog: Catalog):
+    """
+    Test that set_property retries when table is updated concurrently.
+    """
+    table_name = f"test_concurrent_properties_{generate_random_string(8)}".lower()
+    worker_count = 8
+    property_names = [f"custom.test.prop_{index}" for index in range(worker_count)]
+
+    write_using_catalog(
+        schema_name="test",
+        table_name=table_name,
+        catalog=iceberg_catalog,
+        data=polars.DataFrame(get_input_data()),
+        overwrite=True,
+    )
+
+    def update_property(property_name: str) -> None:
+        set_property(
+            schema_name="test",
+            table_name=table_name,
+            catalog=iceberg_catalog,
+            property_name=property_name,
+            property_value=property_name,
+        )
+
+    with ThreadPoolExecutor(max_workers=worker_count) as executor:
+        list(executor.map(update_property, property_names))
+
+    # every retry reloads the table, so more loads than workers means at least one retry happened
+    for property_name in property_names:
+        assert (
+            get_property(
+                schema_name="test",
+                table_name=table_name,
+                catalog=iceberg_catalog,
+                property_name=property_name,
+            )
+            == property_name
+        )
