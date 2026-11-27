@@ -12,9 +12,12 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+import base64
+import hashlib
 import pathlib
 from unittest.mock import MagicMock, patch
 
+import jwt
 import pytest
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
@@ -210,3 +213,44 @@ def test_key_pair_precedence():
         password="test_password",
     )
     assert snowflake_client._authenticator == SnowflakeAuth.KEY_PAIR
+
+
+@pytest.mark.parametrize(
+    ("account", "qualified_user"),
+    [
+        ("myorg-myaccount", "MYORG-MYACCOUNT.TEST_USER"),
+        ("myorg.myaccount", "MYORG-MYACCOUNT.TEST_USER"),
+        ("xy12345", "XY12345.TEST_USER"),
+    ],
+)
+def test_generate_jwt_token_claims(account: str, qualified_user: str) -> None:
+    private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    client = SnowflakeClient(
+        user="test_user",
+        account=account,
+        warehouse="test_warehouse",
+        private_key=serialize_to_pem_key(private_key),
+    )
+
+    token = client.generate_jwt_token()
+
+    payload = jwt.decode(
+        token,
+        key=private_key.public_key(),
+        algorithms=["RS256"],
+        options={"require": ["iss", "sub", "iat", "exp"]},
+    )
+    public_key_bytes = private_key.public_key().public_bytes(
+        serialization.Encoding.DER, serialization.PublicFormat.SubjectPublicKeyInfo
+    )
+    fingerprint = base64.b64encode(hashlib.sha256(public_key_bytes).digest()).decode("ascii")
+    assert payload["sub"] == qualified_user
+    assert payload["iss"] == f"{qualified_user}.SHA256:{fingerprint}"
+
+
+def test_generate_jwt_token_requires_key_pair_authentication() -> None:
+    client = SnowflakeClient(
+        user="test_user", account="myorg-myaccount", warehouse="test_warehouse", password="test_password"
+    )
+    with pytest.raises(ValueError, match="JWT token is only supported with KEY_PAIR authentication"):
+        client.generate_jwt_token()
