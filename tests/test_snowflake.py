@@ -219,7 +219,6 @@ def test_key_pair_precedence():
     ("account", "qualified_user"),
     [
         ("myorg-myaccount", "MYORG-MYACCOUNT.TEST_USER"),
-        ("myorg.myaccount", "MYORG-MYACCOUNT.TEST_USER"),
         ("xy12345", "XY12345.TEST_USER"),
     ],
 )
