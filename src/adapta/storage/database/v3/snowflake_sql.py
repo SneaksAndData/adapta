@@ -6,7 +6,7 @@ import base64
 import hashlib
 import os
 import re
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 from types import TracebackType
 from typing import Self
 
@@ -280,7 +280,7 @@ class SnowflakeClient:
         public_key_bytes = self._private_key.public_key().public_bytes(Encoding.DER, PublicFormat.SubjectPublicKeyInfo)
         fingerprint = base64.b64encode(hashlib.sha256(public_key_bytes).digest()).decode("ascii")
         qualified_user = f"{self._account.upper()}.{self._user.upper()}"
-        now = datetime.now(timezone.utc)
+        now = datetime.now(tz=UTC)
         return jwt.encode(
             {
                 "iss": f"{qualified_user}.SHA256:{fingerprint}",
