@@ -260,15 +260,15 @@ class SnowflakeClient:
 
         self.query(query=f'alter external table "{database}"."{schema}"."{table}" refresh;', fetch_dataframe=False)
 
-    def generate_jwt_token(self, expiration_minutes: int = 5) -> str:
+    def generate_jwt_token(self, timetime_seconds: int = 60) -> str:
         """
         Generates an RS256-signed Snowflake JWT using this client's key-pair credentials,
 
         The client's account and username are normalized to uppercase. The account must be
         a region-free organization-account identifier or account locator
 
-        :param expiration_minutes: Token lifetime in minutes, starting at the current UTC time.
-            Defaults to 5. Snowflake accepts tokens valid for at most 60 minutes.
+        :param timetime_seconds: Token lifetime in seconds, starting at the current UTC time.
+            Defaults to 1 minut. Snowflake accepts tokens valid for at most 60 minutes.
         :return: The signed JWT as a string, without the ``Bearer `` prefix. Use it in an
             ``Authorization: Bearer <token>`` header, optionally with
             ``X-Snowflake-Authorization-Token-Type: KEYPAIR_JWT``.
@@ -286,7 +286,7 @@ class SnowflakeClient:
                 "iss": f"{qualified_user}.SHA256:{fingerprint}",
                 "sub": qualified_user,
                 "iat": now,
-                "exp": now + timedelta(minutes=expiration_minutes),
+                "exp": now + timedelta(seconds=timetime_seconds),
             },
             key=self._private_key,
             algorithm="RS256",
