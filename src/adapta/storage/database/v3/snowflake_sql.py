@@ -2,14 +2,18 @@
 Snowflake Client Wrapper
 """
 
+import base64
+import hashlib
 import os
 import re
+from datetime import UTC, datetime, timedelta
 from types import TracebackType
 from typing import Self
 
+import jwt
 import snowflake.connector
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
-from cryptography.hazmat.primitives.serialization import load_pem_private_key
+from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat, load_pem_private_key
 
 from adapta.logs import SemanticLogger
 from adapta.logs.models import LogLevel
@@ -255,3 +259,35 @@ class SnowflakeClient:
             )
 
         self.query(query=f'alter external table "{database}"."{schema}"."{table}" refresh;', fetch_dataframe=False)
+
+    def generate_jwt_token(self, timetime_seconds: int = 60) -> str:
+        """
+        Generates an RS256-signed Snowflake JWT using this client's key-pair credentials,
+
+        The client's account and username are normalized to uppercase. The account must be
+        a region-free organization-account identifier or account locator
+
+        :param timetime_seconds: Token lifetime in seconds, starting at the current UTC time.
+            Defaults to 1 minut. Snowflake accepts tokens valid for at most 60 minutes.
+        :return: The signed JWT as a string, without the ``Bearer `` prefix. Use it in an
+            ``Authorization: Bearer <token>`` header, optionally with
+            ``X-Snowflake-Authorization-Token-Type: KEYPAIR_JWT``.
+        :raises ValueError: If the client is not configured for key-pair authentication.
+        """
+        if not self._authenticator == SnowflakeAuth.KEY_PAIR:
+            raise ValueError(f"JWT token is only supported with KEY_PAIR authentication but got {self._authenticator}")
+
+        public_key_bytes = self._private_key.public_key().public_bytes(Encoding.DER, PublicFormat.SubjectPublicKeyInfo)
+        fingerprint = base64.b64encode(hashlib.sha256(public_key_bytes).digest()).decode("ascii")
+        qualified_user = f"{self._account.upper()}.{self._user.upper()}"
+        now = datetime.now(tz=UTC)
+        return jwt.encode(
+            {
+                "iss": f"{qualified_user}.SHA256:{fingerprint}",
+                "sub": qualified_user,
+                "iat": now,
+                "exp": now + timedelta(seconds=timetime_seconds),
+            },
+            key=self._private_key,
+            algorithm="RS256",
+        )
